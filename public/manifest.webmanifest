@@ -1,0 +1,55 @@
+{
+  "name": "AquaSpin Rewards",
+  "short_name": "AquaSpin",
+  "description": "Spin to win tokens and cash out via UPI or PayPal",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0A1428",
+  "background_color": "#0A1428",
+  "lang": "en",
+  "categories": ["games", "entertainment", "finance"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "AquaSpin Wheel Game"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Spin Wheel",
+      "url": "/wheel",
+      "description": "Go directly to the spin wheel",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View your token balance",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

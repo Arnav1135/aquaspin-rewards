@@ -6,38 +6,44 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // === AquaSpin Brand Palette ===
-        navy: {
-          950: '#05091A',
-          900: '#0A1428',
-          800: '#0D1B36',
-          700: '#112244',
-          600: '#162B57',
-          500: '#1A3469',
+        // === Custom Brand Palette ===
+        primary: {
+          950: '#1a2d5a',
+          900: '#2a3d7a',
+          800: '#3066be',
+          700: '#4d7fd6',
+          600: '#6b98e8',
+          500: '#8ab1f0',
         },
-        cyan: {
-          neon: '#00F0FF',
-          glow: '#00C8D4',
-          soft: '#7EEDF5',
-          dim: '#00788A',
+        secondary: {
+          neon: '#8ecae6',
+          glow: '#7ab8d8',
+          soft: '#aedce8',
+          dim: '#6fa8c4',
         },
-        gold: {
-          neon: '#FFD700',
-          warm: '#FFC107',
-          dim: '#B8860B',
+        tertiary: {
+          neon: '#b4c5e4',
+          glow: '#9ab5db',
+          soft: '#d4ddf0',
+          dim: '#7a8ab8',
         },
-        success: '#00FF87',
-        danger: '#FF3366',
-        warn: '#FF9900',
+        accent: {
+          neon: '#fbfff1',
+          warm: '#fcfffb',
+          dim: '#e8ecdd',
+        },
+        success: '#10b981',
+        danger: '#ef4444',
+        warn: '#f59e0b',
         // Semantic aliases
-        background: '#0A1428',
-        surface: '#0D1B36',
-        border: '#162B57',
-        muted: '#4A6080',
+        background: '#fbfff1',
+        surface: '#f3f7e8',
+        border: '#e8ecdd',
+        muted: '#8ecae6',
         text: {
-          primary: '#E8F4FD',
-          secondary: '#8BA3C4',
-          muted: '#4A6080',
+          primary: '#1a2d5a',
+          secondary: '#6fa8c4',
+          muted: '#8ecae6',
         },
       },
       fontFamily: {
@@ -51,25 +57,28 @@ const config: Config = {
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'navy-gradient': 'linear-gradient(135deg, #0A1428 0%, #0D1B36 50%, #112244 100%)',
-        'cyan-gradient': 'linear-gradient(135deg, #00F0FF 0%, #00788A 100%)',
-        'gold-gradient': 'linear-gradient(135deg, #FFD700 0%, #FFC107 100%)',
-        'card-gradient': 'linear-gradient(135deg, rgba(13,27,54,0.9) 0%, rgba(22,43,87,0.7) 100%)',
+        'primary-gradient': 'linear-gradient(135deg, #3066be 0%, #6b98e8 50%, #8ab1f0 100%)',
+        'secondary-gradient': 'linear-gradient(135deg, #8ecae6 0%, #7ab8d8 100%)',
+        'accent-gradient': 'linear-gradient(135deg, #fbfff1 0%, #fcfffb 100%)',
+        'card-gradient': 'linear-gradient(135deg, rgba(243,247,232,0.95) 0%, rgba(232,236,221,0.9) 100%)',
       },
       boxShadow: {
-        'cyan-glow': '0 0 20px rgba(0, 240, 255, 0.4), 0 0 40px rgba(0, 240, 255, 0.2)',
-        'cyan-glow-sm': '0 0 8px rgba(0, 240, 255, 0.5)',
-        'gold-glow': '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(255, 215, 0, 0.2)',
-        'gold-glow-sm': '0 0 8px rgba(255, 215, 0, 0.5)',
+        'primary-glow': '0 0 20px rgba(48, 102, 190, 0.4), 0 0 40px rgba(48, 102, 190, 0.2)',
+        'primary-glow-sm': '0 0 8px rgba(48, 102, 190, 0.5)',
+        'secondary-glow': '0 0 20px rgba(142, 202, 230, 0.4), 0 0 40px rgba(142, 202, 230, 0.2)',
+        'secondary-glow-sm': '0 0 8px rgba(142, 202, 230, 0.5)',
+        'accent-glow': '0 0 20px rgba(251, 255, 241, 0.4), 0 0 40px rgba(251, 255, 241, 0.2)',
+        'accent-glow-sm': '0 0 8px rgba(251, 255, 241, 0.5)',
         glass: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
-        'inner-glow': 'inset 0 1px 0 rgba(0, 240, 255, 0.1)',
+        'inner-glow': 'inset 0 1px 0 rgba(142, 202, 230, 0.1)',
       },
       backdropBlur: {
         xs: '2px',
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',
-        'pulse-cyan': 'pulse-cyan 2s ease-in-out infinite',
+        'pulse-primary': 'pulse-primary 2s ease-in-out infinite',
+        'pulse-secondary': 'pulse-secondary 2s ease-in-out infinite',
         'float': 'float 3s ease-in-out infinite',
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
         'token-pop': 'token-pop 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97)',
@@ -79,9 +88,13 @@ const config: Config = {
         'bounce-gentle': 'bounce-gentle 1s ease-in-out infinite',
       },
       keyframes: {
-        'pulse-cyan': {
-          '0%, 100%': { boxShadow: '0 0 10px rgba(0, 240, 255, 0.3)' },
-          '50%': { boxShadow: '0 0 30px rgba(0, 240, 255, 0.8)' },
+        'pulse-primary': {
+          '0%, 100%': { boxShadow: '0 0 10px rgba(48, 102, 190, 0.3)' },
+          '50%': { boxShadow: '0 0 30px rgba(48, 102, 190, 0.8)' },
+        },
+        'pulse-secondary': {
+          '0%, 100%': { boxShadow: '0 0 10px rgba(142, 202, 230, 0.3)' },
+          '50%': { boxShadow: '0 0 30px rgba(142, 202, 230, 0.8)' },
         },
         'float': {
           '0%, 100%': { transform: 'translateY(0px)' },

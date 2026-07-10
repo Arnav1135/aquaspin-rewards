@@ -16,7 +16,7 @@ export function useTokens() {
       updateProfile({ tokens: newTokens });
     });
 
-    return () => { channel.unsubscribe(); };
+    return () => { channel?.unsubscribe(); };
   }, [supabaseUser, updateProfile]);
 
   const addTokens = useCallback((amount: number) => {

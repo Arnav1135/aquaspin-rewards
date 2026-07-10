@@ -46,11 +46,11 @@ export function Dashboard() {
     staleTime: 60_000,
   });
 
-  const hasClamedDailyReward = dailyRewardData && dailyRewardData.length > 0;
+  const hasClaimedDailyReward = dailyRewardData && dailyRewardData.length > 0;
   const todayReward = DAILY_REWARD_SCHEDULE.find(d => d.day === dayInCycle);
 
   const handleClaimDailyReward = async () => {
-    if (!profile || hasClamedDailyReward || claimingReward) return;
+    if (!profile || hasClaimedDailyReward || claimingReward) return;
     setClaimingReward(true);
 
     const tokensToAward = todayReward?.tokens ?? 50;
@@ -195,14 +195,14 @@ export function Dashboard() {
             </div>
 
             <Button
-              variant={hasClamedDailyReward ? 'ghost' : 'gold'}
+              variant={hasClaimedDailyReward ? 'ghost' : 'gold'}
               fullWidth
-              disabled={!!hasClamedDailyReward}
+              disabled={!!hasClaimedDailyReward}
               loading={claimingReward}
               onClick={handleClaimDailyReward}
               id="daily-reward-btn"
             >
-              {hasClamedDailyReward ? (
+              {hasClaimedDailyReward ? (
                 '✓ Today\'s reward claimed!'
               ) : (
                 <>

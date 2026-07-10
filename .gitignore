@@ -38,3 +38,5 @@ dev-dist/
 
 # Supabase local
 .supabase/
+
+.vercel

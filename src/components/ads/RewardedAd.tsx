@@ -198,7 +198,7 @@ export function RewardedAd({ isOpen, onClose, onRewardEarned, triggerReason = 'b
               <p className="text-text-secondary text-sm mt-1">tokens added to your wallet</p>
             </div>
             <Button variant="primary" fullWidth onClick={onClose} id="claim-reward-btn">
-              Awesome! Collect
+              Collect
             </Button>
           </motion.div>
         )}

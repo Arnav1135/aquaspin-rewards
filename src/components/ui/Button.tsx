@@ -5,7 +5,7 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
-type Variant = 'primary' | 'neon' | 'gold' | 'ghost' | 'danger';
+type Variant = 'primary' | 'neon' | 'gold' | 'ghost' | 'danger' | 'success';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -23,6 +23,7 @@ const variantClasses: Record<Variant, string> = {
   gold: 'btn-gold text-navy-900',
   ghost: 'btn-ghost',
   danger: 'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-danger/20 border border-danger/40 hover:bg-danger/30 transition-all duration-200',
+  success: 'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-emerald-600 border border-emerald-500 hover:bg-emerald-500 shadow-lg shadow-emerald-950/20 transition-all duration-200',
 };
 
 const sizeClasses: Record<Size, string> = {

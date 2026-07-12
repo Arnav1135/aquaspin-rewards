@@ -312,3 +312,19 @@
     padding-top: env(safe-area-inset-top);
   }
 }
+
+/* ── 3D Transforms (Coin Flip) ───────────────────────────────────────────── */
+.perspective-800 {
+  perspective: 800px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotateY-180 {
+  transform: rotateY(180deg);
+}
+

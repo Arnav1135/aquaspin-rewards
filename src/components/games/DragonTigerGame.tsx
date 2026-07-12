@@ -52,7 +52,7 @@ function PlayingCard({ card, revealed, isWinner }: { card: CardData | null; reve
 }
 
 export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
-  const { profile, updateProfile } = useAuthStore();
+  const { profile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(50);
   const [betSelection, setBetSelection] = useState<BetType>(null);
   const [dealing, setDealing] = useState(false);
@@ -69,18 +69,31 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
   const handleDeal = async () => {
     if (!betSelection) { toast.error('Choose Dragon, Tiger or Tie!'); return; }
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
-    if (betAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    const { profile, isOwner, updateProfile } = useAuthStore.getState();
+    const freeTrials = profile?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
+    
+    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
+    const actualBetAmount = isFreeTrial ? 0 : betAmount;
+    if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    if (isFreeTrial) {
+      toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
+    }
+
 
     setDealing(true); setDragonCard(null); setTigerCard(null);
     setDragonRevealed(false); setTigerRevealed(false);
     setOutcome(null); setPayoutResult(null);
     playTone(300, 0.1, 'sine', 0.2);
 
-    const nb = balance - betAmount;
+    const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
     }
-    updateProfile({ tokens: nb });
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
 
     const dCard = getRandomCard(), tCard = getRandomCard();
 

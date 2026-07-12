@@ -14,6 +14,7 @@ interface AuthState {
   profile: User | null;
   isLoading: boolean;
   isGuest: boolean;
+  isOwner: boolean;
 
   // Actions
   initialize: () => Promise<void>;
@@ -35,6 +36,7 @@ export const useAuthStore = create<AuthState>()(
         profile: null,
         isLoading: true,
         isGuest: false,
+        isOwner: false,
 
         // ── Initialize auth state from existing session ──────────────────────
         initialize: async () => {
@@ -50,6 +52,7 @@ export const useAuthStore = create<AuthState>()(
               profile,
               isLoading: false,
               isGuest: false,
+              isOwner: profile?.email === 'vermaarnav113@gmail.com',
             });
           } else {
             set({ isLoading: false });
@@ -59,9 +62,9 @@ export const useAuthStore = create<AuthState>()(
           supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session?.user) {
               const { data: profile } = await getUserProfile(session.user.id);
-              set({ session, supabaseUser: session.user, profile, isGuest: false });
+              set({ session, supabaseUser: session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
             } else {
-              set({ session: null, supabaseUser: null, profile: null });
+              set({ session: null, supabaseUser: null, profile: null, isOwner: false });
             }
           });
         },
@@ -73,7 +76,7 @@ export const useAuthStore = create<AuthState>()(
 
           if (data.session?.user) {
             const { data: profile } = await getUserProfile(data.session.user.id);
-            set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false });
+            set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
           }
 
           return {};
@@ -110,14 +113,16 @@ export const useAuthStore = create<AuthState>()(
             is_banned: false,
             created_at: new Date().toISOString(),
             last_login: new Date().toISOString(),
+            free_trials: 3,
+            has_deposited: false,
           };
-          set({ profile: guestProfile, isGuest: true });
+          set({ profile: guestProfile, isGuest: true, isOwner: false });
         },
 
         // ── Logout ───────────────────────────────────────────────────────────
         logout: async () => {
           await supabase.auth.signOut();
-          set({ session: null, supabaseUser: null, profile: null, isGuest: false });
+          set({ session: null, supabaseUser: null, profile: null, isGuest: false, isOwner: false });
         },
 
         // ── Sign up ──────────────────────────────────────────────────────────
@@ -134,7 +139,7 @@ export const useAuthStore = create<AuthState>()(
 
           if (data.session?.user) {
             const { data: profile } = await getUserProfile(data.session.user.id);
-            set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false });
+            set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
           }
 
           return {};
@@ -146,13 +151,16 @@ export const useAuthStore = create<AuthState>()(
           if (!supabaseUser) return;
 
           const { data: profile } = await getUserProfile(supabaseUser.id);
-          if (profile) set({ profile });
+          if (profile) set({ profile, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
         },
 
         // ── Local-only profile update (optimistic) ───────────────────────────
         updateProfile: (updates) => {
           const { profile } = get();
-          if (profile) set({ profile: { ...profile, ...updates } });
+          if (profile) {
+            const newProfile = { ...profile, ...updates };
+            set({ profile: newProfile, isOwner: newProfile.email === 'vermaarnav113@gmail.com' });
+          }
         },
       }),
       {

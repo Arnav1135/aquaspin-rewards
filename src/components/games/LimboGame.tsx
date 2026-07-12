@@ -61,16 +61,29 @@ export function LimboGame({ onClose }: LimboGameProps) {
 
   const handleRoll = async () => {
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
-    if (betAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    const { profile, isOwner, updateProfile } = useAuthStore.getState();
+    const freeTrials = profile?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
+    
+    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
+    const actualBetAmount = isFreeTrial ? 0 : betAmount;
+    if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    if (isFreeTrial) {
+      toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
+    }
+
     if (targetMultiplier < 1.01) { toast.error('Target must be at least 1.01x'); return; }
     setRolling(true); setWin(null); setNearMiss(false);
     setShowConfetti(false); setBgColor('rgba(0,0,0,0)');
     playTone(200, 0.1, 'sine', 0.2);
-    const nb = balance - betAmount;
+    const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
     }
-    updateProfile({ tokens: nb });
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     const u = Math.random();
     let roll = Math.round((0.96 / u) * 100) / 100;
     if (roll < 1.0) roll = 1.0;

@@ -180,16 +180,29 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   const handleStartGame = async () => {
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
-    if (betAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    const { profile, isOwner, updateProfile } = useAuthStore.getState();
+    const freeTrials = profile?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
+    
+    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
+    const actualBetAmount = isFreeTrial ? 0 : betAmount;
+    if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    if (isFreeTrial) {
+      toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
+    }
+
     setGameState('climbing'); setMultiplier(1.0); setCashedOut(false);
     cashedOutRef.current = false; setEarnedTokens(0); setSocialFeed([]);
     particlesRef.current = []; crashEffectRef.current = null;
     playTone(261.63, 0.15, 'sine', 0.2);
-    const nb = balance - betAmount;
+    const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
     }
-    updateProfile({ tokens: nb });
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     crashPointRef.current = Math.random() < 0.03 ? 1.0 : Math.max(1.01, Math.round((0.96 / Math.random()) * 100) / 100);
     startTimeRef.current = Date.now();
     rAFRef.current = requestAnimationFrame(tick);
@@ -286,7 +299,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
           <p className="text-2xs text-muted uppercase tracking-wider">Live Bets</p>
           <AnimatePresence>
             {socialFeed.map((e, i) => (
-              <motion.div key={i} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ opacity: 0 }}
+              <motion.div key={e.user+i} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ opacity: 0 }}
                 className="flex justify-between text-xs text-text-secondary font-mono">
                 <span className="text-cyan-neon">{e.user}</span>
                 <span>{e.amount} @ <span className="text-gold-neon">{e.mult}x</span></span>

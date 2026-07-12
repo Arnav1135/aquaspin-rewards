@@ -58,12 +58,25 @@ export function MinesGame({ onClose }: MinesGameProps) {
   const startNewGame = async () => {
     if (isPlaying) return;
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
-    if (betAmount > balance) { toast.error('Insufficient tokens!'); return; }
-    const nb = balance - betAmount;
+    
+    const { profile, isOwner, updateProfile } = useAuthStore.getState();
+    const freeTrials = profile?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
+    
+    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
+    const actualBetAmount = isFreeTrial ? 0 : betAmount;
+    if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    if (isFreeTrial) {
+      toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
+    }
+
+    const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
     }
-    updateProfile({ tokens: nb });
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     const mineIdx = new Set<number>();
     while (mineIdx.size < mineCount) mineIdx.add(Math.floor(Math.random() * 25));
     setTiles(Array.from({ length: 25 }, (_, i) => ({ id: i, isMine: mineIdx.has(i), clicked: false, exploding: false })));

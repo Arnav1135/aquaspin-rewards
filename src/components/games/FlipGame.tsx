@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 interface FlipGameProps { onClose: () => void; }
 
 export function FlipGame({ onClose }: FlipGameProps) {
-  const { profile, updateProfile } = useAuthStore();
+  const { profile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(50);
   const [selection, setSelection] = useState<'heads' | 'tails' | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
@@ -31,16 +31,29 @@ export function FlipGame({ onClose }: FlipGameProps) {
   const handleFlip = async () => {
     if (!selection) { toast.error('Pick Heads or Tails!'); return; }
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
-    if (betAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    const { profile, isOwner, updateProfile } = useAuthStore.getState();
+    const freeTrials = profile?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
+    
+    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
+    const actualBetAmount = isFreeTrial ? 0 : betAmount;
+    if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    if (isFreeTrial) {
+      toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
+    }
+
 
     setIsFlipping(true); setResult(null); setIsWin(null); setShowParticles(false);
 
     // Deduct bet
-    const nb = balance - betAmount;
+    const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
     }
-    updateProfile({ tokens: nb });
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
 
     // Determine result — 4% house edge
     const flipResult: 'heads' | 'tails' = Math.random() < 0.48 ? selection : (selection === 'heads' ? 'tails' : 'heads');

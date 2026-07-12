@@ -2,8 +2,8 @@
 // Realtime leaderboard with Supabase subscription
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Zap, Flame, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, Zap, Flame, RefreshCw, Info, ChevronDown } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/authStore';
 import { getLeaderboard, subscribeToLeaderboard } from '@/lib/supabase';
@@ -38,10 +38,13 @@ export function Leaderboard() {
 
   return (
     <div className="min-h-screen bg-navy-900 pt-20 pb-24 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Leaderboard Column */}
+        <div className="lg:col-span-2 space-y-6">
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
+          {/* Header */}
+          <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-2xl font-bold text-gradient-cyan">Leaderboard</h1>
             <p className="text-sm text-muted mt-1">
@@ -159,9 +162,16 @@ export function Leaderboard() {
           )}
         </Card>
 
-        <p className="text-center text-2xs text-muted">
-          Rankings based on total tokens earned • Updated live • Top 100 shown
-        </p>
+          <p className="text-center text-2xs text-muted">
+            Rankings based on total tokens earned • Updated live • Top 100 shown
+          </p>
+        </div>
+
+        {/* How to Play Column */}
+        <div className="lg:col-span-1 space-y-6">
+          <HowToPlaySection />
+        </div>
+
       </div>
     </div>
   );
@@ -195,6 +205,68 @@ function PodiumCard({ entry, position }: { entry: any; position: 1 | 2 | 3 }) {
         </span>
         <span className="text-2xs text-text-secondary font-mono">{formatTokens(entry.total_earned)}</span>
       </div>
+    </div>
+  );
+}
+
+function HowToPlaySection() {
+  const games = [
+    { name: 'Crash', desc: 'Place a bet and watch the multiplier rise. Cash out before the rocket crashes to win! If it crashes before you cash out, you lose.' },
+    { name: 'Limbo', desc: 'Set a target multiplier. If the randomly rolled number is higher than your target, you win the payout! Otherwise, you lose the bet.' },
+    { name: 'Plinko', desc: 'Drop the ball into the peg maze. It will bounce down into a bucket with a multiplier. Your payout is Bet × Bucket Multiplier.' },
+    { name: 'Mines', desc: 'Select tiles to uncover gems and increase your multiplier. Avoid the hidden mines! Cash out anytime to secure your current multiplier.' },
+    { name: 'Roulette', desc: 'Bet on colors (Red/Black) or Green (Jackpot). If the wheel lands on your color, you win!' },
+    { name: 'Dragon Tiger', desc: 'Bet on which side (Dragon or Tiger) will draw the higher card. Aces are low. A Tie pays extra.' },
+    { name: 'Flip', desc: 'A classic coin toss. Guess Heads (Gold) or Tails (Silver). If you guess right, you double your bet!' },
+    { name: 'Chicken', desc: 'Lift the cloches. Finding a chicken increases your multiplier. Finding a bone ends the game and you lose your bet. Cash out anytime!' },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-display text-xl font-bold text-gradient-cyan flex items-center gap-2">
+          <Info size={20} /> How to Play
+        </h2>
+        <p className="text-sm text-muted mt-1">
+          Master the games & stack tokens!
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {games.map(game => (
+          <HowToPlayAccordion key={game.name} title={game.name} content={game.desc} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HowToPlayAccordion({ title, content }: { title: string, content: string }) {
+  const [open, setOpen] = useState(false);
+  
+  return (
+    <div className="glass-card border border-white/5 rounded-xl overflow-hidden">
+      <button 
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition-colors"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="font-semibold text-text-primary text-sm">{title}</span>
+        <ChevronDown size={16} className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 pt-0 text-sm text-muted">
+              {content}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

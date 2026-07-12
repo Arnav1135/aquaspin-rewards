@@ -31,6 +31,7 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
   const [spinning, setSpinning] = useState(false);
   const [outcome, setOutcome] = useState<WheelTile | null>(null);
   const [win, setWin] = useState<boolean | null>(null);
+  const actualBetRef = useRef(0);
   const [history, setHistory] = useState<string[]>(['R', 'B', 'R', 'G', 'B', 'R']);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -140,7 +141,7 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
       toast.error(`Rolled ${tile.color} ${tile.num}. Lost bet.`);
       playTone(180, 0.3, 'sawtooth', 0.2); vibrate(100);
     }
-    const fb = (balance - betAmount) + earned;
+    const fb = (balance - actualBetRef.current) + earned;
     if (profile && !profile.id.startsWith('guest')) {
       try {
         await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (isWin ? earned - betAmount : 0), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
@@ -155,15 +156,29 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
   const handleSpin = async () => {
     if (!betSelection) { toast.error('Pick Red, Black or Green!'); return; }
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
-    if (betAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    const { profile, isOwner, updateProfile } = useAuthStore.getState();
+    const freeTrials = profile?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
+    
+    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
+    const actualBetAmount = isFreeTrial ? 0 : betAmount;
+    actualBetRef.current = actualBetAmount;
+    if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
+    
+    if (isFreeTrial) {
+      toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
+    }
+
     if (spinning) return;
     if (rAFRef.current) cancelAnimationFrame(rAFRef.current);
     setSpinning(true); spinningRef.current = true; setOutcome(null); setWin(null);
-    const nb = balance - betAmount;
+    const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
     }
-    updateProfile({ tokens: nb });
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     const winIdx = Math.floor(Math.random() * 15);
     winIdxRef.current = winIdx;
     const targetOffset = -(winIdx * SECTOR_ANGLE + SECTOR_ANGLE / 2);

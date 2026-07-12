@@ -195,15 +195,27 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
   const handleDropBall = useCallback(async () => {
     const bal = balanceRef.current;
     const bet = betAmount;
-    if (bet <= 0 || bet > bal) { if (!autoDrop) toast.error('Insufficient tokens!'); return; }
-    const nb = bal - bet;
     const pr = profileRef.current;
+    const isOwner = pr?.email === 'vermaarnav113@gmail.com';
+    const freeTrials = pr?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !pr?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !pr?.has_deposited && freeTrials <= 0;
+
+    if (outOfTrials) { if (!autoDrop) toast.error('Out of free trials! Deposit to play.'); return; }
+    
+    const actualBet = isFreeTrial ? 0 : bet;
+    if (bet <= 0 || actualBet > bal) { if (!autoDrop) toast.error('Insufficient tokens!'); return; }
+    
+    const nb = bal - actualBet;
     if (pr && !pr.id.startsWith('guest')) {
-      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', pr.id); } catch {}
+      const dbUpdates: any = { tokens: nb };
+      if (isFreeTrial) dbUpdates.free_trials = freeTrials - 1;
+      try { await (supabase.from('users') as any).update(dbUpdates).eq('id', pr.id); } catch {}
     }
-    updateProfile({ tokens: nb });
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
+    if (isFreeTrial) toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
     const jitter = (Math.random() - 0.5) * 8;
-    ballsRef.current.push({ id: Date.now() + Math.random(), x: W / 2 + jitter, y: 20, vx: jitter * 0.1, vy: 1.5, trail: [], active: true, betAmount: bet, settled: false });
+    ballsRef.current.push({ id: Date.now() + Math.random(), x: W / 2 + jitter, y: 20, vx: jitter * 0.1, vy: 1.5, trail: [], active: true, betAmount: actualBet, settled: false });
     setBallsInFlight(prev => prev + 1);
     playTone(450, 0.05, 'sine', 0.1);
   }, [betAmount, autoDrop, updateProfile]);

@@ -23,6 +23,8 @@ export interface Database {
           is_banned: boolean;
           created_at: string;
           last_login: string;
+          free_trials: number;
+          has_deposited: boolean;
         };
         Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['users']['Row']>;

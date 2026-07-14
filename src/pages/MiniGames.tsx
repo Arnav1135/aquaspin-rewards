@@ -12,7 +12,7 @@ import { QuizGame } from '@/components/games/QuizGame';
 import { TapChallenge } from '@/components/games/TapChallenge';
 
 // Import Stake-style games
-import { FlipGame } from '@/components/games/FlipGame';
+import { CoinFlipScene } from '@/features/coinflip/CoinFlipScene';
 import { LimboGame } from '@/components/games/LimboGame';
 import { MinesGame } from '@/components/games/MinesGame';
 import { ChickenGame } from '@/components/games/ChickenGame';
@@ -185,7 +185,7 @@ export function MiniGames() {
       case 'memory': return <MemoryGame onClose={() => setActiveGame(null)} />;
       case 'quiz': return <QuizGame onClose={() => setActiveGame(null)} />;
       case 'tap': return <TapChallenge onClose={() => setActiveGame(null)} />;
-      case 'flip': return <FlipGame onClose={() => setActiveGame(null)} />;
+      case 'flip': return <CoinFlipScene onClose={() => setActiveGame(null)} />;
       case 'limbo': return <LimboGame onClose={() => setActiveGame(null)} />;
       case 'mines': return <MinesGame onClose={() => setActiveGame(null)} />;
       case 'chicken': return <ChickenGame onClose={() => setActiveGame(null)} />;

@@ -143,9 +143,14 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
             <p className="text-text-secondary">Tap the glowing circles before they disappear!</p>
             <p className="text-text-secondary mt-1">{GAME_DURATION} seconds • Build combos for bonus tokens!</p>
           </div>
-          <Button variant="primary" size="lg" onClick={startGame} id="start-tap-btn">
-            <Zap size={20} /> Start Challenge
-          </Button>
+          <div className="flex flex-col gap-2 max-w-[200px] mx-auto">
+            <Button variant="primary" size="lg" onClick={startGame} id="start-tap-btn">
+              <Zap size={20} /> Start Challenge
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-muted text-xs">
+              Close Game
+            </Button>
+          </div>
         </div>
       )}
 

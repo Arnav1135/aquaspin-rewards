@@ -132,7 +132,12 @@ export function MemoryGame({ onClose }: MemoryGameProps) {
             <p className="text-text-secondary">Flip cards to find all {totalPairs} matching pairs.</p>
             <p className="text-text-secondary mt-1">Fewer moves = more tokens (25–100)</p>
           </div>
-          <Button variant="primary" size="lg" onClick={startGame} id="start-memory-btn">Start Game</Button>
+          <div className="flex flex-col gap-2 max-w-[200px] mx-auto">
+            <Button variant="primary" size="lg" onClick={startGame} id="start-memory-btn">Start Game</Button>
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-muted text-xs">
+              Close Game
+            </Button>
+          </div>
         </motion.div>
       )}
 

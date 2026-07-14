@@ -234,12 +234,12 @@ export function MiniGames() {
               <Card
                 hover
                 glow="cyan"
-                className="cursor-pointer group h-full flex flex-col justify-between overflow-hidden p-0"
+                className="cursor-pointer group h-full flex flex-col justify-between overflow-hidden p-0 bg-navy-950/40 border-navy-800/80"
                 onClick={() => setActiveGame(game.key)}
               >
                 <div className="flex flex-col h-full justify-between">
                   <div>
-                    {'image' in game ? (
+                    {game.image ? (
                       <div className="relative h-40 w-full overflow-hidden mb-3 border-b border-navy-800">
                         <img
                           src={game.image}
@@ -254,15 +254,26 @@ export function MiniGames() {
                         </span>
                       </div>
                     ) : (
-                      <div className="flex justify-between items-center mb-3 p-4 pb-0">
-                        <span className="text-3xl">{game.emoji}</span>
-                        <span className="text-3xs uppercase tracking-wider font-semibold text-muted bg-navy-950 px-2 py-0.5 rounded-md border border-navy-800">
+                      <div 
+                        className="relative h-40 w-full mb-3 border-b border-navy-800 flex items-center justify-center overflow-hidden"
+                        style={{
+                          background: `radial-gradient(circle at 50% 120%, ${game.color}25, rgba(10, 20, 40, 0.9))`,
+                        }}
+                      >
+                        <div 
+                          className="absolute w-24 h-24 rounded-full blur-[35px] opacity-30 transition-transform duration-500 group-hover:scale-125"
+                          style={{ backgroundColor: game.color }}
+                        />
+                        <span className="text-5xl z-10 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-300">
+                          {game.emoji}
+                        </span>
+                        <span className="absolute top-2 right-2 text-3xs uppercase tracking-wider font-semibold text-muted bg-navy-950/85 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-sm">
                           {game.category}
                         </span>
                       </div>
                     )}
                     
-                    <div className={'image' in game ? "px-4 pb-2" : "px-4"}>
+                    <div className="px-4 pb-2">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-text-primary group-hover:text-cyan-neon transition-colors">
                           {game.title}
@@ -282,7 +293,7 @@ export function MiniGames() {
                     </div>
                   </div>
                   
-                  <div className={`flex items-center gap-1.5 text-xs font-semibold px-4 pb-4`} style={{ color: game.color }}>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold px-4 pb-4" style={{ color: game.color }}>
                     <Coins size={12} className="text-current" />
                     <span>{game.category === 'Betting' ? `Payout: ${game.reward}` : `Win: ${game.reward}`}</span>
                   </div>
@@ -292,29 +303,29 @@ export function MiniGames() {
           ))}
         </div>
       </div>
-
+ 
       {/* ── Active game overlay ── */}
       <AnimatePresence>
         {activeGame && (
           <motion.div
-            className="fixed inset-0 z-50 bg-navy-950/95 backdrop-blur-sm flex flex-col"
+            className="fixed inset-0 z-50 bg-navy-950/98 backdrop-blur-md flex flex-col"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             {/* Game header */}
-            <div className="flex items-center justify-between p-4 border-b border-navy-700 bg-navy-900/50 backdrop-blur-md">
+            <div className="flex items-center justify-between p-4 border-b border-navy-800 bg-navy-900/80 backdrop-blur-md sticky top-0 z-30">
               <div className="flex items-center gap-2">
-                <Gamepad2 size={20} className="text-cyan-neon" />
+                <Gamepad2 size={20} className="text-cyan-neon animate-pulse" />
                 <span className="font-display font-semibold text-text-primary">
                   {GAMES.find(g => g.key === activeGame)?.title}
                 </span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setActiveGame(null)}>
+              <Button variant="ghost" size="sm" onClick={() => setActiveGame(null)} className="hover:bg-white/10 rounded-xl">
                 <X size={18} />
               </Button>
             </div>
-
+ 
             {/* Game content */}
             <div className="flex-1 overflow-auto bg-navy-950/40">
               {renderGame()}

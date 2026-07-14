@@ -105,7 +105,12 @@ export function QuizGame({ onClose }: QuizGameProps) {
             <p className="text-text-secondary">Answer {QUESTIONS.length} questions correctly.</p>
             <p className="text-cyan-neon font-semibold mt-1">+{TOKENS_PER_CORRECT} tokens per correct answer!</p>
           </div>
-          <Button variant="primary" size="lg" onClick={startGame} id="start-quiz-btn">Start Quiz</Button>
+          <div className="flex flex-col gap-2 max-w-[200px] mx-auto">
+            <Button variant="primary" size="lg" onClick={startGame} id="start-quiz-btn">Start Quiz</Button>
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-muted text-xs">
+              Close Game
+            </Button>
+          </div>
         </motion.div>
       )}
 

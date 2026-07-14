@@ -123,9 +123,14 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
             <p className="text-text-secondary">Click as many times as you can in <strong className="text-cyan-neon">10 seconds</strong>!</p>
             <p className="text-text-secondary mt-1">More clicks = more tokens (up to 50)</p>
           </div>
-          <Button variant="primary" size="lg" onClick={startGame} id="start-clicker-btn">
-            <Zap size={20} /> Start Game
-          </Button>
+          <div className="flex flex-col gap-2 max-w-[200px] mx-auto">
+            <Button variant="primary" size="lg" onClick={startGame} id="start-clicker-btn">
+              <Zap size={20} /> Start Game
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-muted text-xs">
+              Close Game
+            </Button>
+          </div>
         </motion.div>
       )}
 

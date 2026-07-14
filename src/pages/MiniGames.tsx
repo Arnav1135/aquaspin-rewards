@@ -46,6 +46,7 @@ const GAMES = [
     difficulty: 'Medium',
     color: '#FFD700',
     category: 'Betting',
+    image: '/images/mines.jpg',
   },
   {
     key: 'plinko' as const,
@@ -66,6 +67,7 @@ const GAMES = [
     difficulty: 'Hard',
     color: '#00FF87',
     category: 'Betting',
+    image: '/images/crash.jpg',
   },
   {
     key: 'limbo' as const,
@@ -76,6 +78,7 @@ const GAMES = [
     difficulty: 'Medium',
     color: '#FF7700',
     category: 'Betting',
+    image: '/images/limbo.jpg',
   },
   {
     key: 'roulette' as const,
@@ -86,6 +89,7 @@ const GAMES = [
     difficulty: 'Easy',
     color: '#FF3366',
     category: 'Betting',
+    image: '/images/roulette.jpg',
   },
   {
     key: 'dragontiger' as const,
@@ -106,6 +110,7 @@ const GAMES = [
     difficulty: 'Medium',
     color: '#FFB800',
     category: 'Betting',
+    image: '/images/chicken.jpg',
   },
   {
     key: 'flip' as const,
@@ -116,6 +121,7 @@ const GAMES = [
     difficulty: 'Easy',
     color: '#E0E0E0',
     category: 'Betting',
+    image: '/images/flip.jpg',
   },
   {
     key: 'clicker' as const,
@@ -228,36 +234,58 @@ export function MiniGames() {
               <Card
                 hover
                 glow="cyan"
-                className="cursor-pointer group h-full flex flex-col justify-between"
+                className="cursor-pointer group h-full flex flex-col justify-between overflow-hidden p-0"
                 onClick={() => setActiveGame(game.key)}
               >
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-3xl">{game.emoji}</span>
-                    <span className="text-3xs uppercase tracking-wider font-semibold text-muted bg-navy-950 px-2 py-0.5 rounded-md border border-navy-800">
-                      {game.category}
-                    </span>
+                <div className="flex flex-col h-full justify-between">
+                  <div>
+                    {'image' in game ? (
+                      <div className="relative h-40 w-full overflow-hidden mb-3 border-b border-navy-800">
+                        <img
+                          src={game.image}
+                          alt={game.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-2 left-2 text-xl bg-navy-950/80 p-1.5 rounded-lg backdrop-blur-sm border border-white/5">
+                          {game.emoji}
+                        </div>
+                        <span className="absolute top-2 right-2 text-3xs uppercase tracking-wider font-semibold text-muted bg-navy-950/85 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-sm">
+                          {game.category}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center mb-3 p-4 pb-0">
+                        <span className="text-3xl">{game.emoji}</span>
+                        <span className="text-3xs uppercase tracking-wider font-semibold text-muted bg-navy-950 px-2 py-0.5 rounded-md border border-navy-800">
+                          {game.category}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className={'image' in game ? "px-4 pb-2" : "px-4"}>
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-text-primary group-hover:text-cyan-neon transition-colors">
+                          {game.title}
+                        </h3>
+                        <span
+                          className="text-2xs px-2 py-0.5 rounded-full font-medium"
+                          style={{
+                            color: difficultyColors[game.difficulty],
+                            backgroundColor: `${difficultyColors[game.difficulty]}20`,
+                            border: `1px solid ${difficultyColors[game.difficulty]}30`,
+                          }}
+                        >
+                          {game.difficulty}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-secondary mb-4 leading-relaxed">{game.description}</p>
+                    </div>
                   </div>
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-text-primary group-hover:text-cyan-neon transition-colors">
-                      {game.title}
-                    </h3>
-                    <span
-                      className="text-2xs px-2 py-0.5 rounded-full font-medium"
-                      style={{
-                        color: difficultyColors[game.difficulty],
-                        backgroundColor: `${difficultyColors[game.difficulty]}20`,
-                        border: `1px solid ${difficultyColors[game.difficulty]}30`,
-                      }}
-                    >
-                      {game.difficulty}
-                    </span>
+                  
+                  <div className={`flex items-center gap-1.5 text-xs font-semibold px-4 pb-4`} style={{ color: game.color }}>
+                    <Coins size={12} className="text-current" />
+                    <span>{game.category === 'Betting' ? `Payout: ${game.reward}` : `Win: ${game.reward}`}</span>
                   </div>
-                  <p className="text-xs text-text-secondary mb-4 leading-relaxed">{game.description}</p>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: game.color }}>
-                  <Coins size={12} className="text-current" />
-                  <span>{game.category === 'Betting' ? `Payout: ${game.reward}` : `Win: ${game.reward}`}</span>
                 </div>
               </Card>
             </motion.div>

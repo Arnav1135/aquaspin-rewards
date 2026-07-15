@@ -6,7 +6,16 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { playTone, vibrate } from '@/lib/utils';
+import {
+  createAppError,
+  handleError,
+  logError,
+  withErrorHandling,
+  ErrorCategory,
+  ErrorSeverity,
+} from '@/lib/errors';
 import toast from 'react-hot-toast';
 
 interface PlinkoGameProps { onClose: () => void; }
@@ -63,13 +72,28 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
   const getBucketX = (i: number) => W / 2 - ((multipliers.length - 1) * pegSpacing) / 2 + i * pegSpacing;
 
   const physicsLoop = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { rAFRef.current = requestAnimationFrame(physicsLoop); return; }
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        rAFRef.current = requestAnimationFrame(physicsLoop);
+        return;
+      }
 
-    ctx.fillStyle = '#050e1a';
-    ctx.fillRect(0, 0, W, H);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        logError(
+          createAppError(
+            'Failed to get 2D canvas context',
+            ErrorCategory.RENDERING,
+            ErrorSeverity.WARNING
+          )
+        );
+        rAFRef.current = requestAnimationFrame(physicsLoop);
+        return;
+      }
+
+      ctx.fillStyle = '#050e1a';
+      ctx.fillRect(0, 0, W, H);
 
     // Grid
     ctx.strokeStyle = 'rgba(255,255,255,0.03)';
@@ -153,29 +177,119 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
       ctx.fillStyle = '#FF0055'; ctx.shadowBlur = 14; ctx.shadowColor = '#FF0055'; ctx.fill(); ctx.shadowBlur = 0;
     });
 
-    // Settle
+    // Settle balls with error handling
     toSettle.forEach(async ball => {
-      ballsRef.current = ballsRef.current.filter(b => b.id !== ball.id);
-      setBallsInFlight(prev => Math.max(0, prev - 1));
-      let bucketIdx = 0, minDist = Infinity;
-      multipliers.forEach((_, i) => { const d = Math.abs(ball.x - getBucketX(i)); if (d < minDist) { minDist = d; bucketIdx = i; } });
-      bucketFlashesRef.current.push({ idx: bucketIdx, frames: 22 });
-      const mult = multipliers[bucketIdx];
-      const won = Math.floor(ball.betAmount * mult);
-      if (mult >= 1) { toast.success(`${mult}x → +${won} tokens!`); playTone(523, 0.1, 'sine', 0.25); vibrate([40, 40, 80]); }
-      else { toast.error(`${mult}x — lost tokens.`); playTone(180, 0.2, 'sawtooth', 0.15); }
-      const pr = profileRef.current;
-      const fb = balanceRef.current + won;
-      if (pr && !pr.id.startsWith('guest')) {
-        try {
-          await (supabase.from('users') as any).update({ tokens: fb, total_earned: pr.total_earned + Math.max(0, won - ball.betAmount), xp: pr.xp + Math.floor(ball.betAmount * 0.1) }).eq('id', pr.id);
-          await (supabase.from('game_stats') as any).upsert({ user_id: pr.id, games_played: 1, games_won: mult >= 1 ? 1 : 0 });
-        } catch {}
+      try {
+        ballsRef.current = ballsRef.current.filter(b => b.id !== ball.id);
+        setBallsInFlight(prev => Math.max(0, prev - 1));
+
+        // Find closest bucket
+        let bucketIdx = 0;
+        let minDist = Infinity;
+        multipliers.forEach((_, i) => {
+          const d = Math.abs(ball.x - getBucketX(i));
+          if (d < minDist) {
+            minDist = d;
+            bucketIdx = i;
+          }
+        });
+
+        if (bucketIdx < 0 || bucketIdx >= multipliers.length) {
+          throw createAppError(
+            'Invalid bucket index calculated',
+            ErrorCategory.GAME_LOGIC,
+            ErrorSeverity.ERROR,
+            { context: { bucketIdx, multiplierLength: multipliers.length } }
+          );
+        }
+
+        bucketFlashesRef.current.push({ idx: bucketIdx, frames: 22 });
+        const mult = multipliers[bucketIdx];
+
+        if (typeof mult !== 'number' || !Number.isFinite(mult)) {
+          throw createAppError(
+            'Invalid multiplier value',
+            ErrorCategory.GAME_LOGIC,
+            ErrorSeverity.ERROR,
+            { context: { mult } }
+          );
+        }
+
+        const won = Math.floor(ball.betAmount * mult);
+        const pr = profileRef.current;
+        const finalBalance = balanceRef.current + won;
+
+        // Visual feedback
+        if (mult >= 1) {
+          toast.success(`${mult}x → +${won} tokens!`);
+          playTone(523, 0.1, 'sine', 0.25);
+          vibrate([40, 40, 80]);
+        } else {
+          toast.error(`${mult}x — lost tokens.`);
+          playTone(180, 0.2, 'sawtooth', 0.15);
+        }
+
+        // Update database if not guest
+        if (pr && !pr.id.startsWith('guest')) {
+          try {
+            const netWinLoss = won - ball.betAmount;
+            const { error: updateError } = await (supabase.from('users') as any)
+              .update({
+                tokens: finalBalance,
+                total_earned: pr.total_earned + Math.max(0, netWinLoss),
+                xp: pr.xp + Math.floor(ball.betAmount * 0.1),
+              })
+              .eq('id', pr.id);
+
+            if (updateError) {
+              logError(updateError, {
+                context: 'plinko_settle_users_update',
+                gameState: { bucketIdx, mult, won },
+              });
+            }
+
+            // Update game stats
+            const { error: statsError } = await (supabase.from('game_stats') as any).upsert({
+              user_id: pr.id,
+              games_played: 1,
+              games_won: mult >= 1 ? 1 : 0,
+            });
+
+            if (statsError) {
+              logError(statsError, {
+                context: 'plinko_settle_game_stats',
+                gameState: { mult, won },
+              });
+            }
+          } catch (dbError) {
+            logError(dbError, {
+              context: 'plinko_settle_database_error',
+              gameState: { won, bucketIdx, mult },
+            });
+            // Don't throw - update local state anyway
+          }
+        }
+
+        // Update local state
+        balanceRef.current = finalBalance;
+        updateProfile({ tokens: finalBalance });
+      } catch (error) {
+        logError(error, { context: 'plinko_settle_error' });
+        // Ensure ball is removed even on error
+        ballsRef.current = ballsRef.current.filter(b => b.id !== ball.id);
+        setBallsInFlight(prev => Math.max(0, prev - 1));
       }
-      updateProfile({ tokens: fb });
     });
 
-    rAFRef.current = requestAnimationFrame(physicsLoop);
+      rAFRef.current = requestAnimationFrame(physicsLoop);
+    } catch (error) {
+      logError(error, {
+        context: 'plinko_physics_loop',
+        ballCount: ballsRef.current.length,
+      });
+      // Continue animation loop even on error
+      rAFRef.current = requestAnimationFrame(physicsLoop);
+    }
   }, [multipliers, updateProfile]);
 
   useEffect(() => {
@@ -192,77 +306,289 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
     return () => { if (autoDropRef.current) clearInterval(autoDropRef.current); };
   }, [autoDrop, betAmount]);
 
-  const handleDropBall = useCallback(async () => {
-    const bal = balanceRef.current;
-    const bet = betAmount;
-    const pr = profileRef.current;
-    const isOwner = pr?.email === 'vermaarnav113@gmail.com';
-    const freeTrials = pr?.free_trials ?? 3;
-    const isFreeTrial = !isOwner && !pr?.has_deposited && freeTrials > 0;
-    const outOfTrials = !isOwner && !pr?.has_deposited && freeTrials <= 0;
+  // Validate bet amount
+  const validateBet = useCallback((amount: number, balance: number): { valid: boolean; error?: string } => {
+    if (amount <= 0) return { valid: false, error: 'Bet amount must be greater than 0' };
+    if (amount > balance) return { valid: false, error: 'Insufficient tokens for this bet' };
+    if (!Number.isFinite(amount)) return { valid: false, error: 'Invalid bet amount' };
+    return { valid: true };
+  }, []);
 
-    if (outOfTrials) { if (!autoDrop) toast.error('Out of free trials! Deposit to play.'); return; }
-    
-    const actualBet = isFreeTrial ? 0 : bet;
-    if (bet <= 0 || actualBet > bal) { if (!autoDrop) toast.error('Insufficient tokens!'); return; }
-    
-    const nb = bal - actualBet;
-    if (pr && !pr.id.startsWith('guest')) {
-      const dbUpdates: any = { tokens: nb };
-      if (isFreeTrial) dbUpdates.free_trials = freeTrials - 1;
-      try { await (supabase.from('users') as any).update(dbUpdates).eq('id', pr.id); } catch {}
+  // Update user balance in database with error handling
+  const updateUserBalance = useCallback(
+    withErrorHandling(
+      async (newBalance: number, freeTrialsUsed?: boolean) => {
+        const pr = profileRef.current;
+        if (!pr || pr.id.startsWith('guest')) return true;
+
+        try {
+          const dbUpdates: any = { tokens: newBalance };
+          if (freeTrialsUsed) {
+            const currentTrials = pr.free_trials ?? 3;
+            dbUpdates.free_trials = Math.max(0, currentTrials - 1);
+          }
+
+          const { error } = await (supabase.from('users') as any)
+            .update(dbUpdates)
+            .eq('id', pr.id);
+
+          if (error) {
+            throw createAppError(
+              `Failed to update user balance: ${error.message}`,
+              ErrorCategory.DATABASE,
+              ErrorSeverity.ERROR,
+              {
+                userMessage: 'Failed to deduct tokens. Please try again.',
+                context: { originalError: error.message },
+              }
+            );
+          }
+
+          return true;
+        } catch (err) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          throw createAppError(
+            `Database update failed: ${error.message}`,
+            ErrorCategory.DATABASE,
+            ErrorSeverity.ERROR,
+            {
+              userMessage: 'Failed to process your bet. Your tokens have not been deducted.',
+              context: { error: error.message },
+            }
+          );
+        }
+      },
+      {
+        category: ErrorCategory.DATABASE,
+        severity: ErrorSeverity.ERROR,
+        fallbackReturn: false,
+      }
+    ),
+    []
+  );
+
+  const handleDropBall = useCallback(async () => {
+    try {
+      const bal = balanceRef.current;
+      const bet = betAmount;
+      const pr = profileRef.current;
+      
+      if (!pr) {
+        throw createAppError(
+          'User profile not loaded',
+          ErrorCategory.AUTH,
+          ErrorSeverity.ERROR,
+          { userMessage: 'Please refresh and try again.' }
+        );
+      }
+
+      const isOwner = pr?.email === 'vermaarnav113@gmail.com';
+      const freeTrials = pr?.free_trials ?? 3;
+      const isFreeTrial = !isOwner && !pr?.has_deposited && freeTrials > 0;
+      const outOfTrials = !isOwner && !pr?.has_deposited && freeTrials <= 0;
+
+      // Validate free trials
+      if (outOfTrials) {
+        if (!autoDrop) {
+          handleError(
+            createAppError(
+              'No free trials remaining',
+              ErrorCategory.GAME_LOGIC,
+              ErrorSeverity.WARNING,
+              { userMessage: 'Out of free trials! Deposit to play.' }
+            ),
+            { showToast: true }
+          );
+        }
+        return;
+      }
+
+      const actualBet = isFreeTrial ? 0 : bet;
+
+      // Validate bet amount
+      const validation = validateBet(bet, bal);
+      if (!validation.valid) {
+        if (!autoDrop) {
+          handleError(
+            createAppError(
+              validation.error || 'Invalid bet',
+              ErrorCategory.VALIDATION,
+              ErrorSeverity.WARNING,
+              { userMessage: validation.error }
+            ),
+            { showToast: true }
+          );
+        }
+        return;
+      }
+
+      // Calculate new balance
+      const newBalance = bal - actualBet;
+
+      // Update database if not guest
+      if (!pr.id.startsWith('guest')) {
+        const updateSuccess = await updateUserBalance(newBalance, isFreeTrial);
+        if (!updateSuccess) {
+          throw createAppError(
+            'Failed to update balance',
+            ErrorCategory.DATABASE,
+            ErrorSeverity.ERROR,
+            { userMessage: 'Failed to process your bet. Please try again.' }
+          );
+        }
+      }
+
+      // Update local state
+      updateProfile({
+        tokens: newBalance,
+        ...(isFreeTrial ? { free_trials: Math.max(0, freeTrials - 1) } : {}),
+      });
+
+      if (isFreeTrial) {
+        toast.success(`Free Trial Used! (${Math.max(0, freeTrials - 1)} left)`, {
+          icon: '🎁',
+          duration: 2000,
+        });
+      }
+
+      // Drop the ball
+      const jitter = (Math.random() - 0.5) * 8;
+      const newBall: Ball = {
+        id: Date.now() + Math.random(),
+        x: W / 2 + jitter,
+        y: 20,
+        vx: jitter * 0.1,
+        vy: 1.5,
+        trail: [],
+        active: true,
+        betAmount: actualBet,
+        settled: false,
+      };
+
+      ballsRef.current.push(newBall);
+      setBallsInFlight(prev => prev + 1);
+      playTone(450, 0.05, 'sine', 0.1);
+    } catch (error) {
+      handleError(error, {
+        showToast: true,
+        fallbackMessage: 'Failed to drop ball. Please try again.',
+      });
     }
-    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
-    if (isFreeTrial) toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
-    const jitter = (Math.random() - 0.5) * 8;
-    ballsRef.current.push({ id: Date.now() + Math.random(), x: W / 2 + jitter, y: 20, vx: jitter * 0.1, vy: 1.5, trail: [], active: true, betAmount: actualBet, settled: false });
-    setBallsInFlight(prev => prev + 1);
-    playTone(450, 0.05, 'sine', 0.1);
-  }, [betAmount, autoDrop, updateProfile]);
+  }, [betAmount, autoDrop, updateProfile, validateBet, updateUserBalance]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
-        <div className="space-y-4">
-          <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={false} />
-          <div className="space-y-2">
-            <span className="text-xs text-text-secondary font-medium">Risk Level</span>
-            <div className="grid grid-cols-3 gap-1.5">
-              {(['low', 'medium', 'high'] as RiskLevel[]).map(r => (
-                <Button key={r} variant={risk === r ? 'primary' : 'ghost'} onClick={() => { setRisk(r); playTone(400, 0.05, 'sine', 0.1); }}
-                  className={`py-2 text-xs rounded-xl capitalize ${risk === r ? 'border-cyan-neon bg-cyan-neon/10' : 'border-navy-700'}`}>{r}</Button>
-              ))}
+    <ErrorBoundary name="PlinkoGame">
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+        <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
+          <div className="space-y-4">
+            <BetControl
+              betAmount={betAmount}
+              setBetAmount={setBetAmount}
+              disabled={false}
+            />
+            <div className="space-y-2">
+              <span className="text-xs text-text-secondary font-medium">Risk Level</span>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(['low', 'medium', 'high'] as RiskLevel[]).map(r => (
+                  <Button
+                    key={r}
+                    variant={risk === r ? 'primary' : 'ghost'}
+                    onClick={() => {
+                      setRisk(r);
+                      playTone(400, 0.05, 'sine', 0.1);
+                    }}
+                    className={`py-2 text-xs rounded-xl capitalize ${
+                      risk === r
+                        ? 'border-cyan-neon bg-cyan-neon/10'
+                        : 'border-navy-700'
+                    }`}
+                  >
+                    {r}
+                  </Button>
+                ))}
+              </div>
             </div>
+            <div className="space-y-2">
+              <span className="text-xs text-text-secondary font-medium">Rows</span>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[8, 10, 12].map(n => (
+                  <Button
+                    key={n}
+                    variant={rows === n ? 'primary' : 'ghost'}
+                    onClick={() => {
+                      setRows(n);
+                      buildPegs();
+                      playTone(400, 0.05, 'sine', 0.1);
+                    }}
+                    className={`py-2 text-xs rounded-xl ${
+                      rows === n
+                        ? 'border-cyan-neon bg-cyan-neon/10'
+                        : 'border-navy-700'
+                    }`}
+                  >
+                    {n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div
+                className={`w-9 h-5 rounded-full transition-colors ${
+                  autoDrop ? 'bg-cyan-neon' : 'bg-navy-700'
+                } relative`}
+              >
+                <div
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                    autoDrop ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
+                />
+              </div>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={autoDrop}
+                onChange={e => setAutoDrop(e.target.checked)}
+              />
+              <span className="text-xs text-text-secondary">Auto Drop</span>
+            </label>
+            {ballsInFlight > 0 && (
+              <p className="text-xs text-cyan-neon font-mono">
+                {ballsInFlight} ball{ballsInFlight > 1 ? 's' : ''} in flight
+              </p>
+            )}
           </div>
           <div className="space-y-2">
-            <span className="text-xs text-text-secondary font-medium">Rows</span>
-            <div className="grid grid-cols-3 gap-1.5">
-              {[8, 10, 12].map(n => (
-                <Button key={n} variant={rows === n ? 'primary' : 'ghost'} onClick={() => { setRows(n); buildPegs(); playTone(400, 0.05, 'sine', 0.1); }}
-                  className={`py-2 text-xs rounded-xl ${rows === n ? 'border-cyan-neon bg-cyan-neon/10' : 'border-navy-700'}`}>{n}</Button>
-              ))}
-            </div>
+            <Button
+              variant="neon"
+              size="lg"
+              className="w-full font-bold py-4 rounded-xl"
+              disabled={betAmount <= 0 || betAmount > (profile?.tokens ?? 0)}
+              onClick={handleDropBall}
+            >
+              Drop Ball
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-xs text-muted"
+              onClick={onClose}
+            >
+              Close Game
+            </Button>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <div className={`w-9 h-5 rounded-full transition-colors ${autoDrop ? 'bg-cyan-neon' : 'bg-navy-700'} relative`}>
-              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${autoDrop ? 'translate-x-4' : 'translate-x-0.5'}`} />
-            </div>
-            <input type="checkbox" className="sr-only" checked={autoDrop} onChange={e => setAutoDrop(e.target.checked)} />
-            <span className="text-xs text-text-secondary">Auto Drop</span>
-          </label>
-          {ballsInFlight > 0 && <p className="text-xs text-cyan-neon font-mono">{ballsInFlight} ball{ballsInFlight > 1 ? 's' : ''} in flight</p>}
-        </div>
-        <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl" disabled={betAmount <= 0 || betAmount > (profile?.tokens ?? 0)} onClick={handleDropBall}>
-            Drop Ball
-          </Button>
-          <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>Close Game</Button>
-        </div>
-      </Card>
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] bg-navy-900/40 border border-navy-800/80 rounded-2xl overflow-hidden">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted z-10"><HelpCircle size={10} /><span>2–4% edge</span></div>
-        <canvas ref={canvasRef} width={W} height={H} className="w-full max-w-[420px]" />
-      </Card>
-    </div>
+        </Card>
+        <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] bg-navy-900/40 border border-navy-800/80 rounded-2xl overflow-hidden">
+          <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted z-10">
+            <HelpCircle size={10} />
+            <span>2–4% edge</span>
+          </div>
+          <canvas
+            ref={canvasRef}
+            width={W}
+            height={H}
+            className="w-full max-w-[420px]"
+          />
+        </Card>
+      </div>
+    </ErrorBoundary>
   );
 }

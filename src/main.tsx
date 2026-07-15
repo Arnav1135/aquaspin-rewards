@@ -6,6 +6,27 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import '@/styles/globals.css';
 
+// ── Global Error Handling ───────────────────────────────────────────────────
+// Phase 3: Setup centralized error handling for the entire app
+import { setupGlobalErrorHandlers } from '@/lib/errors';
+
+// Initialize global error handlers
+// Catches unhandled promise rejections and window errors
+setupGlobalErrorHandlers();
+
+// Optional: Setup error analytics/tracking service
+// Uncomment and configure when ready to send errors to Sentry, Rollbar, etc.
+// Example:
+// window.__ERROR_ANALYTICS__ = {
+//   track: (data) => {
+//     fetch('/api/errors', { 
+//       method: 'POST', 
+//       headers: { 'Content-Type': 'application/json' },
+//       body: JSON.stringify(data)
+//     });
+//   }
+// };
+
 // ── PWA Service Worker ──────────────────────────────────────────────────────
 // vite-plugin-pwa provides the virtual module for SW registration
 // @ts-expect-error — virtual module provided by vite-plugin-pwa at build time

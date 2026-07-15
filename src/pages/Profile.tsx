@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
-import { getTransactionHistory, getGameStats } from '@/lib/supabase';
+import { getTransactionHistory, getGameStats, getSignInHistory } from '@/lib/supabase';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -31,6 +31,12 @@ export function Profile() {
   const { data: gameStats } = useQuery({
     queryKey: ['game-stats', profile?.id],
     queryFn: () => profile ? getGameStats(profile.id).then(r => r.data) : null,
+    enabled: !!profile && !isGuest,
+  });
+
+  const { data: signInHistory } = useQuery({
+    queryKey: ['sign-in-history', profile?.id],
+    queryFn: () => profile ? getSignInHistory(profile.id).then(r => r.data ?? []) : [],
     enabled: !!profile && !isGuest,
   });
 
@@ -197,6 +203,54 @@ export function Profile() {
                     <div className="text-right">
                       <p className="font-mono font-bold text-sm text-gold-neon">${(tx as any).amount_usd}</p>
                       <p className="text-2xs text-muted">{formatTokens((tx as any).amount_tokens)} tokens</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* ── Sign-in History ── */}
+        {!isGuest && (
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle>
+                <div className="flex items-center gap-2">
+                  <Shield size={18} className="text-text-secondary" />
+                  Sign-In History
+                </div>
+              </CardTitle>
+            </CardHeader>
+
+            {!signInHistory || signInHistory.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted">No login history recorded yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                {signInHistory.map((log: any) => (
+                  <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-navy-850/50 border border-navy-750 text-xs">
+                    <div>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-semibold text-text-primary">
+                          {log.sign_in_method === 'google' ? '🟢 Google Account' : '📧 Email Account'}
+                        </span>
+                        <span className="text-[10px] text-muted uppercase bg-navy-950/80 px-1.5 py-0.5 rounded border border-white/5 font-mono">
+                          {log.device_type || 'desktop'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-text-secondary">
+                        {log.browser || 'Browser'} on {log.os || 'OS'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[11px] font-medium text-cyan-neon">
+                        {formatRelativeTime(log.signed_in_at)}
+                      </p>
+                      <p className="text-[10px] text-muted font-mono max-w-[120px] truncate" title={log.email}>
+                        {log.email}
+                      </p>
                     </div>
                   </div>
                 ))}

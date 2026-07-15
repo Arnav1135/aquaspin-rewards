@@ -76,6 +76,63 @@ export async function getSpinHistory(userId: string) {
     .limit(20);
 }
 
+/** Fetch sign-in history for a user (last 15 logins) */
+export async function getSignInHistory(userId: string) {
+  return db
+    .from('sign_in_history')
+    .select('*')
+    .eq('user_id', userId)
+    .order('signed_in_at', { ascending: false })
+    .limit(15);
+}
+
+/** Detect browser name + version from userAgent */
+function detectBrowser(ua: string): string {
+  if (/Edg\/([\d.]+)/.test(ua)) return `Edge ${ua.match(/Edg\/([\d.]+)/)?.[1]?.split('.')[0] ?? ''}`;
+  if (/OPR\/([\d.]+)/.test(ua)) return `Opera ${ua.match(/OPR\/([\d.]+)/)?.[1]?.split('.')[0] ?? ''}`;
+  if (/Chrome\/([\d.]+)/.test(ua)) return `Chrome ${ua.match(/Chrome\/([\d.]+)/)?.[1]?.split('.')[0] ?? ''}`;
+  if (/Firefox\/([\d.]+)/.test(ua)) return `Firefox ${ua.match(/Firefox\/([\d.]+)/)?.[1]?.split('.')[0] ?? ''}`;
+  if (/Safari\/([\d.]+)/.test(ua) && !/Chrome/.test(ua)) return `Safari`;
+  return 'Unknown Browser';
+}
+
+/** Detect OS from userAgent */
+function detectOS(ua: string): string {
+  if (/Windows NT/.test(ua)) return 'Windows';
+  if (/Mac OS X/.test(ua)) return 'macOS';
+  if (/Android/.test(ua)) return 'Android';
+  if (/iPhone|iPad/.test(ua)) return 'iOS';
+  if (/Linux/.test(ua)) return 'Linux';
+  return 'Unknown OS';
+}
+
+/** Detect device type from userAgent */
+function detectDeviceType(ua: string): 'mobile' | 'tablet' | 'desktop' {
+  if (/Mobi|Android.*Mobile|iPhone/.test(ua)) return 'mobile';
+  if (/iPad|Android(?!.*Mobile)|Tablet/.test(ua)) return 'tablet';
+  return 'desktop';
+}
+
+/**
+ * Record a sign-in event for the user.
+ * Call this immediately after a successful login/signup.
+ */
+export async function recordSignIn(
+  userId: string,
+  email: string,
+  method: 'email' | 'google' | 'guest' = 'email'
+) {
+  const ua = navigator.userAgent;
+  return db.from('sign_in_history').insert({
+    user_id: userId,
+    email,
+    device_type: detectDeviceType(ua),
+    browser: detectBrowser(ua),
+    os: detectOS(ua),
+    sign_in_method: method,
+  });
+}
+
 /** Fetch transaction history for a user */
 export async function getTransactionHistory(userId: string) {
   return db

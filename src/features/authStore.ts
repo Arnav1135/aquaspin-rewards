@@ -4,7 +4,7 @@
 import { create } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, getUserProfile } from '@/lib/supabase';
+import { supabase, getUserProfile, recordSignIn } from '@/lib/supabase';
 import type { User } from '@/types/database';
 
 interface AuthState {
@@ -75,11 +75,15 @@ export const useAuthStore = create<AuthState>()(
                 isGuest: false,
                 isOwner: profile?.email === 'vermaarnav113@gmail.com',
               });
+              // Record sign-in for Google OAuth (SIGNED_IN event on redirect callback)
+              if (event === 'SIGNED_IN' && session.user.app_metadata?.provider === 'google') {
+                recordSignIn(session.user.id, session.user.email ?? '', 'google').catch(console.warn);
+              }
             }
           });
         },
 
-        // ── Email/Password login ─────────────────────────────────────────────
+        // ── Email/Password login ──────────────────────────────────────────────────────
         login: async (email, password) => {
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
           if (error) return { error: error.message };
@@ -87,6 +91,8 @@ export const useAuthStore = create<AuthState>()(
           if (data.session?.user) {
             const { data: profile } = await getUserProfile(data.session.user.id);
             set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
+            // Record the sign-in (fire and forget — don't block login on this)
+            recordSignIn(data.session.user.id, email, 'email').catch(console.warn);
           }
 
           return {};
@@ -135,7 +141,7 @@ export const useAuthStore = create<AuthState>()(
           set({ session: null, supabaseUser: null, profile: null, isGuest: false, isOwner: false });
         },
 
-        // ── Sign up ──────────────────────────────────────────────────────────
+        // ── Sign up ───────────────────────────────────────────────────────────────
         signup: async (email, password, username) => {
           const { data, error } = await supabase.auth.signUp({
             email,
@@ -150,6 +156,8 @@ export const useAuthStore = create<AuthState>()(
           if (data.session?.user) {
             const { data: profile } = await getUserProfile(data.session.user.id);
             set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
+            // Record the first sign-in for newly registered users
+            recordSignIn(data.session.user.id, email, 'email').catch(console.warn);
           }
 
           return {};

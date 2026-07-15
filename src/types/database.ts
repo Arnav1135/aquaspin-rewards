@@ -99,6 +99,21 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['daily_rewards']['Row'], 'id' | 'claimed_at'>;
         Update: Partial<Database['public']['Tables']['daily_rewards']['Row']>;
       };
+      sign_in_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          email: string;
+          signed_in_at: string;
+          device_type: string | null;
+          browser: string | null;
+          os: string | null;
+          ip_address: string | null;
+          sign_in_method: 'email' | 'google' | 'guest';
+        };
+        Insert: Omit<Database['public']['Tables']['sign_in_history']['Row'], 'id' | 'signed_in_at'>;
+        Update: Partial<Database['public']['Tables']['sign_in_history']['Row']>;
+      };
     };
     Views: {
       leaderboard: {
@@ -130,6 +145,7 @@ export type Transaction = Database['public']['Tables']['transactions']['Row'];
 export type GameStats = Database['public']['Tables']['game_stats']['Row'];
 export type AdAnalytics = Database['public']['Tables']['ad_analytics']['Row'];
 export type DailyReward = Database['public']['Tables']['daily_rewards']['Row'];
+export type SignInHistory = Database['public']['Tables']['sign_in_history']['Row'];
 export type LeaderboardEntry = Database['public']['Views']['leaderboard']['Row'];
 
 // ── Wheel segment types ──────────────────────────────────────────────────────

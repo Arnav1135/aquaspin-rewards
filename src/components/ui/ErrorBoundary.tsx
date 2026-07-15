@@ -43,7 +43,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       category: ErrorCategory.RENDERING,
       severity: ErrorSeverity.ERROR,
       context: { componentStack: errorInfo.componentStack },
-    } as AppError;
+      timestamp: Date.now(),
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    } as unknown as AppError;
 
     logError(appError, { boundaryName: this.props.name });
     this.props.onError?.(error, errorInfo);
@@ -67,6 +71,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       }
 
       // Default error UI
+      const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV;
+
       return (
         <div className="w-full h-full flex items-center justify-center p-4 bg-gradient-to-br from-navy-950 to-navy-900">
           <div className="max-w-md w-full">
@@ -86,7 +92,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </div>
 
               {/* Error details in development */}
-              {process.env.NODE_ENV === 'development' && (
+              {isDev && (
                 <div className="bg-navy-950/80 rounded-lg p-3 space-y-2 text-xs font-mono border border-navy-700/50">
                   <div>
                     <p className="text-text-secondary">Message:</p>
@@ -183,8 +189,9 @@ export function createAsyncErrorHandler(
         ...error,
         category: ErrorCategory.GAME_LOGIC,
         severity: ErrorSeverity.ERROR,
-      } as AppError)
-      : new Error(String(error)) as AppError;
+        timestamp: Date.now(),
+      } as unknown as AppError)
+      : (new Error(String(error)) as unknown as AppError);
 
     logError(appError);
     onError?.(appError);

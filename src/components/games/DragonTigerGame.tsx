@@ -1,5 +1,5 @@
 // src/components/games/DragonTigerGame.tsx
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
@@ -7,7 +7,16 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { playTone, vibrate } from '@/lib/utils';
+import {
+  createAppError,
+  handleError,
+  logError,
+  withErrorHandling,
+  ErrorCategory,
+  ErrorSeverity,
+} from '@/lib/errors';
 import toast from 'react-hot-toast';
 
 interface DragonTigerGameProps { onClose: () => void; }
@@ -52,7 +61,7 @@ function PlayingCard({ card, revealed, isWinner }: { card: CardData | null; reve
 }
 
 export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(50);
   const [betSelection, setBetSelection] = useState<BetType>(null);
   const [dealing, setDealing] = useState(false);
@@ -65,79 +74,290 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
   const [payoutResult, setPayoutResult] = useState<number | null>(null);
 
   const balance = profile?.tokens ?? 0;
+  const profileRef = useRef(profile);
+  const balanceRef = useRef(balance);
 
-  const handleDeal = async () => {
-    if (!betSelection) { toast.error('Choose Dragon, Tiger or Tie!'); return; }
-    if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
-    
-    const { profile, isOwner, updateProfile } = useAuthStore.getState();
-    const freeTrials = profile?.free_trials ?? 3;
-    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
-    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
-    
-    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
-    const actualBetAmount = isFreeTrial ? 0 : betAmount;
-    if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
-    
-    if (isFreeTrial) {
-      toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
-    }
+  // Validate bet selection and amount
+  const validateBet = useCallback((): { valid: boolean; error?: string } => {
+    if (!betSelection) return { valid: false, error: 'Select Dragon, Tiger, or Tie to play' };
+    if (betAmount <= 0) return { valid: false, error: 'Bet amount must be greater than 0' };
+    if (betAmount > balance) return { valid: false, error: 'Insufficient tokens for this bet' };
+    if (!Number.isFinite(betAmount)) return { valid: false, error: 'Invalid bet amount' };
+    return { valid: true };
+  }, [betSelection, betAmount, balance]);
 
+  // Update user balance in database with error handling
+  const updateUserBalance = useCallback(
+    withErrorHandling(
+      async (newBalance: number, freeTrialsUsed?: boolean) => {
+        const pr = profileRef.current;
+        if (!pr || pr.id.startsWith('guest')) return true;
 
-    setDealing(true); setDragonCard(null); setTigerCard(null);
-    setDragonRevealed(false); setTigerRevealed(false);
-    setOutcome(null); setPayoutResult(null);
-    playTone(300, 0.1, 'sine', 0.2);
-
-    const nb = balance - actualBetAmount;
-    if (profile && !profile.id.startsWith('guest')) {
-      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
-    }
-    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
-
-    const dCard = getRandomCard(), tCard = getRandomCard();
-
-    setTimeout(() => { setDragonCard(dCard); playTone(400, 0.08, 'sine', 0.12); vibrate(20); }, 500);
-    setTimeout(() => { setDragonRevealed(true); playTone(450, 0.06, 'sine', 0.1); }, 1000);
-    setTimeout(() => { setTigerCard(tCard); playTone(400, 0.08, 'sine', 0.12); vibrate(20); }, 1400);
-    setTimeout(() => { setTigerRevealed(true); playTone(450, 0.06, 'sine', 0.1); }, 1900);
-
-    setTimeout(async () => {
-      let winner: 'dragon' | 'tiger' | 'tie';
-      if (dCard.value > tCard.value) winner = 'dragon';
-      else if (tCard.value > dCard.value) winner = 'tiger';
-      else winner = 'tie';
-
-      setOutcome(winner);
-      setHistory(prev => [...prev.slice(-29), winner === 'dragon' ? 'D' : winner === 'tiger' ? 'T' : 'Tie']);
-
-      let earned = 0, isWin = false;
-      if (betSelection === winner) {
-        isWin = true;
-        earned = winner === 'tie' ? Math.floor(betAmount * 11) : Math.floor(betAmount * 2);
-      } else if (winner === 'tie' && (betSelection === 'dragon' || betSelection === 'tiger')) {
-        earned = Math.floor(betAmount * 0.5);
-      }
-
-      setPayoutResult(earned); setDealing(false);
-      const fb = nb + earned;
-
-      if (isWin) { toast.success(`🎉 ${winner.toUpperCase()} wins! +${earned - betAmount} tokens!`); playTone(523, 0.15, 'sine', 0.3); vibrate([50, 50, 100]); }
-      else if (winner === 'tie' && betSelection !== 'tie') { toast.custom(() => <div className="bg-orange-950 border border-orange-500/50 p-3 rounded-xl text-xs text-orange-400 font-semibold">🤝 Tie! 50% returned ({earned} tokens)</div>); playTone(300, 0.2, 'sine', 0.2); }
-      else { toast.error(`Lost ${betAmount} tokens.`); playTone(180, 0.3, 'sawtooth', 0.2); vibrate(120); }
-
-      if (profile && !profile.id.startsWith('guest')) {
         try {
-          await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (isWin ? earned - betAmount : 0), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
-          await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: isWin ? 1 : 0 });
-        } catch {}
+          const dbUpdates: any = { tokens: newBalance };
+          if (freeTrialsUsed) {
+            const currentTrials = pr.free_trials ?? 3;
+            dbUpdates.free_trials = Math.max(0, currentTrials - 1);
+          }
+
+          const { error } = await (supabase.from('users') as any)
+            .update(dbUpdates)
+            .eq('id', pr.id);
+
+          if (error) {
+            throw createAppError(
+              `Failed to update user balance: ${error.message}`,
+              ErrorCategory.DATABASE,
+              ErrorSeverity.ERROR,
+              {
+                userMessage: 'Failed to deduct tokens. Please try again.',
+                context: { originalError: error.message },
+              }
+            );
+          }
+
+          return true;
+        } catch (err) {
+          const error = err instanceof Error ? err : new Error(String(err));
+          throw createAppError(
+            `Database update failed: ${error.message}`,
+            ErrorCategory.DATABASE,
+            ErrorSeverity.ERROR,
+            {
+              userMessage: 'Failed to process your bet. Your tokens have not been deducted.',
+              context: { error: error.message },
+            }
+          );
+        }
+      },
+      {
+        category: ErrorCategory.DATABASE,
+        severity: ErrorSeverity.ERROR,
+        fallbackReturn: false,
       }
-      updateProfile({ tokens: fb });
-    }, 2300);
-  };
+    ),
+    []
+  );
+
+  // Update game result in database with error recovery
+  const updateGameResult = useCallback(
+    withErrorHandling(
+      async (finalBalance: number, earned: number, won: boolean) => {
+        const pr = profileRef.current;
+        if (!pr || pr.id.startsWith('guest')) return true;
+
+        try {
+          const { error: updateError } = await (supabase.from('users') as any)
+            .update({
+              tokens: finalBalance,
+              total_earned: pr.total_earned + (won ? Math.max(0, earned - betAmount) : 0),
+              xp: pr.xp + Math.floor(betAmount * 0.1),
+            })
+            .eq('id', pr.id);
+
+          if (updateError) {
+            logError(updateError, { context: 'dragontiger_result_update' });
+          }
+
+          const { error: statsError } = await (supabase.from('game_stats') as any).upsert({
+            user_id: pr.id,
+            games_played: 1,
+            games_won: won ? 1 : 0,
+          });
+
+          if (statsError) {
+            logError(statsError, { context: 'dragontiger_stats_update' });
+          }
+
+          return true;
+        } catch (err) {
+          logError(err, { context: 'dragontiger_database_error' });
+          // Don't throw - update local state anyway
+          return true;
+        }
+      },
+      { category: ErrorCategory.DATABASE, fallbackReturn: true }
+    ),
+    [betAmount]
+  );
+
+  const handleDeal = useCallback(async () => {
+    try {
+      // Validate bet
+      const validation = validateBet();
+      if (!validation.valid) {
+        handleError(
+          createAppError(
+            validation.error || 'Invalid bet',
+            ErrorCategory.VALIDATION,
+            ErrorSeverity.WARNING,
+            { userMessage: validation.error }
+          ),
+          { showToast: true }
+        );
+        return;
+      }
+
+      const pr = profileRef.current;
+      if (!pr) {
+        throw createAppError(
+          'User profile not loaded',
+          ErrorCategory.AUTH,
+          ErrorSeverity.ERROR,
+          { userMessage: 'Please refresh and try again.' }
+        );
+      }
+
+      const isOwner = pr?.email === 'vermaarnav113@gmail.com';
+      const freeTrials = pr?.free_trials ?? 3;
+      const isFreeTrial = !isOwner && !pr?.has_deposited && freeTrials > 0;
+      const outOfTrials = !isOwner && !pr?.has_deposited && freeTrials <= 0;
+
+      if (outOfTrials) {
+        handleError(
+          createAppError(
+            'No free trials remaining',
+            ErrorCategory.GAME_LOGIC,
+            ErrorSeverity.WARNING,
+            { userMessage: 'Out of free trials! Deposit real cash to play unlimited.' }
+          ),
+          { showToast: true }
+        );
+        return;
+      }
+
+      const actualBet = isFreeTrial ? 0 : betAmount;
+      const newBalance = balanceRef.current - actualBet;
+
+      // Update database if not guest
+      if (!pr.id.startsWith('guest')) {
+        const updateSuccess = await updateUserBalance(newBalance, isFreeTrial);
+        if (!updateSuccess) {
+          throw createAppError(
+            'Failed to update balance',
+            ErrorCategory.DATABASE,
+            ErrorSeverity.ERROR,
+            { userMessage: 'Failed to process your bet. Please try again.' }
+          );
+        }
+      }
+
+      // Update local state
+      balanceRef.current = newBalance;
+      updateProfile({
+        tokens: newBalance,
+        ...(isFreeTrial ? { free_trials: Math.max(0, freeTrials - 1) } : {}),
+      });
+
+      if (isFreeTrial) {
+        toast.success(`Free Trial Used! (${Math.max(0, freeTrials - 1)} left)`, {
+          icon: '🎁',
+          duration: 2000,
+        });
+      }
+
+      // Start dealing animation
+      setDealing(true);
+      setDragonCard(null);
+      setTigerCard(null);
+      setDragonRevealed(false);
+      setTigerRevealed(false);
+      setOutcome(null);
+      setPayoutResult(null);
+      playTone(300, 0.1, 'sine', 0.2);
+
+      const dCard = getRandomCard();
+      const tCard = getRandomCard();
+
+      setTimeout(() => {
+        setDragonCard(dCard);
+        playTone(400, 0.08, 'sine', 0.12);
+        vibrate(20);
+      }, 500);
+
+      setTimeout(() => {
+        setDragonRevealed(true);
+        playTone(450, 0.06, 'sine', 0.1);
+      }, 1000);
+
+      setTimeout(() => {
+        setTigerCard(tCard);
+        playTone(400, 0.08, 'sine', 0.12);
+        vibrate(20);
+      }, 1400);
+
+      setTimeout(() => {
+        setTigerRevealed(true);
+        playTone(450, 0.06, 'sine', 0.1);
+      }, 1900);
+
+      // Resolve game outcome
+      setTimeout(async () => {
+        try {
+          let winner: 'dragon' | 'tiger' | 'tie';
+          if (dCard.value > tCard.value) winner = 'dragon';
+          else if (tCard.value > dCard.value) winner = 'tiger';
+          else winner = 'tie';
+
+          setOutcome(winner);
+          setHistory(prev => [...prev.slice(-29), winner === 'dragon' ? 'D' : winner === 'tiger' ? 'T' : 'Tie']);
+
+          let earned = 0;
+          let isWin = false;
+
+          if (betSelection === winner) {
+            isWin = true;
+            earned = winner === 'tie' ? Math.floor(betAmount * 11) : Math.floor(betAmount * 2);
+          } else if (winner === 'tie' && (betSelection === 'dragon' || betSelection === 'tiger')) {
+            earned = Math.floor(betAmount * 0.5);
+          }
+
+          setPayoutResult(earned);
+          setDealing(false);
+          const finalBalance = balanceRef.current + earned;
+
+          // User feedback
+          if (isWin) {
+            toast.success(`🎉 ${winner.toUpperCase()} wins! +${earned - betAmount} tokens!`);
+            playTone(523, 0.15, 'sine', 0.3);
+            vibrate([50, 50, 100]);
+          } else if (winner === 'tie' && betSelection !== 'tie') {
+            toast.custom(() => (
+              <div className="bg-orange-950 border border-orange-500/50 p-3 rounded-xl text-xs text-orange-400 font-semibold">
+                🤝 Tie! 50% returned ({earned} tokens)
+              </div>
+            ));
+            playTone(300, 0.2, 'sine', 0.2);
+          } else {
+            toast.error(`Lost ${betAmount} tokens.`);
+            playTone(180, 0.3, 'sawtooth', 0.2);
+            vibrate(120);
+          }
+
+          // Update database
+          balanceRef.current = finalBalance;
+          await updateGameResult(finalBalance, earned, isWin);
+          updateProfile({ tokens: finalBalance });
+        } catch (error) {
+          logError(error, { context: 'dragontiger_outcome_resolution' });
+          setDealing(false);
+          handleError(error, {
+            showToast: true,
+            fallbackMessage: 'Failed to complete game. Your balance has not been updated.',
+          });
+        }
+      }, 2300);
+    } catch (error) {
+      handleError(error, {
+        showToast: true,
+        fallbackMessage: 'Failed to deal cards. Please try again.',
+      });
+    }
+  }, [validateBet, updateUserBalance, updateGameResult, betAmount, betSelection]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+    <ErrorBoundary name="DragonTigerGame">
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
         <div className="space-y-4">
           <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={dealing} />
@@ -253,7 +473,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
             </AnimatePresence>
           </div>
         </div>
-      </Card>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

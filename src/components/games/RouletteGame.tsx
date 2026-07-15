@@ -146,7 +146,9 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
       try {
         await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (isWin ? earned - betAmount : 0), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
         await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: isWin ? 1 : 0 });
-      } catch {}
+      } catch (e) {
+        console.error('Failed to update user after spin:', e);
+      }
     }
     updateProfile({ tokens: fb });
     // Restart idle
@@ -176,7 +178,11 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
     setSpinning(true); spinningRef.current = true; setOutcome(null); setWin(null);
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
-      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
+      try { 
+        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id);
+      } catch (e) {
+        console.error('Failed to update user balance:', e);
+      }
     }
     updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     const winIdx = Math.floor(Math.random() * 15);

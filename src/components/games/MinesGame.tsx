@@ -1,7 +1,7 @@
 // src/components/games/MinesGame.tsx
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, Shield, AlertTriangle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { HelpCircle, Shield, AlertTriangle, X } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -52,7 +52,6 @@ export function MinesGame({ onClose }: MinesGameProps) {
       if (step >= steps) clearInterval(id);
     }, 35);
     return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentMultiplier]);
 
   const startNewGame = async () => {
@@ -74,7 +73,11 @@ export function MinesGame({ onClose }: MinesGameProps) {
 
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
-      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
+      try { 
+        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id);
+      } catch (e) {
+        console.error('Failed to update user balance:', e);
+      }
     }
     updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     const mineIdx = new Set<number>();
@@ -96,7 +99,6 @@ export function MinesGame({ onClose }: MinesGameProps) {
       setGameOver(true); setIsPlaying(false); setHasWon(false);
       playTone(150, 0.4, 'sawtooth', 0.25); vibrate(200);
       toast.error('💥 Hit a mine! Bet lost.');
-      // Stagger reveal remaining mines
       const mineIds = newTiles.filter(t => t.isMine && t.id !== id).map(t => t.id);
       mineIds.forEach((mid, i) => {
         setTimeout(() => {
@@ -109,7 +111,11 @@ export function MinesGame({ onClose }: MinesGameProps) {
         }, (i + 1) * 110);
       });
       if (profile && !profile.id.startsWith('guest')) {
-        try { await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 0 }); } catch {}
+        try { 
+          await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 0 });
+        } catch (e) {
+          console.error('Failed to update game stats:', e);
+        }
       }
     } else {
       setTiles(newTiles);
@@ -118,9 +124,9 @@ export function MinesGame({ onClose }: MinesGameProps) {
       playTone(600 + nc * 45, 0.1, 'sine', 0.2); vibrate(25);
       if (nc === 25 - mineCount) { await handleCashOut(nc); }
     }
-  }, [isPlaying, gameOver, tiles, clicks, mineCount]);
+  }, [isPlaying, gameOver, tiles, clicks, mineCount, profile]);
 
-  const handleCashOut = async (finalClicks = clicks) => {
+  const handleCashOut = useCallback(async (finalClicks = clicks) => {
     if (!isPlaying || gameOver || finalClicks === 0) return;
     const mult = getMinesMultiplier(mineCount, finalClicks);
     const won = Math.floor(betAmount * mult);
@@ -134,10 +140,12 @@ export function MinesGame({ onClose }: MinesGameProps) {
       try {
         await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (won - betAmount), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
         await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 1 });
-      } catch {}
+      } catch (e) {
+        console.error('Failed to update user after cashout:', e);
+      }
     }
     updateProfile({ tokens: fb });
-  };
+  }, [isPlaying, gameOver, clicks, mineCount, profile, balance, betAmount, updateProfile]);
 
   const dangerPct = Math.min(100, (mineCount / 24) * 100);
 
@@ -184,7 +192,9 @@ export function MinesGame({ onClose }: MinesGameProps) {
               Start Game
             </Button>
           )}
-          <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>Close Game</Button>
+          <Button variant="ghost" className="w-full text-xs text-muted border border-navy-700 hover:border-navy-600" onClick={onClose}>
+            <X size={14} /> Close Game
+          </Button>
         </div>
       </Card>
 
@@ -195,31 +205,26 @@ export function MinesGame({ onClose }: MinesGameProps) {
             {tiles.length === 0 ? Array.from({ length: 25 }).map((_, i) => (
               <div key={i} className="aspect-square rounded-xl bg-navy-800/40 border border-navy-700/50 flex items-center justify-center text-navy-600/40 text-xl font-bold">?</div>
             )) : tiles.map(tile => (
-              <div key={tile.id} className="relative aspect-square">
-                <AnimatePresence>
-                  {!tile.clicked && (
-                    <motion.button exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.15 }}
-                      disabled={!isPlaying || gameOver}
-                      onClick={() => handleTileClick(tile.id)}
-                      whileHover={{ scale: 1.06, boxShadow: '0 0 12px rgba(0,240,255,0.3)' }}
-                      whileTap={{ scale: 0.93 }}
-                      className="absolute inset-0 rounded-xl bg-navy-800 border-2 border-navy-700 flex items-center justify-center text-xl font-bold text-navy-500 cursor-pointer">
-                      ?
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-                <AnimatePresence>
-                  {tile.clicked && (
-                    <motion.div
-                      initial={{ scale: 0, rotateY: 90 }} animate={tile.exploding ? { scale: [0, 1.3, 0.9, 1], rotateY: 0 } : { scale: 1, rotateY: 0 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                      className={`absolute inset-0 rounded-xl border-2 flex items-center justify-center text-xl ${tile.isMine ? 'bg-red-950/40 border-danger/60' : 'bg-cyan-950/30 border-cyan-500/60'}`}
-                      style={tile.isMine ? {} : { boxShadow: `0 0 ${8 + clicks * 3}px rgba(0,240,255,${0.25 + clicks * 0.04})` }}>
-                      {tile.isMine ? '💥' : '💎'}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <motion.div key={tile.id} className="aspect-square" layout>
+                {!tile.clicked ? (
+                  <motion.button
+                    disabled={!isPlaying || gameOver}
+                    onClick={() => handleTileClick(tile.id)}
+                    whileHover={{ scale: 1.06, boxShadow: '0 0 12px rgba(0,240,255,0.3)' }}
+                    whileTap={{ scale: 0.93 }}
+                    className="w-full h-full rounded-xl bg-navy-800 border-2 border-navy-700 flex items-center justify-center text-xl font-bold text-navy-500 cursor-pointer">
+                    ?
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    initial={{ scale: 0, rotateY: 90 }} animate={tile.exploding ? { scale: [0, 1.3, 0.9, 1], rotateY: 0 } : { scale: 1, rotateY: 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    className={`w-full h-full rounded-xl border-2 flex items-center justify-center text-xl ${tile.isMine ? 'bg-red-950/40 border-danger/60' : 'bg-cyan-950/30 border-cyan-500/60'}`}
+                    style={tile.isMine ? {} : { boxShadow: `0 0 ${8 + clicks * 3}px rgba(0,240,255,${0.25 + clicks * 0.04})` }}>
+                    {tile.isMine ? '💥' : '💎'}
+                  </motion.div>
+                )}
+              </motion.div>
             ))}
           </div>
           {/* Danger meter */}
@@ -233,21 +238,19 @@ export function MinesGame({ onClose }: MinesGameProps) {
         </div>
 
         <div className="mt-5 text-center min-h-[48px]">
-          <AnimatePresence>
-            {gameOver && (
-              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-                {hasWon ? (
-                  <div><p className="text-xs text-success font-semibold uppercase tracking-wider">🎉 Cashed Out!</p>
-                    <p className="text-xl font-bold text-gold-neon">+{earnedTokens} tokens</p></div>
-                ) : (
-                  <p className="text-xs text-danger font-semibold uppercase tracking-wider flex items-center gap-1.5 justify-center"><AlertTriangle size={12} /> Boom! Mine Hit</p>
-                )}
-              </motion.div>
-            )}
-            {!isPlaying && !gameOver && (
-              <p className="text-xs text-text-secondary flex items-center gap-1.5 justify-center"><Shield size={12} className="text-cyan-neon" /> Pick settings and click Start</p>
-            )}
-          </AnimatePresence>
+          {gameOver && (
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
+              {hasWon ? (
+                <div><p className="text-xs text-success font-semibold uppercase tracking-wider">🎉 Cashed Out!</p>
+                  <p className="text-xl font-bold text-gold-neon">+{earnedTokens} tokens</p></div>
+              ) : (
+                <p className="text-xs text-danger font-semibold uppercase tracking-wider flex items-center gap-1.5 justify-center"><AlertTriangle size={12} /> Boom! Mine Hit</p>
+              )}
+            </motion.div>
+          )}
+          {!isPlaying && !gameOver && (
+            <p className="text-xs text-text-secondary flex items-center gap-1.5 justify-center"><Shield size={12} className="text-cyan-neon" /> Pick settings and click Start</p>
+          )}
         </div>
       </Card>
     </div>

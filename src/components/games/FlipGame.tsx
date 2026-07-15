@@ -51,7 +51,11 @@ export function FlipGame({ onClose }: FlipGameProps) {
     // Deduct bet
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
-      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
+      try { 
+        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id);
+      } catch (e) {
+        console.error('Failed to update user balance:', e);
+      }
     }
     updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
 
@@ -93,7 +97,9 @@ export function FlipGame({ onClose }: FlipGameProps) {
         try {
           await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (won ? payout - betAmount : 0), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
           await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: won ? 1 : 0 });
-        } catch {}
+        } catch (e) {
+          console.error('Failed to update user after flip:', e);
+        }
       }
       updateProfile({ tokens: fb });
     }, 1300);

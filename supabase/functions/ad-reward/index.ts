@@ -56,7 +56,7 @@ serve(async (req: Request) => {
       });
     }
 
-    if (!ad_type || !AD_REWARDS.hasOwnProperty(ad_type)) {
+    if (!ad_type || !Object.prototype.hasOwnProperty.call(AD_REWARDS, ad_type)) {
       return new Response(JSON.stringify({ error: 'Invalid ad type' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

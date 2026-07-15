@@ -35,8 +35,8 @@ export function WheelGame() {
     addSpinToHistory
   } = useGameStore();
 
-  // openAdModal available for future direct ad triggers
-  const { openAdModal: _openAdModal } = useUIStore();
+  // openAdModal available for future direct ad triggers (marked as unused intentionally)
+  const { openAdModal: _openAdModal } = useUIStore();  
 
   const [rewardedAdOpen, setRewardedAdOpen] = useState(false);
   const [interstitialOpen, setInterstitialOpen] = useState(false);

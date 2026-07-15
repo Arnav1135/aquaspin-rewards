@@ -70,7 +70,11 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
-      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
+      try { 
+        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id);
+      } catch (e) {
+        console.error('Failed to update user balance:', e);
+      }
     }
     updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     const boneIdx = new Set<number>();
@@ -100,7 +104,11 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
         setTimeout(() => setTiles(prev => { const c = [...prev]; c[bid] = { ...c[bid], clicked: true }; return c; }), (i + 1) * 100);
       });
       if (profile && !profile.id.startsWith('guest')) {
-        try { await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 0 }); } catch {}
+        try { 
+          await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 0 });
+        } catch (e) {
+          console.error('Failed to update game stats:', e);
+        }
       }
     } else {
       setTiles(newTiles);
@@ -110,7 +118,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     }
   }, [isPlaying, gameOver, tiles, clicks, boneCount]);
 
-  const handleCashOut = async (finalClicks = clicks) => {
+  const handleCashOut = useCallback(async (finalClicks = clicks) => {
     if (!isPlaying || gameOver || finalClicks === 0) return;
     const mult = getMultiplier(boneCount, finalClicks);
     const won = Math.floor(betAmount * mult);
@@ -124,10 +132,12 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
       try {
         await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (won - betAmount), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
         await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 1 });
-      } catch {}
+      } catch (e) {
+        console.error('Failed to update user after cashout:', e);
+      }
     }
     updateProfile({ tokens: fb });
-  };
+  }, [isPlaying, gameOver, clicks, boneCount, profile, balance, betAmount, updateProfile]);
 
   const dangerPct = Math.min(100, (boneCount / 24) * 100);
 

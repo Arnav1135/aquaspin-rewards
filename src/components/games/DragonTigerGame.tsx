@@ -473,7 +473,8 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
             </AnimatePresence>
           </div>
         </div>
-      </div>
+      </Card>
+    </div>
     </ErrorBoundary>
   );
 }

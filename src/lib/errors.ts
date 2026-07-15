@@ -148,12 +148,7 @@ export function handleError(
     } else if ((appError as AppError).severity === ErrorSeverity.ERROR) {
       toast.error(message, { duration: toastDuration });
     } else if ((appError as AppError).severity === ErrorSeverity.WARNING) {
-      toast(() => (
-        <div>
-          <p className="font-semibold">⚠️ Warning</p>
-          <p className="text-sm">{message}</p>
-        </div>
-      ), { duration: toastDuration });
+      toast(message, { duration: toastDuration, icon: '⚠️' });
     } else {
       toast.success(message, { duration: toastDuration });
     }

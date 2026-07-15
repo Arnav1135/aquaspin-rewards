@@ -40,7 +40,8 @@ export const useAuthStore = create<AuthState>()(
 
         // ── Initialize auth state from existing session ──────────────────────
         initialize: async () => {
-          set({ isLoading: true });
+          // Prevent double-initialization (e.g. StrictMode double-mount)
+          if (!get().isLoading) return;
 
           const { data: { session } } = await supabase.auth.getSession();
 
@@ -58,13 +59,22 @@ export const useAuthStore = create<AuthState>()(
             set({ isLoading: false });
           }
 
-          // Listen for auth state changes
-          supabase.auth.onAuthStateChange(async (_event, session) => {
+          // Listen for auth state changes (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.)
+          supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_OUT') {
+              set({ session: null, supabaseUser: null, profile: null, isGuest: false, isOwner: false, isLoading: false });
+              return;
+            }
             if (session?.user) {
               const { data: profile } = await getUserProfile(session.user.id);
-              set({ session, supabaseUser: session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
-            } else {
-              set({ session: null, supabaseUser: null, profile: null, isOwner: false });
+              set({
+                session,
+                supabaseUser: session.user,
+                profile,
+                isLoading: false,
+                isGuest: false,
+                isOwner: profile?.email === 'vermaarnav113@gmail.com',
+              });
             }
           });
         },

@@ -8,6 +8,7 @@ import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
 
 import { Header } from '@/components/layout/Header';
@@ -78,6 +79,16 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── Auth Initializer (runs exactly once) ────────────────────────────────────
+function AuthInitializer() {
+  const { initialize } = useAuthStore();
+  useEffect(() => {
+    initialize();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
 // ── Theme initializer ───────────────────────────────────────────────────────
 function ThemeInit() {
   const { theme } = useUIStore();
@@ -124,6 +135,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <AuthInitializer />
         <ThemeInit />
         <AppRoutes />
 

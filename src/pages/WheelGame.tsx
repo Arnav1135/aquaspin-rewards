@@ -165,18 +165,7 @@ export function WheelGame() {
     ctx.fillStyle = theme.borderColor;
     ctx.fillText('SPIN', cx, cy);
 
-    // ── Draw pointer (triangle at top)
-    const pointerSize = 18;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - radius - 5);
-    ctx.lineTo(cx - pointerSize / 2, cy - radius + pointerSize);
-    ctx.lineTo(cx + pointerSize / 2, cy - radius + pointerSize);
-    ctx.closePath();
-    ctx.fillStyle = theme.pointerColor;
-    ctx.shadowColor = theme.pointerColor;
-    ctx.shadowBlur = 12;
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    // ── NOTE: Pointer is now rendered as a static HTML element, not in the canvas ──
   }, [theme, segmentAngle]);
 
   // ── Initial draw
@@ -428,6 +417,23 @@ export function WheelGame() {
               role="button"
               tabIndex={0}
             />
+
+            {/* Fixed pointer triangle — stays at the top, never rotates */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 z-10 pointer-events-none"
+              style={{ top: -10 }}
+            >
+              <div
+                style={{
+                  width: 0,
+                  height: 0,
+                  borderLeft: '10px solid transparent',
+                  borderRight: '10px solid transparent',
+                  borderTop: `22px solid ${theme.pointerColor}`,
+                  filter: `drop-shadow(0 0 8px ${theme.pointerColor})`,
+                }}
+              />
+            </div>
 
             {/* Spinning overlay glow */}
             <AnimatePresence>

@@ -1,7 +1,8 @@
 // src/hooks/useAuth.ts
 // Custom hook wrapping auth store with convenience selectors
+// NOTE: initialize() is called once in App.tsx root — not here — to avoid
+// multiple simultaneous Supabase session fetches on component mount.
 
-import { useEffect } from 'react';
 import { useAuthStore } from '@/features/authStore';
 
 export function useAuth() {
@@ -11,7 +12,6 @@ export function useAuth() {
     supabaseUser,
     isLoading,
     isGuest,
-    initialize,
     login,
     loginWithGoogle,
     loginAsGuest,
@@ -20,11 +20,6 @@ export function useAuth() {
     refreshProfile,
     updateProfile,
   } = useAuthStore();
-
-  // Initialize auth on first mount
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
 
   return {
     // State

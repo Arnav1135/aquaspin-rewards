@@ -2,7 +2,7 @@
 // Zustand store for game state, spin cooldowns, and reward history
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import type { SpinResult, GameResult, WheelSegment } from '@/types/database';
 
 // ── Wheel segment definitions (visual config — server generates actual reward) ──
@@ -89,59 +89,73 @@ interface GameState {
 
 export const useGameStore = create<GameState>()(
   devtools(
-    (set, get) => ({
-      isSpinning: false,
-      spinCooldownEndsAt: null,
-      lastSpinResult: null,
-      spinHistory: [],
-      activeGame: null,
-      lastGameResult: null,
-      gameHistory: [],
-      wheelTheme: 'aqua',
-      wheelRotation: 0,
-      soundEnabled: true,
-      vibrationEnabled: true,
+    persist(
+      (set, get) => ({
+        isSpinning: false,
+        spinCooldownEndsAt: null,
+        lastSpinResult: null,
+        spinHistory: [],
+        activeGame: null,
+        lastGameResult: null,
+        gameHistory: [],
+        wheelTheme: 'aqua',
+        wheelRotation: 0,
+        soundEnabled: true,
+        vibrationEnabled: true,
 
-      setSpinning: (spinning) => set({ isSpinning: spinning }),
+        setSpinning: (spinning) => set({ isSpinning: spinning }),
 
-      setCooldown: (endsAtMs) => set({ spinCooldownEndsAt: endsAtMs }),
+        setCooldown: (endsAtMs) => set({ spinCooldownEndsAt: endsAtMs }),
 
-      clearCooldown: () => set({ spinCooldownEndsAt: null }),
+        clearCooldown: () => set({ spinCooldownEndsAt: null }),
 
-      setLastSpinResult: (result) => set({ lastSpinResult: result }),
+        setLastSpinResult: (result) => set({ lastSpinResult: result }),
 
-      addSpinToHistory: (result) =>
-        set((state) => ({
-          spinHistory: [result, ...state.spinHistory].slice(0, 50), // Keep last 50
-        })),
+        addSpinToHistory: (result) =>
+          set((state) => ({
+            spinHistory: [result, ...state.spinHistory].slice(0, 50), // Keep last 50
+          })),
 
-      setActiveGame: (game) => set({ activeGame: game }),
+        setActiveGame: (game) => set({ activeGame: game }),
 
-      setLastGameResult: (result) =>
-        set((state) => ({
-          lastGameResult: result,
-          gameHistory: [result, ...state.gameHistory].slice(0, 50),
-        })),
+        setLastGameResult: (result) =>
+          set((state) => ({
+            lastGameResult: result,
+            gameHistory: [result, ...state.gameHistory].slice(0, 50),
+          })),
 
-      setWheelTheme: (theme) => set({ wheelTheme: theme }),
+        setWheelTheme: (theme) => set({ wheelTheme: theme }),
 
-      setWheelRotation: (rotation) => set({ wheelRotation: rotation }),
+        setWheelRotation: (rotation) => set({ wheelRotation: rotation }),
 
-      toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+        toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
 
-      toggleVibration: () => set((state) => ({ vibrationEnabled: !state.vibrationEnabled })),
+        toggleVibration: () => set((state) => ({ vibrationEnabled: !state.vibrationEnabled })),
 
-      getCooldownRemaining: () => {
-        const { spinCooldownEndsAt } = get();
-        if (!spinCooldownEndsAt) return 0;
-        return Math.max(0, Math.ceil((spinCooldownEndsAt - Date.now()) / 1000));
-      },
+        getCooldownRemaining: () => {
+          const { spinCooldownEndsAt } = get();
+          if (!spinCooldownEndsAt) return 0;
+          return Math.max(0, Math.ceil((spinCooldownEndsAt - Date.now()) / 1000));
+        },
 
-      isCoolingDown: () => {
-        const { spinCooldownEndsAt } = get();
-        return spinCooldownEndsAt != null && spinCooldownEndsAt > Date.now();
-      },
-    }),
+        isCoolingDown: () => {
+          const { spinCooldownEndsAt } = get();
+          return spinCooldownEndsAt != null && spinCooldownEndsAt > Date.now();
+        },
+      }),
+      {
+        name: 'aquaspin-game',
+        // Only persist non-transient state
+        partialize: (state) => ({
+          wheelTheme: state.wheelTheme,
+          soundEnabled: state.soundEnabled,
+          vibrationEnabled: state.vibrationEnabled,
+          spinCooldownEndsAt: state.spinCooldownEndsAt,
+          spinHistory: state.spinHistory.slice(0, 20), // Persist last 20 only
+          gameHistory: state.gameHistory.slice(0, 20),
+        }),
+      }
+    ),
     { name: 'GameStore' }
   )
 );

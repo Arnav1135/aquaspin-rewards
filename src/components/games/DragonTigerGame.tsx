@@ -288,7 +288,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
   return (
     <ErrorBoundary name="DragonTigerGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #1c0a08 0%, #0a100a 50%, #080a1c 100%)' }}>
         
         {/* Screen Edge Allegiance Red/Blue glow vignette */}
         {betSelection === 'dragon' && !dealing && (
@@ -300,16 +300,15 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
         <style>{`
           .dragon-ember-bg {
-            background-image: radial-gradient(circle at 20% 20%, rgba(239, 68, 68, 0.05) 0%, transparent 80%);
+            background-image: radial-gradient(circle at 20% 20%, rgba(239, 68, 68, 0.12) 0%, transparent 70%);
           }
           .tiger-wind-bg {
-            background-image: radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 80%);
+            background-image: radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
           }
           .temple-felt {
-            background-color: #0b0f19;
-            background-image: radial-gradient(circle at center, #0f1c2d 0%, #050b14 100%);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            background: linear-gradient(135deg, #1c0a0a 0%, #0a120a 50%, #0a0a1c 100%);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
           }
         `}</style>
 
@@ -411,7 +410,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
           </div>
 
           {/* Elemental Table felt */}
-          <div className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative overflow-hidden bg-slate-950/60 border border-slate-900">
+          <div className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative overflow-hidden border border-slate-700/40" style={{ background: 'linear-gradient(135deg, #1c0a0a 0%, #0d1a0d 50%, #0a0a1c 100%)' }}>
             {/* Background elements */}
             <div className="absolute inset-y-0 left-0 w-1/2 dragon-ember-bg pointer-events-none" />
             <div className="absolute inset-y-0 right-0 w-1/2 tiger-wind-bg pointer-events-none" />

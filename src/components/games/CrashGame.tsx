@@ -67,12 +67,15 @@ export function CrashGame({ onClose }: CrashGameProps) {
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    // Dark Ambient Mission Control Room projection
-    ctx.fillStyle = '#020617';
+    // Mission Control Room - deep space blue, slightly lighter for visibility
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0a1628');
+    bgGrad.addColorStop(1, '#061022');
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // Dynamic grid lines extending to infinity
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.03)';
+    // Dynamic grid lines - more visible
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
     ctx.lineWidth = 1;
     const gridGap = 30;
     for (let x = 40; x < W; x += gridGap) {
@@ -435,7 +438,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
       className={`flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 ${
         tinnitusActive ? 'filter saturate-30 contrast-125' : ''
       }`}
-      style={{ transform: getScreenTremor() }}
+      style={{ transform: getScreenTremor(), background: 'linear-gradient(135deg, #0f1f3d 0%, #0a1628 50%, #0d1a30 100%)' }}
     >
       {/* Time Dilation Slow-mo Vignette */}
       {timeDilationActive && (

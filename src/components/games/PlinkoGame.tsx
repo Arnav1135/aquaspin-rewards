@@ -191,11 +191,11 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
       ctx.save();
       ctx.translate(tiltOffset.x * 3, tiltOffset.y * 3);
 
-      // Cyberpunk LED matrix shifting color gradients
+      // Cyberpunk LED matrix shifting color gradients - lighter and more vivid
       const ledGradient = ctx.createLinearGradient(0, 0, 0, H);
-      ledGradient.addColorStop(0, '#020617'); // Pitch dark slate
-      ledGradient.addColorStop(0.5, '#050b18'); // Ocean navy
-      ledGradient.addColorStop(1, '#0c0714'); // Sunset purple
+      ledGradient.addColorStop(0, '#0f1f3d'); // deep indigo-blue
+      ledGradient.addColorStop(0.5, '#152b52'); // brighter royal navy
+      ledGradient.addColorStop(1, '#1e1b4b'); // vibrant dark purple
       ctx.fillStyle = ledGradient;
       ctx.fillRect(-20, -20, W + 40, H + 40);
 
@@ -591,7 +591,7 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
 
   return (
     <ErrorBoundary name="PlinkoGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #0d1e3d 0%, #1e1b4b 50%, #16223f 100%)' }}>
         
         {/* Left Controls Panel */}
         <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0">

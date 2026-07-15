@@ -284,11 +284,12 @@ export function MinesGame({ onClose }: MinesGameProps) {
 
   return (
     <div 
-      className={`relative flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-screen items-stretch overflow-hidden bg-slate-950 text-text-primary transition-all duration-300 ${
+      className={`relative flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-screen items-stretch overflow-hidden text-text-primary transition-all duration-300 ${
         vinnitusActive ? 'filter saturate-50 contrast-125' : ''
       }`}
       style={{
         transform: screenJolt ? `translate3d(${screenJolt.x}px, ${screenJolt.y}px, 0px)` : 'none',
+        background: 'linear-gradient(135deg, #0d1b38 0%, #0a1628 40%, #0f1535 100%)',
       }}
     >
       {/* Volumetric Hologram projection light beams */}
@@ -319,10 +320,10 @@ export function MinesGame({ onClose }: MinesGameProps) {
           grid-template-columns: repeat(5, 76px);
           grid-gap: 8px;
           padding: 12px;
-          background: rgba(10, 15, 30, 0.5);
+          background: rgba(5, 12, 28, 0.7);
           border-radius: 24px;
-          border: 1px solid rgba(0, 240, 255, 0.15);
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 240, 255, 0.05);
+          border: 1px solid rgba(0, 240, 255, 0.18);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.04);
         }
 
         .hex-cell {
@@ -353,14 +354,13 @@ export function MinesGame({ onClose }: MinesGameProps) {
         .hex-cell-frosted {
           position: absolute;
           inset: 2px;
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(8px);
+          background: rgba(15, 25, 55, 0.85);
           clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
           z-index: 2;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(0, 240, 255, 0.08);
         }
 
         .hex-cell-pulsing-red {
@@ -402,12 +402,10 @@ export function MinesGame({ onClose }: MinesGameProps) {
           55% { transform: scale(1.02); }
         }
 
-        /* Metallic burn patterns background */
+        /* Metallic game board */
         .metallic-burn-table {
-          background-color: #0b0f19;
-          background-image: radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.4) 0%, transparent 100%),
-                            radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.03) 0%, transparent 100%);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: linear-gradient(135deg, #0d1b38 0%, #0a1628 50%, #0f1f3d 100%);
+          border: 1px solid rgba(0, 240, 255, 0.12);
           position: relative;
         }
         .metallic-burn-table::after {

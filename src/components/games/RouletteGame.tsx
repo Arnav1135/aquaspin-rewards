@@ -103,7 +103,7 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
       ctx.arc(CX, CY, RADIUS, start, end);
       ctx.closePath();
       
-      ctx.fillStyle = tile.color === 'red' ? '#991b1b' : tile.color === 'green' ? '#065f46' : '#0f172a';
+      ctx.fillStyle = tile.color === 'red' ? '#b91c1c' : tile.color === 'green' ? '#047857' : '#1e2d45';
       ctx.fill();
 
       // Brass spokes dividers
@@ -331,7 +331,7 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
 
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #1a0a0a 0%, #0a1a0a 50%, #0a0a1a 100%)' }}>
       {/* Visual Shimmer overlay on Green Zero hits */}
       {radialShimmer && (
         <div className="absolute inset-0 pointer-events-none z-30 bg-emerald-500/10 shadow-[inset_0_0_80px_rgba(16,185,129,0.4)] animate-pulse" />
@@ -405,7 +405,7 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
       </Card>
 
       {/* Photorealistic mechanical wheel viewport */}
-      <Card className="flex-1 flex flex-col items-center justify-between relative min-h-[440px] bg-slate-950 border border-slate-900 rounded-2xl p-6 overflow-hidden">
+      <Card className="flex-1 flex flex-col items-center justify-between relative min-h-[440px] border border-slate-800 rounded-2xl p-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a0f0a 0%, #120a0a 50%, #1a0f08 100%)' }}>
         <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
           <HelpCircle size={10} className="text-cyan-400" />
           <span>FRENCH RULES ACTIVE</span>

@@ -15,6 +15,13 @@ const config: Config = {
           600: '#6b98e8',
           500: '#8ab1f0',
         },
+        navy: {
+          950: '#0a142c', // Vivid midnight blue (not dark black)
+          900: '#10224b', // Deep sapphire blue (highly visible, appealing)
+          800: '#1b3266', // Ocean navy
+          700: '#2a4885', // Royal slate
+          600: '#3b5da3', // Vivid sapphire
+        },
         secondary: {
           neon: '#8ecae6',
           glow: '#7ab8d8',

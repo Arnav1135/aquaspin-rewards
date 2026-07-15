@@ -57,6 +57,7 @@ const GAMES = [
     difficulty: 'Easy',
     color: '#00F0FF',
     category: 'Betting',
+    image: '/images/plinko.jpg',
   },
   {
     key: 'crash' as const,
@@ -100,6 +101,7 @@ const GAMES = [
     difficulty: 'Easy',
     color: '#A855F7',
     category: 'Betting',
+    image: '/images/dragontiger.jpg',
   },
   {
     key: 'chicken' as const,

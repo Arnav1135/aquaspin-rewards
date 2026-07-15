@@ -70,11 +70,11 @@ export function LimboGame({ onClose }: LimboGameProps) {
 
       // Vertical descent depth theme color
       const currentM = currentMultRef.current;
-      let bg = 'rgba(5, 10, 22, 0.2)'; // 1x-2x calm nebulae
+      let bg = 'rgba(8, 20, 45, 0.25)'; // 1x-2x calm nebulae - slightly lighter
       if (currentM >= 50.0) {
-        bg = 'rgba(28, 5, 45, 0.2)'; // 50x+ psychedelic geometry
+        bg = 'rgba(35, 8, 55, 0.25)'; // 50x+ psychedelic geometry
       } else if (currentM >= 5.0) {
-        bg = 'rgba(7, 30, 28, 0.2)'; // 5x-10x energy storms
+        bg = 'rgba(10, 40, 35, 0.25)'; // 5x-10x energy storms
       }
 
       ctx.fillStyle = bg;
@@ -283,7 +283,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
       {/* Left betting controls */}
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20">
         <div className="space-y-4">

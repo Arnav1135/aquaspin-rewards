@@ -194,9 +194,9 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
   // Return background gradient themes based on active costume selection
   const getThemeGradient = () => {
     switch (activeTheme) {
-      case 'space': return 'linear-gradient(to bottom, #090917 0%, #1e1136 100%)';
-      case 'pirate': return 'linear-gradient(to bottom, #071926 0%, #112d1f 100%)';
-      default: return 'linear-gradient(to bottom, #3d2208 0%, #0d0f19 100%)'; // storybook farm golden hour
+      case 'space': return 'linear-gradient(to bottom, #1e1b4b 0%, #312e81 100%)';
+      case 'pirate': return 'linear-gradient(to bottom, #0d5c56 0%, #134e4a 100%)';
+      default: return 'linear-gradient(to bottom, #854d0e 0%, #451a03 100%)'; // storybook farm warm sunset
     }
   };
 

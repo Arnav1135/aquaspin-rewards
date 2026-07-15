@@ -12,9 +12,10 @@ interface CardProps {
   glow?: 'cyan' | 'gold' | 'none';
   onClick?: () => void;
   animated?: boolean;
+  style?: React.CSSProperties;
 }
 
-export function Card({ children, className, hover, glow = 'none', onClick, animated = false }: CardProps) {
+export function Card({ children, className, hover, glow = 'none', onClick, animated = false, style }: CardProps) {
   const glowClasses = {
     cyan: 'hover:shadow-cyan-glow hover:border-cyan-neon/50',
     gold: 'hover:shadow-gold-glow hover:border-gold-neon/50',
@@ -26,6 +27,7 @@ export function Card({ children, className, hover, glow = 'none', onClick, anima
   return (
     <Component
       onClick={onClick}
+      style={style}
       className={cn(
         'glass-card p-5',
         hover && 'cursor-pointer transition-all duration-300',

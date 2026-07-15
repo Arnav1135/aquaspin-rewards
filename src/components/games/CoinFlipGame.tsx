@@ -314,7 +314,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
 
   return (
     <ErrorBoundary name="CoinFlipGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)' }}>
         <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
           <div className="space-y-4">
             <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={flipping} />
@@ -372,7 +372,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
           </div>
         </Card>
 
-        <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] bg-navy-900/40 border border-navy-800/80 rounded-2xl p-5 overflow-hidden">
+        <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] border border-navy-800/80 rounded-2xl p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
           <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted">
             <HelpCircle size={10} />
             <span>1% edge</span>

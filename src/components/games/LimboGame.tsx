@@ -1,7 +1,7 @@
 // src/components/games/LimboGame.tsx
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle, Sparkles, Navigation, Gauge } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +11,7 @@ import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface LimboGameProps { onClose: () => void; }
-type Star = { x: number; y: number; size: number; speed: number; };
+type Star = { x: number; y: number; z: number; size: number; color: string; };
 
 export function LimboGame({ onClose }: LimboGameProps) {
   const { profile, updateProfile } = useAuthStore();
@@ -20,44 +20,128 @@ export function LimboGame({ onClose }: LimboGameProps) {
   const [rolling, setRolling] = useState(false);
   const [win, setWin] = useState<boolean | null>(null);
   const [nearMiss, setNearMiss] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [bgColor, setBgColor] = useState('rgba(0,0,0,0)');
   const [displayNum, setDisplayNum] = useState('1.00');
+
+  // Parallax tilt tracking
+  const [tiltOffset, setTiltOffset] = useState({ x: 0, y: 0 });
+
+  // Custom UI representation
+  const [depthIntensity, setDepthIntensity] = useState(1.0); // correlates to current display multiplier
+  const [glitchActive, setGlitchActive] = useState(false);
+  const [starChart, setStarChart] = useState<Array<{ id: number; mult: number; hit: boolean }>>([
+    { id: 1, mult: 1.5, hit: true },
+    { id: 2, mult: 4.8, hit: false },
+    { id: 3, mult: 12.0, hit: true },
+  ]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
   const rAFRef = useRef<number | null>(null);
   const rollingRef = useRef(false);
+  const currentMultRef = useRef(1.0);
   const balance = profile?.tokens ?? 0;
 
   useEffect(() => { rollingRef.current = rolling; }, [rolling]);
 
+  // Setup infinite vertical shaft stars
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const W = canvas.width, H = canvas.height;
-    starsRef.current = Array.from({ length: 80 }, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      size: Math.random() * 2 + 0.5, speed: Math.random() * 0.8 + 0.3
+    
+    // Spawn stars with 3D depth parameters (Z depth)
+    starsRef.current = Array.from({ length: 90 }, () => ({
+      x: (Math.random() - 0.5) * W,
+      y: (Math.random() - 0.5) * H,
+      z: Math.random() * W,
+      size: Math.random() * 2.5 + 0.5,
+      color: Math.random() > 0.6 ? '#00f0ff' : Math.random() > 0.4 ? '#f59e0b' : '#ffffff'
     }));
+
+    let tunnelOffset = 0;
+
     const loop = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      ctx.fillStyle = 'rgba(5,14,26,0.25)';
+      
+      // Speed escalation
+      const rollSpeed = rollingRef.current ? 30 : 2;
+      tunnelOffset += rollSpeed;
+
+      // Vertical descent depth theme color
+      const currentM = currentMultRef.current;
+      let bg = 'rgba(5, 10, 22, 0.2)'; // 1x-2x calm nebulae
+      if (currentM >= 50.0) {
+        bg = 'rgba(28, 5, 45, 0.2)'; // 50x+ psychedelic geometry
+      } else if (currentM >= 5.0) {
+        bg = 'rgba(7, 30, 28, 0.2)'; // 5x-10x energy storms
+      }
+
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
-      starsRef.current.forEach(s => {
-        s.y += s.speed * (rollingRef.current ? 5 : 1);
-        if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+
+      ctx.save();
+      // Mouse/Tilt parallax translation
+      ctx.translate(W / 2 + tiltOffset.x * 12, H / 2 + tiltOffset.y * 12);
+
+      // Draw concentric rings of light receding into vertical shaft
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 6; i++) {
+        const ringZ = ((i * 120 + tunnelOffset) % 720);
+        const ringScale = 360 / (ringZ + 1);
+        const radius = 240 * ringScale;
+        const alpha = Math.min(0.5, (1 - ringZ / 720));
+        
+        ctx.strokeStyle = currentM >= 50 ? `rgba(168, 85, 247, ${alpha})` : currentM >= 5 ? `rgba(249, 115, 22, ${alpha})` : `rgba(0, 240, 255, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${0.4 + s.size * 0.2})`;
-        ctx.fill();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Draw Star Core particle descent
+      starsRef.current.forEach(s => {
+        s.z -= rollSpeed;
+        if (s.z <= 0) {
+          s.z = W;
+          s.x = (Math.random() - 0.5) * W;
+          s.y = (Math.random() - 0.5) * H;
+        }
+
+        const k = 180 / s.z;
+        const px = s.x * k;
+        const py = s.y * k;
+        const size = s.size * k;
+
+        if (px > -W/2 && px < W/2 && py > -H/2 && py < H/2) {
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(0.5, size), 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.shadowColor = s.color;
+          ctx.shadowBlur = size * 2;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
       });
+
+      // Target Portal Ring at predicted depth (flickers/distorts)
+      if (rollingRef.current) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 12]);
+        ctx.beginPath();
+        ctx.arc(0, 0, 70 + Math.sin(Date.now() * 0.05) * 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.restore();
       rAFRef.current = requestAnimationFrame(loop);
     };
+
     rAFRef.current = requestAnimationFrame(loop);
     return () => { if (rAFRef.current) cancelAnimationFrame(rAFRef.current); };
-  }, []);
+  }, [tiltOffset]);
 
   const handleRoll = async () => {
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
@@ -67,7 +151,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
     const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
     const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
     
-    if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
+    if (outOfTrials) { toast.error('Out of free trials! Deposit to play.'); return; }
     const actualBetAmount = isFreeTrial ? 0 : betAmount;
     if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
     
@@ -75,10 +159,16 @@ export function LimboGame({ onClose }: LimboGameProps) {
       toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
     }
 
-    if (targetMultiplier < 1.01) { toast.error('Target must be at least 1.01x'); return; }
-    setRolling(true); setWin(null); setNearMiss(false);
-    setShowConfetti(false); setBgColor('rgba(0,0,0,0)');
-    playTone(200, 0.1, 'sine', 0.2);
+    setRolling(true);
+    setWin(null);
+    setNearMiss(false);
+    setGlitchActive(false);
+
+    // Gravity slingshot launch pulse tone
+    playTone(150, 0.15, 'sawtooth', 0.25);
+    playTone(70, 0.35, 'sine', 0.3); // deep slingshot sub-bass
+    vibrate(60);
+
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { 
@@ -88,28 +178,47 @@ export function LimboGame({ onClose }: LimboGameProps) {
       }
     }
     updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
+
     const u = Math.random();
     let roll = Math.round((0.96 / u) * 100) / 100;
     if (roll < 1.0) roll = 1.0;
-    if (roll > 1000000) roll = 1000000;
+    if (roll > 100000) roll = 100000;
+    
     const isWin = roll >= targetMultiplier;
-    const isNearMiss = !isWin && roll >= targetMultiplier * 0.85;
+    const isNearMiss = !isWin && roll >= targetMultiplier * 0.88;
 
     let count = 0;
+    const steps = 18;
     const interval = setInterval(() => {
-      const tmp = Math.round((1 + Math.random() * targetMultiplier * 1.5) * 100) / 100;
+      const ratio = count / steps;
+      // Exponential ascent descent display num
+      const tmp = Math.max(1.0, Math.pow(ratio, 2.5) * roll + Math.random() * 0.5);
       setDisplayNum(tmp.toFixed(2));
-      playTone(300 + tmp * 3, 0.02, 'sine', 0.04);
+      currentMultRef.current = tmp;
+      setDepthIntensity(tmp);
+
+      // Sonic layer penetrations click melody
+      playTone(280 + tmp * 4, 0.03, 'sine', 0.08);
+      
+      // Proximity tremoring screen shakes
+      if (tmp >= targetMultiplier * 0.8) {
+        vibrate(10);
+      }
+
       count++;
-      if (count > 16) {
+      if (count > steps) {
         clearInterval(interval);
         setRolling(false);
         setDisplayNum(roll.toFixed(2));
+        currentMultRef.current = roll;
+        setDepthIntensity(roll);
         setWin(isWin);
         setNearMiss(isNearMiss);
+
+        // Record star history
+        setStarChart(prev => [...prev.slice(-3), { id: Date.now(), mult: roll, hit: isWin }]);
+
         finalizeResult(roll, isWin, isNearMiss, nb);
-        if (isWin) { setBgColor('rgba(16,185,129,0.12)'); setShowConfetti(true); setTimeout(() => setShowConfetti(false), 1200); }
-        else setBgColor('rgba(239,68,68,0.10)');
       }
     }, 65);
   };
@@ -119,20 +228,33 @@ export function LimboGame({ onClose }: LimboGameProps) {
     if (isWin) {
       const winAmt = Math.floor(betAmount * targetMultiplier);
       fb += winAmt;
-      toast.success(`Target hit! +${winAmt - betAmount} tokens 🚀`);
-      playTone(523, 0.15, 'sine', 0.3); setTimeout(() => playTone(659, 0.25, 'sine', 0.3), 100);
-      vibrate([50, 50, 150]);
-    } else if (isNearMiss) {
-      toast.custom(() => (
-        <div className="bg-orange-950 border border-orange-500/50 p-3 rounded-xl text-xs text-orange-400 font-semibold flex items-center gap-2">
-          <AlertCircle size={12} /> Near Miss! Hit {roll}x (needed {targetMultiplier}x)
-        </div>
-      ), { duration: 3000 });
-      playTone(180, 0.3, 'sawtooth', 0.2); vibrate(100);
+      toast.success(`Target Penetrated! +${winAmt - betAmount} tokens!`, { icon: '🌠' });
+      
+      // Target hit exact frame freeze / white flash sound
+      playTone(520, 0.15, 'sine', 0.35);
+      setTimeout(() => playTone(1040, 0.3, 'sine', 0.4), 80);
+      vibrate([80, 40, 160]);
     } else {
-      toast.error(`Crashed at ${roll}x. Try again!`);
-      playTone(160, 0.3, 'sawtooth', 0.2); vibrate(100);
+      if (isNearMiss) {
+        // Dissonant reality correcting glitch
+        setGlitchActive(true);
+        setTimeout(() => setGlitchActive(false), 500);
+
+        toast.custom(() => (
+          <div className="bg-orange-950/90 border border-orange-500/50 px-3.5 py-2.5 rounded-xl text-xs text-orange-400 font-bold flex items-center gap-2 backdrop-blur-md">
+            <AlertCircle size={14} className="text-orange-400 animate-ping" />
+            Reality glitched! Stopped at {roll}x (Target: {targetMultiplier}x)
+          </div>
+        ), { duration: 3000 });
+        playTone(190, 0.3, 'sawtooth', 0.25);
+        vibrate([100, 50, 100]);
+      } else {
+        toast.error(`Atmospheric burn at ${roll}x.`);
+        playTone(150, 0.28, 'sawtooth', 0.2);
+        vibrate(80);
+      }
     }
+
     if (profile && !profile.id.startsWith('guest')) {
       try {
         await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (isWin ? Math.floor(betAmount * (targetMultiplier - 1)) : 0), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
@@ -146,100 +268,155 @@ export function LimboGame({ onClose }: LimboGameProps) {
 
   const winChance = Math.min(100, (96 / targetMultiplier));
   const numColor = win === true ? '#10b981' : win === false ? '#ef4444' : '#00F0FF';
-  const presets = [1.5, 2, 3, 5, 10, 50];
+  const presets = [1.2, 1.5, 2.0, 5.0, 10.0, 50.0];
+
+  // Mouse orientation parallax tilt tracking
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+    setTiltOffset({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setTiltOffset({ x: 0, y: 0 });
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
+      {/* Left betting controls */}
+      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20">
         <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-400 to-orange-300 tracking-widest uppercase">
+              Star Core
+            </h2>
+            <Sparkles size={16} className="text-purple-400 animate-pulse" />
+          </div>
+
           <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={rolling} />
+
+          {/* Radial-like slider target depth multiplier selector */}
           <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-text-secondary">Target Multiplier</span>
-              <span className="text-muted">{winChance.toFixed(2)}% win</span>
+            <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest">
+              <span>Target Depth</span>
+              <span className="text-cyan-300 font-mono">{targetMultiplier.toFixed(2)}x</span>
             </div>
-            <div className="flex rounded-xl bg-navy-900 p-1 border border-navy-700/60">
+            <div className="flex rounded-xl bg-slate-950 p-1.5 border border-slate-800">
               <input type="number" step="0.1" min="1.01" max="100000" value={targetMultiplier}
                 onChange={e => setTargetMultiplier(Math.max(1.01, Math.min(parseFloat(e.target.value) || 1.01, 100000)))}
-                disabled={rolling} className="w-full bg-transparent border-0 outline-none text-sm font-mono text-text-primary px-3 py-1.5" />
-              <span className="flex items-center pr-3 text-sm text-muted font-semibold">x</span>
+                disabled={rolling} className="w-full bg-transparent border-0 outline-none text-sm font-mono text-cyan-300 px-3 py-1" />
+              <span className="flex items-center pr-3 text-xs text-slate-500 font-bold">X</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {presets.map(p => (
-                <button key={p} onClick={() => setTargetMultiplier(p)} disabled={rolling}
-                  className={`py-1.5 rounded-lg text-xs font-bold border transition-all ${targetMultiplier === p ? 'border-cyan-neon bg-cyan-neon/10 text-cyan-neon' : 'border-navy-700 text-muted hover:border-navy-500'}`}>
-                  {p}x
+                <button 
+                  key={p} 
+                  onClick={() => {
+                    setTargetMultiplier(p);
+                    playTone(320, 0.05, 'sine', 0.1);
+                  }} 
+                  disabled={rolling}
+                  className={`py-1.5 rounded-lg text-2xs font-mono font-bold border transition-all ${
+                    targetMultiplier === p 
+                      ? 'border-purple-500 bg-purple-500/10 text-purple-300' 
+                      : 'border-slate-800 text-slate-500 hover:border-slate-700'
+                  }`}
+                >
+                  {p.toFixed(1)}x
                 </button>
               ))}
             </div>
           </div>
-          <div className="space-y-1">
-            <div className="flex justify-between text-xs text-muted">
-              <span>Win Chance</span><span>{winChance.toFixed(2)}%</span>
+
+          {/* Submarine Sub-Depth Gauge Indicator */}
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Gauge size={14} className="text-slate-400 animate-pulse" />
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Depth Gauge</span>
             </div>
-            <div className="h-2 rounded-full bg-navy-800 overflow-hidden">
-              <motion.div className="h-full rounded-full bg-cyan-neon" animate={{ width: `${winChance}%` }} transition={{ duration: 0.4 }} />
+            <span className="font-mono text-xs font-bold text-cyan-300">
+              {depthIntensity.toFixed(2)}m
+            </span>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex justify-between text-2xs text-slate-400 font-bold uppercase font-mono">
+              <span>Warp Prob</span><span>{winChance.toFixed(2)}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-slate-950 overflow-hidden">
+              <motion.div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" animate={{ width: `${winChance}%` }} transition={{ duration: 0.4 }} />
             </div>
           </div>
         </div>
+
         <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl" disabled={rolling || betAmount <= 0 || betAmount > balance} onClick={handleRoll}>
-            {rolling ? 'Rolling...' : 'Bet'}
+          <Button variant="neon" size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-purple-500/40 shadow-lg shadow-purple-500/20 animate-pulse" disabled={rolling || betAmount <= 0 || betAmount > balance} onClick={handleRoll}>
+            {rolling ? 'SLINGSHOT IGNITED' : 'LAUNCH STAR-CORE'}
           </Button>
-          <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>Close Game</Button>
+          <Button variant="ghost" className="w-full text-2xs text-slate-500 hover:text-slate-400" onClick={onClose}>
+            Close Shaft
+          </Button>
         </div>
       </Card>
 
-      <motion.div className="flex-1 relative rounded-2xl border border-navy-800/80 overflow-hidden min-h-[360px]"
-        animate={{ backgroundColor: bgColor }} transition={{ duration: 0.5 }}>
+      {/* Infinite Vertical Shaft viewport */}
+      <motion.div 
+        className={`flex-1 relative rounded-2xl border border-slate-900 overflow-hidden min-h-[360px] bg-slate-950 cursor-zoom-in transition-all duration-300 ${
+          glitchActive ? 'filter invert saturate-200 hue-rotate-90 scale-95' : ''
+        }`}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
         <canvas ref={canvasRef} width={600} height={400} className="absolute inset-0 w-full h-full" />
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted z-10">
-          <HelpCircle size={10} /><span>4% edge</span>
+        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
+          <Navigation size={11} className="text-purple-400" /><span>COSMIC SHIELD: 4%</span>
         </div>
+        
+        {/* Core descent overlay */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full gap-6 p-6">
           <AnimatePresence mode="wait">
-            <motion.div key={displayNum}
-              initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
-              transition={{ duration: 0.05 }}>
-              <motion.p className="text-7xl md:text-8xl font-extrabold font-mono tracking-tight drop-shadow-lg"
-                style={{ color: numColor }}
-                animate={nearMiss && win === false ? { boxShadow: ['0 0 0 0 rgba(249,115,22,0.5)', '0 0 0 20px rgba(249,115,22,0)', '0 0 0 0 rgba(249,115,22,0.5)'] } : {}}
-                transition={{ repeat: 3, duration: 0.5 }}>
+            <motion.div 
+              key={displayNum}
+              initial={{ scale: 0.85, opacity: 0.8 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.9, opacity: 0.8 }}
+              transition={{ duration: 0.05 }}
+            >
+              <p className="text-7xl md:text-8xl font-black font-mono tracking-tighter drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]"
+                style={{ color: numColor }}>
                 {displayNum}x
-              </motion.p>
+              </p>
             </motion.div>
           </AnimatePresence>
 
           <div className="min-h-[32px] text-center">
-            {win === true && <motion.p initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-sm font-bold text-success uppercase tracking-widest">🎉 TARGET HIT!</motion.p>}
-            {win === false && !nearMiss && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm font-bold text-danger uppercase tracking-widest">❌ CRASHED</motion.p>}
-            {win === false && nearMiss && <motion.span initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-xs px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold">⚡ NEAR MISS!</motion.span>}
-            {rolling && <p className="text-xs text-muted animate-pulse uppercase tracking-wider">Launching...</p>}
+            {win === true && <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest animate-bounce">🌌 DIMENSION SHATTERED</p>}
+            {win === false && !nearMiss && <p className="text-xs font-bold text-red-500 uppercase tracking-widest">☄️ CORE COLLAPSED</p>}
+            {win === false && nearMiss && <span className="text-2xs px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold">QUANTUM GLITCH</span>}
+            {rolling && <p className="text-2xs text-slate-400 animate-pulse uppercase tracking-widest font-bold">GRAVITY SLINGSHOT Descent...</p>}
           </div>
 
-          {showConfetti && (
-            <div className="absolute inset-0 pointer-events-none">
-              {Array.from({ length: 20 }).map((_, i) => {
-                const angle = (i / 20) * Math.PI * 2;
-                const dist = 80 + Math.random() * 80;
-                return (
-                  <motion.div key={i} className="absolute rounded-full"
-                    style={{ width: 7, height: 7, top: '50%', left: '50%', marginTop: -3, marginLeft: -3, background: i % 2 === 0 ? '#f59e0b' : '#00F0FF' }}
-                    initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-                    animate={{ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, opacity: 0, scale: 0 }}
-                    transition={{ duration: 0.9, ease: 'easeOut' }} />
-                );
-              })}
+          {/* Star chart constellation logs */}
+          <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 backdrop-blur-sm">
+            <div className="flex gap-1.5 items-center">
+              <span className="text-[10px] text-slate-500 font-bold uppercase font-mono">Constellation History:</span>
+              <div className="flex gap-1">
+                {starChart.map((s, idx) => (
+                  <span 
+                    key={s.id + idx}
+                    className={`text-2xs font-bold font-mono px-1.5 py-0.5 rounded border ${
+                      s.hit 
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                        : 'bg-red-500/10 border-red-500/30 text-red-400'
+                    }`}
+                  >
+                    {s.mult.toFixed(1)}x
+                  </span>
+                ))}
+              </div>
             </div>
-          )}
-
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex justify-between text-2xs text-muted mb-1">
-              <span>Target: {targetMultiplier.toFixed(2)}x</span><span>{winChance.toFixed(2)}% chance</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-navy-800 overflow-hidden">
-              <div className="h-full rounded-full bg-cyan-neon/70 transition-all duration-300" style={{ width: `${winChance}%` }} />
-            </div>
+            <span className="text-[9px] text-slate-500 font-bold font-mono">TARGET: {targetMultiplier.toFixed(2)}x</span>
           </div>
         </div>
       </motion.div>

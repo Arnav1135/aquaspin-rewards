@@ -43,3 +43,4 @@ dev-dist/
 run-schema.ps1
 setup-supabase.ps1
 patch-games.cjs
+casino-games/

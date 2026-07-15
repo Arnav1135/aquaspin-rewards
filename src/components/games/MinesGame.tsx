@@ -1,7 +1,7 @@
 // src/components/games/MinesGame.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, AlertTriangle, X, Zap, Target, Trophy } from 'lucide-react';
+import { Shield, AlertTriangle, Zap, Trophy, Play } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -12,40 +12,6 @@ import toast from 'react-hot-toast';
 
 interface MinesGameProps { onClose: () => void; }
 type TileState = { id: number; isMine: boolean; clicked: boolean; exploding: boolean; revealed: boolean; };
-
-// Background themes that change per game
-const BACKGROUND_THEMES = [
-  {
-    name: 'Neon Blue',
-    gradient: 'linear-gradient(135deg, #001f3f 0%, #003d5c 50%, #00539b 100%)',
-    accent: 'from-cyan-500/40 to-blue-600/20',
-    particles: '🔵',
-  },
-  {
-    name: 'Purple Storm',
-    gradient: 'linear-gradient(135deg, #1a0033 0%, #330066 50%, #660099 100%)',
-    accent: 'from-purple-500/40 to-pink-600/20',
-    particles: '⚡',
-  },
-  {
-    name: 'Dark Forest',
-    gradient: 'linear-gradient(135deg, #0d2818 0%, #1a4d2e 50%, #2d6a4f 100%)',
-    accent: 'from-emerald-500/40 to-green-600/20',
-    particles: '🌿',
-  },
-  {
-    name: 'Crimson Abyss',
-    gradient: 'linear-gradient(135deg, #2a0000 0%, #5c0000 50%, #8b0000 100%)',
-    accent: 'from-red-500/40 to-orange-600/20',
-    particles: '🔥',
-  },
-  {
-    name: 'Gold Mine',
-    gradient: 'linear-gradient(135deg, #3d2817 0%, #8b6914 50%, #daa520 20%)',
-    accent: 'from-amber-500/40 to-yellow-600/20',
-    particles: '✨',
-  },
-];
 
 function combinations(n: number, k: number): number {
   if (k < 0 || k > n) return 0; if (k === 0 || k === n) return 1;
@@ -70,20 +36,57 @@ export function MinesGame({ onClose }: MinesGameProps) {
   const [hasWon, setHasWon] = useState(false);
   const [earnedTokens, setEarnedTokens] = useState(0);
   const [displayMult, setDisplayMult] = useState(1.0);
-  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number }>>([]);
-  const [currentTheme, setCurrentTheme] = useState(0);
-  const [winStreak, setWinStreak] = useState(0);
-  const [showCashOutPulse, setShowCashOutPulse] = useState(false);
+  
+  // Custom Visual State
+  const [hoveredTile, setHoveredTile] = useState<number | null>(null);
+  const [proximityFactor, setProximityFactor] = useState(0); // 0 = safe, 1 = warning red, 2 = critical
+  const [vinnitusActive, setVinnitusActive] = useState(false); // tinnitus visual effect
+  const [screenJolt, setScreenJolt] = useState<{ x: number; y: number } | null>(null);
+  const [safePath, setSafePath] = useState<number[]>([]); // array of clicked safe tile IDs
 
   const balance = profile?.tokens ?? 0;
   const currentMultiplier = getMinesMultiplier(mineCount, clicks);
-  const nextMultiplier = getMinesMultiplier(mineCount, clicks + 1);
-  const theme = BACKGROUND_THEMES[currentTheme];
 
-  // Animated multiplier display
+  // Sound and visual tick rate for heart rate pulse
+  const heartRateInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+  const clicksRef = useRef(clicks);
+  clicksRef.current = clicks;
+
+  // Track dynamic heartbeat sound & visual pulses
+  useEffect(() => {
+    if (isPlaying && !gameOver) {
+      const bpm = 60 + clicks * 25; // Speed up as they find more gems
+      const intervalMs = (60 / bpm) * 1000;
+      
+      heartRateInterval.current = setInterval(() => {
+        // Soft heartbeat sound
+        playTone(90, 0.08, 'sine', 0.15);
+      }, intervalMs);
+    } else {
+      if (heartRateInterval.current) clearInterval(heartRateInterval.current);
+    }
+    return () => {
+      if (heartRateInterval.current) clearInterval(heartRateInterval.current);
+    };
+  }, [isPlaying, clicks, gameOver]);
+
+  // Handle tile click coordinates for SVG paths
+  const getTileCenter = (id: number) => {
+    const col = id % 5;
+    const row = Math.floor(id / 5);
+    // Grid gap and cell dimensions
+    return {
+      x: col * 76 + 38,
+      y: row * 76 + 38
+    };
+  };
+
+  // Smooth Multiplier interpolation
   useEffect(() => {
     const target = currentMultiplier;
-    const steps = 12;
+    const steps = 15;
     let step = 0;
     const start = displayMult;
     const diff = target - start;
@@ -91,18 +94,38 @@ export function MinesGame({ onClose }: MinesGameProps) {
       step++;
       setDisplayMult(Math.round((start + diff * (step / steps)) * 100) / 100);
       if (step >= steps) clearInterval(id);
-    }, 35);
+    }, 25);
     return () => clearInterval(id);
   }, [currentMultiplier]);
 
-  // Pulse animation for cashout when multiplier gets high
+  // Proximity checker on hover
   useEffect(() => {
-    if (isPlaying && clicks > 0 && currentMultiplier > 2.0) {
-      setShowCashOutPulse(true);
-    } else {
-      setShowCashOutPulse(false);
+    if (!isPlaying || gameOver || hoveredTile === null) {
+      setProximityFactor(0);
+      return;
     }
-  }, [isPlaying, clicks, currentMultiplier]);
+
+    const hoverCol = hoveredTile % 5;
+    const hoverRow = Math.floor(hoveredTile / 5);
+
+    let minD = Infinity;
+    tiles.forEach(tile => {
+      if (tile.isMine) {
+        const col = tile.id % 5;
+        const row = Math.floor(tile.id / 5);
+        const dist = Math.sqrt(Math.pow(hoverCol - col, 2) + Math.pow(hoverRow - row, 2));
+        if (dist < minD) minD = dist;
+      }
+    });
+
+    if (minD <= 1.0) {
+      setProximityFactor(2); // Critical: directly adjacent or hovering mine
+    } else if (minD <= 1.5) {
+      setProximityFactor(1); // Warning proximity
+    } else {
+      setProximityFactor(0);
+    }
+  }, [hoveredTile, tiles, isPlaying, gameOver]);
 
   const startNewGame = async () => {
     if (isPlaying) return;
@@ -141,24 +164,13 @@ export function MinesGame({ onClose }: MinesGameProps) {
     setHasWon(false);
     setEarnedTokens(0);
     setDisplayMult(1.0);
-    setShowCashOutPulse(false);
+    setSafePath([]);
+    setVinnitusActive(false);
+    setScreenJolt(null);
     
-    // Rotate theme for each new game
-    setCurrentTheme((prev) => (prev + 1) % BACKGROUND_THEMES.length);
-    
-    // Celebration particles on start
-    createParticles(13, 13);
-    playTone(440, 0.1, 'sine', 0.2);
-  };
-
-  const createParticles = (centerX: number, centerY: number) => {
-    const newParticles = Array.from({ length: 12 }, () => ({
-      id: Math.random(),
-      x: centerX + (Math.random() - 0.5) * 100,
-      y: centerY + (Math.random() - 0.5) * 100,
-    }));
-    setParticles(prev => [...prev, ...newParticles]);
-    setTimeout(() => setParticles([]), 1000);
+    // Starting sonic pulse
+    playTone(180, 0.1, 'sawtooth', 0.25);
+    setTimeout(() => playTone(360, 0.15, 'sine', 0.2), 100);
   };
 
   const handleTileClick = useCallback(async (id: number) => {
@@ -170,23 +182,30 @@ export function MinesGame({ onClose }: MinesGameProps) {
     newTiles[id] = { ...tile, clicked: true, revealed: true };
 
     if (tile.isMine) {
-      // Mine hit - explosion sequence
+      // Detonation time slow sequence + shockwave
       newTiles[id].exploding = true;
       setTiles(newTiles);
       setGameOver(true);
       setIsPlaying(false);
       setHasWon(false);
-      setWinStreak(0);
 
-      playTone(150, 0.4, 'sawtooth', 0.25);
-      vibrate([100, 50, 150, 50, 200]);
-      
-      // Create explosion particles
-      createParticles(id % 5 * 70 + 35, Math.floor(id / 5) * 70 + 35);
-      
-      toast.error('💥 BOOM! Hit a mine!', { duration: 3000 });
+      // Directional Shockwave: jolt screen away from mine
+      const mineCol = id % 5;
+      const joltX = mineCol < 2.5 ? 40 : -40; // If mine left, push right. If right, push left.
+      setScreenJolt({ x: joltX, y: 15 });
+      setTimeout(() => setScreenJolt(null), 300);
 
-      // Reveal other mines with delay
+      // Visual Tinnitus (Chromatic Aberration + Desaturation)
+      setVinnitusActive(true);
+      setTimeout(() => setVinnitusActive(false), 2000);
+
+      playTone(100, 0.8, 'sawtooth', 0.4);
+      playTone(50, 1.2, 'sine', 0.5); // Deep sub-bass thud
+      vibrate([150, 75, 200, 75, 300]);
+      
+      toast.error('💥 DETONATED! Hit a live mine!', { duration: 3000 });
+
+      // Reveal all other mines
       const mineIds = newTiles.filter(t => t.isMine && t.id !== id).map(t => t.id);
       mineIds.forEach((mid, i) => {
         setTimeout(() => {
@@ -195,7 +214,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
             copy[mid] = { ...copy[mid], clicked: true };
             return copy;
           });
-          playTone(120 + i * 15, 0.05, 'sawtooth', 0.08);
+          playTone(90 + i * 20, 0.05, 'sawtooth', 0.1);
         }, (i + 1) * 80);
       });
 
@@ -207,20 +226,17 @@ export function MinesGame({ onClose }: MinesGameProps) {
         }
       }
     } else {
-      // Safe tile - successful click
+      // Safe Gem reveal
       setTiles(newTiles);
       const nc = clicks + 1;
       setClicks(nc);
+      setSafePath(prev => [...prev, id]);
 
-      // Progressive sound pitch
-      playTone(600 + nc * 35, 0.1, 'sine', 0.15);
-      vibrate([20, 10, 30]);
-
-      // Win particles
-      createParticles(id % 5 * 70 + 35, Math.floor(id / 5) * 70 + 35);
+      // Gem reveal sonar tone
+      playTone(400 + nc * 50, 0.15, 'sine', 0.2);
+      vibrate([40, 20, 50]);
 
       if (nc === 25 - mineCount) {
-        // Auto-cashout when all safe tiles revealed
         await handleCashOut(nc);
       }
     }
@@ -236,26 +252,18 @@ export function MinesGame({ onClose }: MinesGameProps) {
     setIsPlaying(false);
     setGameOver(true);
     setHasWon(true);
-    const newStreak = winStreak + 1;
-    setWinStreak(newStreak);
 
     setTiles(prev => prev.map(t => ({ ...t, clicked: true })));
 
     const profit = won - betAmount;
-    toast.success(`🎉 Cashed Out! +${profit} tokens`, { duration: 3000, icon: '💰' });
+    toast.success(`🎉 Secure Abort! +${profit} tokens`, { duration: 3000, icon: '💰' });
 
-    // Victory sound
-    playTone(523, 0.15, 'sine', 0.3);
-    setTimeout(() => playTone(659, 0.25, 'sine', 0.3), 100);
-    setTimeout(() => playTone(784, 0.2, 'sine', 0.3), 200);
-    vibrate([50, 50, 100, 50, 150]);
-
-    // Celebration particles
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => {
-        createParticles(13 + (Math.random() - 0.5) * 20, 13 + (Math.random() - 0.5) * 20);
-      }, i * 150);
-    }
+    // Triumphant landing melody
+    playTone(523.25, 0.12, 'sine', 0.25);
+    setTimeout(() => playTone(659.25, 0.12, 'sine', 0.25), 80);
+    setTimeout(() => playTone(783.99, 0.15, 'sine', 0.25), 160);
+    setTimeout(() => playTone(1046.50, 0.25, 'sine', 0.3), 240);
+    vibrate([60, 40, 100, 40, 150]);
 
     const fb = balance + won;
     if (profile && !profile.id.startsWith('guest')) {
@@ -271,377 +279,444 @@ export function MinesGame({ onClose }: MinesGameProps) {
       }
     }
     updateProfile({ tokens: fb });
-  }, [isPlaying, gameOver, clicks, mineCount, profile, balance, betAmount, updateProfile, winStreak]);
+  }, [isPlaying, gameOver, clicks, mineCount, profile, balance, betAmount, updateProfile]);
 
-  const dangerPct = Math.min(100, (mineCount / 24) * 100);
-  const safeRevealedCount = tiles.filter(t => t.clicked && !t.isMine).length;
 
   return (
     <div 
-      className="relative flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-screen items-stretch overflow-hidden"
-      style={{ background: theme.gradient }}
+      className={`relative flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-screen items-stretch overflow-hidden bg-slate-950 text-text-primary transition-all duration-300 ${
+        vinnitusActive ? 'filter saturate-50 contrast-125' : ''
+      }`}
+      style={{
+        transform: screenJolt ? `translate3d(${screenJolt.x}px, ${screenJolt.y}px, 0px)` : 'none',
+      }}
     >
-      {/* Animated background particles */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 15 }).map((_, idx) => (
-          <motion.div
-            key={idx}
-            className="absolute text-3xl opacity-10"
-            animate={{
-              x: [Math.random() * 100 - 50, Math.random() * 100 - 50],
-              y: [-50, window.innerHeight + 50],
-              rotate: [0, 360],
-              opacity: [0.05, 0.15, 0.05],
-            }}
-            transition={{
-              duration: 8 + Math.random() * 4,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-            style={{ left: `${Math.random() * 100}%`, top: '-50px' }}
-          >
-            {theme.particles}
-          </motion.div>
-        ))}
+      {/* Volumetric Hologram projection light beams */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[700px] bg-gradient-to-t from-cyan-500/5 to-transparent filter blur-3xl rounded-full opacity-60" />
+        <div className="absolute top-12 left-1/4 w-[300px] h-[300px] bg-purple-500/5 filter blur-3xl rounded-full" />
       </div>
 
-      {/* Floating particles on tile clicks */}
-      <AnimatePresence>
-        {particles.map((particle) => (
-          <motion.div
-            key={particle.id}
-            className="absolute text-4xl pointer-events-none"
-            initial={{ x: particle.x, y: particle.y, scale: 1, opacity: 1 }}
-            animate={{ x: particle.x + (Math.random() - 0.5) * 100, y: particle.y - 100, scale: 0, opacity: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          >
-            💎
-          </motion.div>
-        ))}
-      </AnimatePresence>
+      {/* Screen edge proximity warnings */}
+      {proximityFactor > 0 && isPlaying && !gameOver && (
+        <div 
+          className={`absolute inset-0 pointer-events-none z-10 transition-all duration-500 ${
+            proximityFactor === 2 
+              ? 'shadow-[inset_0_0_80px_rgba(239,68,68,0.45)] animate-pulse' 
+              : 'shadow-[inset_0_0_40px_rgba(239,68,68,0.2)]'
+          }`}
+        />
+      )}
+
+      {/* Volumetric Light projection rays */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80vw] h-full pointer-events-none bg-[radial-gradient(ellipse_at_top,_rgba(0,240,255,0.06)_0%,_rgba(0,0,0,0)_60%)]" />
+
+      {/* CSS Styles injection for hex grid and specialized animations */}
+      <style>{`
+        .mines-hex-grid {
+          position: relative;
+          display: grid;
+          grid-template-columns: repeat(5, 76px);
+          grid-gap: 8px;
+          padding: 12px;
+          background: rgba(10, 15, 30, 0.5);
+          border-radius: 24px;
+          border: 1px solid rgba(0, 240, 255, 0.15);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 240, 255, 0.05);
+        }
+
+        .hex-cell {
+          width: 76px;
+          height: 76px;
+          position: relative;
+          clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .hex-cell::before {
+          content: '';
+          position: absolute;
+          inset: 1px;
+          background: #111827;
+          clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+          z-index: 1;
+        }
+
+        .hex-cell-rim {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(0,240,255,0.4) 50%, rgba(0,0,0,0.8) 100%);
+          z-index: 0;
+        }
+
+        .hex-cell-frosted {
+          position: absolute;
+          inset: 2px;
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(8px);
+          clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .hex-cell-pulsing-red {
+          animation: hexPulseRed 2.5s infinite ease-in-out;
+        }
+
+        @keyframes hexPulseRed {
+          0%, 100% { background: rgba(239, 68, 68, 0.03); }
+          50% { background: rgba(239, 68, 68, 0.09); }
+        }
+
+        /* Proximity tremor micro-vibrations */
+        .grid-tremor-1 {
+          animation: tremorMicro 0.3s infinite linear;
+        }
+        .grid-tremor-2 {
+          animation: tremorCritical 0.15s infinite linear;
+        }
+
+        @keyframes tremorMicro {
+          0% { transform: translate(0.5px, 0.5px); }
+          50% { transform: translate(-0.5px, -0.5px); }
+          100% { transform: translate(0.5px, -0.5px); }
+        }
+        @keyframes tremorCritical {
+          0% { transform: translate(1.5px, 1.5px) rotate(0.5deg); }
+          50% { transform: translate(-1.5px, -1.5px) rotate(-0.5deg); }
+          100% { transform: translate(1.5px, -1.5px) rotate(0.5deg); }
+        }
+
+        /* Heartbeat monitor animation for multiplier */
+        .multiplier-heartrate {
+          animation: heartRateBeat 1.2s infinite ease-in-out;
+        }
+        @keyframes heartRateBeat {
+          0%, 100% { transform: scale(1); filter: brightness(1); }
+          25% { transform: scale(1.04); filter: brightness(1.2); }
+          40% { transform: scale(0.98); }
+          55% { transform: scale(1.02); }
+        }
+
+        /* Metallic burn patterns background */
+        .metallic-burn-table {
+          background-color: #0b0f19;
+          background-image: radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.4) 0%, transparent 100%),
+                            radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.03) 0%, transparent 100%);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          position: relative;
+        }
+        .metallic-burn-table::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          opacity: 0.15;
+          background-image: 
+            radial-gradient(circle at 40% 60%, rgba(255,255,255,0.08) 1px, transparent 1px),
+            radial-gradient(circle at 20% 80%, rgba(239,68,68,0.1) 4px, transparent 8px);
+          background-size: 140px 140px;
+          pointer-events: none;
+        }
+
+        /* Volumetric shadow caustic pattern */
+        .caustic-effect {
+          background: radial-gradient(circle, rgba(0,240,255,0.15) 0%, transparent 70%);
+          filter: blur(6px);
+        }
+      `}</style>
 
       {/* Left Control Panel */}
-      <Card className="w-full lg:w-96 flex flex-col justify-between p-6 space-y-6 bg-gradient-to-br from-slate-900/90 to-slate-800/90 border-2 border-cyan-500/40 rounded-3xl shrink-0 backdrop-blur-sm">
-        {/* Header */}
-        <motion.div className="space-y-2" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
-            MINES
-          </h2>
-          <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Win Streak: <span className="text-gold-neon">{winStreak}</span></p>
-        </motion.div>
-
-        <div className="space-y-5">
-          {/* Bet Control */}
-          <motion.div className="space-y-3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-            <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={isPlaying} />
+      <Card className="w-full lg:w-96 flex flex-col justify-between p-6 space-y-6 bg-slate-900/90 border-2 border-cyan-500/20 rounded-3xl shrink-0 backdrop-blur-md z-20">
+        <div className="space-y-4">
+          <motion.div className="flex justify-between items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-200 uppercase tracking-wider">
+              MINES
+            </h2>
+            {/* LED bomb display */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/60 border border-red-500/30">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <span className="font-mono text-xs font-bold text-red-500 tracking-widest shadow-red-500/50">
+                BOMBS: {mineCount.toString().padStart(2, '0')}
+              </span>
+            </div>
           </motion.div>
 
-          {/* Mine Count Selector */}
-          <motion.div className="space-y-3" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">Mine Count</label>
+          <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={isPlaying} />
+
+          {/* Mine count selector */}
+          <div className="space-y-2">
+            <label className="text-2xs font-bold text-slate-400 uppercase tracking-widest">Mine Count</label>
             <div className="grid grid-cols-4 gap-2">
               {[1, 3, 5, 10].map(n => (
-                <motion.div key={n} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    variant={mineCount === n ? 'primary' : 'ghost'}
-                    disabled={isPlaying}
-                    onClick={() => { setMineCount(n); playTone(400, 0.05, 'sine', 0.1); }}
-                    className={`py-3 text-sm font-bold rounded-2xl transition-all ${
-                      mineCount === n
-                        ? 'border-2 border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-lg shadow-cyan-500/30'
-                        : 'border-2 border-slate-700 hover:border-cyan-500/60 text-slate-400'
-                    }`}
-                  >
-                    {n}
-                  </Button>
-                </motion.div>
+                <Button
+                  key={n}
+                  variant={mineCount === n ? 'primary' : 'ghost'}
+                  disabled={isPlaying}
+                  onClick={() => { setMineCount(n); playTone(400, 0.05, 'sine', 0.1); }}
+                  className={`py-2 rounded-xl text-xs font-bold font-mono transition-all ${
+                    mineCount === n
+                      ? 'border-cyan-400/80 bg-cyan-500/10 text-cyan-300'
+                      : 'border-slate-800 text-slate-400'
+                  }`}
+                >
+                  {n}
+                </Button>
               ))}
             </div>
-            <input
-              type="number"
-              min="1"
-              max="24"
-              value={mineCount}
-              disabled={isPlaying}
-              onChange={e => setMineCount(Math.max(1, Math.min(parseInt(e.target.value) || 1, 24)))}
-              className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-2.5 text-sm font-mono text-cyan-300 outline-none focus:border-cyan-400 focus:shadow-lg focus:shadow-cyan-500/20"
-              placeholder="Custom mines"
-            />
-          </motion.div>
+          </div>
 
-          {/* Multiplier Display */}
+          {/* Live Heartbeat Multiplier counter */}
           {isPlaying && (
-            <motion.div
-              className="p-5 rounded-2xl bg-gradient-to-br from-purple-900/50 to-blue-900/50 border-2 border-purple-500/40 space-y-3"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400 font-bold uppercase tracking-wider">Next Multiplier</span>
-                <motion.span
-                  className="text-cyan-300 font-mono font-black text-lg"
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                >
-                  {nextMultiplier.toFixed(2)}x
-                </motion.span>
-              </div>
-              <motion.div className="text-center" key={displayMult}>
-                <motion.p
-                  className="text-5xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-gold-neon via-yellow-300 to-orange-300"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {displayMult.toFixed(2)}x
-                </motion.p>
-                <p className="text-sm font-mono text-cyan-300/80 mt-2">= {Math.floor(betAmount * displayMult)} 🪙</p>
-              </motion.div>
-              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-cyan-400 to-purple-400"
-                  animate={{ width: `${(clicks / (25 - mineCount)) * 100}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-              <p className="text-xs text-slate-400 text-center font-mono">
-                Safe Tiles: {safeRevealedCount} / {25 - mineCount}
+            <div className={`p-4 rounded-2xl bg-gradient-to-br from-cyan-950/40 to-slate-900 border border-cyan-500/20 text-center space-y-2 ${
+              clicks > 0 ? 'multiplier-heartrate' : ''
+            }`}>
+              <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-widest">MULTIPLIER</span>
+              <h3 className="text-4xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-gold-neon via-yellow-200 to-amber-400 leading-none">
+                {displayMult.toFixed(2)}x
+              </h3>
+              <p className="text-xs text-slate-400 font-mono">
+                = {Math.floor(betAmount * displayMult)} tokens
               </p>
-            </motion.div>
+            </div>
           )}
-
-          {/* Risk Indicator */}
-          <motion.div className="p-4 rounded-2xl bg-slate-800/40 border border-slate-700 space-y-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400 font-bold uppercase">Risk Level</span>
-              <span className="text-red-400 font-bold font-mono">{dangerPct.toFixed(0)}%</span>
-            </div>
-            <div className="w-full h-4 bg-slate-900 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full"
-                style={{
-                  background: `linear-gradient(to right, #10b981, #eab308, #dc2626)`,
-                }}
-                animate={{ width: `${dangerPct}%` }}
-                transition={{ duration: 0.4 }}
-              />
-            </div>
-          </motion.div>
         </div>
 
         {/* Action Buttons */}
-        <div className="space-y-3 pt-4">
+        <div className="space-y-2.5">
           {isPlaying ? (
             <>
-              <motion.div
-                animate={showCashOutPulse ? { scale: [1, 1.05, 1] } : {}}
-                transition={{ repeat: showCashOutPulse ? Infinity : 0, duration: 0.6 }}
-              >
+              {/* Cash out button with glow particle layers */}
+              <div className="relative group">
                 <Button
                   variant="success"
                   size="lg"
-                  className="w-full font-black py-4 text-lg rounded-2xl transition-all disabled:opacity-30"
+                  className="w-full font-bold py-3.5 text-sm rounded-xl disabled:opacity-30 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 border border-emerald-400/30"
                   disabled={clicks === 0}
                   onClick={() => handleCashOut()}
                 >
-                  <Trophy size={20} className="mr-2" />
-                  CASH OUT ({Math.floor(betAmount * currentMultiplier)})
+                  <Trophy size={16} />
+                  ABORT & SECURE PAYOUT
                 </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button
-                  variant="ghost"
-                  className="w-full text-sm border-2 border-red-500/40 text-red-400 hover:border-red-500/70 py-2 rounded-xl font-bold"
-                  onClick={startNewGame}
-                >
-                  Restart Game
-                </Button>
-              </motion.div>
-            </>
-          ) : (
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-            >
+              </div>
               <Button
-                variant="neon"
-                size="lg"
-                className="w-full font-black py-4 text-lg rounded-2xl shadow-xl shadow-cyan-500/40 transition-all"
-                disabled={betAmount <= 0 || betAmount > balance}
+                variant="ghost"
+                className="w-full text-xs text-red-400 hover:text-red-300 hover:bg-red-500/5 py-2 rounded-xl border border-red-500/20"
                 onClick={startNewGame}
               >
-                <Zap size={20} className="mr-2" />
-                START GAME
+                Trigger Force Restart
               </Button>
-            </motion.div>
+            </>
+          ) : (
+            <Button
+              variant="neon"
+              size="lg"
+              className="w-full font-bold py-3.5 text-sm rounded-xl shadow-lg shadow-cyan-500/20 border border-cyan-400/40"
+              disabled={betAmount <= 0 || betAmount > balance}
+              onClick={startNewGame}
+            >
+              <Play size={16} className="mr-1" /> START PROJECTION
+            </Button>
           )}
+
           <Button
             variant="ghost"
-            className="w-full text-xs text-slate-400 border-2 border-slate-700 hover:border-slate-600 hover:text-slate-300 py-2 rounded-xl"
+            className="w-full text-2xs text-slate-500 hover:text-slate-400 py-1.5 rounded-lg"
             onClick={onClose}
           >
-            <X size={16} className="mr-1" /> Close
+            Close Hologram
           </Button>
         </div>
 
-        {/* Info Footer */}
-        <motion.div className="pt-4 border-t border-slate-700 text-xs text-slate-400 space-y-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
-          <div className="flex justify-between">
-            <span>House Edge:</span>
-            <span className="text-slate-300 font-mono font-bold">3%</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Balance:</span>
-            <span className="text-cyan-400 font-mono font-bold">{balance} 🪙</span>
-          </div>
-        </motion.div>
+        {/* Footer Info */}
+        <div className="pt-3 border-t border-slate-800 text-2xs text-slate-500 flex justify-between font-mono">
+          <span>Safe Path Return: 97%</span>
+          <span>Balance: {balance} tokens</span>
+        </div>
       </Card>
 
       {/* Game Board */}
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[500px] bg-gradient-to-br from-slate-900/60 to-slate-800/60 border-2 border-cyan-500/40 rounded-3xl p-8 overflow-hidden backdrop-blur-sm">
-        {/* Decorative corners */}
-        <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-cyan-500/40 rounded-bl-3xl pointer-events-none" />
-        <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-cyan-500/40 rounded-bl-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-cyan-500/40 rounded-tr-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-cyan-500/40 rounded-tl-3xl pointer-events-none" />
+      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[500px] metallic-burn-table rounded-3xl p-8 overflow-hidden z-20">
+        {/* Hologram projecting beam lines */}
+        <div className="absolute top-0 inset-x-0 h-4 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none" />
 
-        {/* Game Info */}
-        <motion.div
-          className="absolute top-6 left-6 flex items-center gap-2 text-xs font-bold text-cyan-300 uppercase tracking-widest z-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+        {/* Mines grid container with proximity micro-tremor logic */}
+        <div 
+          className={`relative ${
+            proximityFactor === 2 ? 'grid-tremor-2' : proximityFactor === 1 ? 'grid-tremor-1' : ''
+          }`}
         >
-          <Target size={14} />
-          <span>Theme: {theme.name}</span>
-        </motion.div>
+          {/* SVG Connector path overlay for the Safe Path Trail */}
+          {safePath.length > 1 && (
+            <svg 
+              className="absolute inset-0 pointer-events-none z-10 w-full h-full"
+              style={{ mixBlendMode: 'screen' }}
+            >
+              <defs>
+                <linearGradient id="gold-trail" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ffd700" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#ffae00" stopOpacity="0.4" />
+                </linearGradient>
+                <filter id="glow-filter">
+                  <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              <path
+                d={safePath.reduce((acc, tileId, index) => {
+                  const pt = getTileCenter(tileId);
+                  return index === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`;
+                }, '')}
+                fill="none"
+                stroke="url(#gold-trail)"
+                strokeWidth="4"
+                strokeDasharray="6 4"
+                filter="url(#glow-filter)"
+                className="animate-[dash_10s_linear_infinite]"
+              />
+            </svg>
+          )}
 
-        {/* Tiles Grid */}
-        <div className="space-y-2">
-          <div className="grid grid-cols-5 gap-3 w-full max-w-md">
+          {/* Hexagonal Grid */}
+          <div className="mines-hex-grid">
             {tiles.length === 0 ? (
-              // Placeholder tiles
+              // Placeholder Grid
               Array.from({ length: 25 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="aspect-square rounded-2xl bg-slate-800/40 border-2 border-slate-700/50 flex items-center justify-center text-slate-600/40 text-3xl font-black"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: i * 0.02, type: 'spring' }}
-                >
-                  ?
-                </motion.div>
+                <div key={i} className="hex-cell">
+                  <div className="hex-cell-rim" />
+                  <div className="hex-cell-frosted text-slate-600 font-black text-lg">
+                    ?
+                  </div>
+                </div>
               ))
             ) : (
-              // Active tiles
-              tiles.map((tile) => (
-                <motion.div key={tile.id} layout className="aspect-square">
-                  <AnimatePresence mode="wait">
-                    {!tile.clicked ? (
-                      <motion.button
-                        key="unclicked"
-                        disabled={!isPlaying || gameOver}
-                        onClick={() => handleTileClick(tile.id)}
-                        initial={{ scale: 0, rotateY: 90 }}
-                        animate={{ scale: 1, rotateY: 0 }}
-                        exit={{ scale: 0, rotateY: -90 }}
-                        whileHover={isPlaying && !gameOver ? { scale: 1.1, boxShadow: '0 0 30px rgba(0,240,255,0.6)' } : {}}
-                        whileTap={isPlaying && !gameOver ? { scale: 0.85 } : {}}
-                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                        className="w-full h-full rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border-3 border-cyan-500/60 flex items-center justify-center text-4xl font-black text-cyan-300/80 cursor-pointer shadow-lg hover:shadow-cyan-500/50 active:shadow-none transition-all"
-                      >
-                        ?
-                      </motion.button>
-                    ) : (
-                      <motion.div
-                        key="clicked"
-                        initial={{ scale: 0, rotateY: 90 }}
-                        animate={tile.exploding ? { scale: [0, 1.4, 0.95, 1], rotateY: 0, rotate: [0, 15, -15, 0] } : { scale: 1, rotateY: 0 }}
-                        transition={tile.exploding ? { duration: 0.6, type: 'spring' } : { duration: 0.4 }}
-                        exit={{ scale: 0, rotateY: -90 }}
-                        className={`w-full h-full rounded-2xl border-3 flex items-center justify-center text-4xl font-black transition-all ${
-                          tile.isMine
-                            ? 'bg-gradient-to-br from-red-900/60 to-red-950/80 border-red-500/80 shadow-lg shadow-red-600/40'
-                            : 'bg-gradient-to-br from-cyan-900/40 to-blue-900/50 border-cyan-400/80 shadow-lg shadow-cyan-500/50'
-                        }`}
-                        style={tile.isMine ? {} : { boxShadow: `0 0 ${15 + clicks * 4}px rgba(0,240,255,${0.3 + clicks * 0.05})` }}
-                      >
-                        <motion.span
-                          animate={tile.isMine ? { rotate: [0, 360], scale: [1, 1.2, 1] } : { scale: [1, 1.1, 1] }}
-                          transition={{ duration: 0.6 }}
+              // Active Interactive Grid
+              tiles.map((tile) => {
+                const isHovered = hoveredTile === tile.id;
+                return (
+                  <div 
+                    key={tile.id} 
+                    className="hex-cell"
+                    onMouseEnter={() => setHoveredTile(tile.id)}
+                    onMouseLeave={() => setHoveredTile(null)}
+                  >
+                    <div className="hex-cell-rim" />
+                    
+                    <AnimatePresence mode="wait">
+                      {!tile.clicked ? (
+                        <motion.button
+                          key="unclicked"
+                          disabled={!isPlaying || gameOver}
+                          onClick={() => handleTileClick(tile.id)}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.6 }}
+                          className={`hex-cell-frosted text-xl font-bold transition-all duration-300 ${
+                            isPlaying && !gameOver ? 'hex-cell-pulsing-red hover:text-cyan-300 text-slate-400' : 'text-slate-600'
+                          }`}
+                          style={{
+                            boxShadow: isHovered && isPlaying && !gameOver ? 'inset 0 0 15px rgba(0, 240, 255, 0.4)' : 'none'
+                          }}
                         >
-                          {tile.isMine ? '💣' : '💎'}
-                        </motion.span>
-                      </motion.div>
+                          {isHovered && isPlaying && !gameOver ? <Zap size={14} className="text-cyan-300 animate-pulse" /> : '?'}
+                        </motion.button>
+                      ) : (
+                        // Revealed cell state
+                        <motion.div
+                          key="revealed"
+                          initial={{ opacity: 0, scale: 0.6, rotateY: 90 }}
+                          animate={tile.exploding ? { scale: [1, 1.3, 0.95, 1], rotate: [0, 8, -8, 0], rotateY: 0, opacity: 1 } : { scale: 1, rotateY: 0, opacity: 1 }}
+                          transition={{ duration: 0.5 }}
+                          className={`hex-cell-frosted text-2xl z-20 ${
+                            tile.isMine
+                              ? 'bg-gradient-to-br from-red-950/70 to-red-900/40 border border-red-500/40'
+                              : 'bg-gradient-to-br from-cyan-950/40 to-blue-900/20 border border-cyan-400/40'
+                          }`}
+                        >
+                          <AnimatePresence>
+                            {tile.isMine ? (
+                              // Detonated/swirling crimson orb mine representation
+                              <motion.div 
+                                className="relative w-8 h-8 rounded-full bg-radial from-red-500 to-red-900 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.8)]"
+                                animate={{ scale: [1, 1.15, 1], rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                              >
+                                <span className="text-lg">💣</span>
+                                <span className="absolute inset-0 rounded-full border border-red-400/50 animate-ping" />
+                              </motion.div>
+                            ) : (
+                              // Luminous slow-rotating gem representation
+                              <motion.div
+                                className="text-xl filter drop-shadow-[0_0_8px_rgba(0,240,255,0.7)]"
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 12, ease: 'linear' }}
+                              >
+                                💎
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Caustic / ray effect on table underneath active safe gem tiles */}
+                    {tile.clicked && !tile.isMine && (
+                      <div className="absolute -bottom-2 inset-x-0 h-4 caustic-effect pointer-events-none z-0" />
                     )}
-                  </AnimatePresence>
-                </motion.div>
-              ))
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Game Status */}
-        <motion.div className="mt-8 text-center min-h-20 space-y-3">
+        {/* Informative Status Banner */}
+        <div className="mt-8 text-center min-h-16 flex items-center justify-center">
           <AnimatePresence mode="wait">
             {gameOver && (
               <motion.div
-                key="game-over"
-                initial={{ scale: 0.5, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.5, opacity: 0 }}
-                className="space-y-2"
+                key="gameover"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="space-y-1"
               >
                 {hasWon ? (
-                  <motion.div
-                    initial={{ y: -10 }}
-                    animate={{ y: 0 }}
-                    transition={{ repeat: Infinity, duration: 0.5 }}
-                    className="space-y-1"
-                  >
-                    <motion.p className="text-sm font-black uppercase tracking-widest text-emerald-400 flex items-center justify-center gap-2">
-                      <Trophy size={16} /> Victory!
-                    </motion.p>
-                    <motion.p className="text-4xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-gold-neon via-yellow-300 to-orange-300">
-                      +{earnedTokens} 🪙
-                    </motion.p>
-                  </motion.div>
+                  <div>
+                    <span className="text-xs uppercase tracking-widest text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+                      <Trophy size={14} /> Mission Completed
+                    </span>
+                    <h4 className="text-xl font-black text-white">
+                      +{earnedTokens} Tokens Secured
+                    </h4>
+                  </div>
                 ) : (
-                  <motion.div className="space-y-1">
-                    <p className="text-sm font-black uppercase tracking-widest text-red-400 flex items-center justify-center gap-2">
-                      <AlertTriangle size={16} /> Game Over
-                    </p>
-                    <p className="text-2xl font-black text-red-300">MINE HIT!</p>
-                  </motion.div>
+                  <div>
+                    <span className="text-xs uppercase tracking-widest text-red-500 font-bold flex items-center justify-center gap-1.5">
+                      <AlertTriangle size={14} /> Detonation Sequence Fired
+                    </span>
+                    <h4 className="text-lg font-black text-red-400">
+                      GRID COMPROMISED
+                    </h4>
+                  </div>
                 )}
               </motion.div>
             )}
+
             {!isPlaying && !gameOver && (
-              <motion.p
-                key="start-message"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-sm text-slate-300 flex items-center gap-2 justify-center uppercase tracking-wider font-bold"
-              >
-                <Shield size={16} className="text-cyan-300" />
-                Set your bet and click START GAME
-              </motion.p>
-            )}
-            {isPlaying && !gameOver && clicks === 0 && (
-              <motion.p
-                key="playing-message"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-sm text-cyan-300 flex items-center gap-2 justify-center uppercase tracking-wider font-bold animate-pulse"
-              >
-                <Zap size={16} /> Click tiles carefully!
-              </motion.p>
+              <p className="text-xs text-slate-500 font-mono tracking-wider flex items-center gap-1.5">
+                <Shield size={12} className="text-cyan-400" />
+                INITIALIZE CORE AND CHOOSE SAFE COORDINATES
+              </p>
             )}
           </AnimatePresence>
-        </motion.div>
+        </div>
       </Card>
     </div>
   );

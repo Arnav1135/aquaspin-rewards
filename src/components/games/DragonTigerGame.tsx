@@ -1,7 +1,7 @@
 // src/components/games/DragonTigerGame.tsx
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -9,14 +9,6 @@ import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { playTone, vibrate } from '@/lib/utils';
-import {
-  createAppError,
-  handleError,
-  logError,
-  withErrorHandling,
-  ErrorCategory,
-  ErrorSeverity,
-} from '@/lib/errors';
 import toast from 'react-hot-toast';
 
 interface DragonTigerGameProps { onClose: () => void; }
@@ -31,29 +23,53 @@ function getRandomCard(): CardData {
   return { suit: SUITS[s], value: v + 1, label: LABELS[v] };
 }
 
-function PlayingCard({ card, revealed, isWinner }: { card: CardData | null; revealed: boolean; isWinner: boolean }) {
+function PlayingPlaque({ card, revealed, side, isWinner }: { card: CardData | null; revealed: boolean; side: 'dragon' | 'tiger'; isWinner: boolean }) {
   const isRed = card?.suit === '♥' || card?.suit === '♦';
+  const themeClass = side === 'dragon' 
+    ? 'from-amber-900 to-red-950 border-orange-500 text-orange-400' 
+    : 'from-slate-900 to-cyan-950 border-cyan-500 text-cyan-300';
+  
   return (
-    <div className="relative" style={{ width: 96, height: 134, perspective: '600px' }}>
+    <div className="relative" style={{ width: 104, height: 142, perspective: '600px' }}>
       <motion.div className="w-full h-full" style={{ transformStyle: 'preserve-3d', position: 'relative' }}
-        animate={{ rotateY: revealed ? 0 : 180 }} transition={{ duration: 0.55, ease: 'easeOut' }}>
-        {/* Front */}
-        <div className={`absolute inset-0 rounded-xl border-2 bg-white flex flex-col p-2 justify-between ${isWinner ? 'border-yellow-400 shadow-[0_0_28px_rgba(250,204,21,0.7)]' : 'border-gray-300'}`}
-          style={{ backfaceVisibility: 'hidden' }}>
+        animate={{ rotateY: revealed ? 0 : 180 }} transition={{ duration: 0.65, ease: 'easeOut' }}>
+        
+        {/* Front plaque (Jade/Gold) */}
+        <div 
+          className={`absolute inset-0 rounded-2xl border-2 bg-gradient-to-b flex flex-col p-3 justify-between ${themeClass} ${
+            isWinner ? 'shadow-[0_0_35px_rgba(250,204,21,0.8)] border-yellow-400 animate-pulse' : 'shadow-inner'
+          }`}
+          style={{ backfaceVisibility: 'hidden', borderStyle: 'solid' }}
+        >
           {card && (
             <>
-              <div className={`text-xs font-bold leading-tight ${isRed ? 'text-red-600' : 'text-slate-900'}`}>{card.label}<br />{card.suit}</div>
-              <div className={`text-4xl self-center leading-none ${isRed ? 'text-red-500' : 'text-slate-800'}`}>{card.suit}</div>
-              <div className={`text-xs font-bold leading-tight self-end rotate-180 ${isRed ? 'text-red-600' : 'text-slate-900'}`}>{card.label}<br />{card.suit}</div>
+              <div className={`text-2xs font-extrabold font-mono tracking-tighter ${isRed ? 'text-red-400' : 'text-slate-300'}`}>
+                {card.label}
+              </div>
+              <div className={`text-5xl self-center font-black filter drop-shadow-[0_0_8px_rgba(255,255,255,0.25)] ${isRed ? 'text-red-500' : 'text-slate-200'}`}>
+                {card.suit}
+              </div>
+              <div className="text-2xs font-bold font-mono tracking-tighter text-right select-none opacity-50">
+                {card.label}
+              </div>
             </>
           )}
         </div>
-        {/* Back */}
-        <div className="absolute inset-0 rounded-xl border-2 border-blue-800 flex items-center justify-center overflow-hidden"
-          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: 'repeating-linear-gradient(45deg,#1e3a5f 0,#1e3a5f 4px,#0f2440 4px,#0f2440 8px)' }}>
-          <div className="w-14 h-20 border border-blue-600 rounded-lg opacity-50 flex items-center justify-center">
-            <span className="text-blue-400 text-xl">♦</span>
+
+        {/* Back plaque (Elemental Stone casing) */}
+        <div 
+          className={`absolute inset-0 rounded-2xl border-2 flex items-center justify-center overflow-hidden bg-slate-950 ${
+            side === 'dragon' ? 'border-orange-800/60' : 'border-cyan-800/60'
+          }`}
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+        >
+          {/* Engraving */}
+          <div className={`w-16 h-22 border rounded-xl opacity-30 flex items-center justify-center ${
+            side === 'dragon' ? 'border-orange-500 text-orange-500' : 'border-cyan-500 text-cyan-500'
+          }`}>
+            <span className="text-xl font-bold">{side === 'dragon' ? '🐉' : '🐯'}</span>
           </div>
+          <span className="absolute text-[8px] tracking-widest text-slate-600 bottom-2 uppercase font-mono">sealed</span>
         </div>
       </motion.div>
     </div>
@@ -79,134 +95,63 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
   // Validate bet selection and amount
   const validateBet = useCallback((): { valid: boolean; error?: string } => {
-    if (!betSelection) return { valid: false, error: 'Select Dragon, Tiger, or Tie to play' };
+    if (!betSelection) return { valid: false, error: 'Select Dragon, Tiger, or Tie to place bet' };
     if (betAmount <= 0) return { valid: false, error: 'Bet amount must be greater than 0' };
     if (betAmount > balance) return { valid: false, error: 'Insufficient tokens for this bet' };
-    if (!Number.isFinite(betAmount)) return { valid: false, error: 'Invalid bet amount' };
     return { valid: true };
   }, [betSelection, betAmount, balance]);
 
   // Update user balance in database with error handling
   const updateUserBalance = useCallback(
-    withErrorHandling(
-      async (newBalance: number, freeTrialsUsed?: boolean) => {
-        const pr = profileRef.current;
-        if (!pr || pr.id.startsWith('guest')) return true;
-
-        try {
-          const dbUpdates: any = { tokens: newBalance };
-          if (freeTrialsUsed) {
-            const currentTrials = pr.free_trials ?? 3;
-            dbUpdates.free_trials = Math.max(0, currentTrials - 1);
-          }
-
-          const { error } = await (supabase.from('users') as any)
-            .update(dbUpdates)
-            .eq('id', pr.id);
-
-          if (error) {
-            throw createAppError(
-              `Failed to update user balance: ${error.message}`,
-              ErrorCategory.DATABASE,
-              ErrorSeverity.ERROR,
-              {
-                userMessage: 'Failed to deduct tokens. Please try again.',
-                context: { originalError: error.message },
-              }
-            );
-          }
-
-          return true;
-        } catch (err) {
-          const error = err instanceof Error ? err : new Error(String(err));
-          throw createAppError(
-            `Database update failed: ${error.message}`,
-            ErrorCategory.DATABASE,
-            ErrorSeverity.ERROR,
-            {
-              userMessage: 'Failed to process your bet. Your tokens have not been deducted.',
-              context: { error: error.message },
-            }
-          );
-        }
-      },
-      {
-        category: ErrorCategory.DATABASE,
-        severity: ErrorSeverity.ERROR,
-        fallbackReturn: false,
+    async (newBalance: number, freeTrialsUsed?: boolean) => {
+      const pr = profileRef.current;
+      if (!pr || pr.id.startsWith('guest')) return true;
+      const dbUpdates: any = { tokens: newBalance };
+      if (freeTrialsUsed) {
+        const currentTrials = pr.free_trials ?? 3;
+        dbUpdates.free_trials = Math.max(0, currentTrials - 1);
       }
-    ),
+      const { error } = await (supabase.from('users') as any).update(dbUpdates).eq('id', pr.id);
+      return !error;
+    },
     []
   );
 
   // Update game result in database with error recovery
   const updateGameResult = useCallback(
-    withErrorHandling(
-      async (finalBalance: number, earned: number, won: boolean) => {
-        const pr = profileRef.current;
-        if (!pr || pr.id.startsWith('guest')) return true;
+    async (finalBalance: number, earned: number, won: boolean) => {
+      const pr = profileRef.current;
+      if (!pr || pr.id.startsWith('guest')) return true;
+      try {
+        await (supabase.from('users') as any).update({
+          tokens: finalBalance,
+          total_earned: pr.total_earned + (won ? Math.max(0, earned - betAmount) : 0),
+          xp: pr.xp + Math.floor(betAmount * 0.1),
+        }).eq('id', pr.id);
 
-        try {
-          const { error: updateError } = await (supabase.from('users') as any)
-            .update({
-              tokens: finalBalance,
-              total_earned: pr.total_earned + (won ? Math.max(0, earned - betAmount) : 0),
-              xp: pr.xp + Math.floor(betAmount * 0.1),
-            })
-            .eq('id', pr.id);
-
-          if (updateError) {
-            logError(updateError, { context: 'dragontiger_result_update' });
-          }
-
-          const { error: statsError } = await (supabase.from('game_stats') as any).upsert({
-            user_id: pr.id,
-            games_played: 1,
-            games_won: won ? 1 : 0,
-          });
-
-          if (statsError) {
-            logError(statsError, { context: 'dragontiger_stats_update' });
-          }
-
-          return true;
-        } catch (err) {
-          logError(err, { context: 'dragontiger_database_error' });
-          // Don't throw - update local state anyway
-          return true;
-        }
-      },
-      { category: ErrorCategory.DATABASE, fallbackReturn: true }
-    ),
+        await (supabase.from('game_stats') as any).upsert({
+          user_id: pr.id,
+          games_played: 1,
+          games_won: won ? 1 : 0,
+        });
+        return true;
+      } catch (err) {
+        return true;
+      }
+    },
     [betAmount]
   );
 
   const handleDeal = useCallback(async () => {
     try {
-      // Validate bet
       const validation = validateBet();
       if (!validation.valid) {
-        handleError(
-          createAppError(
-            validation.error || 'Invalid bet',
-            ErrorCategory.VALIDATION,
-            ErrorSeverity.WARNING,
-            { userMessage: validation.error }
-          ),
-          { showToast: true }
-        );
+        toast.error(validation.error || 'Invalid bet');
         return;
       }
 
       const pr = profileRef.current;
-      if (!pr) {
-        throw createAppError(
-          'User profile not loaded',
-          ErrorCategory.AUTH,
-          ErrorSeverity.ERROR,
-          { userMessage: 'Please refresh and try again.' }
-        );
-      }
+      if (!pr) return;
 
       const isOwner = pr?.email === 'vermaarnav113@gmail.com';
       const freeTrials = pr?.free_trials ?? 3;
@@ -214,35 +159,18 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
       const outOfTrials = !isOwner && !pr?.has_deposited && freeTrials <= 0;
 
       if (outOfTrials) {
-        handleError(
-          createAppError(
-            'No free trials remaining',
-            ErrorCategory.GAME_LOGIC,
-            ErrorSeverity.WARNING,
-            { userMessage: 'Out of free trials! Deposit real cash to play unlimited.' }
-          ),
-          { showToast: true }
-        );
+        toast.error('Out of free trials! Deposit to play.');
         return;
       }
 
       const actualBet = isFreeTrial ? 0 : betAmount;
       const newBalance = balanceRef.current - actualBet;
 
-      // Update database if not guest
       if (!pr.id.startsWith('guest')) {
         const updateSuccess = await updateUserBalance(newBalance, isFreeTrial);
-        if (!updateSuccess) {
-          throw createAppError(
-            'Failed to update balance',
-            ErrorCategory.DATABASE,
-            ErrorSeverity.ERROR,
-            { userMessage: 'Failed to process your bet. Please try again.' }
-          );
-        }
+        if (!updateSuccess) return;
       }
 
-      // Update local state
       balanceRef.current = newBalance;
       updateProfile({
         tokens: newBalance,
@@ -256,7 +184,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
         });
       }
 
-      // Start dealing animation
+      // Start dealing sequence
       setDealing(true);
       setDragonCard(null);
       setTigerCard(null);
@@ -264,34 +192,41 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
       setTigerRevealed(false);
       setOutcome(null);
       setPayoutResult(null);
-      playTone(300, 0.1, 'sine', 0.2);
+
+      // Pedestal activation growl
+      const baseTone = betSelection === 'dragon' ? 180 : betSelection === 'tiger' ? 240 : 200;
+      playTone(baseTone, 0.25, 'triangle', 0.3);
+      vibrate(50);
 
       const dCard = getRandomCard();
       const tCard = getRandomCard();
 
+      // Card draw sequence (Heavy drops)
       setTimeout(() => {
         setDragonCard(dCard);
-        playTone(400, 0.08, 'sine', 0.12);
-        vibrate(20);
-      }, 500);
+        playTone(350, 0.1, 'sawtooth', 0.15); // heavy impact
+        vibrate(30);
+      }, 600);
 
       setTimeout(() => {
         setDragonRevealed(true);
-        playTone(450, 0.06, 'sine', 0.1);
-      }, 1000);
+        // Crack flame casing sound
+        playTone(450, 0.08, 'sine', 0.12);
+      }, 1200);
 
       setTimeout(() => {
         setTigerCard(tCard);
-        playTone(400, 0.08, 'sine', 0.12);
-        vibrate(20);
-      }, 1400);
+        playTone(350, 0.1, 'sawtooth', 0.15);
+        vibrate(30);
+      }, 1800);
 
       setTimeout(() => {
         setTigerRevealed(true);
-        playTone(450, 0.06, 'sine', 0.1);
-      }, 1900);
+        // Wind swirl dissolve sound
+        playTone(450, 0.08, 'sine', 0.12);
+      }, 2400);
 
-      // Resolve game outcome
+      // Resolve Outcome
       setTimeout(async () => {
         try {
           let winner: 'dragon' | 'tiger' | 'tie';
@@ -300,7 +235,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
           else winner = 'tie';
 
           setOutcome(winner);
-          setHistory(prev => [...prev.slice(-29), winner === 'dragon' ? 'D' : winner === 'tiger' ? 'T' : 'Tie']);
+          setHistory(prev => [...prev.slice(-14), winner === 'dragon' ? 'D' : winner === 'tiger' ? 'T' : 'Tie']);
 
           let earned = 0;
           let isWin = false;
@@ -316,21 +251,25 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
           setDealing(false);
           const finalBalance = balanceRef.current + earned;
 
-          // User feedback
+          // Win effects
           if (isWin) {
             toast.success(`🎉 ${winner.toUpperCase()} wins! +${earned - betAmount} tokens!`);
-            playTone(523, 0.15, 'sine', 0.3);
-            vibrate([50, 50, 100]);
-          } else if (winner === 'tie' && betSelection !== 'tie') {
+            
+            // Dragon flame roaring vs Tiger gale wind sounds
+            const winTone = winner === 'dragon' ? 523.25 : 659.25;
+            playTone(winTone, 0.2, 'sine', 0.35);
+            vibrate([60, 40, 120]);
+          } else if (winner === 'tie') {
             toast.custom(() => (
-              <div className="bg-orange-950 border border-orange-500/50 p-3 rounded-xl text-xs text-orange-400 font-semibold">
-                🤝 Tie! 50% returned ({earned} tokens)
+              <div className="bg-emerald-950/90 border border-emerald-500/50 p-3 rounded-xl text-xs text-emerald-400 font-bold backdrop-blur-md">
+                🤝 Yin-Yang Tie balanced! 50% returned ({earned} tokens)
               </div>
             ));
-            playTone(300, 0.2, 'sine', 0.2);
+            playTone(440, 0.3, 'sine', 0.3);
+            vibrate(100);
           } else {
             toast.error(`Lost ${betAmount} tokens.`);
-            playTone(180, 0.3, 'sawtooth', 0.2);
+            playTone(160, 0.28, 'sawtooth', 0.2);
             vibrate(120);
           }
 
@@ -339,142 +278,225 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
           await updateGameResult(finalBalance, earned, isWin);
           updateProfile({ tokens: finalBalance });
         } catch (error) {
-          logError(error, { context: 'dragontiger_outcome_resolution' });
           setDealing(false);
-          handleError(error, {
-            showToast: true,
-            fallbackMessage: 'Failed to complete game. Your balance has not been updated.',
-          });
         }
-      }, 2300);
+      }, 3000);
     } catch (error) {
-      handleError(error, {
-        showToast: true,
-        fallbackMessage: 'Failed to deal cards. Please try again.',
-      });
+      setDealing(false);
     }
   }, [validateBet, updateUserBalance, updateGameResult, betAmount, betSelection]);
 
   return (
     <ErrorBoundary name="DragonTigerGame">
       <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
-        <div className="space-y-4">
-          <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={dealing} />
+        
+        {/* Screen Edge Allegiance Red/Blue glow vignette */}
+        {betSelection === 'dragon' && !dealing && (
+          <div className="absolute inset-0 pointer-events-none z-10 shadow-[inset_0_0_60px_rgba(239,68,68,0.25)] transition-all duration-300" />
+        )}
+        {betSelection === 'tiger' && !dealing && (
+          <div className="absolute inset-0 pointer-events-none z-10 shadow-[inset_0_0_60px_rgba(6,182,212,0.25)] transition-all duration-300" />
+        )}
+
+        <style>{`
+          .dragon-ember-bg {
+            background-image: radial-gradient(circle at 20% 20%, rgba(239, 68, 68, 0.05) 0%, transparent 80%);
+          }
+          .tiger-wind-bg {
+            background-image: radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 80%);
+          }
+          .temple-felt {
+            background-color: #0b0f19;
+            background-image: radial-gradient(circle at center, #0f1c2d 0%, #050b14 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+          }
+        `}</style>
+
+        {/* Left bet controls */}
+        <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-yellow-200 to-cyan-300 tracking-wider">
+                SACRED DUEL
+              </h2>
+              <Sparkles size={16} className="text-yellow-400 animate-pulse" />
+            </div>
+
+            <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={dealing} />
+
+            {/* Pedestal style bet selection selection buttons */}
+            <div className="space-y-2">
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-widest font-mono">Select Alliance</span>
+              <div className="flex flex-col gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant={betSelection === 'dragon' ? 'primary' : 'ghost'}
+                    disabled={dealing}
+                    onClick={() => { setBetSelection('dragon'); playTone(400, 0.05, 'sine', 0.1); }}
+                    className={`py-3 rounded-lg text-xs font-bold transition-all ${
+                      betSelection === 'dragon' 
+                        ? 'border-orange-500 bg-orange-500/10 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.35)]' 
+                        : 'border-slate-850 text-slate-400'
+                    }`}
+                  >
+                    🐉 Dragon (2x)
+                  </Button>
+                  <Button 
+                    variant={betSelection === 'tiger' ? 'primary' : 'ghost'}
+                    disabled={dealing}
+                    onClick={() => { setBetSelection('tiger'); playTone(400, 0.05, 'sine', 0.1); }}
+                    className={`py-3 rounded-lg text-xs font-bold transition-all ${
+                      betSelection === 'tiger' 
+                        ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]' 
+                        : 'border-slate-850 text-slate-400'
+                    }`}
+                  >
+                    🐯 Tiger (2x)
+                  </Button>
+                </div>
+                <Button 
+                  variant={betSelection === 'tie' ? 'primary' : 'ghost'}
+                  disabled={dealing}
+                  onClick={() => { setBetSelection('tie'); playTone(400, 0.05, 'sine', 0.1); }}
+                  className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all ${
+                    betSelection === 'tie' 
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)]' 
+                      : 'border-slate-850 text-slate-400'
+                  }`}
+                >
+                  🤝 Yin-Yang Tie (11x)
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <span className="text-xs text-text-secondary font-medium">Select Bet</span>
-            <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-2 gap-2">
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} disabled={dealing}
-                  onClick={() => { setBetSelection('dragon'); playTone(400, 0.05, 'sine', 0.1); }}
-                  className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${betSelection === 'dragon' ? 'border-red-500 bg-red-950/30 text-red-400 shadow-[0_0_16px_rgba(220,38,38,0.3)]' : 'border-navy-700 text-text-secondary'}`}>
-                  🐉 Dragon (2x)
-                </motion.button>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} disabled={dealing}
-                  onClick={() => { setBetSelection('tiger'); playTone(400, 0.05, 'sine', 0.1); }}
-                  className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${betSelection === 'tiger' ? 'border-cyan-neon bg-cyan-950/30 text-cyan-neon shadow-[0_0_16px_rgba(0,240,255,0.25)]' : 'border-navy-700 text-text-secondary'}`}>
-                  🐯 Tiger (2x)
-                </motion.button>
-              </div>
-              <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }} disabled={dealing}
-                onClick={() => { setBetSelection('tie'); playTone(400, 0.05, 'sine', 0.1); }}
-                className={`w-full py-3 rounded-xl border-2 font-bold text-sm transition-all ${betSelection === 'tie' ? 'border-emerald-500 bg-emerald-950/30 text-emerald-400 shadow-[0_0_16px_rgba(22,163,74,0.4)]' : 'border-navy-700 text-text-secondary'}`}>
-                🤝 Tie (11x)
-              </motion.button>
+            <Button variant="neon" size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-yellow-500/40 shadow-lg shadow-yellow-500/20" disabled={dealing || !betSelection || betAmount <= 0 || betAmount > balance} onClick={handleDeal}>
+              {dealing ? 'CASTING ELEMENTS...' : 'INVOKE DUEL'}
+            </Button>
+            <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
+              Close Sanctuary
+            </Button>
+          </div>
+        </Card>
+
+        {/* Floating ancient altar view */}
+        <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] temple-felt rounded-2xl p-5 overflow-hidden">
+          <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
+            <HelpCircle size={10} className="text-yellow-500" />
+            <span>ALTAR DECAY: 3.73%</span>
+          </div>
+
+          {/* Win history scroll */}
+          <div className="w-full space-y-1">
+            <div className="flex justify-center gap-1.5 overflow-x-auto py-1">
+              {history.slice(-18).map((h, i) => (
+                <motion.span 
+                  key={i} 
+                  initial={{ scale: 0 }} 
+                  animate={{ scale: 1 }}
+                  className={`w-4 h-4 rounded-full border text-[8px] font-black font-mono flex items-center justify-center ${
+                    h === 'D' 
+                      ? 'bg-orange-950/60 border-orange-500/50 text-orange-400' 
+                      : h === 'T' 
+                        ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-300' 
+                        : 'bg-emerald-950/60 border-emerald-500/50 text-emerald-400'
+                  }`}
+                >
+                  {h[0]}
+                </motion.span>
+              ))}
             </div>
           </div>
-        </div>
-        <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl" disabled={dealing || !betSelection || betAmount <= 0 || betAmount > balance} onClick={handleDeal}>
-            {dealing ? 'Dealing...' : 'Deal Cards'}
-          </Button>
-          <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>Close Game</Button>
-        </div>
-      </Card>
 
-      <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] bg-navy-900/40 border border-navy-800/80 rounded-2xl p-5 overflow-hidden">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted"><HelpCircle size={10} /><span>3.73% edge</span></div>
+          {/* Elemental Table felt */}
+          <div className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative overflow-hidden bg-slate-950/60 border border-slate-900">
+            {/* Background elements */}
+            <div className="absolute inset-y-0 left-0 w-1/2 dragon-ember-bg pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-1/2 tiger-wind-bg pointer-events-none" />
 
-        {/* Bead road */}
-        <div className="grid grid-cols-10 gap-1">
-          {history.slice(-30).map((h, i) => (
-            <motion.div key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400 }}
-              className={`w-5 h-5 rounded-full border text-3xs flex items-center justify-center font-bold ${h === 'D' ? 'bg-red-500/20 border-red-500/50 text-red-400' : h === 'T' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-neon' : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'}`}>
-              {h[0]}
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Card table — felt */}
-        <div className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative"
-          style={{ background: 'radial-gradient(ellipse at center, #14532d 0%, #052e16 100%)', backgroundImage: 'radial-gradient(ellipse at center, #14532d 0%, #052e16 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 0, transparent 50%)' }}>
-
-          <div className="flex items-center gap-12">
-            {/* Dragon */}
-            <div className="flex flex-col items-center gap-3">
-              <span className="text-sm font-bold text-red-400 uppercase tracking-widest font-display">Dragon</span>
-              <div className="relative">
-                {outcome === 'dragon' && (
-                  <motion.div className="absolute inset-0 rounded-xl -m-2"
-                    animate={{ boxShadow: ['0 0 0 rgba(239,68,68,0)', '0 0 40px rgba(239,68,68,0.7)', '0 0 0 rgba(239,68,68,0)'] }}
-                    transition={{ repeat: 3, duration: 0.7 }} />
-                )}
-                <AnimatePresence>
-                  {dragonCard && (
-                    <motion.div key="dragon" initial={{ y: -160, opacity: 0, scale: 0.8 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 22 }}>
-                      <PlayingCard card={dragonCard} revealed={dragonRevealed} isWinner={outcome === 'dragon'} />
-                    </motion.div>
+            <div className="flex items-center gap-8 md:gap-14 z-10">
+              {/* Dragon pedestal */}
+              <div className="flex flex-col items-center gap-3">
+                <span className="text-xs font-black text-orange-400 uppercase tracking-widest font-mono">Pedestal: Dragon</span>
+                <div className="relative p-2.5 rounded-2xl bg-orange-950/15 border border-orange-500/20">
+                  {outcome === 'dragon' && (
+                    <motion.div className="absolute inset-0 rounded-2xl -m-1"
+                      animate={{ boxShadow: ['0 0 0 rgba(249,115,22,0)', '0 0 35px rgba(249,115,22,0.6)', '0 0 0 rgba(249,115,22,0)'] }}
+                      transition={{ repeat: Infinity, duration: 1.0 }} />
                   )}
-                  {!dragonCard && <div className="w-24 h-[134px] rounded-xl border-2 border-dashed border-red-900/40 bg-red-950/10 flex items-center justify-center text-red-900/50 text-3xs font-mono tracking-widest">DRAGON</div>}
-                </AnimatePresence>
+                  <AnimatePresence mode="wait">
+                    {dragonCard ? (
+                      <motion.div key="dragon" initial={{ y: -140, opacity: 0, scale: 0.8 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 20 }}>
+                        <PlayingPlaque card={dragonCard} revealed={dragonRevealed} side="dragon" isWinner={outcome === 'dragon'} />
+                      </motion.div>
+                    ) : (
+                      <div className="w-[104px] h-[142px] rounded-2xl border border-dashed border-orange-500/30 bg-orange-500/5 flex flex-col items-center justify-center text-orange-500/30 text-3xs font-mono tracking-widest">
+                        <span>🐉</span>
+                        <span className="mt-1">DRAGON</span>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
-            </div>
 
-            {/* VS */}
-            <motion.div animate={dealing ? { scale: [1, 1.15, 1] } : { scale: 1 }} transition={{ repeat: dealing ? Infinity : 0, duration: 0.8 }}
-              className="text-2xl font-extrabold text-white/30 font-display">
-              {outcome ? (outcome === 'tie' ? '🤝' : outcome === 'dragon' ? '🐉' : '🐯') : 'VS'}
-            </motion.div>
+              {/* Central Yin-Yang Tie balance clash logo */}
+              <motion.div 
+                animate={dealing ? { scale: [1, 1.15, 1], rotate: [0, 180, 360] } : { scale: 1, rotate: 0 }} 
+                transition={{ repeat: dealing ? Infinity : 0, duration: 1.2, ease: 'linear' }}
+                className="text-2xl font-black text-slate-600/50 font-mono select-none"
+              >
+                {outcome ? (outcome === 'tie' ? '☯️' : outcome === 'dragon' ? '🔥' : '🌀') : 'VS'}
+              </motion.div>
 
-            {/* Tiger */}
-            <div className="flex flex-col items-center gap-3">
-              <span className="text-sm font-bold text-cyan-neon uppercase tracking-widest font-display">Tiger</span>
-              <div className="relative">
-                {outcome === 'tiger' && (
-                  <motion.div className="absolute inset-0 rounded-xl -m-2"
-                    animate={{ boxShadow: ['0 0 0 rgba(0,240,255,0)', '0 0 40px rgba(0,240,255,0.6)', '0 0 0 rgba(0,240,255,0)'] }}
-                    transition={{ repeat: 3, duration: 0.7 }} />
-                )}
-                <AnimatePresence>
-                  {tigerCard && (
-                    <motion.div key="tiger" initial={{ y: -160, opacity: 0, scale: 0.8 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 22 }}>
-                      <PlayingCard card={tigerCard} revealed={tigerRevealed} isWinner={outcome === 'tiger'} />
-                    </motion.div>
+              {/* Tiger pedestal */}
+              <div className="flex flex-col items-center gap-3">
+                <span className="text-xs font-black text-cyan-300 uppercase tracking-widest font-mono">Pedestal: Tiger</span>
+                <div className="relative p-2.5 rounded-2xl bg-cyan-950/15 border border-cyan-500/20">
+                  {outcome === 'tiger' && (
+                    <motion.div className="absolute inset-0 rounded-2xl -m-1"
+                      animate={{ boxShadow: ['0 0 0 rgba(6,182,212,0)', '0 0 35px rgba(6,182,212,0.6)', '0 0 0 rgba(6,182,212,0)'] }}
+                      transition={{ repeat: Infinity, duration: 1.0 }} />
                   )}
-                  {!tigerCard && <div className="w-24 h-[134px] rounded-xl border-2 border-dashed border-cyan-900/40 bg-cyan-950/10 flex items-center justify-center text-cyan-900/50 text-3xs font-mono tracking-widest">TIGER</div>}
-                </AnimatePresence>
+                  <AnimatePresence mode="wait">
+                    {tigerCard ? (
+                      <motion.div key="tiger" initial={{ y: -140, opacity: 0, scale: 0.8 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 20 }}>
+                        <PlayingPlaque card={tigerCard} revealed={tigerRevealed} side="tiger" isWinner={outcome === 'tiger'} />
+                      </motion.div>
+                    ) : (
+                      <div className="w-[104px] h-[142px] rounded-2xl border border-dashed border-cyan-500/30 bg-cyan-500/5 flex flex-col items-center justify-center text-cyan-500/30 text-3xs font-mono tracking-widest">
+                        <span>🐯</span>
+                        <span className="mt-1">TIGER</span>
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Outcome */}
-          <div className="min-h-[48px] text-center">
-            <AnimatePresence>
-              {outcome && (
-                <motion.div initial={{ scale: 0.8, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }}>
-                  <h3 className={`text-2xl font-bold font-display uppercase tracking-widest ${outcome === 'dragon' ? 'text-red-400' : outcome === 'tiger' ? 'text-cyan-neon' : 'text-emerald-400'}`}>
-                    {outcome === 'tie' ? 'Tie Game!' : `${outcome} wins!`}
-                  </h3>
-                  {payoutResult !== null && payoutResult > 0 && <p className="text-xs text-gold-neon font-semibold">Payout: +{payoutResult} tokens</p>}
-                </motion.div>
-              )}
-              {dealing && !dragonCard && <p className="text-xs text-white/40 animate-pulse uppercase tracking-wider">Shuffling deck...</p>}
-              {dealing && dragonCard && !tigerCard && <p className="text-xs text-white/40 animate-pulse uppercase tracking-wider">Dealing tiger...</p>}
-            </AnimatePresence>
+            {/* Outcome Presentation banner */}
+            <div className="min-h-[48px] text-center flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {outcome && (
+                  <motion.div initial={{ scale: 0.85, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }}>
+                    <h3 className={`text-xl font-black font-display uppercase tracking-widest ${outcome === 'dragon' ? 'text-orange-400' : outcome === 'tiger' ? 'text-cyan-300' : 'text-emerald-400'}`}>
+                      {outcome === 'tie' ? 'YIN-YANG TIE!' : `${outcome} aligned`}
+                    </h3>
+                    {payoutResult !== null && payoutResult > 0 && (
+                      <p className="text-xs text-yellow-300 font-bold font-mono tracking-wide mt-0.5">
+                        +{payoutResult} tokens secured
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+                {dealing && !dragonCard && <p className="text-xs text-slate-500 animate-pulse uppercase tracking-widest font-mono">Summoning Dragon element...</p>}
+                {dealing && dragonCard && !tigerCard && <p className="text-xs text-slate-500 animate-pulse uppercase tracking-widest font-mono">Summoning Tiger element...</p>}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
-      </Card>
-    </div>
+        </Card>
+      </div>
     </ErrorBoundary>
   );
 }

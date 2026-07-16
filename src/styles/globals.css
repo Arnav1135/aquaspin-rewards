@@ -10,31 +10,31 @@
 /* ── CSS Custom Properties (Exact Fintech Reference) ──────────────────────── */
 :root {
   /* Color tokens */
-  --c-navy:         #16213E;
-  --c-navy-dark:    #111d38;
-  --c-navy-deeper:  #0d1628;
-  --c-sky:          #4A90D9;
-  --c-sky-pale:     #A8CBEA;
-  --c-offwhite:     #F5F8FC;
-  --c-app-bg:       linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%);
-  --c-teal:         #3DDC97;
-  --c-coral:        #F76C6C;
-  --c-scrim:        rgba(22, 33, 62, 0.62);
-  --c-scrim-heavy:  rgba(22, 33, 62, 0.80);
+  --c-navy:         #7b8bc1;
+  --c-navy-dark:    #5a6b9c;
+  --c-navy-deeper:  #4a5b8c;
+  --c-sky:          #66bdf2;
+  --c-sky-pale:     #c2e7fa;
+  --c-offwhite:     #FFFFFF;
+  --c-app-bg:       linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%);
+  --c-teal:         #66bdf2;
+  --c-coral:        #7b8bc1;
+  --c-scrim:        rgba(123, 139, 193, 0.4);
+  --c-scrim-heavy:  rgba(123, 139, 193, 0.7);
 
   /* Card dynamic backgrounds */
-  --card-navy-bg:   linear-gradient(135deg, var(--c-navy) 0%, #1e2d52 100%);
-  --card-white-bg:  rgba(255, 255, 255, 0.82);
-  --card-sky-bg:    linear-gradient(135deg, rgba(74,144,217,0.12) 0%, rgba(168,203,234,0.18) 100%);
-  --border-white:   rgba(168, 203, 234, 0.35);
-  --border-sky:     rgba(168, 203, 234, 0.45);
-  --text-white-bg:  var(--c-navy);
-  --text-sky-bg:    var(--c-navy);
+  --card-navy-bg:   linear-gradient(135deg, #7b8bc1 0%, #8ba0cd 100%);
+  --card-white-bg:  rgba(255, 255, 255, 0.6);
+  --card-sky-bg:    linear-gradient(135deg, #66bdf2 0%, #85ccf5 100%);
+  --border-white:   rgba(255, 255, 255, 0.8);
+  --border-sky:     rgba(255, 255, 255, 0.5);
+  --text-white-bg:  #2a3b6c;
+  --text-sky-bg:    #FFFFFF;
 
   /* Shadows */
-  --shadow-card-navy: 0 8px 24px rgba(22,33,62,0.18), 0 2px 8px rgba(22,33,62,0.10);
-  --shadow-card-sky:  0 8px 24px rgba(74,144,217,0.14), 0 2px 8px rgba(74,144,217,0.08);
-  --shadow-card-lift: 0 12px 32px rgba(22,33,62,0.22), 0 4px 12px rgba(22,33,62,0.12);
+  --shadow-card-navy: 0 8px 32px rgba(123, 139, 193, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  --shadow-card-sky:  0 8px 32px rgba(102, 189, 242, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+  --shadow-card-lift: 0 12px 40px rgba(123, 139, 193, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
 
   /* Radius */
   --r-card-primary:   28px;  /* navy cards */
@@ -50,22 +50,22 @@
 
 .dark {
   /* Flipped colors in dark mode */
-  --c-navy:         #F5F8FC;
-  --c-navy-dark:    #E4EEF9;
-  --c-navy-deeper:  #ffffff;
-  --c-offwhite:     #16213E;
-  --c-app-bg:       linear-gradient(160deg, #090e1a 0%, #0d1628 100%);
-  --c-scrim:        rgba(0, 0, 0, 0.75);
-  --c-scrim-heavy:  rgba(0, 0, 0, 0.90);
+  --c-navy:         #FFFFFF;
+  --c-navy-dark:    #e1eff8;
+  --c-navy-deeper:  #cfe5f5;
+  --c-offwhite:     #2a3b6c;
+  --c-app-bg:       linear-gradient(160deg, #1c2642 0%, #0d1628 100%);
+  --c-scrim:        rgba(0, 0, 0, 0.5);
+  --c-scrim-heavy:  rgba(0, 0, 0, 0.8);
 
   /* Card overrides */
-  --card-navy-bg:   linear-gradient(135deg, #0d1628 0%, #16213e 100%);
-  --card-white-bg:  rgba(22, 33, 62, 0.85);
-  --card-sky-bg:    linear-gradient(135deg, rgba(74, 144, 217, 0.1) 0%, rgba(22, 33, 62, 0.9) 100%);
-  --border-white:   rgba(74, 144, 217, 0.25);
-  --border-sky:     rgba(74, 144, 217, 0.3);
-  --text-white-bg:  #F5F8FC;
-  --text-sky-bg:    #A8CBEA;
+  --card-navy-bg:   linear-gradient(135deg, #4a5b8c 0%, #5a6b9c 100%);
+  --card-white-bg:  rgba(42, 59, 108, 0.6);
+  --card-sky-bg:    linear-gradient(135deg, rgba(102, 189, 242, 0.2) 0%, rgba(42, 59, 108, 0.8) 100%);
+  --border-white:   rgba(255, 255, 255, 0.15);
+  --border-sky:     rgba(102, 189, 242, 0.25);
+  --text-white-bg:  #FFFFFF;
+  --text-sky-bg:    #c2e7fa;
 
   /* Shadows override to look more subtle in dark mode */
   --shadow-card-navy: 0 8px 32px rgba(0,0,0,0.5);
@@ -187,19 +187,19 @@
     font-size: 0.875rem;
     letter-spacing: 0.01em;
     color: var(--c-offwhite);
-    background: linear-gradient(135deg, var(--c-navy) 0%, #1e2d52 100%);
-    border: 1px solid rgba(74, 144, 217, 0.25);
-    box-shadow: 0 4px 14px rgba(22,33,62,0.25);
+    background: linear-gradient(135deg, var(--c-navy) 0%, #8ba0cd 100%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 14px rgba(123, 139, 193, 0.25), inset 0 2px 4px rgba(255,255,255,0.3);
     transition: all var(--t-base);
     cursor: pointer;
     user-select: none;
   }
   .btn-primary:hover {
-    background: linear-gradient(135deg, #111a33 0%, #1a2748 100%);
-    box-shadow: 0 6px 20px rgba(22,33,62,0.35);
+    background: linear-gradient(135deg, #8ba0cd 0%, #9cb1d9 100%);
+    box-shadow: 0 6px 20px rgba(123, 139, 193, 0.35), inset 0 2px 4px rgba(255,255,255,0.4);
     transform: translateY(-1px);
   }
-  .btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(22,33,62,0.2); }
+  .btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(123, 139, 193, 0.2); }
   .btn-primary:disabled { opacity: 0.40; cursor: not-allowed; transform: none; }
 
   /* Sky / Secondary button */
@@ -213,15 +213,15 @@
     font-family: 'Poppins', sans-serif;
     font-weight: 600;
     font-size: 0.875rem;
-    color: var(--c-navy);
-    background: linear-gradient(135deg, #4A90D9 0%, #6aaae4 100%);
-    border: none;
-    box-shadow: 0 4px 14px rgba(74,144,217,0.30);
+    color: var(--c-offwhite);
+    background: linear-gradient(135deg, #66bdf2 0%, #85ccf5 100%);
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 4px 14px rgba(102, 189, 242, 0.30), inset 0 2px 4px rgba(255,255,255,0.3);
     transition: all var(--t-base);
   }
   .btn-sky:hover {
-    background: linear-gradient(135deg, #2b7cc4 0%, #4A90D9 100%);
-    box-shadow: 0 6px 20px rgba(74,144,217,0.40);
+    background: linear-gradient(135deg, #85ccf5 0%, #a6dbf8 100%);
+    box-shadow: 0 6px 20px rgba(102, 189, 242, 0.40), inset 0 2px 4px rgba(255,255,255,0.4);
     transform: translateY(-1px);
   }
   .btn-sky:disabled { opacity: 0.40; cursor: not-allowed; }

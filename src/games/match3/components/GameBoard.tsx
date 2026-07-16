@@ -157,7 +157,10 @@ export const GameBoard = ({
           y: Math.random() * 100 - 50,
           color: ['#FF6B6B', '#4A90E2', '#5FBB6F', '#FFD93D', '#B565D8'][Math.floor(Math.random() * 5)],
         }));
-      setParticles(prev => [...prev, ...newParticles]);
+      setParticles(prev => {
+        const next = [...prev, ...newParticles];
+        return next.length > 30 ? next.slice(next.length - 30) : next;
+      });
       setTimeout(() => {
         setParticles(prev => prev.filter(p => !newParticles.some(np => np.id === p.id)));
       }, 800);
@@ -220,7 +223,10 @@ export const GameBoard = ({
         color,
       }));
     
-    setParticles(prev => [...prev, ...newParticles]);
+    setParticles(prev => {
+      const next = [...prev, ...newParticles];
+      return next.length > 30 ? next.slice(next.length - 30) : next;
+    });
     setTimeout(() => {
       setParticles(prev => prev.filter(p => !newParticles.some(np => np.id === p.id)));
     }, 600);

@@ -25,6 +25,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({ particles }) => 
             background: particle.color,
             left: '50%',
             top: '50%',
+            willChange: 'transform, opacity',
           }}
           initial={{
             x: 0,

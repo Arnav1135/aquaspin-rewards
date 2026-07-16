@@ -9,38 +9,38 @@ const config: Config = {
         // ═══════════════════════════════════════════════════════
         // FINTECH REFERENCE PALETTE — DO NOT MODIFY THESE VALUES
         // ═══════════════════════════════════════════════════════
-        'app-bg-start': '#F4F8FC',
-        'app-bg-end':   '#E4EEF9',
+        'app-bg-start': '#e1eff8',
+        'app-bg-end':   '#cfe5f5',
 
-        // Primary dark card / nav / buttons
+        // Primary dark card / nav / buttons (Muted purplish slate blue)
         'navy': {
-          950: '#0d1628',
-          900: '#111d38',
-          800: '#16213E',   // ← PRIMARY: all nav, cards, primary buttons
-          700: '#1e2d52',
-          600: '#243560',
-          500: '#2d4070',
-          400: '#3b5080',
+          950: '#4a5b8c',
+          900: '#5a6b9c',
+          800: '#7b8bc1',   // ← PRIMARY: all nav, cards, primary buttons
+          700: '#8ba0cd',
+          600: '#9cb1d9',
+          500: '#adc2e5',
+          400: '#becff1',
         },
 
-        // Secondary sky-blue card & accent
+        // Secondary sky-blue card & accent (Bright cyan-blue)
         'sky': {
-          600: '#2b7cc4',
-          500: '#4A90D9',   // ← SECONDARY: card backgrounds, accents
-          400: '#6aaae4',
-          300: '#8dbfe9',
-          200: '#A8CBEA',   // ← TERTIARY: light accent cards, borders
-          100: '#c8dff2',
-          50:  '#e4eff9',
+          600: '#45a9ee',
+          500: '#66bdf2',   // ← SECONDARY: card backgrounds, accents
+          400: '#85ccf5',
+          300: '#a6dbf8',
+          200: '#c2e7fa',   // ← TERTIARY: light accent cards, borders
+          100: '#dcf2fc',
+          50:  '#eff9fe',
         },
 
         // Text
-        'offwhite':  '#F5F8FC',   // ← text on navy
-        'darknavy':  '#16213E',   // ← text on light backgrounds
+        'offwhite':  '#FFFFFF',   // ← text on navy
+        'darknavy':  '#2a3b6c',   // ← text on light backgrounds
 
         // Status
-        'success-teal': '#3DDC97',   // ← wins, positive
-        'coral-loss':   '#F76C6C',   // ← losses, negative
+        'success-teal': '#66bdf2',   // using cyan for positive to match theme
+        'coral-loss':   '#7b8bc1',   // using slate for negative to match theme
 
         // Scrim overlay (defined as CSS var too)
         'scrim': 'rgba(22,33,62,0.6)',
@@ -114,39 +114,39 @@ const config: Config = {
       },
 
       backgroundImage: {
-        'app-gradient':     'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)',
-        'navy-gradient':    'linear-gradient(135deg, #16213E 0%, #1e2d52 100%)',
-        'sky-gradient':     'linear-gradient(135deg, #4A90D9 0%, #6aaae4 100%)',
-        'teal-gradient':    'linear-gradient(135deg, #3DDC97 0%, #2bc47e 100%)',
-        'coral-gradient':   'linear-gradient(135deg, #F76C6C 0%, #e55555 100%)',
-        'primary-gradient': 'linear-gradient(135deg, #16213E 0%, #2d4070 100%)',
-        'card-gradient':    'linear-gradient(135deg, rgba(244,248,252,0.97) 0%, rgba(228,238,249,0.95) 100%)',
-        'secondary-gradient':'linear-gradient(135deg, #A8CBEA 0%, #8dbfe9 100%)',
-        'accent-gradient':  'linear-gradient(135deg, #F4F8FC 0%, #E4EEF9 100%)',
+        'app-gradient':     'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)',
+        'navy-gradient':    'linear-gradient(135deg, #7b8bc1 0%, #8ba0cd 100%)',
+        'sky-gradient':     'linear-gradient(135deg, #66bdf2 0%, #85ccf5 100%)',
+        'teal-gradient':    'linear-gradient(135deg, #66bdf2 0%, #85ccf5 100%)',
+        'coral-gradient':   'linear-gradient(135deg, #7b8bc1 0%, #8ba0cd 100%)',
+        'primary-gradient': 'linear-gradient(135deg, #7b8bc1 0%, #9cb1d9 100%)',
+        'card-gradient':    'linear-gradient(135deg, rgba(225,239,248,0.97) 0%, rgba(207,229,245,0.95) 100%)',
+        'secondary-gradient':'linear-gradient(135deg, #c2e7fa 0%, #a6dbf8 100%)',
+        'accent-gradient':  'linear-gradient(135deg, #e1eff8 0%, #cfe5f5 100%)',
       },
 
       boxShadow: {
-        // Card shadows — soft diffused, WCAG-safe
-        'card-navy':  '0 8px 24px rgba(22,33,62,0.18), 0 2px 8px rgba(22,33,62,0.10)',
-        'card-sky':   '0 8px 24px rgba(74,144,217,0.14), 0 2px 8px rgba(74,144,217,0.08)',
-        'card-lift':  '0 12px 32px rgba(22,33,62,0.22), 0 4px 12px rgba(22,33,62,0.12)',
+        // Card shadows — soft glassmorphic, WCAG-safe
+        'card-navy':  '0 8px 32px rgba(123,139,193,0.3), inset 0 2px 4px rgba(255,255,255,0.4)',
+        'card-sky':   '0 8px 32px rgba(102,189,242,0.3), inset 0 2px 4px rgba(255,255,255,0.5)',
+        'card-lift':  '0 12px 40px rgba(123,139,193,0.4), inset 0 2px 4px rgba(255,255,255,0.4)',
         // Glow effects
-        'teal-glow':  '0 0 20px rgba(61,220,151,0.35), 0 0 40px rgba(61,220,151,0.15)',
-        'sky-glow':   '0 0 20px rgba(74,144,217,0.35), 0 0 40px rgba(74,144,217,0.15)',
-        'navy-glow':  '0 0 20px rgba(22,33,62,0.4), 0 0 40px rgba(22,33,62,0.2)',
+        'teal-glow':  '0 0 20px rgba(102,189,242,0.4), 0 0 40px rgba(102,189,242,0.2)',
+        'sky-glow':   '0 0 20px rgba(102,189,242,0.4), 0 0 40px rgba(102,189,242,0.2)',
+        'navy-glow':  '0 0 20px rgba(123,139,193,0.4), 0 0 40px rgba(123,139,193,0.2)',
         // Legacy
-        'primary-glow':    '0 0 20px rgba(22,33,62,0.4)',
-        'primary-glow-sm': '0 0 8px rgba(22,33,62,0.5)',
-        'secondary-glow':  '0 0 20px rgba(74,144,217,0.4)',
-        'secondary-glow-sm':'0 0 8px rgba(74,144,217,0.5)',
-        'cyan-glow':       '0 0 20px rgba(74,144,217,0.4), 0 0 40px rgba(74,144,217,0.2)',
-        'gold-glow':       '0 0 20px rgba(61,220,151,0.4), 0 0 40px rgba(61,220,151,0.2)',
-        'accent-glow':     '0 0 20px rgba(244,248,252,0.4)',
-        'accent-glow-sm':  '0 0 8px rgba(244,248,252,0.5)',
-        'glass':           '0 8px 32px rgba(22,33,62,0.15), inset 0 1px 0 rgba(255,255,255,0.3)',
-        'inner-glow':      'inset 0 1px 0 rgba(74,144,217,0.15)',
-        'cyan-glow-sm':    '0 0 8px rgba(74,144,217,0.5)',
-        'gold-glow-sm':    '0 0 8px rgba(61,220,151,0.5)',
+        'primary-glow':    '0 0 20px rgba(123,139,193,0.4)',
+        'primary-glow-sm': '0 0 8px rgba(123,139,193,0.5)',
+        'secondary-glow':  '0 0 20px rgba(102,189,242,0.4)',
+        'secondary-glow-sm':'0 0 8px rgba(102,189,242,0.5)',
+        'cyan-glow':       '0 0 20px rgba(102,189,242,0.4), 0 0 40px rgba(102,189,242,0.2)',
+        'gold-glow':       '0 0 20px rgba(102,189,242,0.4), 0 0 40px rgba(102,189,242,0.2)',
+        'accent-glow':     '0 0 20px rgba(225,239,248,0.4)',
+        'accent-glow-sm':  '0 0 8px rgba(225,239,248,0.5)',
+        'glass':           '0 8px 32px rgba(123,139,193,0.2), inset 0 2px 4px rgba(255,255,255,0.6)',
+        'inner-glow':      'inset 0 2px 4px rgba(255,255,255,0.6)',
+        'cyan-glow-sm':    '0 0 8px rgba(102,189,242,0.5)',
+        'gold-glow-sm':    '0 0 8px rgba(102,189,242,0.5)',
       },
 
       backdropBlur: { xs: '2px' },

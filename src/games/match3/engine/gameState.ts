@@ -1,4 +1,4 @@
-// Game State Management with Zustand
+// Game State Management with Zustand - Enhanced with Animation Support
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { GameState, Position, LevelConfig, CandyType } from '@/games/match3/types';
@@ -20,6 +20,10 @@ interface Match3Store extends GameState {
   // State queries
   canSwap: (pos1: Position, pos2: Position) => boolean;
   hasValidMoves: () => boolean;
+  
+  // Animation states
+  animatingPositions: Set<string>;
+  setAnimatingPositions: (positions: Set<string>) => void;
 }
 
 export const useMatch3Store = create<Match3Store>()(
@@ -35,6 +39,7 @@ export const useMatch3Store = create<Match3Store>()(
     starCount: 0,
     cascadeCount: 0,
     currentLevel: null,
+    animatingPositions: new Set(),
 
     // Load a level
     loadLevel: (levelId: number) => {
@@ -54,6 +59,7 @@ export const useMatch3Store = create<Match3Store>()(
         state.gameStatus = 'playing';
         state.starCount = 0;
         state.cascadeCount = 0;
+        state.animatingPositions = new Set();
       });
     },
 
@@ -83,10 +89,16 @@ export const useMatch3Store = create<Match3Store>()(
         draft.board[pos1.row][pos1.col] = draft.board[pos2.row][pos2.col];
         draft.board[pos2.row][pos2.col] = temp;
 
+        // Mark positions as animating
+        const animating = new Set<string>();
+        animating.add(`${pos1.row}-${pos1.col}`);
+        animating.add(`${pos2.row}-${pos2.col}`);
+        draft.animatingPositions = animating;
+
         // Find and process matches after a delay (for animation)
         setTimeout(() => {
           get().processMatches();
-        }, 200);
+        }, 300);
       });
     },
 
@@ -98,6 +110,7 @@ export const useMatch3Store = create<Match3Store>()(
 
       set((draft) => {
         draft.cascadeCount = 0;
+        draft.animatingPositions = new Set();
       });
 
       while (true) {
@@ -105,6 +118,18 @@ export const useMatch3Store = create<Match3Store>()(
         if (matches.length === 0) break;
 
         cascadeCount++;
+
+        // Mark matched positions as animating
+        const animatingSet = new Set<string>();
+        matches.forEach(match => {
+          match.positions.forEach(pos => {
+            animatingSet.add(`${pos.row}-${pos.col}`);
+          });
+        });
+
+        set((draft) => {
+          draft.animatingPositions = animatingSet;
+        });
 
         // Clear matches
         const { board: clearedBoard, scorePoints: clearScore } =
@@ -126,9 +151,10 @@ export const useMatch3Store = create<Match3Store>()(
         draft.score += totalScore;
         draft.cascadeCount = cascadeCount;
         draft.isAnimating = false;
+        draft.animatingPositions = new Set();
 
         // Check level completion
-        if (draft.movesRemaining <= 0 || !Match3Engine.hasValidMoves(board)) {
+        if (draft.movesRemaining <= 0) {
           if (draft.score >= draft.currentLevel!.starThresholds[0]) {
             draft.gameStatus = 'levelComplete';
             draft.starCount = draft.score >= draft.currentLevel!.starThresholds[2]
@@ -139,6 +165,9 @@ export const useMatch3Store = create<Match3Store>()(
           } else {
             draft.gameStatus = 'levelFailed';
           }
+        } else if (!Match3Engine.hasValidMoves(board)) {
+          // Auto-shuffle if no valid moves
+          draft.board = Match3Engine.shuffleBoard(board);
         }
       });
     },
@@ -168,6 +197,13 @@ export const useMatch3Store = create<Match3Store>()(
     // Check for valid moves
     hasValidMoves: () => {
       return Match3Engine.hasValidMoves(get().board);
+    },
+
+    // Set animating positions
+    setAnimatingPositions: (positions: Set<string>) => {
+      set((draft) => {
+        draft.animatingPositions = positions;
+      });
     },
   }))
 );

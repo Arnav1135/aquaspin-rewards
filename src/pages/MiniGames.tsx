@@ -23,6 +23,7 @@ import { ArcheryGame } from '@/components/games/ArcheryGame';
 import { ChessGame } from '@/components/games/ChessGame';
 import { SolitaireGame } from '@/components/games/SolitaireGame';
 import { PoolGame } from '@/components/games/PoolGame';
+import { Match3Game } from '@/games/match3';
 
 // Betting / Casino games
 import { CoinFlipScene } from '@/features/coinflip/CoinFlipScene';
@@ -186,12 +187,19 @@ const GAMES = [
     desc: '10 questions across topics. Each correct answer earns tokens!',
     thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
   },
+  // === PUZZLE / MATCH-3 ===
+  {
+    key: 'match3',      title: 'Candy Crush',  emoji: '🍬', category: 'Puzzle',
+    reward: '60 Levels',     difficulty: 'Hard',   color: '#FF6B6B',
+    desc: 'Match 3+ candies in this epic 60-level puzzle adventure!',
+    thumbnail: '/thumbnails/candy.jpg',
+  },
 ] as const;
 
 type GameKey = typeof GAMES[number]['key'] | null;
-type Category = 'All' | 'Casino' | 'Arcade' | 'Board' | 'Quiz';
+type Category = 'All' | 'Casino' | 'Arcade' | 'Board' | 'Quiz' | 'Puzzle';
 
-const CATEGORIES: Category[] = ['All', 'Casino', 'Arcade', 'Board', 'Quiz'];
+const CATEGORIES: Category[] = ['All', 'Casino', 'Arcade', 'Board', 'Quiz', 'Puzzle'];
 
 const DIFFICULTY_COLOR: Record<string, string> = {
   Easy:   '#3DDC97',
@@ -263,6 +271,8 @@ export function MiniGames() {
       case 'mathsquiz':   return <MathsQuizGame onClose={close} />;
       case 'sudoku':      return <SudokuGame onClose={close} />;
       case 'quiz':        return <QuizGame onClose={close} />;
+      // Puzzle
+      case 'match3':      return <Match3Game onClose={close} />;
       default:            return null;
     }
   };

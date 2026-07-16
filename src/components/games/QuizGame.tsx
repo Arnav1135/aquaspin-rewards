@@ -1,5 +1,5 @@
 // src/components/games/QuizGame.tsx
-// Multiple-choice trivia quiz — earn 5 tokens per correct answer
+// Multiple-choice trivia quiz — earn 15 tokens per correct answer
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,7 +7,6 @@ import { CheckCircle, XCircle, Trophy } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { playTone } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -88,26 +87,32 @@ export function QuizGame({ onClose }: QuizGameProps) {
   };
 
   const getOptionClass = (i: number) => {
-    if (!answered) return 'border-navy-600 hover:border-navy-400 bg-navy-800 cursor-pointer';
-    if (i === question.correct) return 'border-success bg-success/15 text-success cursor-default';
-    if (i === selected && i !== question.correct) return 'border-danger bg-danger/15 text-danger cursor-default';
-    return 'border-navy-700 bg-navy-800 opacity-50 cursor-default';
+    if (!answered) {
+      return 'border-[rgba(168,203,234,0.45)] hover:border-[#4A90D9] bg-white cursor-pointer text-[#16213E]';
+    }
+    if (i === question.correct) {
+      return 'border-[#3DDC97] bg-[#3DDC97]/15 text-[#1a8a5c] cursor-default';
+    }
+    if (i === selected && i !== question.correct) {
+      return 'border-[#F76C6C] bg-[#F76C6C]/15 text-[#c04040] cursor-default';
+    }
+    return 'border-[rgba(168,203,234,0.25)] bg-[#F4F8FC] opacity-50 cursor-default text-[#16213E]';
   };
 
   return (
-    <div className="flex flex-col items-center p-6 gap-6 min-h-[calc(100vh-64px)]">
+    <div className="flex flex-col items-center p-6 gap-6 min-h-[calc(100vh-140px)]">
 
       {phase === 'ready' && (
         <motion.div className="text-center space-y-6 mt-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="text-7xl">🎯</div>
           <div>
-            <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Trivia Quiz</h2>
-            <p className="text-text-secondary">Answer {QUESTIONS.length} questions correctly.</p>
-            <p className="text-cyan-neon font-semibold mt-1">+{TOKENS_PER_CORRECT} tokens per correct answer!</p>
+            <h2 className="font-display text-2xl font-bold text-[#16213E] mb-2">Trivia Quiz</h2>
+            <p className="text-[#4A90D9]">Answer {QUESTIONS.length} questions correctly.</p>
+            <p className="text-[#3DDC97] font-semibold mt-1">+{TOKENS_PER_CORRECT} tokens per correct answer!</p>
           </div>
           <div className="flex flex-col gap-2 max-w-[200px] mx-auto">
             <Button variant="primary" size="lg" onClick={startGame} id="start-quiz-btn">Start Quiz</Button>
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-muted text-xs">
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">
               Close Game
             </Button>
           </div>
@@ -117,10 +122,17 @@ export function QuizGame({ onClose }: QuizGameProps) {
       {phase === 'playing' && (
         <div className="w-full max-w-md space-y-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted">Question {qIndex + 1}/{QUESTIONS.length}</span>
-            <span className="text-cyan-neon font-semibold">{correct} correct ✓</span>
+            <span className="text-[#4A90D9]">Question {qIndex + 1}/{QUESTIONS.length}</span>
+            <span className="text-[#3DDC97] font-semibold">{correct} correct ✓</span>
           </div>
-          <ProgressBar value={progress} height={6} />
+
+          {/* Simple progress bar matching sky design */}
+          <div className="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
+            <div
+              className="h-full bg-[#4A90D9] transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -128,9 +140,9 @@ export function QuizGame({ onClose }: QuizGameProps) {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -30 }}
-              className="glass-card rounded-2xl p-5"
+              className="card-white rounded-2xl p-5"
             >
-              <p className="font-semibold text-text-primary mb-4 leading-relaxed">{question.q}</p>
+              <p className="font-semibold text-[#16213E] mb-4 leading-relaxed">{question.q}</p>
 
               <div className="space-y-2">
                 {question.options.map((opt, i) => (
@@ -142,8 +154,8 @@ export function QuizGame({ onClose }: QuizGameProps) {
                   >
                     <div className="flex items-center justify-between">
                       <span>{opt}</span>
-                      {answered && i === question.correct && <CheckCircle size={16} className="text-success" />}
-                      {answered && i === selected && i !== question.correct && <XCircle size={16} className="text-danger" />}
+                      {answered && i === question.correct && <CheckCircle size={16} className="text-[#3DDC97]" />}
+                      {answered && i === selected && i !== question.correct && <XCircle size={16} className="text-[#F76C6C]" />}
                     </div>
                   </motion.button>
                 ))}
@@ -161,20 +173,20 @@ export function QuizGame({ onClose }: QuizGameProps) {
 
       {phase === 'result' && (
         <motion.div className="text-center space-y-6 mt-8" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-          <Trophy size={56} className="text-gold-neon mx-auto" />
+          <Trophy size={56} className="text-[#3DDC97] mx-auto" />
           <div>
-            <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Quiz Complete!</h2>
-            <p className="text-text-secondary mb-1">{correct}/{QUESTIONS.length} correct answers</p>
-            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gold-neon/15 border border-gold-neon/30 mt-2">
-              <span className="font-display font-bold text-2xl text-gold-neon">+{tokensEarned}</span>
-              <span className="text-text-secondary">tokens earned!</span>
+            <h2 className="font-display text-2xl font-bold text-[#16213E] mb-2">Quiz Complete!</h2>
+            <p className="text-[#4A90D9] mb-1">{correct}/{QUESTIONS.length} correct answers</p>
+            <div className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#3DDC97]/15 border border-[#3DDC97]/30 mt-2">
+              <span className="font-display font-bold text-2xl text-[#3DDC97]">+{tokensEarned}</span>
+              <span className="text-[#4A90D9]">tokens earned!</span>
             </div>
             {correct === QUESTIONS.length && (
-              <p className="text-success font-semibold mt-2">🏆 Perfect Score!</p>
+              <p className="text-[#3DDC97] font-semibold mt-2">🏆 Perfect Score!</p>
             )}
           </div>
-          <div className="flex gap-3">
-            <Button variant="neon" onClick={startGame}>Play Again</Button>
+          <div className="flex gap-3 justify-center">
+            <Button variant="primary" onClick={startGame}>Play Again</Button>
             <Button variant="ghost" onClick={onClose}>Done</Button>
           </div>
         </motion.div>

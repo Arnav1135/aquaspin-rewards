@@ -42,10 +42,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#16213E' }}>
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-cyan-neon/30 border-t-cyan-neon animate-spin" />
-          <p className="text-text-secondary text-sm font-medium">Loading AquaSpin...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-[#4A90D9]/30 border-t-[#4A90D9] animate-spin" />
+          <p className="text-[#A8CBEA] text-sm font-medium">Loading AquaSpin...</p>
         </div>
       </div>
     );
@@ -146,19 +146,19 @@ export default function App() {
           toastOptions={{
             duration: 4000,
             style: {
-              background: '#0D1B36',
-              color: '#E8F4FD',
-              border: '1px solid #162B57',
+              background: '#16213E',
+              color: '#F5F8FC',
+              border: '1px solid rgba(74, 144, 217, 0.20)',
               borderRadius: '12px',
               padding: '12px 16px',
               fontSize: '14px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              boxShadow: '0 8px 32px rgba(22, 33, 62, 0.35)',
             },
             success: {
-              iconTheme: { primary: '#00FF87', secondary: '#0A1428' },
+              iconTheme: { primary: '#3DDC97', secondary: '#16213E' },
             },
             error: {
-              iconTheme: { primary: '#FF3366', secondary: '#0A1428' },
+              iconTheme: { primary: '#F76C6C', secondary: '#16213E' },
             },
           }}
         />

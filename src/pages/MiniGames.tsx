@@ -1,17 +1,29 @@
 // src/pages/MiniGames.tsx
-// Mini-games hub with game selection cards including Stake-style betting games
+// Complete gaming hub — 16 games, fintech UI, GameFrame visibility protection
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gamepad2, X, Coins } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { Gamepad2, X, Search } from 'lucide-react';
+
+// Free-play & classic games
 import { ClickerGame } from '@/components/games/ClickerGame';
 import { MemoryGame } from '@/components/games/MemoryGame';
 import { QuizGame } from '@/components/games/QuizGame';
 import { TapChallenge } from '@/components/games/TapChallenge';
+import { TicTacToeGame } from '@/components/games/TicTacToeGame';
+import { MathsQuizGame } from '@/components/games/MathsQuizGame';
+import { SudokuGame } from '@/components/games/SudokuGame';
+import { FlappyBirdGame } from '@/components/games/FlappyBirdGame';
+import { KnifeThrowerGame } from '@/components/games/KnifeThrowerGame';
+import { ChickenJumpGame } from '@/components/games/ChickenJumpGame';
+import { DotsAndBoxesGame } from '@/components/games/DotsAndBoxesGame';
+import { DartsGame } from '@/components/games/DartsGame';
+import { ArcheryGame } from '@/components/games/ArcheryGame';
+import { ChessGame } from '@/components/games/ChessGame';
+import { SolitaireGame } from '@/components/games/SolitaireGame';
+import { PoolGame } from '@/components/games/PoolGame';
 
-// Import Stake-style games
+// Betting / Casino games
 import { CoinFlipScene } from '@/features/coinflip/CoinFlipScene';
 import { LimboGame } from '@/components/games/LimboGame';
 import { MinesGame } from '@/components/games/MinesGame';
@@ -21,316 +33,388 @@ import { RouletteGame } from '@/components/games/RouletteGame';
 import { CrashGame } from '@/components/games/CrashGame';
 import { PlinkoGame } from '@/components/games/PlinkoGame';
 
-type GameKey =
-  | 'clicker'
-  | 'memory'
-  | 'quiz'
-  | 'tap'
-  | 'flip'
-  | 'limbo'
-  | 'mines'
-  | 'chicken'
-  | 'dragontiger'
-  | 'roulette'
-  | 'crash'
-  | 'plinko'
-  | null;
-
+// ─────────────────────────────────────────────────────────────
+// Game catalogue
+// ─────────────────────────────────────────────────────────────
 const GAMES = [
+  // === BETTING / CASINO ===
   {
-    key: 'mines' as const,
-    title: 'Mines',
-    description: 'Stake classic. Click tiles to find gems. Avoid hidden mines and cash out early!',
-    emoji: '💣',
-    reward: 'Up to 1,000x+',
-    difficulty: 'Medium',
-    color: '#FFD700',
-    category: 'Betting',
-    image: '/images/mines.jpg',
+    key: 'mines',       title: 'Mines',       emoji: '💣',  category: 'Casino',
+    reward: 'Up to 1,000x+', difficulty: 'Medium', color: '#FFD700',
+    desc: 'Click tiles to find gems. Avoid hidden mines and cash out early!',
   },
   {
-    key: 'plinko' as const,
-    title: 'Plinko',
-    description: 'Drop ball down peg triangle and score high outer multipliers! Bouncing action.',
-    emoji: '🔴',
-    reward: 'Up to 170x',
-    difficulty: 'Easy',
-    color: '#00F0FF',
-    category: 'Betting',
-    image: '/images/plinko.jpg',
+    key: 'plinko',      title: 'Plinko',      emoji: '🔴',  category: 'Casino',
+    reward: 'Up to 170x',    difficulty: 'Easy',   color: '#4A90D9',
+    desc: 'Drop a ball through pegs and score high outer multipliers!',
   },
   {
-    key: 'crash' as const,
-    title: 'Crash',
-    description: 'Watch the rocket climb. Cash out before it crashes to secure your multiplier!',
-    emoji: '📈',
-    reward: 'Up to 10,000x+',
-    difficulty: 'Hard',
-    color: '#00FF87',
-    category: 'Betting',
-    image: '/images/crash.jpg',
+    key: 'crash',       title: 'Crash',       emoji: '📈',  category: 'Casino',
+    reward: 'Up to 10,000x+',difficulty: 'Hard',   color: '#3DDC97',
+    desc: 'Cash out before the rocket crashes to secure your multiplier!',
   },
   {
-    key: 'limbo' as const,
-    title: 'Limbo',
-    description: 'Set your target multiplier and roll the digital slot. High multiplier wins!',
-    emoji: '🚀',
-    reward: 'Up to 100,000x',
-    difficulty: 'Medium',
-    color: '#FF7700',
-    category: 'Betting',
-    image: '/images/limbo.jpg',
+    key: 'limbo',       title: 'Limbo',       emoji: '🚀',  category: 'Casino',
+    reward: 'Up to 100,000x', difficulty: 'Medium', color: '#F97316',
+    desc: 'Set your target multiplier and roll. High multiplier wins!',
   },
   {
-    key: 'roulette' as const,
-    title: 'Roulette',
-    description: 'Color betting. Roll Red (2x), Black (2x), or Green (14x) on horizontal slide wheel.',
-    emoji: '🎡',
-    reward: 'Up to 14x',
-    difficulty: 'Easy',
-    color: '#FF3366',
-    category: 'Betting',
-    image: '/images/roulette.jpg',
+    key: 'roulette',    title: 'Roulette',    emoji: '🎡',  category: 'Casino',
+    reward: 'Up to 14x',     difficulty: 'Easy',   color: '#F76C6C',
+    desc: 'Bet Red (2x), Black (2x), or Green (14x) on the spin wheel.',
   },
   {
-    key: 'dragontiger' as const,
-    title: 'Dragon Tiger',
-    description: 'Simplified baccarat. Bet on which side deals the higher card: Dragon, Tiger, or Tie.',
-    emoji: '🎴',
-    reward: 'Up to 11x',
-    difficulty: 'Easy',
-    color: '#A855F7',
-    category: 'Betting',
-    image: '/images/dragontiger.jpg',
+    key: 'dragontiger', title: 'Dragon Tiger',emoji: '🎴',  category: 'Casino',
+    reward: 'Up to 11x',     difficulty: 'Easy',   color: '#A855F7',
+    desc: 'Bet on Dragon, Tiger, or Tie for the higher card.',
   },
   {
-    key: 'chicken' as const,
-    title: 'Chicken',
-    description: 'Lift covers to find delicious roasted chicken. Avoid bones. Cash out early!',
-    emoji: '🍗',
-    reward: 'Up to 1,000x+',
-    difficulty: 'Medium',
-    color: '#FFB800',
-    category: 'Betting',
-    image: '/images/chicken.jpg',
+    key: 'chicken',     title: 'Chicken',     emoji: '🍗',  category: 'Casino',
+    reward: 'Up to 1,000x+', difficulty: 'Medium', color: '#FFB800',
+    desc: 'Lift covers to find chicken. Avoid bones. Cash out early!',
   },
   {
-    key: 'flip' as const,
-    title: 'Coin Flip',
-    description: 'Flip a neon coin and guess Heads or Tails for a 1.96x return payout.',
-    emoji: '🪙',
-    reward: '1.96x Bet',
-    difficulty: 'Easy',
-    color: '#E0E0E0',
-    category: 'Betting',
-    image: '/images/flip.jpg',
+    key: 'flip',        title: 'Coin Flip',   emoji: '🪙',  category: 'Casino',
+    reward: '1.96x Bet',     difficulty: 'Easy',   color: '#A8CBEA',
+    desc: 'Flip a coin and guess Heads or Tails for 1.96x payout.',
+  },
+  // === ARCADE / SKILL ===
+  {
+    key: 'flappy',      title: 'Flappy Bird', emoji: '🐦',  category: 'Arcade',
+    reward: 'High Score',    difficulty: 'Hard',   color: '#FFD700',
+    desc: 'Fly through pipe gaps without crashing. Classic endless runner!',
   },
   {
-    key: 'clicker' as const,
-    title: 'Clicker Rush',
-    description: 'Click as fast as you can in 10 seconds! Earn tokens based on click speed.',
-    emoji: '👆',
-    reward: '10–50 tokens',
-    difficulty: 'Easy',
-    color: '#00F0FF',
-    category: 'Free Play',
+    key: 'knife',       title: 'Knife Hit',   emoji: '🗡️', category: 'Arcade',
+    reward: 'Stage Clear',   difficulty: 'Medium', color: '#6366F1',
+    desc: 'Throw knives at a rotating log. Hit apples for bonus points!',
   },
   {
-    key: 'memory' as const,
-    title: 'Memory Match',
-    description: 'Flip cards to find matching pairs. Complete the board to win big!',
-    emoji: '🧠',
-    reward: '25–100 tokens',
-    difficulty: 'Medium',
-    color: '#FFD700',
-    category: 'Free Play',
+    key: 'chickenjump', title: 'Chicken Jump', emoji: '🐔', category: 'Arcade',
+    reward: 'High Score',    difficulty: 'Easy',   color: '#F97316',
+    desc: 'Jump over obstacles in this endless side-scrolling runner!',
   },
   {
-    key: 'quiz' as const,
-    title: 'Trivia Quiz',
-    description: '10 questions across topics. Each correct answer earns you tokens!',
-    emoji: '🎯',
-    reward: '5–150 tokens',
-    difficulty: 'Medium',
-    color: '#A855F7',
-    category: 'Free Play',
+    key: 'archery',     title: 'Archery',     emoji: '🏹',  category: 'Arcade',
+    reward: 'High Score',    difficulty: 'Medium', color: '#3DDC97',
+    desc: 'Aim your arrow accounting for wind and gravity. Hit the bullseye!',
   },
   {
-    key: 'tap' as const,
-    title: 'Tap Challenge',
-    description: 'Tap the glowing targets as fast as possible! Mobile-first speed test.',
-    emoji: '✨',
-    reward: '15–80 tokens',
-    difficulty: 'Hard',
-    color: '#00FF87',
-    category: 'Free Play',
+    key: 'darts',       title: 'Darts',       emoji: '🎯',  category: 'Arcade',
+    reward: 'Best Score',    difficulty: 'Easy',   color: '#F76C6C',
+    desc: 'Swipe to throw darts. Hit doubles and trebles for big scores!',
   },
-];
+  {
+    key: 'pool',        title: 'Pool',        emoji: '🎱',  category: 'Arcade',
+    reward: 'Table Clear',   difficulty: 'Medium', color: '#3DDC97',
+    desc: 'Aim and strike the cue ball. Pocket all colored balls to win!',
+  },
+  {
+    key: 'clicker',     title: 'Clicker Rush',emoji: '👆',  category: 'Arcade',
+    reward: '10–50 tokens',  difficulty: 'Easy',   color: '#4A90D9',
+    desc: 'Click as fast as possible in 10 seconds! Earn tokens per click.',
+  },
+  {
+    key: 'tap',         title: 'Tap Challenge',emoji: '✨', category: 'Arcade',
+    reward: '15–80 tokens',  difficulty: 'Hard',   color: '#A8CBEA',
+    desc: 'Tap glowing targets before they vanish. Speed test!',
+  },
+  // === BOARD / PUZZLE ===
+  {
+    key: 'chess',       title: 'Chess',       emoji: '♟️',  category: 'Board',
+    reward: 'Victory',       difficulty: 'Hard',   color: '#4A90D9',
+    desc: 'Play classical chess against AI or pass-and-play locally.',
+  },
+  {
+    key: 'solitaire',   title: 'Solitaire',   emoji: '🃏',  category: 'Board',
+    reward: 'Clear Board',   difficulty: 'Medium', color: '#3DDC97',
+    desc: 'Classic Klondike solitaire. Sort cards from Ace to King!',
+  },
+  {
+    key: 'tictactoe',   title: 'Tic Tac Toe', emoji: '❌',  category: 'Board',
+    reward: 'Win Streak',    difficulty: 'Easy',   color: '#4A90D9',
+    desc: 'Three in a row wins! Play against AI or a friend locally.',
+  },
+  {
+    key: 'dots',        title: 'Dots & Boxes', emoji: '⬜', category: 'Board',
+    reward: 'Most Boxes',    difficulty: 'Medium', color: '#A855F7',
+    desc: 'Complete boxes by drawing lines to claim territory. Beats AI!',
+  },
+  {
+    key: 'memory',      title: 'Memory Match', emoji: '🧠', category: 'Board',
+    reward: '25–100 tokens', difficulty: 'Medium', color: '#FFD700',
+    desc: 'Flip cards to find matching pairs. Complete the board to win!',
+  },
+  // === TRIVIA / QUIZ ===
+  {
+    key: 'mathsquiz',   title: 'Maths Blitz', emoji: '🔢',  category: 'Quiz',
+    reward: 'High Score',    difficulty: 'Medium', color: '#4A90D9',
+    desc: 'Rapid-fire maths challenges: Arithmetic, Algebra, Geometry!',
+  },
+  {
+    key: 'sudoku',      title: 'Sudoku',      emoji: '🔢',  category: 'Quiz',
+    reward: 'Time Record',   difficulty: 'Hard',   color: '#6366F1',
+    desc: 'Fill the 9×9 grid. Uses pencil marks, hints, and error limits.',
+  },
+  {
+    key: 'quiz',        title: 'Trivia Quiz',  emoji: '🎯', category: 'Quiz',
+    reward: '5–150 tokens',  difficulty: 'Medium', color: '#A855F7',
+    desc: '10 questions across topics. Each correct answer earns tokens!',
+  },
+] as const;
 
-const difficultyColors: Record<string, string> = {
-  Easy: '#00FF87',
-  Medium: '#FFD700',
-  Hard: '#FF3366',
+type GameKey = typeof GAMES[number]['key'] | null;
+type Category = 'All' | 'Casino' | 'Arcade' | 'Board' | 'Quiz';
+
+const CATEGORIES: Category[] = ['All', 'Casino', 'Arcade', 'Board', 'Quiz'];
+
+const DIFFICULTY_COLOR: Record<string, string> = {
+  Easy:   '#3DDC97',
+  Medium: '#4A90D9',
+  Hard:   '#F76C6C',
 };
 
 export function MiniGames() {
   const [activeGame, setActiveGame] = useState<GameKey>(null);
-  const [categoryFilter, setCategoryFilter] = useState<'All' | 'Betting' | 'Free Play'>('All');
+  const [category, setCategory] = useState<Category>('All');
+  const [search, setSearch] = useState('');
 
-  const filteredGames = GAMES.filter(
-    (game) => categoryFilter === 'All' || game.category === categoryFilter
-  );
+  const filtered = GAMES.filter(g => {
+    const matchCat = category === 'All' || g.category === category;
+    const matchSearch = g.title.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
 
-  const renderGame = () => {
-    switch (activeGame) {
-      case 'clicker': return <ClickerGame onClose={() => setActiveGame(null)} />;
-      case 'memory': return <MemoryGame onClose={() => setActiveGame(null)} />;
-      case 'quiz': return <QuizGame onClose={() => setActiveGame(null)} />;
-      case 'tap': return <TapChallenge onClose={() => setActiveGame(null)} />;
-      case 'flip': return <CoinFlipScene onClose={() => setActiveGame(null)} />;
-      case 'limbo': return <LimboGame onClose={() => setActiveGame(null)} />;
-      case 'mines': return <MinesGame onClose={() => setActiveGame(null)} />;
-      case 'chicken': return <ChickenGame onClose={() => setActiveGame(null)} />;
-      case 'dragontiger': return <DragonTigerGame onClose={() => setActiveGame(null)} />;
-      case 'roulette': return <RouletteGame onClose={() => setActiveGame(null)} />;
-      case 'crash': return <CrashGame onClose={() => setActiveGame(null)} />;
-      case 'plinko': return <PlinkoGame onClose={() => setActiveGame(null)} />;
-      default: return null;
+  const activeGameMeta = GAMES.find(g => g.key === activeGame);
+
+  const renderGame = (key: GameKey, close: () => void) => {
+    switch (key) {
+      // Betting
+      case 'flip':        return <CoinFlipScene onClose={close} />;
+      case 'limbo':       return <LimboGame onClose={close} />;
+      case 'mines':       return <MinesGame onClose={close} />;
+      case 'chicken':     return <ChickenGame onClose={close} />;
+      case 'dragontiger': return <DragonTigerGame onClose={close} />;
+      case 'roulette':    return <RouletteGame onClose={close} />;
+      case 'crash':       return <CrashGame onClose={close} />;
+      case 'plinko':      return <PlinkoGame onClose={close} />;
+      // Arcade
+      case 'clicker':     return <ClickerGame onClose={close} />;
+      case 'tap':         return <TapChallenge onClose={close} />;
+      case 'flappy':      return <FlappyBirdGame onClose={close} />;
+      case 'knife':       return <KnifeThrowerGame onClose={close} />;
+      case 'chickenjump': return <ChickenJumpGame onClose={close} />;
+      case 'archery':     return <ArcheryGame onClose={close} />;
+      case 'darts':       return <DartsGame onClose={close} />;
+      case 'pool':        return <PoolGame onClose={close} />;
+      // Board
+      case 'chess':       return <ChessGame onClose={close} />;
+      case 'solitaire':   return <SolitaireGame onClose={close} />;
+      case 'tictactoe':   return <TicTacToeGame onClose={close} />;
+      case 'dots':        return <DotsAndBoxesGame onClose={close} />;
+      case 'memory':      return <MemoryGame onClose={close} />;
+      // Quiz
+      case 'mathsquiz':   return <MathsQuizGame onClose={close} />;
+      case 'sudoku':      return <SudokuGame onClose={close} />;
+      case 'quiz':        return <QuizGame onClose={close} />;
+      default:            return null;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-navy-900 pt-20 pb-24 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+  const close = () => setActiveGame(null);
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  return (
+    <div
+      className="min-h-screen pt-20 pb-28 px-4"
+      style={{ background: 'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)' }}
+    >
+      <div className="max-w-5xl mx-auto">
+
+        {/* ── Page Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="font-display text-2xl font-bold text-gradient-cyan">Mini Games</h1>
-            <p className="text-sm text-text-secondary mt-1">Play free games or bet tokens on Stake originals!</p>
+            <div className="flex items-center gap-2 mb-1">
+              <Gamepad2 size={20} style={{ color: '#4A90D9' }} />
+              <h1 className="text-2xl font-bold" style={{ color: '#16213E' }}>Game Library</h1>
+            </div>
+            <p className="text-sm" style={{ color: 'rgba(22,33,62,0.55)' }}>
+              {GAMES.length} games across Casino, Arcade, Board & Quiz
+            </p>
           </div>
 
-          {/* Filters */}
-          <div className="flex gap-2 bg-navy-950 p-1 rounded-xl border border-navy-800 self-start">
-            {(['All', 'Betting', 'Free Play'] as const).map((cat) => (
-              <Button
-                key={cat}
-                variant={categoryFilter === cat ? 'primary' : 'ghost'}
-                onClick={() => setCategoryFilter(cat)}
-                size="sm"
-                className="py-1 px-3 text-xs rounded-lg"
-              >
-                {cat}
-              </Button>
-            ))}
+          {/* Search */}
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-xl"
+            style={{
+              background: 'rgba(255,255,255,0.82)',
+              border: '1.5px solid rgba(168,203,234,0.45)',
+              minWidth: 200,
+            }}
+          >
+            <Search size={14} style={{ color: 'rgba(22,33,62,0.40)' }} />
+            <input
+              className="bg-transparent text-sm outline-none flex-1"
+              style={{ color: '#16213E' }}
+              placeholder="Search games..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {filteredGames.map((game, i) => (
-            <motion.div
-              key={game.key}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+        {/* ── Category Filters (pill style) ── */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              className={`filter-pill ${category === cat ? 'active' : ''}`}
+              onClick={() => setCategory(cat)}
             >
-              <Card
-                hover
-                glow="cyan"
-                className="cursor-pointer group h-full flex flex-col justify-between overflow-hidden p-0 bg-navy-950/40 border-navy-800/80"
-                onClick={() => setActiveGame(game.key)}
-              >
-                <div className="flex flex-col h-full justify-between">
-                  <div>
-                    {game.image ? (
-                      <div className="relative h-40 w-full overflow-hidden mb-3 border-b border-navy-800">
-                        <img
-                          src={game.image}
-                          alt={game.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute top-2 left-2 text-xl bg-navy-950/80 p-1.5 rounded-lg backdrop-blur-sm border border-white/5">
-                          {game.emoji}
-                        </div>
-                        <span className="absolute top-2 right-2 text-3xs uppercase tracking-wider font-semibold text-muted bg-navy-950/85 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-sm">
-                          {game.category}
-                        </span>
-                      </div>
-                    ) : (
-                      <div 
-                        className="relative h-40 w-full mb-3 border-b border-navy-800 flex items-center justify-center overflow-hidden"
-                        style={{
-                          background: `radial-gradient(circle at 50% 120%, ${game.color}25, rgba(10, 20, 40, 0.9))`,
-                        }}
-                      >
-                        <div 
-                          className="absolute w-24 h-24 rounded-full blur-[35px] opacity-30 transition-transform duration-500 group-hover:scale-125"
-                          style={{ backgroundColor: game.color }}
-                        />
-                        <span className="text-5xl z-10 filter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-110 transition-transform duration-300">
-                          {game.emoji}
-                        </span>
-                        <span className="absolute top-2 right-2 text-3xs uppercase tracking-wider font-semibold text-muted bg-navy-950/85 px-2 py-0.5 rounded-md border border-white/5 backdrop-blur-sm">
-                          {game.category}
-                        </span>
-                      </div>
-                    )}
-                    
-                    <div className="px-4 pb-2">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-text-primary group-hover:text-cyan-neon transition-colors">
-                          {game.title}
-                        </h3>
-                        <span
-                          className="text-2xs px-2 py-0.5 rounded-full font-medium"
-                          style={{
-                            color: difficultyColors[game.difficulty],
-                            backgroundColor: `${difficultyColors[game.difficulty]}20`,
-                            border: `1px solid ${difficultyColors[game.difficulty]}30`,
-                          }}
-                        >
-                          {game.difficulty}
-                        </span>
-                      </div>
-                      <p className="text-xs text-text-secondary mb-4 leading-relaxed">{game.description}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5 text-xs font-semibold px-4 pb-4" style={{ color: game.color }}>
-                    <Coins size={12} className="text-current" />
-                    <span>{game.category === 'Betting' ? `Payout: ${game.reward}` : `Win: ${game.reward}`}</span>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
+              {cat}
+            </button>
           ))}
         </div>
+
+        {/* ── Game Grid ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filtered.map((game, i) => (
+            <motion.button
+              key={game.key}
+              onClick={() => setActiveGame(game.key)}
+              className="text-left group"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+            >
+              {/* Fixed navy frame — no game art ever touches app chrome */}
+              <div
+                className="rounded-3xl overflow-hidden"
+                style={{
+                  background: '#16213E',
+                  padding: 10,
+                  boxShadow: '0 6px 20px rgba(22,33,62,0.14)',
+                  transition: 'all 0.25s',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 30px rgba(22,33,62,0.22)';
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(22,33,62,0.14)';
+                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
+                }}
+              >
+                {/* Art area */}
+                <div
+                  className="rounded-2xl h-28 flex items-center justify-center relative overflow-hidden mb-0"
+                  style={{
+                    background: `radial-gradient(circle at 50% 110%, ${game.color}35, rgba(22,33,62,0.95))`,
+                  }}
+                >
+                  {/* Glow orb */}
+                  <div
+                    className="absolute w-16 h-16 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity"
+                    style={{ background: game.color }}
+                  />
+                  <span className="text-4xl z-10 transition-transform duration-300 group-hover:scale-110">
+                    {game.emoji}
+                  </span>
+                  {/* Category badge — smart contrast: always white-on-navy */}
+                  <span
+                    className="absolute top-2 right-2 badge-chip badge-chip-dark"
+                    style={{ fontSize: '0.55rem' }}
+                  >
+                    {game.category}
+                  </span>
+                </div>
+              </div>
+
+              {/* Info strip below frame */}
+              <div className="px-1 pt-2.5 pb-1">
+                <div className="flex items-start justify-between gap-1">
+                  <h3
+                    className="font-semibold text-sm leading-tight group-hover:opacity-80 transition-opacity"
+                    style={{ color: '#16213E' }}
+                  >
+                    {game.title}
+                  </h3>
+                  <span
+                    className="badge-chip flex-shrink-0 mt-0.5"
+                    style={{
+                      fontSize: '0.55rem',
+                      color: DIFFICULTY_COLOR[game.difficulty],
+                      background: `${DIFFICULTY_COLOR[game.difficulty]}18`,
+                      border: `1px solid ${DIFFICULTY_COLOR[game.difficulty]}30`,
+                    }}
+                  >
+                    {game.difficulty}
+                  </span>
+                </div>
+                <p className="text-2xs mt-0.5 leading-snug" style={{ color: 'rgba(22,33,62,0.50)' }}>
+                  {game.reward}
+                </p>
+              </div>
+            </motion.button>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-lg font-semibold" style={{ color: '#16213E' }}>No games found</p>
+            <p className="text-sm mt-1" style={{ color: 'rgba(22,33,62,0.45)' }}>Try a different search or category.</p>
+          </div>
+        )}
       </div>
- 
-      {/* ── Active game overlay ── */}
+
+      {/* ── Active Game Overlay ── */}
       <AnimatePresence>
         {activeGame && (
           <motion.div
-            className="fixed inset-0 z-50 bg-navy-950/98 backdrop-blur-md flex flex-col"
+            className="fixed inset-0 z-50 flex flex-col"
+            style={{ background: 'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Game header */}
-            <div className="flex items-center justify-between p-4 border-b border-navy-800 bg-navy-900/80 backdrop-blur-md sticky top-0 z-30">
-              <div className="flex items-center gap-2">
-                <Gamepad2 size={20} className="text-cyan-neon animate-pulse" />
-                <span className="font-display font-semibold text-text-primary">
-                  {GAMES.find(g => g.key === activeGame)?.title}
-                </span>
+            {/* ── Overlay Header bar ── */}
+            <div
+              className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+              style={{
+                background: '#16213E',
+                borderBottom: '1px solid rgba(74,144,217,0.18)',
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">{activeGameMeta?.emoji}</span>
+                <div>
+                  <p className="font-semibold text-sm leading-none" style={{ color: '#F5F8FC' }}>
+                    {activeGameMeta?.title}
+                  </p>
+                  <p className="text-2xs mt-0.5" style={{ color: 'rgba(245,248,252,0.45)' }}>
+                    {activeGameMeta?.category} · {activeGameMeta?.difficulty}
+                  </p>
+                </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => setActiveGame(null)} className="hover:bg-white/10 rounded-xl">
-                <X size={18} />
-              </Button>
+              <button
+                className="game-control-btn"
+                onClick={close}
+                aria-label="Close game"
+                style={{ background: 'rgba(247,108,108,0.20)', borderColor: 'rgba(247,108,108,0.35)' }}
+              >
+                <X size={16} strokeWidth={2} style={{ color: '#F76C6C' }} />
+              </button>
             </div>
- 
-            {/* Game content */}
-            <div className="flex-1 overflow-auto bg-navy-950/40">
-              {renderGame()}
+
+            {/* ── Game Content inside protection frame ── */}
+            <div className="flex-1 overflow-auto p-4">
+              {/*
+                Each game renders inside a GameFrame which provides:
+                - 16px navy letterbox buffer
+                - Scrim bar with standardized controls
+                - Visual isolation (overflow:hidden + isolation:isolate)
+                The game's own onClose passes through to parent's close()
+              */}
+              {renderGame(activeGame, close)}
             </div>
           </motion.div>
         )}

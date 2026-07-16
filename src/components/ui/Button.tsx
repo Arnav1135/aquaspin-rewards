@@ -1,11 +1,11 @@
 // src/components/ui/Button.tsx
-// Reusable button component with neon variants
+// Fintech-grade button system — fixed navy/white color system across all contexts
 
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
-type Variant = 'primary' | 'neon' | 'gold' | 'ghost' | 'danger' | 'success';
+type Variant = 'primary' | 'sky' | 'neon' | 'gold' | 'ghost' | 'ghost-dark' | 'danger' | 'success';
 type Size = 'sm' | 'md' | 'lg' | 'xl';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -18,23 +18,28 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<Variant, string> = {
-  primary: 'btn-primary text-navy-900',
-  neon: 'btn-neon',
-  gold: 'btn-gold text-navy-900',
-  ghost: 'btn-ghost',
-  danger: 'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-danger/20 border border-danger/40 hover:bg-danger/30 transition-all duration-200',
-  success: 'inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-emerald-600 border border-emerald-500 hover:bg-emerald-500 shadow-lg shadow-emerald-950/20 transition-all duration-200',
+  primary:      'btn-primary',
+  sky:          'btn-sky',
+  neon:         'btn-primary',   // legacy alias → navy primary
+  gold:         'btn-success',   // legacy alias → success/teal
+  ghost:        'btn-ghost',
+  'ghost-dark': 'btn-ghost-dark',
+  danger:       'btn-danger',
+  success:      'btn-success',
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-xs rounded-lg',
-  md: 'px-6 py-3 text-sm rounded-xl',
-  lg: 'px-8 py-4 text-base rounded-xl',
-  xl: 'px-10 py-5 text-lg rounded-2xl',
+  sm: 'px-3 py-1.5 text-xs rounded-lg gap-1.5',
+  md: 'px-5 py-2.5 text-sm',
+  lg: 'px-7 py-3.5 text-base',
+  xl: 'px-9 py-4 text-lg',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size = 'md', loading, icon, iconRight, fullWidth, className, children, disabled, ...props }, ref) => {
+  (
+    { variant = 'primary', size = 'md', loading, icon, iconRight, fullWidth, className, children, disabled, ...props },
+    ref
+  ) => {
     return (
       <motion.button
         ref={ref}
@@ -42,7 +47,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           variantClasses[variant],
           size !== 'md' && sizeClasses[size],
           fullWidth && 'w-full',
-          (disabled || loading) && 'opacity-50 cursor-not-allowed pointer-events-none',
+          (disabled || loading) && 'opacity-40 cursor-not-allowed pointer-events-none',
           className
         )}
         disabled={disabled || loading}
@@ -50,9 +55,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...(props as React.ComponentProps<typeof motion.button>)}
       >
         {loading ? (
-          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          /* Loading: soft blue pulse animation — NEVER game-specific colors */
+          <svg
+            className="animate-spin h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ color: 'currentColor' }}
+          >
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
         ) : (
           icon

@@ -1,27 +1,52 @@
 // src/components/ui/Card.tsx
-// Glassmorphism card component
+// Fintech-grade card component with navy/sky/white variants
 
 import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
+type CardVariant = 'navy' | 'sky' | 'white' | 'glass' | 'stat-win' | 'stat-loss';
+
 interface CardProps {
   children: ReactNode;
   className?: string;
+  variant?: CardVariant;
   hover?: boolean;
-  glow?: 'cyan' | 'gold' | 'none';
+  glow?: 'sky' | 'teal' | 'coral' | 'none' | 'cyan' | 'gold'; // cyan/gold = legacy aliases
   onClick?: () => void;
   animated?: boolean;
   style?: React.CSSProperties;
 }
 
-export function Card({ children, className, hover, glow = 'none', onClick, animated = false, style }: CardProps) {
-  const glowClasses = {
-    cyan: 'hover:shadow-cyan-glow hover:border-cyan-neon/50',
-    gold: 'hover:shadow-gold-glow hover:border-gold-neon/50',
-    none: '',
-  };
+const variantBase: Record<CardVariant, string> = {
+  navy:      'card-navy on-navy',
+  sky:       'card-sky',
+  white:     'card-white',
+  glass:     'glass-card',
+  'stat-win':  'stat-card-win p-4',
+  'stat-loss': 'stat-card-loss p-4',
+};
 
+const glowMap: Record<string, string> = {
+  sky:   'hover:shadow-sky-glow hover:border-sky-500/50',
+  teal:  'hover:shadow-teal-glow hover:border-success-teal/50',
+  coral: 'hover:border-coral-loss/50',
+  none:  '',
+  // legacy
+  cyan:  'hover:shadow-sky-glow hover:border-sky-500/50',
+  gold:  'hover:shadow-teal-glow hover:border-success-teal/50',
+};
+
+export function Card({
+  children,
+  className,
+  variant = 'white',
+  hover,
+  glow = 'none',
+  onClick,
+  animated = false,
+  style,
+}: CardProps) {
   const Component = animated ? motion.div : 'div';
 
   return (
@@ -29,17 +54,16 @@ export function Card({ children, className, hover, glow = 'none', onClick, anima
       onClick={onClick}
       style={style}
       className={cn(
-        'glass-card p-5',
+        'p-5',
+        variantBase[variant],
         hover && 'cursor-pointer transition-all duration-300',
-        hover && glowClasses[glow],
+        hover && glowMap[glow],
         onClick && 'cursor-pointer',
         className
       )}
-      {...(animated ? {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
-        transition: { duration: 0.4 },
-      } : {})}
+      {...(animated
+        ? { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } }
+        : {})}
     >
       {children}
     </Component>
@@ -48,7 +72,7 @@ export function Card({ children, className, hover, glow = 'none', onClick, anima
 
 export function CardHeader({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center justify-between mb-4', className)}>
+    <div className={cn('section-header mb-4', className)}>
       {children}
     </div>
   );
@@ -56,7 +80,7 @@ export function CardHeader({ children, className }: { children: ReactNode; class
 
 export function CardTitle({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <h3 className={cn('font-display font-semibold text-lg text-text-primary', className)}>
+    <h3 className={cn('section-title', className)}>
       {children}
     </h3>
   );

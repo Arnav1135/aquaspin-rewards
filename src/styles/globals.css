@@ -22,6 +22,15 @@
   --c-scrim:        rgba(22, 33, 62, 0.62);
   --c-scrim-heavy:  rgba(22, 33, 62, 0.80);
 
+  /* Card dynamic backgrounds */
+  --card-navy-bg:   linear-gradient(135deg, var(--c-navy) 0%, #1e2d52 100%);
+  --card-white-bg:  rgba(255, 255, 255, 0.82);
+  --card-sky-bg:    linear-gradient(135deg, rgba(74,144,217,0.12) 0%, rgba(168,203,234,0.18) 100%);
+  --border-white:   rgba(168, 203, 234, 0.35);
+  --border-sky:     rgba(168, 203, 234, 0.45);
+  --text-white-bg:  var(--c-navy);
+  --text-sky-bg:    var(--c-navy);
+
   /* Shadows */
   --shadow-card-navy: 0 8px 24px rgba(22,33,62,0.18), 0 2px 8px rgba(22,33,62,0.10);
   --shadow-card-sky:  0 8px 24px rgba(74,144,217,0.14), 0 2px 8px rgba(74,144,217,0.08);
@@ -37,6 +46,31 @@
   /* Transitions */
   --t-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --t-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark {
+  /* Flipped colors in dark mode */
+  --c-navy:         #F5F8FC;
+  --c-navy-dark:    #E4EEF9;
+  --c-navy-deeper:  #ffffff;
+  --c-offwhite:     #16213E;
+  --c-app-bg:       linear-gradient(160deg, #090e1a 0%, #0d1628 100%);
+  --c-scrim:        rgba(0, 0, 0, 0.75);
+  --c-scrim-heavy:  rgba(0, 0, 0, 0.90);
+
+  /* Card overrides */
+  --card-navy-bg:   linear-gradient(135deg, #0d1628 0%, #16213e 100%);
+  --card-white-bg:  rgba(22, 33, 62, 0.85);
+  --card-sky-bg:    linear-gradient(135deg, rgba(74, 144, 217, 0.1) 0%, rgba(22, 33, 62, 0.9) 100%);
+  --border-white:   rgba(74, 144, 217, 0.25);
+  --border-sky:     rgba(74, 144, 217, 0.3);
+  --text-white-bg:  #F5F8FC;
+  --text-sky-bg:    #A8CBEA;
+
+  /* Shadows override to look more subtle in dark mode */
+  --shadow-card-navy: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-card-sky:  0 8px 32px rgba(0,0,0,0.4);
+  --shadow-card-lift: 0 12px 40px rgba(0,0,0,0.6);
 }
 
 /* ── Base Reset & Typography ────────────────────────────────────────────── */
@@ -96,7 +130,7 @@
      ──────────────────────────────────────────────────────────────────────── */
 
   .card-navy {
-    background: linear-gradient(135deg, var(--c-navy) 0%, #1e2d52 100%);
+    background: var(--card-navy-bg);
     border: 1px solid rgba(74, 144, 217, 0.18);
     border-radius: var(--r-card-primary);
     box-shadow: var(--shadow-card-navy);
@@ -104,33 +138,34 @@
   }
 
   .card-sky {
-    background: linear-gradient(135deg, rgba(74,144,217,0.12) 0%, rgba(168,203,234,0.18) 100%);
-    border: 1px solid rgba(168, 203, 234, 0.45);
+    background: var(--card-sky-bg);
+    border: 1px solid var(--border-sky);
     border-radius: var(--r-card-secondary);
     box-shadow: var(--shadow-card-sky);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    color: var(--c-navy);
+    color: var(--text-sky-bg);
   }
 
   .card-white {
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(168, 203, 234, 0.35);
+    background: var(--card-white-bg);
+    border: 1px solid var(--border-white);
     border-radius: var(--r-card-secondary);
     box-shadow: var(--shadow-card-sky);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    color: var(--c-navy);
+    color: var(--text-white-bg);
   }
 
   /* Legacy glass-card — mapped to sky style for compatibility */
   .glass-card {
-    background: rgba(255, 255, 255, 0.80);
-    border: 1px solid rgba(168, 203, 234, 0.40);
+    background: var(--card-white-bg);
+    border: 1px solid var(--border-white);
     border-radius: var(--r-card-secondary);
     box-shadow: var(--shadow-card-sky);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    color: var(--text-white-bg);
   }
 
   /* ────────────────────────────────────────────────────────────────────────

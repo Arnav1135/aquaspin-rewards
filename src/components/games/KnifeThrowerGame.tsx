@@ -1,388 +1,328 @@
-// src/components/games/KnifeThrowerGame.tsx
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { HelpCircle, RefreshCw, Trophy, Target, Shield } from 'lucide-react';
+// src/components/games/KnifeThrowerGame.tsx — Premium Knife Hit Canvas Game
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-interface KnifeThrowerGameProps {
-  onClose: () => void;
-}
+interface Props { onClose: () => void }
 
-type Knife = {
-  angle: number;
-  hit: boolean;
-  y: number; // For flying animation
-};
+type Knife = { angle: number; embedded: boolean; flying: boolean; y: number };
+type Apple = { angle: number; collected: boolean };
+type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string; r: number };
 
-type Apple = {
-  angle: number;
-  sliced: boolean;
-};
-
-export function KnifeThrowerGame({ onClose }: KnifeThrowerGameProps) {
-  const [score, setScore] = useState(0);
-  const [stage, setStage] = useState(1);
-  const [knivesLeft, setKnivesLeft] = useState(7);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [won, setWon] = useState(false);
-  const [selectedKnifeSkin, setSelectedKnifeSkin] = useState<'standard' | 'fire' | 'ice'>('standard');
-
+export function KnifeThrowerGame({ onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rAFRef = useRef<number | null>(null);
+  const rafRef = useRef(0);
+  const s = useRef({
+    phase: 'idle' as 'idle' | 'playing' | 'dead' | 'stageclear',
+    logAngle: 0, logSpeed: 0.022,
+    knives: [] as Knife[], apples: [] as Apple[], particles: [] as Particle[],
+    flyingKnife: null as Knife | null,
+    score: 0, stage: 1, knivesLeft: 7,
+    frame: 0, lastTime: 0,
+    best: parseInt(localStorage.getItem('kt-best') || '0'),
+    screenShake: 0,
+  });
+  const [disp, setDisp] = useState({ score: 0, stage: 1, knives: 7, phase: 'idle' as 'idle'|'playing'|'dead'|'stageclear', best: parseInt(localStorage.getItem('kt-best')||'0') });
+  const W = 360, H = 520, LOG_R = 80, LOG_Y = 200;
 
-  // Gameplay ref arrays
-  const knives = useRef<Knife[]>([]);
-  const apples = useRef<Apple[]>([]);
-  const targetRotation = useRef(0);
-  const targetSpeed = useRef(0.03);
-  const flyingKnifeY = useRef<number | null>(null);
-
-  const W = 400;
-  const H = 400;
-  const targetX = 200;
-  const targetY = 130;
-  const targetRadius = 60;
-  const knifeStartY = 350;
-
-  const initStage = useCallback(() => {
-    knives.current = [];
-    flyingKnifeY.current = null;
-    setKnivesLeft(7 + Math.floor(stage * 0.5));
-
-    // Spawn some initial apples on target wheel
-    const spawnedApples: Apple[] = [];
-    const appleCount = stage === 1 ? 1 : stage % 3 === 0 ? 3 : 2;
-    for (let i = 0; i < appleCount; i++) {
-      spawnedApples.push({
-        angle: (i * Math.PI * 2) / appleCount + Math.random() * 0.5,
-        sliced: false
-      });
+  const spawnParticles = (x: number, y: number, color: string, n = 10) => {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, sp = 2 + Math.random() * 5;
+      s.current.particles.push({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color, r: 2+Math.random()*4 });
     }
-    apples.current = spawnedApples;
-
-    // Set rotation speed/direction changes per level
-    targetSpeed.current = 0.02 + stage * 0.006 * (Math.random() < 0.5 ? -1 : 1);
-  }, [stage]);
-
-  const handleThrow = () => {
-    if (flyingKnifeY.current !== null || knivesLeft <= 0 || gameOver || won || !isPlaying) return;
-    
-    flyingKnifeY.current = knifeStartY;
-    setKnivesLeft(prev => prev - 1);
-    playTone(400, 0.03, 'triangle', 0.08);
   };
 
-  const startNewGame = () => {
-    setScore(0);
-    setStage(1);
-    setIsPlaying(true);
-    setGameOver(false);
-    setWon(false);
-    initStage();
-    playTone(550, 0.05, 'sine', 0.15);
-  };
+  const initStage = useCallback((stage: number) => {
+    const gs = s.current;
+    gs.logAngle = 0;
+    gs.logSpeed = 0.018 + stage * 0.008;
+    gs.knivesLeft = 7 + stage;
+    gs.knives = [];
+    gs.flyingKnife = null;
+    gs.phase = 'playing';
+    // Random apples on log
+    const appleCount = Math.min(stage + 1, 4);
+    gs.apples = Array.from({ length: appleCount }, (_, i) => ({
+      angle: (Math.PI * 2 * i) / appleCount + Math.PI / 3,
+      collected: false,
+    }));
+    setDisp(d => ({ ...d, knives: gs.knivesLeft, phase: 'playing', stage }));
+  }, []);
+
+  const throwKnife = useCallback(() => {
+    const gs = s.current;
+    if (gs.phase !== 'playing' || gs.flyingKnife || gs.knivesLeft <= 0) return;
+    gs.flyingKnife = { angle: 0, embedded: false, flying: true, y: H - 60 };
+    gs.knivesLeft--;
+    setDisp(d => ({ ...d, knives: gs.knivesLeft }));
+    playTone(800, 0.05, 'sine', 0.08); vibrate(10);
+  }, []);
 
   useEffect(() => {
-    if (isPlaying) {
-      initStage();
-    }
-  }, [stage, isPlaying, initStage]);
+    const handleKey = (e: KeyboardEvent) => { if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); throwKnife(); } };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [throwKnife]);
 
-  // Main rendering ticks loop
-  const updateLoop = () => {
-    if (!isPlaying || gameOver || won) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
 
-    ctx.clearRect(0, 0, W, H);
+    const drawLog = (cx: number, cy: number, r: number) => {
+      // Outer wood ring
+      const woodGrad = ctx.createRadialGradient(cx-20, cy-20, 10, cx, cy, r);
+      woodGrad.addColorStop(0, '#c8793c');
+      woodGrad.addColorStop(0.5, '#a0522d');
+      woodGrad.addColorStop(1, '#6b3520');
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.fillStyle = woodGrad; ctx.fill();
+      // Wood rings
+      for (let ri = r*0.7; ri > 10; ri -= 12) {
+        ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+      // Center dot
+      ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI*2);
+      ctx.fillStyle = '#4a2010'; ctx.fill();
+    };
 
-    // 1. Draw dynamic background
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-    bgGrad.addColorStop(0, '#0a0518');
-    bgGrad.addColorStop(0.5, '#1e0c2e');
-    bgGrad.addColorStop(1, '#0c0714');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, W, H);
-
-    // 2. Rotate the board wheel
-    targetRotation.current += targetSpeed.current;
-
-    // 3. Draw Target Board log (wooden pattern)
-    ctx.save();
-    ctx.translate(targetX, targetY);
-    ctx.rotate(targetRotation.current);
-
-    // Outer metal rim
-    ctx.fillStyle = '#475569';
-    ctx.beginPath();
-    ctx.arc(0, 0, targetRadius + 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Wood base
-    ctx.fillStyle = stage % 5 === 0 ? '#b91c1c' : '#78350f'; // Red boss logs
-    ctx.beginPath();
-    ctx.arc(0, 0, targetRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Wood rings
-    ctx.strokeStyle = stage % 5 === 0 ? '#ef4444' : '#a16207';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, 0, targetRadius * 0.7, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(0, 0, targetRadius * 0.4, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Draw hit knives stuck to target
-    knives.current.forEach(knife => {
+    const drawKnife = (cx: number, cy: number, angle: number, alpha = 1) => {
       ctx.save();
-      ctx.rotate(knife.angle);
-      
-      // Draw Knife Blade
-      const bladeGrad = ctx.createLinearGradient(0, targetRadius - 10, 0, targetRadius + 18);
-      bladeGrad.addColorStop(0, '#ffffff');
-      bladeGrad.addColorStop(1, '#94a3b8');
-      ctx.fillStyle = bladeGrad;
-      ctx.fillRect(-2, targetRadius - 5, 4, 20);
-
-      // Draw Hilt handle
-      ctx.fillStyle = selectedKnifeSkin === 'fire' ? '#ef4444' : selectedKnifeSkin === 'ice' ? '#06b6d4' : '#1e293b';
-      ctx.fillRect(-4, targetRadius + 15, 8, 12);
-      ctx.restore();
-    });
-
-    // Draw Apples on target
-    apples.current.forEach(apple => {
-      if (apple.sliced) return;
-      ctx.save();
-      ctx.rotate(apple.angle);
-      
-      ctx.fillStyle = '#ef4444';
+      ctx.translate(cx, cy); ctx.rotate(angle);
+      ctx.globalAlpha = alpha;
+      // Blade
+      const blade = ctx.createLinearGradient(-2, -45, 2, 0);
+      blade.addColorStop(0, '#e8e8e8'); blade.addColorStop(0.5, '#c0c0c0'); blade.addColorStop(1, '#888');
+      ctx.fillStyle = blade;
       ctx.beginPath();
-      ctx.arc(0, targetRadius - 8, 8, 0, Math.PI * 2);
+      ctx.moveTo(0, -45); ctx.lineTo(3, -10); ctx.lineTo(-3, -10); ctx.closePath();
       ctx.fill();
-      
-      // Leaf
-      ctx.fillStyle = '#22c55e';
-      ctx.fillRect(-1, targetRadius - 20, 2, 4);
+      // Handle
+      ctx.fillStyle = '#5c3317';
+      ctx.beginPath(); ctx.roundRect(-4, -10, 8, 28, 2); ctx.fill();
+      // Handle wrapping
+      ctx.strokeStyle = '#8B4513'; ctx.lineWidth = 2;
+      for (let hy = -6; hy < 18; hy += 7) {
+        ctx.beginPath(); ctx.moveTo(-4, hy); ctx.lineTo(4, hy); ctx.stroke();
+      }
+      // Guard
+      ctx.fillStyle = '#888';
+      ctx.beginPath(); ctx.roundRect(-6, -12, 12, 4, 1); ctx.fill();
+      ctx.globalAlpha = 1;
       ctx.restore();
-    });
+    };
 
-    ctx.restore();
+    const drawApple = (x: number, y: number, collected: boolean) => {
+      if (collected) return;
+      ctx.font = '22px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🍎', x, y);
+    };
 
-    // 4. Update & Draw Flying Knife
-    if (flyingKnifeY.current !== null) {
-      flyingKnifeY.current -= 14;
+    const loop = (timestamp: number) => {
+      const gs = s.current;
+      const dt = Math.min((timestamp - gs.lastTime) / 16, 3);
+      gs.lastTime = timestamp; gs.frame++;
 
-      // Draw active flying knife
-      const bladeGrad = ctx.createLinearGradient(0, flyingKnifeY.current, 0, flyingKnifeY.current + 25);
-      bladeGrad.addColorStop(0, '#ffffff');
-      bladeGrad.addColorStop(1, '#94a3b8');
-      ctx.fillStyle = bladeGrad;
-      ctx.fillRect(targetX - 2.5, flyingKnifeY.current, 5, 25);
+      const cx = W / 2, cy = LOG_Y;
 
-      ctx.fillStyle = selectedKnifeSkin === 'fire' ? '#ef4444' : selectedKnifeSkin === 'ice' ? '#06b6d4' : '#1e293b';
-      ctx.fillRect(targetX - 4.5, flyingKnifeY.current + 25, 9, 12);
+      // Screen shake
+      const shakeX = gs.screenShake > 0 ? (Math.random()-0.5)*gs.screenShake*3 : 0;
+      const shakeY = gs.screenShake > 0 ? (Math.random()-0.5)*gs.screenShake*3 : 0;
+      if (gs.screenShake > 0) gs.screenShake -= dt;
 
-      // Check collision with target boundary
-      if (flyingKnifeY.current <= targetY + targetRadius - 5) {
-        const hitAngle = -targetRotation.current + Math.PI / 2; // relative angle stuck
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
+      ctx.clearRect(-10, -10, W+20, H+20);
 
-        // Check collision with existing stuck knives
-        const collided = knives.current.some(k => {
-          const diff = Math.abs(k.angle - hitAngle);
-          const tolerance = 0.18; // approx 10 degrees separation
-          return diff < tolerance || Math.abs(diff - Math.PI * 2) < tolerance;
+      // Background
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#1a0a2e'); bg.addColorStop(1, '#0d0820');
+      ctx.fillStyle = bg; ctx.fillRect(-10, -10, W+20, H+20);
+
+      // Spotlight
+      const spot = ctx.createRadialGradient(cx, cy, 20, cx, cy, 200);
+      spot.addColorStop(0, 'rgba(255,200,100,0.12)'); spot.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = spot; ctx.fillRect(0, 0, W, H);
+
+      // Stage info
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(`STAGE ${gs.stage}`, cx, 20);
+
+      // Score HUD
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath(); ctx.roundRect(W-85, 8, 78, 30, 15); ctx.fill();
+      ctx.fillStyle = '#FFD700'; ctx.font = 'bold 16px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(`⭐ ${gs.score}`, W-46, 27);
+
+      // Knives left display at bottom
+      const kx = cx - (gs.knivesLeft * 14) / 2;
+      for (let i = 0; i < gs.knivesLeft; i++) {
+        ctx.save(); ctx.translate(kx + i*14 + 7, H-30); ctx.rotate(Math.PI);
+        drawKnife(0, 0, 0, 0.8);
+        ctx.restore();
+      }
+
+      if (gs.phase === 'playing' || gs.phase === 'stageclear') {
+        // Rotate log
+        gs.logAngle += gs.logSpeed * dt;
+        if (gs.frame % 180 === 0) gs.logSpeed *= -1; // direction change
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(gs.logAngle);
+
+        // Draw embedded knives (rotating with log)
+        gs.knives.forEach(k => {
+          const kx2 = Math.sin(k.angle) * (LOG_R + 30);
+          const ky2 = -Math.cos(k.angle) * (LOG_R + 30);
+          drawKnife(kx2, ky2, k.angle);
         });
 
-        if (collided) {
-          // Surrender run, knife deflated
-          setIsPlaying(false);
-          setGameOver(true);
-          playTone(180, 0.35, 'sawtooth', 0.3);
-          vibrate([60, 40, 120]);
-          toast.error('Log Overlap Detonation! Lost Run.');
-          return;
-        }
-
-        // Stuck successfully!
-        knives.current.push({
-          angle: hitAngle,
-          hit: true,
-          y: targetRadius
+        // Draw apples on log
+        gs.apples.forEach(a => {
+          const ax2 = Math.sin(a.angle) * (LOG_R + 8);
+          const ay2 = -Math.cos(a.angle) * (LOG_R + 8);
+          drawApple(ax2, ay2, a.collected);
         });
 
-        // Check if sliced apples
-        apples.current.forEach(apple => {
-          if (apple.sliced) return;
-          const diff = Math.abs(apple.angle - hitAngle);
-          const appleTolerance = 0.22;
-          if (diff < appleTolerance || Math.abs(diff - Math.PI * 2) < appleTolerance) {
-            apple.sliced = true;
-            setScore(s => s + 50);
-            playTone(880, 0.08, 'sine', 0.15);
-            toast.success('🍎 Apple Sliced! +50 pts', { id: 'knife-apple-feedback' });
-          }
+        ctx.restore();
+
+        drawLog(cx, cy, LOG_R);
+
+        // Draw embedded knives again (on top of log) — same rotation
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(gs.logAngle);
+        gs.knives.forEach(k => {
+          const kx2 = Math.sin(k.angle) * (LOG_R);
+          const ky2 = -Math.cos(k.angle) * (LOG_R);
+          drawKnife(kx2, ky2, k.angle);
         });
+        ctx.restore();
 
-        flyingKnifeY.current = null;
-        setScore(s => s + 10);
-        playTone(600, 0.04, 'triangle', 0.1);
-        vibrate(30);
+        // Flying knife
+        if (gs.flyingKnife && gs.flyingKnife.flying) {
+          gs.flyingKnife.y -= 12 * dt;
+          const fk = gs.flyingKnife;
 
-        // Check if Stage cleared
-        if (knivesLeft <= 0) {
-          if (stage % 5 === 0) {
-            toast.success('💀 Boss Annihilated!', { icon: '🔥' });
+          // Check collision with log
+          const dist = Math.sqrt((cx - cx)**2 + (fk.y - cy)**2);
+          if (dist <= LOG_R + 38) {
+            // Compute the angle where knife hit relative to log
+            const hitAngle = Math.atan2(cx - cx, cy - fk.y) - gs.logAngle;
+
+            // Check overlap with existing knives
+            let collision = false;
+            for (const ek of gs.knives) {
+              let diff = Math.abs(hitAngle - ek.angle);
+              if (diff > Math.PI) diff = Math.PI*2 - diff;
+              if (diff < 0.28) { collision = true; break; }
+            }
+
+            if (collision) {
+              // Hit existing knife → game over
+              gs.phase = 'dead';
+              const newBest = Math.max(gs.score, gs.best);
+              gs.best = newBest; localStorage.setItem('kt-best', String(newBest));
+              setDisp(d => ({ ...d, phase: 'dead', best: newBest, score: gs.score }));
+              spawnParticles(cx, fk.y, '#ff4444', 16);
+              gs.screenShake = 8;
+              playTone(150, 0.25, 'sawtooth', 0.35); vibrate(200);
+              toast.error('💥 Hit a knife! Game Over');
+            } else {
+              // Check apple collection
+              let gotApple = false;
+              gs.apples.forEach(a => {
+                if (a.collected) return;
+                let diff2 = Math.abs(hitAngle - a.angle);
+                if (diff2 > Math.PI) diff2 = Math.PI*2 - diff2;
+                if (diff2 < 0.3) {
+                  a.collected = true; gotApple = true;
+                  spawnParticles(cx, fk.y, '#ff6600', 12);
+                  toast.success('🍎 Apple! +50pts');
+                  gs.score += 50;
+                }
+              });
+              // Embed knife
+              gs.knives.push({ angle: hitAngle, embedded: true, flying: false, y: 0 });
+              gs.score += 10 + gs.stage * 5;
+              if (gotApple) gs.score += 0; // already added
+              setDisp(d => ({ ...d, score: gs.score }));
+              spawnParticles(cx + Math.sin(hitAngle)*LOG_R, cy - Math.cos(hitAngle)*LOG_R, '#c8793c', 8);
+              playTone(600 + gs.stage*30, 0.06, 'sine', 0.1); vibrate(25);
+
+              // Check stage clear
+              if (gs.knivesLeft === 0) {
+                gs.phase = 'stageclear';
+                setTimeout(() => {
+                  gs.stage++;
+                  gs.score += 200 * gs.stage;
+                  setDisp(d => ({ ...d, score: gs.score, stage: gs.stage }));
+                  initStage(gs.stage);
+                  toast.success(`🎉 Stage ${gs.stage} cleared!`);
+                }, 1200);
+              }
+            }
+            gs.flyingKnife = null;
           } else {
-            toast.success('✓ Stage Cleared!', { id: 'knife-stage-feedback' });
+            drawKnife(cx, fk.y, 0);
           }
-          setStage(s => s + 1);
         }
       }
-    }
 
-    rAFRef.current = requestAnimationFrame(updateLoop);
-  };
+      // Particles
+      gs.particles.forEach(p => {
+        p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 0.2*dt; p.life -= 0.04*dt;
+        if (p.life <= 0) return;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r*p.life, 0, Math.PI*2);
+        ctx.fillStyle = p.color + Math.floor(p.life*220).toString(16).padStart(2,'0');
+        ctx.fill();
+      });
+      gs.particles = gs.particles.filter(p => p.life > 0);
 
-  useEffect(() => {
-    if (isPlaying && !gameOver) {
-      rAFRef.current = requestAnimationFrame(updateLoop);
-    }
-    return () => {
-      if (rAFRef.current) cancelAnimationFrame(rAFRef.current);
+      // Idle screen
+      if (gs.phase === 'idle') {
+        drawLog(cx, cy, LOG_R);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath(); ctx.roundRect(cx-110, H/2+40, 220, 110, 20); ctx.fill();
+        ctx.fillStyle = '#FFD700'; ctx.font = 'bold 22px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('KNIFE THROWER', cx, H/2+68);
+        ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '13px system-ui';
+        ctx.fillText('Tap or Space to throw', cx, H/2+92);
+        ctx.fillStyle = '#aaa'; ctx.font = '12px system-ui';
+        ctx.fillText(`Best: ${gs.best}`, cx, H/2+115);
+      }
+
+      ctx.restore();
+      rafRef.current = requestAnimationFrame(loop);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, gameOver, knivesLeft, selectedKnifeSkin]);
+
+    gs.logAngle = 0;
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [initStage]);
+
+  const gs = s.current;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-4xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #10061e 0%, #1e0c2e 50%, #0c0714 100%)' }}>
-      
-      {/* Settings Panel */}
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20 text-white animate-fade-in">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-            <h2 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 to-yellow-300 uppercase tracking-widest">
-              Knife Hit
-            </h2>
-            <Target size={16} className="text-red-500 animate-pulse" />
-          </div>
-
-          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <Shield size={14} className="text-cyan-400" />
-              <span className="text-[10px] text-slate-400 font-bold uppercase">Active Stage</span>
-            </div>
-            <span className="font-mono text-sm font-bold text-cyan-400">{stage % 5 === 0 ? 'BOSS STAGE 💀' : `Stage ${stage}`}</span>
-          </div>
-
-          <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <Trophy size={14} className="text-yellow-400" />
-              <span className="text-[10px] text-slate-400 font-bold uppercase">Total Score</span>
-            </div>
-            <span className="font-mono text-sm font-bold text-yellow-400">{score}</span>
-          </div>
-
-          {/* Knives Skin Selector */}
-          <div className="space-y-2">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Thrower Blades</span>
-            <div className="grid grid-cols-3 gap-2">
-              {(['standard', 'fire', 'ice'] as const).map(skin => (
-                <button
-                  key={skin}
-                  onClick={() => { setSelectedKnifeSkin(skin); playTone(450, 0.05, 'sine', 0.1); }}
-                  className={`py-2 rounded-xl text-3xs font-mono font-bold capitalize border transition-all ${
-                    selectedKnifeSkin === skin 
-                      ? 'border-red-500 bg-red-500/10 text-red-300' 
-                      : 'border-slate-800 text-slate-500 hover:border-slate-700'
-                  }`}
-                >
-                  {skin}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {!isPlaying ? (
-            <Button variant="neon" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={startNewGame}>
-              Start Throwing
-            </Button>
-          ) : (
-            <Button variant="danger" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={() => { setIsPlaying(false); setGameOver(true); }}>
-              Surrender Run
-            </Button>
-          )}
-          <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
-            Exit Dojo
-          </Button>
-        </div>
-      </Card>
-
-      {/* Main Knife board viewport */}
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] border border-slate-800 rounded-2xl p-6 overflow-hidden bg-slate-950/40 text-white">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
-          <HelpCircle size={10} className="text-cyan-400" />
-          <span>TAP / CLICK ON BOARD TO THROW</span>
-        </div>
-
-        {isPlaying ? (
-          <div className="relative flex flex-col items-center w-full h-full justify-center">
-            
-            {/* Knife indicator pile */}
-            <div className="absolute bottom-6 left-4 flex flex-col gap-1 z-10">
-              {Array.from({ length: knivesLeft }).map((_, i) => (
-                <div key={i} className={`w-1.5 h-6 rounded bg-red-500 ${selectedKnifeSkin === 'ice' ? 'bg-cyan-400' : 'bg-red-500'}`} />
-              ))}
-            </div>
-
-            <div className="relative border-2 border-slate-800/80 rounded-2xl overflow-hidden shadow-lg shadow-black/50">
-              <canvas
-                ref={canvasRef}
-                width={W}
-                height={H}
-                onClick={handleThrow}
-                className="block cursor-pointer bg-slate-950"
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="text-center space-y-6 max-w-sm">
-            {gameOver ? (
-              <>
-                <RefreshCw size={36} className="text-red-400 mx-auto animate-pulse" />
-                <h3 className="text-2xl font-black text-slate-200">RUN DETONATED</h3>
-                <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 font-mono space-y-1.5 text-sm">
-                  <p className="text-slate-400">Score Achieved: <span className="text-cyan-400 font-bold">{score} pts</span></p>
-                  <p className="text-slate-400">Stage Reached: <span className="text-indigo-400 font-bold">{stage}</span></p>
-                </div>
-                <Button variant="neon" size="lg" className="w-full animate-bounce" onClick={startNewGame}>
-                  Restart Dojo Run
-                </Button>
-              </>
-            ) : (
-              <>
-                <Target size={36} className="text-red-500 mx-auto animate-pulse" />
-                <h3 className="text-xl font-bold">Ready to Throw?</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Throw knives to stick them to the rotating log target. Slice apples for bonus multipliers! Don't overlap knives.
-                </p>
-                <Button variant="neon" size="lg" className="w-full" onClick={startNewGame}>
-                  Start Dojo Run
-                </Button>
-              </>
-            )}
-          </div>
+    <div className="flex flex-col items-center gap-4">
+      <canvas ref={canvasRef} width={W} height={H}
+        className="rounded-2xl select-none touch-none cursor-pointer"
+        style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6)', maxWidth: '100%' }}
+        onClick={throwKnife}
+        onTouchStart={e => { e.preventDefault(); throwKnife(); }}
+      />
+      <div className="flex gap-3">
+        {disp.phase === 'idle' && (
+          <Button variant="primary" onClick={() => { gs.stage = 1; gs.score = 0; initStage(1); }}>🎮 Play</Button>
         )}
-      </Card>
+        {disp.phase === 'dead' && (
+          <Button variant="primary" onClick={() => { gs.stage = 1; gs.score = 0; setDisp(d=>({...d,score:0,stage:1})); initStage(1); }}>▶ Retry</Button>
+        )}
+        <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
+      </div>
     </div>
   );
 }

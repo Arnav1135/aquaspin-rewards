@@ -1,317 +1,249 @@
-// src/components/games/SudokuGame.tsx
-import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { HelpCircle, RefreshCw, Trophy, Sparkles } from 'lucide-react';
+// src/components/games/SudokuGame.tsx — Premium Sudoku
+import { useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-interface SudokuGameProps {
-  onClose: () => void;
+interface Props { onClose: () => void }
+type CellState = { value: number; given: boolean; notes: Set<number>; error: boolean };
+type Phase = 'idle' | 'playing' | 'won';
+
+// --- Sudoku generator ---
+function emptyGrid(): number[][] { return Array.from({length:9},()=>Array(9).fill(0)); }
+function isValid(grid: number[][], r: number, c: number, num: number): boolean {
+  for(let i=0;i<9;i++) { if(grid[r][i]===num||grid[i][c]===num) return false; }
+  const br=Math.floor(r/3)*3, bc=Math.floor(c/3)*3;
+  for(let i=0;i<3;i++) for(let j=0;j<3;j++) { if(grid[br+i][bc+j]===num) return false; }
+  return true;
+}
+function solve(grid: number[][]): boolean {
+  for(let r=0;r<9;r++) for(let c=0;c<9;c++) {
+    if(grid[r][c]===0) {
+      const nums=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5);
+      for(const n of nums) { if(isValid(grid,r,c,n)) { grid[r][c]=n; if(solve(grid)) return true; grid[r][c]=0; } }
+      return false;
+    }
+  }
+  return true;
+}
+function generatePuzzle(holes: number): { puzzle: number[][]; solution: number[][] } {
+  const solution = emptyGrid();
+  solve(solution);
+  const puzzle = solution.map(r=>[...r]);
+  let removed = 0;
+  while(removed < holes) {
+    const r=Math.floor(Math.random()*9), c=Math.floor(Math.random()*9);
+    if(puzzle[r][c]!==0) { puzzle[r][c]=0; removed++; }
+  }
+  return { puzzle, solution };
 }
 
-type Cell = {
-  value: number;
-  original: boolean;
-  notes: number[];
-};
-
-type SudokuBoard = Cell[];
-
-// A pre-generated basic grid template which we will shuffle to create varied game seeds
-const BASE_SUDOKU_GRID = [
-  5, 3, 4, 6, 7, 8, 9, 1, 2,
-  6, 7, 2, 1, 9, 5, 3, 4, 8,
-  1, 9, 8, 3, 4, 2, 5, 6, 7,
-  8, 5, 9, 7, 6, 1, 4, 2, 3,
-  4, 2, 6, 8, 5, 3, 7, 9, 1,
-  7, 1, 3, 9, 2, 4, 8, 5, 6,
-  9, 6, 1, 5, 3, 7, 2, 8, 4,
-  2, 8, 7, 4, 1, 9, 6, 3, 5,
-  3, 4, 5, 2, 8, 6, 1, 7, 9
-];
-
-export function SudokuGame({ onClose }: SudokuGameProps) {
-  const [board, setBoard] = useState<SudokuBoard>([]);
-  const [solution, setSolution] = useState<number[]>([]);
-  const [selectedCell, setSelectedCell] = useState<number | null>(null);
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'expert'>('easy');
-  const [noteMode, setNoteMode] = useState(false);
+export function SudokuGame({ onClose }: Props) {
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [grid, setGrid] = useState<CellState[][]>([]);
+  const [solution, setSolution] = useState<number[][]>([]);
+  const [selected, setSelected] = useState<[number,number]|null>(null);
+  const [notesMode, setNotesMode] = useState(false);
+  const [difficulty, setDifficulty] = useState<'Easy'|'Medium'|'Hard'>('Medium');
   const [mistakes, setMistakes] = useState(0);
-  const [gameOver, setGameOver] = useState(false);
-  const [won, setWon] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [best, setBest] = useState(() => parseInt(localStorage.getItem('sdk-best')||'0'));
 
-  const shuffleGrid = (grid: number[]): { initial: number[]; solved: number[] } => {
-    const solved = [...grid];
-    // Map number pairs to swap values (preserving valid Sudoku constraints)
-    const map = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
-    for (let i = 0; i < 81; i++) {
-      solved[i] = map[solved[i] - 1];
-    }
-
-    // Determine numbers to remove based on difficulty
-    const cellsToRemove = difficulty === 'expert' ? 52 : difficulty === 'hard' ? 44 : difficulty === 'medium' ? 36 : 28;
-    const initial = [...solved];
-    const removedIndices = new Set<number>();
-    while (removedIndices.size < cellsToRemove) {
-      removedIndices.add(Math.floor(Math.random() * 81));
-    }
-    removedIndices.forEach(idx => {
-      initial[idx] = 0;
-    });
-
-    return { initial, solved };
-  };
-
-  const handleRestart = useCallback(() => {
-    const { initial, solved } = shuffleGrid(BASE_SUDOKU_GRID);
-    const cells: SudokuBoard = initial.map(val => ({
-      value: val,
-      original: val !== 0,
-      notes: []
-    }));
-    setBoard(cells);
-    setSolution(solved);
-    setSelectedCell(null);
-    setMistakes(0);
-    setGameOver(false);
-    setWon(false);
-    playTone(400, 0.05, 'sine', 0.1);
-  }, [difficulty]);
+  const HOLES = { Easy: 35, Medium: 45, Hard: 55 };
 
   useEffect(() => {
-    handleRestart();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (phase !== 'playing') return;
+    const t = setInterval(() => setTimer(s => s+1), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+
+  const startGame = useCallback(() => {
+    const { puzzle, solution: sol } = generatePuzzle(HOLES[difficulty]);
+    setSolution(sol);
+    setGrid(puzzle.map(row => row.map(v => ({ value:v, given:v!==0, notes:new Set<number>(), error:false }))));
+    setSelected(null); setMistakes(0); setTimer(0); setNotesMode(false);
+    setPhase('playing');
+    playTone(500, 0.05, 'sine', 0.1);
   }, [difficulty]);
 
-  const handleCellSelect = (idx: number) => {
-    if (gameOver || won) return;
-    setSelectedCell(idx);
-    playTone(550, 0.02, 'sine', 0.05);
-  };
+  const handleCell = useCallback((r: number, c: number) => {
+    if (grid[r]?.[c]?.given) { setSelected([r,c]); return; }
+    setSelected([r,c]);
+    playTone(400, 0.02, 'sine', 0.05);
+  }, [grid]);
 
-  const handleInputNumber = (num: number) => {
-    if (selectedCell === null || gameOver || won) return;
-    const cell = board[selectedCell];
-    if (cell.original) return;
-
-    if (noteMode) {
-      const newBoard = [...board];
-      const currentNotes = newBoard[selectedCell].notes;
-      if (currentNotes.includes(num)) {
-        newBoard[selectedCell].notes = currentNotes.filter(n => n !== num);
+  const handleNumber = useCallback((num: number) => {
+    if (!selected) return;
+    const [r,c] = selected;
+    if (grid[r]?.[c]?.given) return;
+    setGrid(prev => {
+      const ng = prev.map(row=>row.map(cell=>({...cell,notes:new Set(cell.notes)})));
+      if (notesMode) {
+        const notes = ng[r][c].notes;
+        if (notes.has(num)) notes.delete(num); else notes.add(num);
       } else {
-        newBoard[selectedCell].notes = [...currentNotes, num].sort();
-      }
-      setBoard(newBoard);
-      playTone(500, 0.03, 'sine', 0.05);
-      return;
-    }
-
-    const correctValue = solution[selectedCell];
-    const newBoard = [...board];
-
-    if (num === correctValue) {
-      newBoard[selectedCell].value = num;
-      newBoard[selectedCell].notes = [];
-      setBoard(newBoard);
-      playTone(600, 0.08, 'sine', 0.1);
-      vibrate(15);
-
-      // Check win condition
-      if (newBoard.every((c, idx) => c.value === solution[idx])) {
-        setWon(true);
-        playTone(523, 0.15, 'sine', 0.2);
-        setTimeout(() => playTone(659, 0.15, 'sine', 0.2), 100);
-        toast.success('Congratulations! Sudoku Solved.');
-      }
-    } else {
-      setMistakes(prev => {
-        const nextMistakes = prev + 1;
-        if (nextMistakes >= 3) {
-          setGameOver(true);
-          playTone(200, 0.35, 'sawtooth', 0.35);
-          toast.error('Game Over! 3 Mistakes reached.');
+        if (num === solution[r][c]) {
+          ng[r][c].value = num; ng[r][c].error = false; ng[r][c].notes.clear();
+          playTone(600, 0.04, 'sine', 0.08); vibrate(10);
+          // Clear notes in same row/col/box
+          for(let i=0;i<9;i++){ng[r][i].notes.delete(num);ng[i][c].notes.delete(num);}
+          const br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+          for(let i=0;i<3;i++)for(let j=0;j<3;j++){ng[br+i][bc+j].notes.delete(num);}
+          // Check win
+          if(ng.flat().every(cell=>cell.value!==0&&!cell.error)){
+            setPhase('won');
+            const elapsed = timer;
+            const nb = best===0||elapsed<best?elapsed:best;
+            setBest(nb); localStorage.setItem('sdk-best',String(nb));
+            toast.success('🎉 Puzzle solved!'); playTone(800,0.1,'sine',0.2); vibrate(100);
+          }
+        } else {
+          ng[r][c].error = true; ng[r][c].value = num;
+          setMistakes(m=>m+1); playTone(200,0.08,'sawtooth',0.12); vibrate(40);
+          setTimeout(()=>setGrid(g=>g.map((row,ri)=>row.map((cell,ci)=>ri===r&&ci===c?{...cell,error:false,value:0}:cell))),800);
         }
-        return nextMistakes;
-      });
-      playTone(220, 0.2, 'sawtooth', 0.15);
-      vibrate(80);
-      toast.error('Incorrect Number!');
-    }
-  };
+      }
+      return ng;
+    });
+  }, [selected, notesMode, solution, grid, best, timer]);
 
-  const handleHint = () => {
-    if (selectedCell === null || gameOver || won) {
-      toast('Select an empty cell first', { icon: '💡' });
-      return;
-    }
-    const cell = board[selectedCell];
-    if (cell.original || cell.value !== 0) return;
+  const handleHint = useCallback(() => {
+    if (!selected) { toast('Select a cell first!'); return; }
+    const [r,c] = selected;
+    if (grid[r]?.[c]?.given || grid[r]?.[c]?.value!==0) return;
+    setGrid(prev => {
+      const ng = prev.map(row=>row.map(cell=>({...cell,notes:new Set(cell.notes)})));
+      ng[r][c].value = solution[r][c]; ng[r][c].error = false;
+      return ng;
+    });
+    playTone(700, 0.05, 'sine', 0.08);
+    toast.success('💡 Hint used!');
+  }, [selected, grid, solution]);
 
-    const correctValue = solution[selectedCell];
-    const newBoard = [...board];
-    newBoard[selectedCell].value = correctValue;
-    newBoard[selectedCell].notes = [];
-    setBoard(newBoard);
-    playTone(700, 0.1, 'sine', 0.2);
-    toast.success('Hint Filled!');
+  const formatTime = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+
+  const isHighlighted = (r: number, c: number) => {
+    if (!selected) return false;
+    const [sr,sc] = selected;
+    return sr===r || sc===c || (Math.floor(sr/3)===Math.floor(r/3) && Math.floor(sc/3)===Math.floor(c/3));
   };
+  const isSelected = (r:number,c:number) => selected?.[0]===r && selected?.[1]===c;
+  const sameValue = (r:number,c:number) => selected && grid[selected[0]]?.[selected[1]]?.value>0 && grid[r]?.[c]?.value===grid[selected[0]]?.[selected[1]]?.value;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-4xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #090e1a 0%, #1e1b4b 50%, #0d1e3d 100%)' }}>
-      
-      {/* Settings Card */}
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-6 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20 text-white animate-fade-in">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-            <h2 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-300 uppercase tracking-widest">
-              Sudoku Core
-            </h2>
-            <Trophy size={16} className="text-yellow-400" />
+    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{background:'linear-gradient(135deg,#0a1628 0%,#16213E 100%)'}}>
+      {phase !== 'idle' && (
+        <>
+          {/* Stats bar */}
+          <div className="flex gap-4 w-full max-w-sm justify-between">
+            <span className="text-white font-mono">{formatTime(timer)}</span>
+            <span className="text-red-400">❌ {mistakes}</span>
+            <span className="text-yellow-400 text-sm">{difficulty}</span>
+            {best > 0 && <span className="text-white/50 font-mono text-sm">Best: {formatTime(best)}</span>}
           </div>
 
-          {/* Difficulty selector */}
-          <div className="space-y-2">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Difficulty Setting</span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(['easy', 'medium', 'hard', 'expert'] as const).map(diff => (
-                <button
-                  key={diff}
-                  onClick={() => setDifficulty(diff)}
-                  className={`py-1.5 rounded-lg text-3xs font-mono font-bold border capitalize transition-all ${
-                    difficulty === diff ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300' : 'border-slate-800 text-slate-500 hover:border-slate-700'
-                  }`}
-                >
-                  {diff}
-                </button>
-              ))}
-            </div>
+          {/* Board */}
+          <div className="rounded-2xl overflow-hidden select-none"
+            style={{ border:'2px solid rgba(74,144,217,0.35)', background:'rgba(255,255,255,0.04)' }}>
+            {grid.map((row,r)=>(
+              <div key={r} className="flex" style={{borderBottom:r%3===2&&r!==8?'2px solid rgba(74,144,217,0.4)':'1px solid rgba(255,255,255,0.08)'}}>
+                {row.map((cell,c)=>{
+                  const sel=isSelected(r,c), hl=isHighlighted(r,c), sv=sameValue(r,c);
+                  let bg='transparent';
+                  if(sel) bg='rgba(74,144,217,0.4)';
+                  else if(sv) bg='rgba(74,144,217,0.18)';
+                  else if(hl) bg='rgba(255,255,255,0.05)';
+                  return (
+                    <div key={c} onClick={()=>handleCell(r,c)}
+                      className="flex items-center justify-center cursor-pointer transition-colors relative"
+                      style={{
+                        width:35,height:35,background:bg,
+                        borderRight:c%3===2&&c!==8?'2px solid rgba(74,144,217,0.4)':'1px solid rgba(255,255,255,0.08)',
+                        color: cell.error?'#F76C6C':cell.given?'#A8CBEA':'#fff',
+                        fontWeight: cell.given?700:500, fontSize: cell.value?'16px':'9px',
+                      }}>
+                      {cell.value > 0 ? (
+                        <motion.span animate={cell.error?{x:[-3,3,-3,0]}:{}} transition={{duration:0.3}}>
+                          {cell.value}
+                        </motion.span>
+                      ) : cell.notes.size > 0 ? (
+                        <div className="grid grid-cols-3 gap-0 w-full h-full p-0.5">
+                          {[1,2,3,4,5,6,7,8,9].map(n=>(
+                            <span key={n} style={{fontSize:'7px',color:cell.notes.has(n)?'#4A90D9':'transparent',lineHeight:'11px',textAlign:'center'}}>{n}</span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
-          {/* Mistake Counter */}
-          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Mistakes Count</span>
-            <span className={`font-mono text-xs font-bold ${mistakes > 1 ? 'text-red-400' : 'text-cyan-400'}`}>
-              {mistakes} / 3
-            </span>
+          {/* Number pad */}
+          <div className="flex gap-2">
+            {[1,2,3,4,5,6,7,8,9].map(n=>(
+              <motion.button key={n} onClick={()=>handleNumber(n)}
+                whileTap={{scale:0.92}}
+                className="w-9 h-9 rounded-xl font-bold text-white transition-all"
+                style={{background:notesMode?'rgba(74,144,217,0.25)':'rgba(255,255,255,0.1)',border:`1.5px solid rgba(255,255,255,${notesMode?'0.25':'0.15'})`,fontSize:'16px'}}>
+                {n}
+              </motion.button>
+            ))}
           </div>
 
-          {/* Notes Option toggler */}
-          <div className="space-y-2">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Pencil Notes Mode</span>
-            <button
-              onClick={() => { setNoteMode(!noteMode); playTone(500, 0.04, 'sine', 0.1); }}
-              className={`w-full py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                noteMode ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300' : 'border-slate-800 text-slate-500 hover:border-slate-700'
-              }`}
-            >
-              ✍️ Notes mode: {noteMode ? 'ON' : 'OFF'}
+          {/* Controls */}
+          <div className="flex gap-2">
+            <button onClick={()=>setNotesMode(!notesMode)}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={{background:notesMode?'rgba(74,144,217,0.4)':'rgba(255,255,255,0.08)',color:notesMode?'#4A90D9':'#aaa',border:`1px solid ${notesMode?'#4A90D9':'rgba(255,255,255,0.1)'}`}}>
+              ✏️ Notes {notesMode?'ON':'OFF'}
+            </button>
+            <button onClick={handleHint}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={{background:'rgba(255,215,0,0.15)',color:'#FFD700',border:'1px solid rgba(255,215,0,0.3)'}}>
+              💡 Hint
+            </button>
+            <button onClick={startGame}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={{background:'rgba(255,255,255,0.08)',color:'#aaa',border:'1px solid rgba(255,255,255,0.1)'}}>
+              🔄 New
             </button>
           </div>
-        </div>
+        </>
+      )}
 
-        <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={handleHint}>
-            💡 Get Hint
-          </Button>
-          <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
-            Exit Sudoku
-          </Button>
-        </div>
-      </Card>
-
-      {/* Main Grid display board */}
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] border border-slate-800 rounded-2xl p-6 overflow-hidden bg-slate-950/40 text-white">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider">
-          <HelpCircle size={10} className="text-cyan-400" />
-          <span>SUDOKU RULES ACTIVE</span>
-        </div>
-
-        {gameOver ? (
-          <div className="text-center space-y-6 max-w-sm">
-            <RefreshCw size={36} className="text-red-400 mx-auto animate-spin-slow" />
-            <h3 className="text-2xl font-black text-slate-200">OUT OF LIVES</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              You reached the maximum limit of 3 incorrect answers. Let's restart!
-            </p>
-            <Button variant="neon" size="lg" className="w-full animate-bounce" onClick={handleRestart}>
-              Start Again
-            </Button>
+      {phase === 'idle' && (
+        <div className="flex flex-col items-center gap-5 mt-8">
+          <div className="text-5xl">🔢</div>
+          <h2 className="text-white font-bold text-3xl">Sudoku</h2>
+          <p className="text-white/60 text-sm text-center max-w-xs">Fill the 9×9 grid so every row, column and 3×3 box contains 1-9.</p>
+          <div className="flex gap-2">
+            {(['Easy','Medium','Hard'] as const).map(d=>(
+              <button key={d} onClick={()=>setDifficulty(d)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{background:difficulty===d?'#4A90D9':'rgba(255,255,255,0.08)',color:'#fff',border:difficulty===d?'none':'1px solid rgba(255,255,255,0.15)'}}>
+                {d}
+              </button>
+            ))}
           </div>
-        ) : won ? (
-          <div className="text-center space-y-6 max-w-sm">
-            <Sparkles size={36} className="text-yellow-400 mx-auto animate-pulse" />
-            <h3 className="text-2xl font-black text-yellow-300 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">SUDOKU SOLVED</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Congratulations on a successful puzzle run!
-            </p>
-            <Button variant="neon" size="lg" className="w-full animate-bounce" onClick={handleRestart}>
-              Play Next Grid
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-6 w-full max-w-md">
-            
-            {/* Sudoku Board Grid */}
-            <div className="grid grid-cols-9 gap-0.5 p-1 bg-slate-900 border-2 border-slate-800 rounded-2xl overflow-hidden w-full aspect-square max-w-[340px]">
-              {board.map((cell, idx) => {
-                const isSelected = selectedCell === idx;
-                const row = Math.floor(idx / 9);
-                const col = idx % 9;
-                
-                // Add border divisions for 3x3 blocks
-                const borderRight = (col === 2 || col === 5) ? 'border-r border-slate-700' : '';
-                const borderBottom = (row === 2 || row === 5) ? 'border-b border-slate-700' : '';
+          <Button variant="primary" onClick={startGame} className="px-10 py-3 text-lg">🎮 Start</Button>
+        </div>
+      )}
 
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handleCellSelect(idx)}
-                    className={`aspect-square relative flex items-center justify-center text-xs font-mono font-bold transition-all ${borderRight} ${borderBottom} ${
-                      isSelected 
-                        ? 'bg-cyan-500/20 text-cyan-200' 
-                        : cell.original 
-                          ? 'bg-slate-950/60 text-slate-400 cursor-default'
-                          : cell.value !== 0 
-                            ? 'bg-slate-900/40 text-cyan-300' 
-                            : 'bg-slate-900/10 hover:bg-slate-800/30'
-                    }`}
-                  >
-                    {cell.value !== 0 ? (
-                      <span className="text-base font-black">{cell.value}</span>
-                    ) : (
-                      <div className="grid grid-cols-3 gap-0.5 w-full h-full p-0.5 pointer-events-none">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                          <span key={n} className="text-[7px] text-slate-500/60 text-center leading-none">
-                            {cell.notes.includes(n) ? n : ''}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Input Selection Pads */}
-            <div className="flex justify-between items-center gap-1.5 w-full max-w-[340px]">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                <motion.button
-                  key={num}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleInputNumber(num)}
-                  className="flex-1 aspect-square bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 rounded-xl flex items-center justify-center font-mono font-bold text-sm outline-none"
-                >
-                  {num}
-                </motion.button>
-              ))}
-            </div>
-          </div>
+      <AnimatePresence>
+        {phase === 'won' && (
+          <motion.div initial={{scale:0.8,opacity:0}} animate={{scale:1,opacity:1}} className="text-center">
+            <div className="text-4xl">🎉</div>
+            <p className="text-white font-bold text-xl">Solved in {formatTime(timer)}!</p>
+            {timer === best && <p className="text-yellow-400 text-sm">New Best! 🏆</p>}
+            <Button variant="primary" onClick={startGame} className="mt-3">▶ Play Again</Button>
+          </motion.div>
         )}
-      </Card>
+      </AnimatePresence>
+
+      <Button variant="ghost" size="sm" onClick={onClose} className="mt-auto">Exit</Button>
     </div>
   );
 }

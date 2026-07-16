@@ -1,449 +1,232 @@
-// src/components/games/DotsAndBoxesGame.tsx
-import { useState, useEffect, useRef } from 'react';
-import { HelpCircle, RefreshCw, Trophy } from 'lucide-react';
+// src/components/games/DotsAndBoxesGame.tsx — Premium Dots and Boxes
+import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-interface DotsAndBoxesGameProps {
-  onClose: () => void;
+interface Props { onClose: () => void }
+
+const GRID = 5; // 5x5 dots = 4x4 boxes
+const PLAYER_COLOR = '#4A90D9';
+const AI_COLOR = '#F76C6C';
+
+type LineKey = string;
+function hKey(r: number, c: number): LineKey { return `h${r}_${c}`; }
+function vKey(r: number, c: number): LineKey { return `v${r}_${c}`; }
+
+
+
+function checkBox(lines: Set<LineKey>, r: number, c: number): boolean {
+  return lines.has(hKey(r,c)) && lines.has(hKey(r+1,c)) && lines.has(vKey(r,c)) && lines.has(vKey(r,c+1));
 }
 
-type Line = {
-  row: number;
-  col: number;
-  type: 'h' | 'v';
-  owner: 'p1' | 'p2' | null;
-};
-
-type Box = {
-  row: number;
-  col: number;
-  owner: 'p1' | 'p2' | null;
-};
-
-export function DotsAndBoxesGame({ onClose }: DotsAndBoxesGameProps) {
-  const [gridSize, setGridSize] = useState<4 | 5 | 6>(4); // number of dots
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [activePlayer, setActivePlayer] = useState<'p1' | 'p2'>('p1');
-  const [opponent, setOpponent] = useState<'ai' | 'player'>('ai');
-  const [scores, setScores] = useState({ p1: 0, p2: 0 });
-  const [gameOver, setGameOver] = useState(false);
-  const [winner, setWinner] = useState<string | null>(null);
-
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Game state references to maintain instant responsiveness in requestAnimationFrame
-  const lines = useRef<Line[]>([]);
-  const boxes = useRef<Box[]>([]);
-
-  const W = 360;
-  const H = 360;
-  const margin = 40;
-
-  const initBoard = () => {
-    const size = gridSize;
-    const horizontalLines: Line[] = [];
-    const verticalLines: Line[] = [];
-    const boxList: Box[] = [];
-
-    // Build lines
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size - 1; c++) {
-        horizontalLines.push({ row: r, col: c, type: 'h', owner: null });
-      }
+function getNewBoxes(lines: Set<LineKey>, key: LineKey): number[][] {
+  const newLines = new Set(lines); newLines.add(key);
+  const boxes: number[][] = [];
+  for (let r = 0; r < GRID-1; r++) {
+    for (let c = 0; c < GRID-1; c++) {
+      if (!checkBox(lines,r,c) && checkBox(newLines,r,c)) boxes.push([r,c]);
     }
-    for (let r = 0; r < size - 1; r++) {
-      for (let c = 0; c < size; c++) {
-        verticalLines.push({ row: r, col: c, type: 'v', owner: null });
-      }
+  }
+  return boxes;
+}
+
+function getAIMove(lines: Set<LineKey>): LineKey | null {
+  // Try to complete a box
+  const allLines: LineKey[] = [];
+  for (let r=0;r<GRID;r++) for(let c=0;c<GRID-1;c++) allLines.push(hKey(r,c));
+  for (let r=0;r<GRID-1;r++) for(let c=0;c<GRID;c++) allLines.push(vKey(r,c));
+  const avail = allLines.filter(l => !lines.has(l));
+  // 1. Take any completing move
+  for (const l of avail) { if (getNewBoxes(lines,l).length > 0) return l; }
+  // 2. Avoid 3-sided boxes (give opponent boxes)
+  const safe = avail.filter(l => {
+    const tmp = new Set(lines); tmp.add(l);
+    for(let r=0;r<GRID-1;r++) for(let c=0;c<GRID-1;c++) {
+      let count = 0;
+      if(tmp.has(hKey(r,c)))count++; if(tmp.has(hKey(r+1,c)))count++;
+      if(tmp.has(vKey(r,c)))count++; if(tmp.has(vKey(r,c+1)))count++;
+      if(count===3)return false;
     }
-    lines.current = [...horizontalLines, ...verticalLines];
+    return true;
+  });
+  if (safe.length > 0) return safe[Math.floor(Math.random()*safe.length)];
+  return avail[Math.floor(Math.random()*avail.length)] ?? null;
+}
 
-    // Build boxes
-    for (let r = 0; r < size - 1; r++) {
-      for (let c = 0; c < size - 1; c++) {
-        boxList.push({ row: r, col: c, owner: null });
-      }
+export function DotsAndBoxesGame({ onClose }: Props) {
+  const [lines, setLines] = useState<Set<LineKey>>(new Set());
+  const [boxes, setBoxes] = useState<('player'|'ai'|null)[][]>(Array.from({length:GRID-1},()=>Array(GRID-1).fill(null)));
+  const [isPlayer, setIsPlayer] = useState(true);
+  const [scores, setScores] = useState({ player: 0, ai: 0 });
+  const [phase, setPhase] = useState<'idle'|'playing'|'done'>('idle');
+  const [aiThinking, setAiThinking] = useState(false);
+  const [hoveredLine, setHoveredLine] = useState<LineKey | null>(null);
+
+  const reset = useCallback(() => {
+    setLines(new Set()); setBoxes(Array.from({length:GRID-1},()=>Array(GRID-1).fill(null)));
+    setIsPlayer(true); setScores({ player:0, ai:0 }); setPhase('playing'); setAiThinking(false);
+  }, []);
+
+  const playLine = useCallback((key: LineKey, byPlayer: boolean, currentLines: Set<LineKey>, currentBoxes: ('player'|'ai'|null)[][]): { newLines: Set<LineKey>; newBoxes: ('player'|'ai'|null)[][]; gained: number } => {
+    const newLines = new Set(currentLines); newLines.add(key);
+    const newBoxes = currentBoxes.map(row => [...row]) as ('player'|'ai'|null)[][];
+    const owner = byPlayer ? 'player' : 'ai';
+    let gained = 0;
+    for(let r=0;r<GRID-1;r++) for(let c=0;c<GRID-1;c++) {
+      if(newBoxes[r][c]===null && checkBox(newLines,r,c)) { newBoxes[r][c]=owner; gained++; }
     }
-    boxes.current = boxList;
+    return { newLines, newBoxes, gained };
+  }, []);
 
-    setScores({ p1: 0, p2: 0 });
-    setActivePlayer('p1');
-    setGameOver(false);
-    setWinner(null);
-    setIsPlaying(true);
-    playTone(550, 0.05, 'sine', 0.15);
-  };
-
-  const checkCompletedBoxes = (player: 'p1' | 'p2'): boolean => {
-    let completedAny = false;
-
-    boxes.current.forEach(box => {
-      if (box.owner !== null) return;
-
-      // Find lines forming this box
-      const top = lines.current.find(l => l.type === 'h' && l.row === box.row && l.col === box.col);
-      const bottom = lines.current.find(l => l.type === 'h' && l.row === box.row + 1 && l.col === box.col);
-      const left = lines.current.find(l => l.type === 'v' && l.row === box.row && l.col === box.col);
-      const right = lines.current.find(l => l.type === 'v' && l.row === box.row && l.col === box.col + 1);
-
-      if (top?.owner && bottom?.owner && left?.owner && right?.owner) {
-        box.owner = player;
-        completedAny = true;
-        setScores(prev => {
-          const nextScores = { ...prev, [player]: prev[player] + 1 };
-          return nextScores;
-        });
-        playTone(660, 0.08, 'sine', 0.2);
-        vibrate(25);
-      }
-    });
-
-    return completedAny;
-  };
-
-  const getAIMove = (): Line | null => {
-    // Find any move that completes a box immediately
-    for (const line of lines.current) {
-      if (line.owner !== null) continue;
-      // Temporary check
-      line.owner = 'p2';
-      let completes = false;
-      for (const box of boxes.current) {
-        if (box.owner !== null) continue;
-        const top = lines.current.find(l => l.type === 'h' && l.row === box.row && l.col === box.col);
-        const bottom = lines.current.find(l => l.type === 'h' && l.row === box.row + 1 && l.col === box.col);
-        const left = lines.current.find(l => l.type === 'v' && l.row === box.row && l.col === box.col);
-        const right = lines.current.find(l => l.type === 'v' && l.row === box.row && l.col === box.col + 1);
-        if (top?.owner && bottom?.owner && left?.owner && right?.owner) {
-          completes = true;
-          break;
-        }
-      }
-      line.owner = null; // revert
-      if (completes) return line;
-    }
-
-    // Otherwise, pick a random available line
-    const available = lines.current.filter(l => l.owner === null);
-    if (available.length === 0) return null;
-    return available[Math.floor(Math.random() * available.length)];
-  };
-
-  const handleAIMove = () => {
-    const aiLine = getAIMove();
-    if (!aiLine) return;
-
-    aiLine.owner = 'p2';
-    playTone(400, 0.04, 'sine', 0.1);
-
-    const completed = checkCompletedBoxes('p2');
-
-    // Check game over
-    const allFilled = lines.current.every(l => l.owner !== null);
-    if (allFilled) {
-      resolveGameEnd();
-      return;
-    }
-
-    if (completed) {
-      // AI gets another turn
+  const handleLine = useCallback((key: LineKey) => {
+    if (!isPlayer || lines.has(key) || phase !== 'playing' || aiThinking) return;
+    const { newLines, newBoxes, gained } = playLine(key, true, lines, boxes);
+    const pScore = newBoxes.flat().filter(b=>b==='player').length;
+    const aScore = newBoxes.flat().filter(b=>b==='ai').length;
+    setLines(newLines); setBoxes(newBoxes); setScores({ player:pScore, ai:aScore });
+    playTone(gained>0?750:500, 0.05, 'sine', 0.08);
+    if (gained>0) { vibrate(20); toast.success(`+${gained} box${gained>1?'es':''}!`); }
+    const total = (GRID-1)*(GRID-1);
+    if(pScore+aScore>=total) { setPhase('done'); return; }
+    if (gained === 0) {
+      setIsPlayer(false); setAiThinking(true);
       setTimeout(() => {
-        handleAIMove();
-      }, 600);
-    } else {
-      setActivePlayer('p1');
-    }
-    drawBoard();
-  };
-
-  const resolveGameEnd = () => {
-    setGameOver(true);
-    let winMsg = '';
-    if (scores.p1 > scores.p2) {
-      winMsg = 'Player 1 Wins!';
-      playTone(523, 0.15, 'sine', 0.25);
-    } else if (scores.p2 > scores.p1) {
-      winMsg = opponent === 'ai' ? 'AI Wins!' : 'Player 2 Wins!';
-      playTone(200, 0.3, 'sawtooth', 0.3);
-    } else {
-      winMsg = 'Draw Match!';
-      playTone(300, 0.2, 'triangle', 0.2);
-    }
-    setWinner(winMsg);
-    toast.success(winMsg, { icon: '🏆' });
-  };
-
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isPlaying || gameOver || activePlayer === 'p2' && opponent === 'ai') return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    const size = gridSize;
-    const dotSpacing = (W - margin * 2) / (size - 1);
-
-    // Find the closest line
-    let closestLine: Line | null = null;
-    let minDistance = 15; // Click tolerance radius
-
-    lines.current.forEach(line => {
-      if (line.owner !== null) return;
-
-      let lx1 = 0, ly1 = 0, lx2 = 0, ly2 = 0;
-      if (line.type === 'h') {
-        lx1 = margin + line.col * dotSpacing;
-        ly1 = margin + line.row * dotSpacing;
-        lx2 = lx1 + dotSpacing;
-        ly2 = ly1;
-      } else {
-        lx1 = margin + line.col * dotSpacing;
-        ly1 = margin + line.row * dotSpacing;
-        lx2 = lx1;
-        ly2 = ly1 + dotSpacing;
-      }
-
-      // Calculate distance from point to line segment
-      const l2 = Math.pow(lx2 - lx1, 2) + Math.pow(ly2 - ly1, 2);
-      let t = ((clickX - lx1) * (lx2 - lx1) + (clickY - ly1) * (ly2 - ly1)) / l2;
-      t = Math.max(0, Math.min(1, t));
-      const projX = lx1 + t * (lx2 - lx1);
-      const projY = ly1 + t * (ly2 - ly1);
-      const dist = Math.sqrt(Math.pow(clickX - projX, 2) + Math.pow(clickY - projY, 2));
-
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestLine = line;
-      }
-    });
-
-    if (closestLine) {
-      const line = closestLine as Line;
-      line.owner = activePlayer;
-      playTone(450, 0.04, 'sine', 0.1);
-      vibrate(20);
-
-      const completed = checkCompletedBoxes(activePlayer);
-
-      // Check game over
-      const allFilled = lines.current.every(l => l.owner !== null);
-      if (allFilled) {
-        resolveGameEnd();
-        drawBoard();
-        return;
-      }
-
-      if (completed) {
-        // Current player gets another turn, do nothing else
-      } else {
-        if (opponent === 'ai') {
-          setActivePlayer('p2');
-          setTimeout(() => {
-            handleAIMove();
-          }, 600);
-        } else {
-          setActivePlayer(activePlayer === 'p1' ? 'p2' : 'p1');
+        const aiMove = getAIMove(newLines);
+        if (!aiMove) { setAiThinking(false); setIsPlayer(true); return; }
+        const { newLines:nl2, newBoxes:nb2, gained:g2 } = playLine(aiMove, false, newLines, newBoxes);
+        const pS2 = nb2.flat().filter(b=>b==='player').length;
+        const aS2 = nb2.flat().filter(b=>b==='ai').length;
+        setLines(nl2); setBoxes(nb2); setScores({ player:pS2, ai:aS2 });
+        playTone(g2>0?450:350, 0.04, 'sine', 0.07);
+        if(pS2+aS2>=total) { setPhase('done'); return; }
+        setIsPlayer(g2===0);
+        setAiThinking(false);
+        if(g2>0) { // AI gets another turn
+          setTimeout(()=>{
+            setIsPlayer(false); setAiThinking(true);
+            const m2=getAIMove(nl2);
+            if(!m2){setAiThinking(false);setIsPlayer(true);return;}
+            const {newLines:nl3,newBoxes:nb3,gained:g3}=playLine(m2,false,nl2,nb2);
+            const pS3=nb3.flat().filter(b=>b==='player').length;
+            const aS3=nb3.flat().filter(b=>b==='ai').length;
+            setLines(nl3);setBoxes(nb3);setScores({player:pS3,ai:aS3});
+            if(pS3+aS3>=total){setPhase('done');return;}
+            setIsPlayer(g3===0); setAiThinking(false);
+          },300);
         }
-      }
-      drawBoard();
+      }, 400);
     }
-  };
+  }, [lines, boxes, isPlayer, phase, aiThinking, playLine]);
 
-  const drawBoard = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, W, H);
-
-    // Grid backdrop
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, W, H);
-
-    const size = gridSize;
-    const dotSpacing = (W - margin * 2) / (size - 1);
-
-    // Draw completed box fill overlays
-    boxes.current.forEach(box => {
-      if (box.owner === null) return;
-      ctx.fillStyle = box.owner === 'p1' ? 'rgba(6, 182, 212, 0.15)' : 'rgba(99, 102, 241, 0.15)';
-      const bx = margin + box.col * dotSpacing + 4;
-      const by = margin + box.row * dotSpacing + 4;
-      ctx.fillRect(bx, by, dotSpacing - 8, dotSpacing - 8);
-    });
-
-    // Draw lines
-    lines.current.forEach(line => {
-      let lx1 = 0, ly1 = 0, lx2 = 0, ly2 = 0;
-      if (line.type === 'h') {
-        lx1 = margin + line.col * dotSpacing;
-        ly1 = margin + line.row * dotSpacing;
-        lx2 = lx1 + dotSpacing;
-        ly2 = ly1;
-      } else {
-        lx1 = margin + line.col * dotSpacing;
-        ly1 = margin + line.row * dotSpacing;
-        lx2 = lx1;
-        ly2 = ly1 + dotSpacing;
-      }
-
-      ctx.beginPath();
-      ctx.moveTo(lx1, ly1);
-      ctx.lineTo(lx2, ly2);
-      ctx.lineWidth = line.owner ? 4.5 : 2;
-      ctx.strokeStyle = line.owner 
-        ? line.owner === 'p1' ? '#06b6d4' : '#6366f1' 
-        : '#334155';
-      ctx.stroke();
-    });
-
-    // Draw dots
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        const dx = margin + c * dotSpacing;
-        const dy = margin + r * dotSpacing;
-        ctx.beginPath();
-        ctx.arc(dx, dy, 5, 0, Math.PI * 2);
-        ctx.fillStyle = '#94a3b8';
-        ctx.fill();
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (isPlaying) {
-      drawBoard();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, gridSize]);
+  const DOT = 28, GAP = 58, PAD = 28;
+  const getPos = (r: number, c: number) => ({ x: PAD + c*GAP, y: PAD + r*GAP });
+  const winner = phase==='done' ? (scores.player>scores.ai?'You win! 🎉':scores.player<scores.ai?'AI wins 🤖':"It's a draw! 🤝") : null;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-4xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #090910 0%, #0d1a30 50%, #0e1b4b 100%)' }}>
-      
-      {/* Settings Panel */}
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20 text-white animate-fade-in">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-            <h2 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-300 uppercase tracking-widest">
-              Box Chain
-            </h2>
-            <Trophy size={16} className="text-yellow-400" />
+    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{ background:'linear-gradient(135deg,#0a1628 0%,#16213E 100%)' }}>
+      {/* Scores */}
+      <div className="flex gap-5 mt-2">
+        {[{label:'You',val:scores.player,color:PLAYER_COLOR},{label:'AI',val:scores.ai,color:AI_COLOR}].map(s=>(
+          <div key={s.label} className="flex flex-col items-center px-5 py-2 rounded-2xl" style={{background:'rgba(255,255,255,0.07)'}}>
+            <span className="text-2xl font-bold" style={{color:s.color}}>{s.val}</span>
+            <span className="text-xs text-white/50">{s.label}</span>
           </div>
-
-          <div className="space-y-2">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Opponent Mode</span>
-            <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-              <button disabled={isPlaying} onClick={() => setOpponent('ai')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${opponent === 'ai' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-400'}`}>
-                🤖 vs AI
-              </button>
-              <button disabled={isPlaying} onClick={() => setOpponent('player')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${opponent === 'player' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-500 hover:text-slate-400'}`}>
-                👥 Pass & Play
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Grid Size</span>
-            <div className="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-              {([4, 5, 6] as const).map(sz => (
-                <button key={sz} disabled={isPlaying} onClick={() => setGridSize(sz)} className={`py-1.5 rounded-lg text-xs font-mono font-bold transition-all ${gridSize === sz ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-500 hover:text-slate-400'}`}>
-                  {sz}x{sz}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Scores indicator */}
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2 text-center">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Completed boxes</p>
-            <div className="grid grid-cols-2 gap-2 text-sm font-mono">
-              <div className="border-r border-slate-900">
-                <span className="text-cyan-400 font-black">{scores.p1}</span>
-                <p className="text-3xs text-slate-500">Player 1</p>
-              </div>
-              <div>
-                <span className="text-indigo-400 font-black">{scores.p2}</span>
-                <p className="text-3xs text-slate-500">{opponent === 'ai' ? 'AI Bot' : 'Player 2'}</p>
-              </div>
-            </div>
-          </div>
+        ))}
+        <div className="flex flex-col items-center px-5 py-2 rounded-2xl" style={{background:'rgba(255,255,255,0.07)'}}>
+          <span className="text-sm font-bold text-white">{(GRID-1)*(GRID-1)-scores.player-scores.ai}</span>
+          <span className="text-xs text-white/50">Left</span>
         </div>
+      </div>
+      <div className="text-white/70 text-sm">{phase==='playing'?(isPlayer?'Your turn':'🤖 AI thinking...'):(winner||'')}</div>
 
-        <div className="space-y-2">
-          {!isPlaying ? (
-            <Button variant="neon" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={initBoard}>
-              Start Match
-            </Button>
-          ) : (
-            <Button variant="danger" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={() => { setIsPlaying(false); setGameOver(true); }}>
-              Abort Run
-            </Button>
-          )}
-          <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
-            Exit Panel
-          </Button>
-        </div>
-      </Card>
+      {/* Game board as SVG */}
+      {phase!=='idle' && (
+        <svg width={PAD*2+GAP*(GRID-1)} height={PAD*2+GAP*(GRID-1)} className="select-none touch-none">
+          {/* Boxes */}
+          {Array.from({length:GRID-1},(_, r)=>Array.from({length:GRID-1},(_,c)=>{
+            const {x,y}=getPos(r,c);
+            const owner=boxes[r]?.[c];
+            if(!owner) return null;
+            return (
+              <rect key={`b${r}_${c}`} x={x+DOT/2} y={y+DOT/2} width={GAP-DOT} height={GAP-DOT}
+                fill={owner==='player'?`${PLAYER_COLOR}35`:`${AI_COLOR}35`}
+                rx={4}
+              >
+                <animate attributeName="opacity" from="0" to="1" dur="0.3s" fill="freeze"/>
+              </rect>
+            );
+          }))}
 
-      {/* Main Grid View */}
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] border border-slate-800 rounded-2xl p-6 overflow-hidden bg-slate-950/40 text-white">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
-          <HelpCircle size={10} className="text-cyan-400" />
-          <span>CONNECT DOTS TO FORM BOXES</span>
-        </div>
-
-        {isPlaying ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-xs font-bold uppercase tracking-widest font-mono">
-              Current turn: <span className={activePlayer === 'p1' ? 'text-cyan-400' : 'text-indigo-400'}>{activePlayer === 'p1' ? 'PLAYER 1 (Cyan)' : opponent === 'ai' ? 'AI BOT (Blue)' : 'PLAYER 2 (Blue)'}</span>
-            </div>
-            
-            <div className="relative border-2 border-slate-800/80 rounded-2xl overflow-hidden shadow-lg shadow-black/50">
-              <canvas
-                ref={canvasRef}
-                width={W}
-                height={H}
-                onClick={handleCanvasClick}
-                className="block bg-slate-950"
+          {/* Horizontal lines */}
+          {Array.from({length:GRID},(_, r)=>Array.from({length:GRID-1},(_,c)=>{
+            const key=hKey(r,c);
+            const taken=lines.has(key);
+            const hov=hoveredLine===key;
+            const {x,y}=getPos(r,c);
+            return (
+              <line key={key} x1={x+DOT/2} y1={y+DOT/2} x2={getPos(r,c+1).x+DOT/2} y2={getPos(r,c+1).y+DOT/2}
+                stroke={taken?(isPlayer?AI_COLOR:PLAYER_COLOR):hov?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.15)'}
+                strokeWidth={taken?4:hov?3:2} strokeLinecap="round"
+                style={{cursor:'pointer',transition:'stroke 0.15s'}}
+                onClick={()=>handleLine(key)}
+                onMouseEnter={()=>setHoveredLine(key)}
+                onMouseLeave={()=>setHoveredLine(null)}
               />
-            </div>
-          </div>
-        ) : (
-          <div className="text-center space-y-6 max-w-sm">
-            {gameOver ? (
-              <>
-                <RefreshCw size={36} className="text-indigo-400 mx-auto animate-spin-slow" />
-                <h3 className="text-2xl font-black text-slate-200">MATCH OVER</h3>
-                <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 font-mono space-y-1.5 text-sm">
-                  <p className="text-slate-400">P1 Score: <span className="text-cyan-400 font-bold">{scores.p1}</span></p>
-                  <p className="text-slate-400">P2 Score: <span className="text-indigo-400 font-bold">{scores.p2}</span></p>
-                  <p className="text-yellow-400 font-bold uppercase pt-1 border-t border-slate-900">{winner}</p>
-                </div>
-                <Button variant="neon" size="lg" className="w-full animate-bounce" onClick={initBoard}>
-                  Play Again
-                </Button>
-              </>
-            ) : (
-              <>
-                <Trophy size={36} className="text-cyan-400 mx-auto animate-pulse" />
-                <h3 className="text-xl font-bold">Dots & Boxes</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Take turns drawing lines between dots. Form completed 1x1 boxes to earn points and secure extra moves!
-                </p>
-                <Button variant="neon" size="lg" className="w-full" onClick={initBoard}>
-                  Start Match
-                </Button>
-              </>
-            )}
-          </div>
+            );
+          }))}
+
+          {/* Vertical lines */}
+          {Array.from({length:GRID-1},(_, r)=>Array.from({length:GRID},(_,c)=>{
+            const key=vKey(r,c);
+            const taken=lines.has(key);
+            const hov=hoveredLine===key;
+            const {x,y}=getPos(r,c);
+            return (
+              <line key={key} x1={x+DOT/2} y1={y+DOT/2} x2={getPos(r+1,c).x+DOT/2} y2={getPos(r+1,c).y+DOT/2}
+                stroke={taken?(isPlayer?AI_COLOR:PLAYER_COLOR):hov?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.15)'}
+                strokeWidth={taken?4:hov?3:2} strokeLinecap="round"
+                style={{cursor:'pointer',transition:'stroke 0.15s'}}
+                onClick={()=>handleLine(key)}
+                onMouseEnter={()=>setHoveredLine(key)}
+                onMouseLeave={()=>setHoveredLine(null)}
+              />
+            );
+          }))}
+
+          {/* Dots */}
+          {Array.from({length:GRID},(_, r)=>Array.from({length:GRID},(_,c)=>{
+            const {x,y}=getPos(r,c);
+            return <circle key={`d${r}_${c}`} cx={x+DOT/2} cy={y+DOT/2} r={6} fill="#A8CBEA"/>;
+          }))}
+
+          {/* Box labels */}
+          {Array.from({length:GRID-1},(_, r)=>Array.from({length:GRID-1},(_,c)=>{
+            const owner=boxes[r]?.[c];
+            if(!owner)return null;
+            const {x,y}=getPos(r,c);
+            return <text key={`bl${r}_${c}`} x={x+GAP/2} y={y+GAP/2+5} textAnchor="middle" fontSize="16"
+              fill={owner==='player'?PLAYER_COLOR:AI_COLOR} fontWeight="bold">
+              {owner==='player'?'×':'○'}
+            </text>;
+          }))}
+        </svg>
+      )}
+
+      <AnimatePresence>
+        {phase==='done' && (
+          <motion.div initial={{scale:0.8,opacity:0}} animate={{scale:1,opacity:1}} className="text-center">
+            <p className="text-white font-bold text-xl mt-1">{winner}</p>
+          </motion.div>
         )}
-      </Card>
+      </AnimatePresence>
+
+      <div className="flex gap-3">
+        {phase==='idle' && <Button variant="primary" onClick={reset}>🎮 Play vs AI</Button>}
+        {(phase==='playing'||phase==='done') && <Button variant="primary" onClick={reset}>🔄 New Game</Button>}
+        <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
+      </div>
     </div>
   );
 }

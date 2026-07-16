@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, Settings, LogOut, User, Volume2, VolumeX, ChevronDown, Gamepad2
+  Menu, Settings, LogOut, User, Volume2, VolumeX, ChevronDown, Gamepad2, Sun, Moon
 } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
@@ -16,7 +16,7 @@ import { cn, getInitials, getAvatarColor } from '@/lib/utils';
 export function Header() {
   const location = useLocation();
   const { profile, logout, isGuest } = useAuthStore();
-  const { toggleSidebar, toggleSettings } = useUIStore();
+  const { toggleSidebar, toggleSettings, theme, toggleTheme } = useUIStore();
   const { soundEnabled, toggleSound } = useGameStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -108,6 +108,18 @@ export function Header() {
               <TokenCounter value={tokens} size="sm" showIcon={true} />
             </div>
           )}
+
+          {/* Theme toggle — 36px circle icon-btn */}
+          <button
+            className="icon-btn-sm"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark'
+              ? <Sun size={15} strokeWidth={2} />
+              : <Moon size={15} strokeWidth={2} />
+            }
+          </button>
 
           {/* Sound toggle — 36px circle icon-btn */}
           <button

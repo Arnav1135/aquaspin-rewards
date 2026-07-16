@@ -1,404 +1,250 @@
-// src/components/games/DartsGame.tsx
-import { useState, useEffect, useRef } from 'react';
-import { HelpCircle, Target, Sparkles } from 'lucide-react';
+// src/components/games/DartsGame.tsx — Premium Darts Canvas Game
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-interface DartsGameProps {
-  onClose: () => void;
-}
+interface Props { onClose: () => void }
+type Dart = { x: number; y: number; score: number; label: string };
+type Particle = { x:number; y:number; vx:number; vy:number; life:number; color:string; r:number };
 
-type DartsScoreMode = 301 | 501;
-
-type ThrownDart = {
-  x: number;
-  y: number;
-  score: number;
-  ring: 'single' | 'double' | 'triple' | 'outer-bull' | 'inner-bull' | 'miss';
-};
-
-// Darts sector angles around the board
-const BOARD_SECTORS = [
-  20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5
-];
-
-export function DartsGame({ onClose }: DartsGameProps) {
-  const [scoreMode, setScoreMode] = useState<DartsScoreMode>(301);
-  const [remainingScore, setRemainingScore] = useState(301);
-  const [dartsLeft, setDartsLeft] = useState(3);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [won, setWon] = useState(false);
-
+export function DartsGame({ onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  const thrownDarts = useRef<ThrownDart[]>([]);
-  const isMouseDown = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const flyingDart = useRef<{ x: number; y: number; targetX: number; targetY: number; progress: number } | null>(null);
+  const rafRef = useRef(0);
+  const s = useRef({
+    phase: 'idle' as 'idle'|'playing'|'result',
+    darts: [] as Dart[], particles: [] as Particle[],
+    totalScore: 0, throwsLeft: 10, lastScore: '',
+    best: parseInt(localStorage.getItem('drt-best')||'0'),
+    frame: 0, lastTime: 0,
+    // Oscillating cursor
+    cursorAngle: 0, cursorR: 0, cursorDir: 1,
+    sway: 0, swayDir: 1,
+    throwPending: false,
+  });
+  const [disp, setDisp] = useState({ score: 0, throwsLeft: 10, phase: 'idle' as 'idle'|'playing'|'result', best: parseInt(localStorage.getItem('drt-best')||'0'), lastScore: '' });
+  const W = 380, H = 520;
+  const CX = W / 2, CY = 200;
 
-  const W = 380;
-  const H = 380;
-  const CX = 190;
-  const CY = 190;
-  
-  // Board radii percentages
-  const R_DOUBLE = 145;
-  const R_TRIPLE_OUTER = 96;
-  const R_TRIPLE_INNER = 88;
-  const R_BULL_OUTER = 16;
-  const R_BULL_INNER = 6;
+  const SECTORS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
 
-  const initGame = () => {
-    setRemainingScore(scoreMode);
-    setDartsLeft(3);
-    thrownDarts.current = [];
-    flyingDart.current = null;
-    setIsPlaying(true);
-    setGameOver(false);
-    setWon(false);
-    playTone(523, 0.05, 'sine', 0.15);
-    setTimeout(() => drawBoard(), 50);
+
+  const getScore = (dx: number, dy: number): { pts: number; label: string } => {
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    if (dist > 175) return { pts: 0, label: 'Miss' };
+    if (dist <= 10) return { pts: 50, label: 'BULLSEYE! 🎯' };
+    if (dist <= 25) return { pts: 25, label: 'Bull! ✅' };
+    const sectorAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+    const idx = Math.floor(((sectorAngle + 360 + 9) / 18) % 20);
+    const base = SECTORS[idx % 20];
+    if (dist > 105 && dist <= 115) return { pts: base * 3, label: `Triple ${base} ×3! 🔥` };
+    if (dist > 165 && dist <= 175) return { pts: base * 2, label: `Double ${base} ×2!` };
+    return { pts: base, label: `${base}` };
   };
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isPlaying || gameOver || won || dartsLeft <= 0 || flyingDart.current) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    isMouseDown.current = true;
-    dragStart.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  };
-
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isMouseDown.current || !isPlaying || flyingDart.current) return;
-    isMouseDown.current = false;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const endX = e.clientX - rect.left;
-    const endY = e.clientY - rect.top;
-
-    // Calculate swipe velocity
-    const dx = endX - dragStart.current.x;
-    const dy = endY - dragStart.current.y;
-    
-    // Target coordinate based on swipe
-    const targetX = CX + dx * 1.5;
-    const targetY = CY + dy * 1.5;
-
-    setDartsLeft(prev => prev - 1);
-    
-    // Launch dart flying animation
-    flyingDart.current = {
-      x: CX,
-      y: H - 20,
-      targetX,
-      targetY,
-      progress: 0
-    };
-    playTone(300, 0.04, 'triangle', 0.08);
-  };
-
-  const calculateDartScore = (x: number, y: number): ThrownDart => {
-    const dx = x - CX;
-    const dy = y - CY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist > R_DOUBLE + 10) {
-      return { x, y, score: 0, ring: 'miss' };
+  const throw_ = useCallback(() => {
+    const gs = s.current;
+    if (gs.phase !== 'playing' || gs.throwPending) return;
+    gs.throwPending = true;
+    // Add randomness around cursor position
+    const noise = 12;
+    const hitX = CX + gs.cursorR * Math.cos(gs.cursorAngle) + (Math.random()-0.5)*noise;
+    const hitY = CY + gs.cursorR * Math.sin(gs.cursorAngle) + gs.sway + (Math.random()-0.5)*noise;
+    const dx = hitX - CX, dy = hitY - CY;
+    const { pts, label } = getScore(dx, dy);
+    gs.darts.push({ x: hitX, y: hitY, score: pts, label });
+    gs.totalScore += pts; gs.throwsLeft--; gs.lastScore = label;
+    // Particles
+    const color = pts >= 50 ? '#FFD700' : pts >= 25 ? '#3DDC97' : pts > 20 ? '#4A90D9' : '#aaa';
+    for (let pi = 0; pi < 10; pi++) {
+      const a = Math.random()*Math.PI*2, sp = 2+Math.random()*5;
+      gs.particles.push({ x: hitX, y: hitY, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color, r: 2+Math.random()*3 });
     }
-
-    if (dist <= R_BULL_INNER) {
-      return { x, y, score: 50, ring: 'inner-bull' };
+    playTone(pts >= 50 ? 900 : pts >= 20 ? 600 : 350, 0.07, 'sine', 0.12); vibrate(30);
+    if (pts >= 50) toast.success(`🏆 ${label} +${pts}pts!`);
+    else if (pts >= 20) toast.success(`🎯 ${label} +${pts}pts`);
+    setDisp(d => ({ ...d, score: gs.totalScore, throwsLeft: gs.throwsLeft, lastScore: label }));
+    gs.throwPending = false;
+    if (gs.throwsLeft <= 0) {
+      gs.phase = 'result';
+      const newBest = Math.max(gs.totalScore, gs.best);
+      gs.best = newBest; localStorage.setItem('drt-best', String(newBest));
+      setDisp(d => ({ ...d, phase: 'result', best: newBest }));
+      toast.success(`🎉 Final: ${gs.totalScore}pts | Best: ${newBest}`);
     }
-    if (dist <= R_BULL_OUTER) {
-      return { x, y, score: 25, ring: 'outer-bull' };
-    }
-
-    // Calculate sector angle
-    // Math.atan2 returns angle in radians [-PI, PI]
-    let angle = Math.atan2(dy, dx);
-    // Shift by half sector to align with 20 at the top center
-    angle = -angle + Math.PI / 2 + Math.PI / 20;
-    if (angle < 0) angle += Math.PI * 2;
-    const sectorIndex = Math.floor((angle / (Math.PI * 2)) * 20) % 20;
-    const sectorValue = BOARD_SECTORS[sectorIndex];
-
-    if (dist >= R_TRIPLE_INNER && dist <= R_TRIPLE_OUTER) {
-      return { x, y, score: sectorValue * 3, ring: 'triple' };
-    }
-    if (dist >= R_DOUBLE && dist <= R_DOUBLE + 8) {
-      return { x, y, score: sectorValue * 2, ring: 'double' };
-    }
-
-    return { x, y, score: sectorValue, ring: 'single' };
-  };
-
-  const resolveDartLanding = (targetX: number, targetY: number) => {
-    const dart = calculateDartScore(targetX, targetY);
-    thrownDarts.current.push(dart);
-
-    const nextScore = remainingScore - dart.score;
-
-    if (nextScore === 0) {
-      setRemainingScore(0);
-      setWon(true);
-      setIsPlaying(false);
-      playTone(523, 0.15, 'sine', 0.2);
-      setTimeout(() => playTone(659, 0.15, 'sine', 0.2), 100);
-      toast.success('🥇 Zero Reached! Victory.');
-    } else if (nextScore < 0) {
-      playTone(180, 0.35, 'sawtooth', 0.25);
-      toast.error('Bust! Went below zero.', { id: 'dart-feedback' });
-      // Reset darts in hand
-      setDartsLeft(3);
-    } else {
-      setRemainingScore(nextScore);
-      playTone(600, 0.05, 'triangle', 0.1);
-      vibrate(20);
-      toast.success(`Hit ${dart.ring.toUpperCase()} ${dart.score}!`, { id: 'dart-feedback' });
-
-      if (dartsLeft - 1 <= 0) {
-        // Hand finished, reset round
-        setDartsLeft(3);
-      }
-    }
-    drawBoard();
-  };
-
-  const drawBoard = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, W, H);
-
-    // Draw backing board felt
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, W, H);
-
-    // 1. Draw outer boundary ring
-    ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(CX, CY, R_DOUBLE + 10, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // 2. Draw Sectors
-    for (let i = 0; i < 20; i++) {
-      const startAngle = (i * Math.PI * 2) / 20 - Math.PI / 2 - Math.PI / 20;
-      const endAngle = startAngle + (Math.PI * 2) / 20;
-      const isEven = i % 2 === 0;
-
-      // Outer Single Sector
-      ctx.fillStyle = isEven ? '#1e293b' : '#f8fafc';
-      ctx.beginPath();
-      ctx.moveTo(CX, CY);
-      ctx.arc(CX, CY, R_DOUBLE, startAngle, endAngle);
-      ctx.closePath();
-      ctx.fill();
-
-      // Double ring
-      ctx.fillStyle = isEven ? '#ef4444' : '#22c55e';
-      ctx.beginPath();
-      ctx.moveTo(CX, CY);
-      ctx.arc(CX, CY, R_DOUBLE + 8, startAngle, endAngle);
-      ctx.closePath();
-      ctx.fill();
-
-      // Inner Single Sector
-      ctx.fillStyle = isEven ? '#1e293b' : '#f8fafc';
-      ctx.beginPath();
-      ctx.moveTo(CX, CY);
-      ctx.arc(CX, CY, R_TRIPLE_OUTER, startAngle, endAngle);
-      ctx.closePath();
-      ctx.fill();
-
-      // Triple ring
-      ctx.fillStyle = isEven ? '#ef4444' : '#22c55e';
-      ctx.beginPath();
-      ctx.moveTo(CX, CY);
-      ctx.arc(CX, CY, R_TRIPLE_OUTER, startAngle, endAngle);
-      ctx.arc(CX, CY, R_TRIPLE_INNER, endAngle, startAngle, true);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 3. Draw Bullseyes
-    ctx.fillStyle = '#22c55e'; // Green outer bull
-    ctx.beginPath();
-    ctx.arc(CX, CY, R_BULL_OUTER, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ef4444'; // Red inner bull
-    ctx.beginPath();
-    ctx.arc(CX, CY, R_BULL_INNER, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 4. Draw stuck darts
-    thrownDarts.current.forEach(dart => {
-      ctx.beginPath();
-      ctx.arc(dart.x, dart.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = '#ef4444';
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    });
-
-    // 5. Draw flying dart shadow
-    if (flyingDart.current) {
-      const fd = flyingDart.current;
-      fd.progress += 0.08;
-      fd.x += (fd.targetX - fd.x) * 0.08;
-      fd.y += (fd.targetY - fd.y) * 0.08;
-
-      ctx.beginPath();
-      ctx.arc(fd.x, fd.y, 6 - fd.progress * 2, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.fill();
-
-      if (fd.progress >= 1.0) {
-        const targetX = fd.targetX;
-        const targetY = fd.targetY;
-        flyingDart.current = null;
-        resolveDartLanding(targetX, targetY);
-      }
-    }
-  };
+  }, []);
 
   useEffect(() => {
-    let animId: number;
-    const animate = () => {
-      if (flyingDart.current) {
-        drawBoard();
-      }
-      animId = requestAnimationFrame(animate);
-    };
-    if (isPlaying) {
-      animId = requestAnimationFrame(animate);
-    }
-    return () => cancelAnimationFrame(animId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying]);
+    const handleKey = (e: KeyboardEvent) => { if (e.code === 'Space') { e.preventDefault(); throw_(); } };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [throw_]);
+
+  const startGame = useCallback(() => {
+    const gs = s.current;
+    gs.phase = 'playing'; gs.darts = []; gs.particles = [];
+    gs.totalScore = 0; gs.throwsLeft = 10; gs.lastScore = '';
+    gs.cursorAngle = 0; gs.cursorR = 0; gs.cursorDir = 1; gs.sway = 0; gs.swayDir = 1;
+    setDisp(d => ({ ...d, score: 0, throwsLeft: 10, phase: 'playing', lastScore: '' }));
+  }, []);
 
   useEffect(() => {
-    if (isPlaying) {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+
+    const drawBoard = () => {
+      // Board bg
+      ctx.beginPath(); ctx.arc(CX, CY, 180, 0, Math.PI*2);
+      ctx.fillStyle = '#1a1a2e'; ctx.fill();
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke();
+
+      // Sector wedges
+      const sectorAngle = Math.PI * 2 / 20;
+      SECTORS.forEach((num, i) => {
+        const startA = (i * sectorAngle) - Math.PI/2 - sectorAngle/2;
+        const endA = startA + sectorAngle;
+        // Outer single
+        ctx.beginPath(); ctx.moveTo(CX, CY);
+        ctx.arc(CX, CY, 165, startA, endA);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 === 0 ? '#1b1b2e' : '#2a2a4e'; ctx.fill();
+        // Double ring
+        ctx.beginPath(); ctx.moveTo(CX + Math.cos(startA)*165, CY + Math.sin(startA)*165);
+        ctx.arc(CX, CY, 175, startA, endA);
+        ctx.arc(CX, CY, 165, endA, startA, true);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 === 0 ? '#c62828' : '#2e7d32'; ctx.fill();
+        // Inner single
+        ctx.beginPath(); ctx.moveTo(CX, CY);
+        ctx.arc(CX, CY, 115, startA, endA);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 === 0 ? '#1b1b2e' : '#2a2a4e'; ctx.fill();
+        // Triple ring
+        ctx.beginPath(); ctx.moveTo(CX + Math.cos(startA)*115, CY + Math.sin(startA)*115);
+        ctx.arc(CX, CY, 105, startA, endA);
+        ctx.arc(CX, CY, 115, endA, startA, true);
+        ctx.closePath();
+        ctx.fillStyle = i % 2 === 0 ? '#c62828' : '#2e7d32'; ctx.fill();
+
+        // Sector number
+        const labelR = 140;
+        const midA = startA + sectorAngle/2;
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(num), CX + Math.cos(midA)*labelR, CY + Math.sin(midA)*labelR);
+      });
+      // Bull
+      ctx.beginPath(); ctx.arc(CX, CY, 25, 0, Math.PI*2); ctx.fillStyle = '#c62828'; ctx.fill();
+      ctx.beginPath(); ctx.arc(CX, CY, 10, 0, Math.PI*2); ctx.fillStyle = '#00cc44'; ctx.fill();
+
+      // Wire ring outlines
+      [10,25,105,115,165,175].forEach(r => {
+        ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+      });
+    };
+
+    const loop = (timestamp: number) => {
+      const gs = s.current;
+      const dt = Math.min((timestamp - gs.lastTime) / 16, 3);
+      gs.lastTime = timestamp; gs.frame++;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Dark background
+      ctx.fillStyle = '#1a0a2e'; ctx.fillRect(0, 0, W, H);
+      // Board shadow/glow
+      const glow = ctx.createRadialGradient(CX, CY, 80, CX, CY, 200);
+      glow.addColorStop(0, 'rgba(74,144,217,0.12)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
       drawBoard();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, scoreMode]);
+
+      // Oscillating cursor
+      if (gs.phase === 'playing') {
+        gs.cursorAngle += 0.04 * dt;
+        gs.cursorR += gs.cursorDir * 0.8 * dt;
+        if (gs.cursorR > 80 || gs.cursorR < 0) gs.cursorDir *= -1;
+        gs.sway += gs.swayDir * 0.5 * dt;
+        if (gs.sway > 20 || gs.sway < -20) gs.swayDir *= -1;
+
+        const curX = CX + gs.cursorR * Math.cos(gs.cursorAngle);
+        const curY = CY + gs.cursorR * Math.sin(gs.cursorAngle) + gs.sway;
+
+        // Crosshair
+        ctx.strokeStyle = 'rgba(255,50,50,0.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(curX-14, curY); ctx.lineTo(curX+14, curY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(curX, curY-14); ctx.lineTo(curX, curY+14); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(curX, curY, 7, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(255,50,50,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+      }
+
+      // Embedded darts
+      gs.darts.forEach((d, i) => {
+        ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(-Math.PI/4);
+        ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -22); ctx.stroke();
+        ctx.fillStyle = '#9E9E9E';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-3, 6); ctx.lineTo(3, 6); ctx.closePath(); ctx.fill();
+        // Score pop
+        if (i === gs.darts.length - 1 && gs.frame < 40) {
+          ctx.rotate(Math.PI/4);
+          ctx.fillStyle = '#FFD700'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+          ctx.fillText(`+${d.score}`, 0, -30);
+        }
+        ctx.restore();
+      });
+
+      // Particles
+      gs.particles.forEach(p => {
+        p.x += p.vx*dt; p.y += p.vy*dt; p.life -= 0.05*dt;
+        if (p.life <= 0) return;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r*p.life, 0, Math.PI*2);
+        ctx.fillStyle = p.color + Math.floor(p.life*220).toString(16).padStart(2,'0'); ctx.fill();
+      });
+      gs.particles = gs.particles.filter(p => p.life > 0);
+
+      // HUD
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath(); ctx.roundRect(0, H-90, W, 90, [0,0,0,0]); ctx.fill();
+      ctx.fillStyle = '#FFD700'; ctx.font = 'bold 28px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(String(gs.totalScore), W/2, H-52);
+      ctx.fillStyle = '#aaa'; ctx.font = '12px system-ui';
+      ctx.fillText(`Throws: ${gs.throwsLeft} left`, W/2, H-30);
+      if (gs.lastScore) {
+        ctx.fillStyle = '#3DDC97'; ctx.font = 'bold 13px system-ui';
+        ctx.fillText(gs.lastScore, W/2, H-10);
+      }
+
+      // Idle
+      if (gs.phase === 'idle') {
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.roundRect(W/2-100, CY+50, 200, 100, 20); ctx.fill();
+        ctx.fillStyle = '#F76C6C'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('🎯 DARTS', W/2, CY+85);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '13px system-ui';
+        ctx.fillText('Tap when cursor is on target!', W/2, CY+110);
+        ctx.fillStyle = '#FFD700'; ctx.font = '12px system-ui';
+        ctx.fillText(`Best: ${gs.best}pts`, W/2, CY+132);
+      }
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-4xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #090b11 0%, #1e1b4b 50%, #0d1e3d 100%)' }}>
-      
-      {/* Left controls & stats */}
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20 text-white animate-fade-in">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-            <h2 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-300 uppercase tracking-widest">
-              Dart Simulator
-            </h2>
-            <Target size={16} className="text-green-400" />
-          </div>
-
-          <div className="space-y-2">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Score Mode</span>
-            <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-              <button disabled={isPlaying} onClick={() => setScoreMode(301)} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${scoreMode === 301 ? 'bg-green-500/20 text-green-300' : 'text-slate-500'}`}>
-                301 Pts
-              </button>
-              <button disabled={isPlaying} onClick={() => setScoreMode(501)} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${scoreMode === 501 ? 'bg-green-500/20 text-green-300' : 'text-slate-500'}`}>
-                501 Pts
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between font-mono text-sm">
-            <span className="text-[10px] text-slate-400 font-bold uppercase">Points Left</span>
-            <span className="font-bold text-green-400">{remainingScore}</span>
-          </div>
-
-          {/* Darts in hand */}
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 font-bold uppercase">Darts Left</span>
-            <div className="flex gap-1.5">
-              {Array.from({ length: 3 }).map((_, idx) => (
-                <div key={idx} className={`w-2.5 h-6 rounded-full border border-slate-800 ${idx < dartsLeft ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-slate-900'}`} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {!isPlaying ? (
-            <Button variant="neon" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={initGame}>
-              Start Throwing
-            </Button>
-          ) : (
-            <Button variant="danger" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={() => { setIsPlaying(false); setGameOver(true); }}>
-              Abort Run
-            </Button>
-          )}
-          <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
-            Exit Panel
-          </Button>
-        </div>
-      </Card>
-
-      {/* Main Board view */}
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] border border-slate-800 rounded-2xl p-6 overflow-hidden bg-slate-950/40 text-white">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
-          <HelpCircle size={10} className="text-cyan-400" />
-          <span>DRAG & SWIPE TO THROW DART</span>
-        </div>
-
-        {isPlaying ? (
-          <div className="relative border-2 border-slate-800/80 rounded-2xl overflow-hidden shadow-lg shadow-black/50">
-            <canvas
-              ref={canvasRef}
-              width={W}
-              height={H}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-              className="block cursor-pointer bg-slate-950"
-            />
-          </div>
-        ) : (
-          <div className="text-center space-y-6 max-w-sm">
-            {won ? (
-              <>
-                <Sparkles size={36} className="text-yellow-400 mx-auto animate-pulse" />
-                <h3 className="text-2xl font-black text-yellow-300 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">LEG CLEARED</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Congratulations on hitting zero! Outstanding accuracy.
-                </p>
-                <Button variant="neon" size="lg" className="w-full" onClick={initGame}>
-                  Play Again
-                </Button>
-              </>
-            ) : (
-              <>
-                <Target size={36} className="text-green-500 mx-auto animate-pulse" />
-                <h3 className="text-xl font-bold">Darts Tournament</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Swipe your cursor forward on the dartboard to throw. Score multipliers apply on double/triple rings!
-                </p>
-                <Button variant="neon" size="lg" className="w-full" onClick={initGame}>
-                  Start Throwing
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-      </Card>
+    <div className="flex flex-col items-center gap-4">
+      <canvas ref={canvasRef} width={W} height={H}
+        className="rounded-2xl select-none touch-none cursor-crosshair"
+        style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6)', maxWidth: '100%' }}
+        onClick={disp.phase === 'idle' ? startGame : throw_}
+        onTouchStart={e => { e.preventDefault(); if (disp.phase === 'idle') startGame(); else throw_(); }}
+      />
+      <div className="flex gap-3">
+        {disp.phase === 'result' && <Button variant="primary" onClick={startGame}>▶ Play Again</Button>}
+        <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
+      </div>
     </div>
   );
 }

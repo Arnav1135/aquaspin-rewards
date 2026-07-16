@@ -1,347 +1,216 @@
-// src/components/games/TicTacToeGame.tsx
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, RefreshCw, Trophy, User, Cpu } from 'lucide-react';
+// src/components/games/TicTacToeGame.tsx — Premium Tic Tac Toe with Minimax AI
+import { useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-interface TicTacToeGameProps {
-  onClose: () => void;
+interface Props { onClose: () => void }
+
+type Cell = 'X' | 'O' | null;
+const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+function checkWin(b: Cell[]): { winner: Cell; line: number[] } | null {
+  for (const [a,c,d] of WINS) {
+    if (b[a] && b[a] === b[c] && b[a] === b[d]) return { winner: b[a], line: [a,c,d] };
+  }
+  return null;
 }
 
-type BoardState = ('X' | 'O' | null)[];
-type GameMode = 'single' | 'multi';
-type AIDifficulty = 'easy' | 'medium' | 'hard' | 'impossible';
-
-const WINNING_COMBOS = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-  [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
-  [0, 4, 8], [2, 4, 6]             // Diagonals
-];
-
-export function TicTacToeGame({ onClose }: TicTacToeGameProps) {
-  const [board, setBoard] = useState<BoardState>(Array(9).fill(null));
-  const [isXNext, setIsXNext] = useState(true);
-  const [mode, setMode] = useState<GameMode>('single');
-  const [difficulty, setDifficulty] = useState<AIDifficulty>('hard');
-  const [winner, setWinner] = useState<'X' | 'O' | 'Draw' | null>(null);
-  const [winningCombo, setWinningCombo] = useState<number[] | null>(null);
-  const [streak, setStreak] = useState(0);
-  const [stats, setStats] = useState({ wins: 0, losses: 0, draws: 0 });
-
-  const checkWinner = (currentBoard: BoardState) => {
-    for (const combo of WINNING_COMBOS) {
-      const [a, b, c] = combo;
-      if (currentBoard[a] && currentBoard[a] === currentBoard[b] && currentBoard[a] === currentBoard[c]) {
-        return { winner: currentBoard[a], combo };
+function minimax(board: Cell[], depth: number, isMax: boolean, alpha: number, beta: number): number {
+  const res = checkWin(board);
+  if (res?.winner === 'O') return 10 - depth;
+  if (res?.winner === 'X') return depth - 10;
+  if (board.every(c => c !== null)) return 0;
+  if (isMax) {
+    let best = -Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (!board[i]) {
+        board[i] = 'O';
+        best = Math.max(best, minimax(board, depth+1, false, alpha, beta));
+        board[i] = null;
+        alpha = Math.max(alpha, best);
+        if (beta <= alpha) break;
       }
     }
-    if (currentBoard.every(cell => cell !== null)) {
-      return { winner: 'Draw' as const, combo: null };
-    }
-    return { winner: null, combo: null };
-  };
-
-  const minimax = useCallback((tempBoard: BoardState, depth: number, isMaximizing: boolean): number => {
-    const { winner: currentWinner } = checkWinner(tempBoard);
-    if (currentWinner === 'O') return 10 - depth;
-    if (currentWinner === 'X') return depth - 10;
-    if (currentWinner === 'Draw') return 0;
-
-    if (isMaximizing) {
-      let bestScore = -Infinity;
-      for (let i = 0; i < 9; i++) {
-        if (tempBoard[i] === null) {
-          tempBoard[i] = 'O';
-          const score = minimax(tempBoard, depth + 1, false);
-          tempBoard[i] = null;
-          bestScore = Math.max(score, bestScore);
-        }
+    return best;
+  } else {
+    let best = Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (!board[i]) {
+        board[i] = 'X';
+        best = Math.min(best, minimax(board, depth+1, true, alpha, beta));
+        board[i] = null;
+        beta = Math.min(beta, best);
+        if (beta <= alpha) break;
       }
-      return bestScore;
-    } else {
-      let bestScore = Infinity;
-      for (let i = 0; i < 9; i++) {
-        if (tempBoard[i] === null) {
-          tempBoard[i] = 'X';
-          const score = minimax(tempBoard, depth + 1, true);
-          tempBoard[i] = null;
-          bestScore = Math.min(score, bestScore);
-        }
-      }
-      return bestScore;
     }
+    return best;
+  }
+}
+
+function getAIMove(board: Cell[]): number {
+  let best = -Infinity, move = -1;
+  for (let i = 0; i < 9; i++) {
+    if (!board[i]) {
+      board[i] = 'O';
+      const score = minimax([...board], 0, false, -Infinity, Infinity);
+      board[i] = null;
+      if (score > best) { best = score; move = i; }
+    }
+  }
+  return move;
+}
+
+export function TicTacToeGame({ onClose }: Props) {
+  const [board, setBoard] = useState<Cell[]>(Array(9).fill(null));
+  const [xTurn, setXTurn] = useState(true);
+  const [result, setResult] = useState<{ winner: Cell; line: number[] } | 'draw' | null>(null);
+  const [mode, setMode] = useState<'ai' | 'pvp'>('ai');
+  const [scores, setScores] = useState({ X: 0, O: 0, D: 0 });
+  const [aiThinking, setAiThinking] = useState(false);
+  const [animCell, setAnimCell] = useState<number | null>(null);
+
+  const reset = useCallback(() => {
+    setBoard(Array(9).fill(null));
+    setXTurn(true);
+    setResult(null);
+    setAiThinking(false);
   }, []);
 
-  const getAIMove = useCallback((currentBoard: BoardState): number => {
-    // Easy difficulty: Pure random move
-    if (difficulty === 'easy') {
-      const available = currentBoard.map((c, i) => c === null ? i : null).filter(c => c !== null) as number[];
-      return available[Math.floor(Math.random() * available.length)];
+  const place = useCallback((idx: number, b: Cell[], isX: boolean): Cell[] => {
+    const nb = [...b];
+    nb[idx] = isX ? 'X' : 'O';
+    return nb;
+  }, []);
+
+  const handleResult = useCallback((nb: Cell[], placer: 'X' | 'O') => {
+    const win = checkWin(nb);
+    if (win) {
+      setResult(win);
+      setScores(s => ({ ...s, [placer]: s[placer] + 1 }));
+      playTone(placer === 'X' ? 700 : 400, 0.1, 'sine', 0.3); vibrate(80);
+      toast.success(placer === 'X' ? '🎉 You win!' : mode === 'ai' ? '🤖 AI wins!' : '⭕ O wins!');
+      return true;
     }
-
-    // Medium difficulty: 50% minimax, 50% random
-    if (difficulty === 'medium' && Math.random() < 0.5) {
-      const available = currentBoard.map((c, i) => c === null ? i : null).filter(c => c !== null) as number[];
-      return available[Math.floor(Math.random() * available.length)];
+    if (nb.every(c => c !== null)) {
+      setResult('draw');
+      setScores(s => ({ ...s, D: s.D + 1 }));
+      playTone(300, 0.08, 'sine', 0.2);
+      toast('🤝 Draw!');
+      return true;
     }
+    return false;
+  }, [mode]);
 
-    // Hard difficulty: Block wins or take winning moves, otherwise minimax
-    if (difficulty === 'hard' && Math.random() < 0.2) {
-      const available = currentBoard.map((c, i) => c === null ? i : null).filter(c => c !== null) as number[];
-      return available[Math.floor(Math.random() * available.length)];
-    }
-
-    // Impossible: Full Minimax
-    let bestScore = -Infinity;
-    let move = -1;
-    for (let i = 0; i < 9; i++) {
-      if (currentBoard[i] === null) {
-        currentBoard[i] = 'O';
-        const score = minimax(currentBoard, 0, false);
-        currentBoard[i] = null;
-        if (score > bestScore) {
-          bestScore = score;
-          move = i;
-        }
-      }
-    }
-    return move;
-  }, [difficulty, minimax]);
-
-  const handleCellClick = (index: number) => {
-    if (board[index] || winner) return;
-
-    // Player move (always 'X' in single player, or next turn in multi)
-    const newBoard = [...board];
-    const currentPlayer = isXNext ? 'X' : 'O';
-    newBoard[index] = currentPlayer;
-    setBoard(newBoard);
-    playTone(isXNext ? 350 : 450, 0.05, 'sine', 0.1);
-    vibrate(20);
-
-    const { winner: checkW, combo } = checkWinner(newBoard);
-    if (checkW) {
-      setWinner(checkW);
-      setWinningCombo(combo);
-      resolveGameEnd(checkW);
-      return;
-    }
-
-    if (mode === 'single') {
-      setIsXNext(false);
-    } else {
-      setIsXNext(!isXNext);
-    }
-  };
-
-  useEffect(() => {
-    if (mode === 'single' && !isXNext && !winner) {
-      const timer = setTimeout(() => {
-        const aiMove = getAIMove(board);
-        if (aiMove !== -1) {
-          const newBoard = [...board];
-          newBoard[aiMove] = 'O';
-          setBoard(newBoard);
-          playTone(450, 0.05, 'sine', 0.1);
-          const { winner: checkW, combo } = checkWinner(newBoard);
-          if (checkW) {
-            setWinner(checkW);
-            setWinningCombo(combo);
-            resolveGameEnd(checkW);
-          } else {
-            setIsXNext(true);
+  const handleClick = useCallback((idx: number) => {
+    if (board[idx] || result || aiThinking || (!xTurn && mode === 'ai')) return;
+    const nb = place(idx, board, xTurn);
+    setBoard(nb); setAnimCell(idx);
+    playTone(xTurn ? 600 : 400, 0.04, 'sine', 0.08); vibrate(20);
+    const done = handleResult(nb, xTurn ? 'X' : 'O');
+    if (!done) {
+      setXTurn(!xTurn);
+      if (mode === 'ai' && xTurn) {
+        setAiThinking(true);
+        setTimeout(() => {
+          const aiIdx = getAIMove([...nb]);
+          if (aiIdx >= 0) {
+            const nb2 = place(aiIdx, nb, false);
+            setBoard(nb2); setAnimCell(aiIdx);
+            playTone(400, 0.04, 'sine', 0.08); vibrate(15);
+            handleResult(nb2, 'O');
+            setXTurn(true);
           }
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isXNext, mode, board, winner, getAIMove]);
-
-  const resolveGameEnd = (w: 'X' | 'O' | 'Draw') => {
-    if (w === 'X') {
-      setStreak(prev => prev + 1);
-      setStats(prev => ({ ...prev, wins: prev.wins + 1 }));
-      toast.success('🎉 You Won!');
-      playTone(523.25, 0.15, 'sine', 0.2);
-      setTimeout(() => playTone(659.25, 0.15, 'sine', 0.2), 100);
-      vibrate([50, 50, 100]);
-    } else if (w === 'O') {
-      setStreak(0);
-      setStats(prev => ({ ...prev, losses: prev.losses + 1 }));
-      if (mode === 'single') {
-        toast.error('💀 AI Won!');
-        playTone(220, 0.3, 'sawtooth', 0.2);
-      } else {
-        toast.success('🎉 Player O Won!');
-        playTone(523.25, 0.15, 'sine', 0.2);
+          setAiThinking(false);
+        }, 350);
       }
-      vibrate(150);
-    } else {
-      setStats(prev => ({ ...prev, draws: prev.draws + 1 }));
-      toast('🤝 Draw Match!', { icon: '⚖️' });
-      playTone(300, 0.2, 'triangle', 0.15);
-      vibrate(50);
     }
+  }, [board, result, aiThinking, xTurn, mode, place, handleResult]);
+
+  // Symbol styles
+  const XColor = '#4A90D9', OColor = '#F76C6C';
+  const getSymbol = (cell: Cell, idx: number, line: number[]) => {
+    const isWin = line.includes(idx);
+    if (cell === 'X') return (
+      <motion.svg width="54" height="54" viewBox="0 0 54 54" initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ duration: 0.3 }}>
+        <motion.line x1="10" y1="10" x2="44" y2="44" stroke={isWin ? '#FFD700' : XColor} strokeWidth="6" strokeLinecap="round"
+          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.25 }} />
+        <motion.line x1="44" y1="10" x2="10" y2="44" stroke={isWin ? '#FFD700' : XColor} strokeWidth="6" strokeLinecap="round"
+          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.25, delay: 0.1 }} />
+      </motion.svg>
+    );
+    if (cell === 'O') return (
+      <motion.svg width="54" height="54" viewBox="0 0 54 54" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.circle cx="27" cy="27" r="18" stroke={isWin ? '#FFD700' : OColor} strokeWidth="6" fill="none"
+          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.35 }} />
+      </motion.svg>
+    );
+    return null;
   };
 
-  const handleRestart = () => {
-    setBoard(Array(9).fill(null));
-    setIsXNext(true);
-    setWinner(null);
-    setWinningCombo(null);
-    playTone(600, 0.05, 'sine', 0.15);
-  };
+  const winLine = typeof result === 'object' && result !== null ? result.line : [];
+  const statusText = result === 'draw' ? "It's a Draw!" : result ? (result.winner === 'X' ? (mode === 'ai' ? '🎉 You Win!' : '❌ X Wins!') : (mode === 'ai' ? '🤖 AI Wins!' : '⭕ O Wins!')) : aiThinking ? '🤖 AI thinking...' : xTurn ? (mode === 'ai' ? 'Your turn (X)' : "❌ X's turn") : (mode === 'ai' ? '🤖 AI turn' : "⭕ O's turn");
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-4xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0a0a1c 100%)' }}>
-      
-      {/* Left Settings & Stats */}
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-6 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20 text-white animate-fade-in">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-            <h2 className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-300 uppercase tracking-widest">
-              Glow Grid
-            </h2>
-            <Trophy size={16} className="text-yellow-400" />
+    <div className="flex flex-col items-center gap-5 p-4 min-h-screen" style={{ background: 'linear-gradient(135deg,#0a1628 0%,#16213E 60%,#1a3a6b 100%)' }}>
+      {/* Mode toggle */}
+      <div className="flex gap-2 mt-2">
+        {(['ai','pvp'] as const).map(m => (
+          <button key={m} onClick={() => { setMode(m); reset(); }}
+            className="px-5 py-2 rounded-xl font-semibold text-sm transition-all"
+            style={{ background: mode === m ? '#4A90D9' : 'rgba(255,255,255,0.08)', color: '#fff', border: mode === m ? 'none' : '1px solid rgba(255,255,255,0.15)' }}>
+            {m === 'ai' ? '🤖 vs AI' : '👥 2 Player'}
+          </button>
+        ))}
+      </div>
+
+      {/* Scoreboard */}
+      <div className="flex gap-4">
+        {[{ label: mode === 'ai' ? 'You' : 'X', key: 'X', color: XColor }, { label: 'Draw', key: 'D', color: '#aaa' }, { label: mode === 'ai' ? 'AI' : 'O', key: 'O', color: OColor }].map(s => (
+          <div key={s.key} className="flex flex-col items-center px-4 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.07)', minWidth: 64 }}>
+            <span className="text-2xl font-bold" style={{ color: s.color }}>{scores[s.key as 'X'|'O'|'D']}</span>
+            <span className="text-xs opacity-60 text-white">{s.label}</span>
           </div>
+        ))}
+      </div>
 
-          {/* Mode switch */}
-          <div className="space-y-2">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">Opponent Mode</span>
-            <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
-              <button onClick={() => { setMode('single'); handleRestart(); }} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'single' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-500 border border-transparent'}`}>
-                🤖 vs AI
-              </button>
-              <button onClick={() => { setMode('multi'); handleRestart(); }} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'multi' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-500 border border-transparent'}`}>
-                👥 Pass & Play
-              </button>
-            </div>
-          </div>
+      {/* Status */}
+      <motion.div key={statusText} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+        className="text-white font-semibold text-base opacity-90">{statusText}</motion.div>
 
-          {/* Difficulty Switch */}
-          {mode === 'single' && (
-            <div className="space-y-2">
-              <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">AI Difficulty</span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {(['easy', 'medium', 'hard', 'impossible'] as const).map(diff => (
-                  <button key={diff} onClick={() => setDifficulty(diff)} className={`py-1.5 rounded-lg text-3xs font-mono font-bold border capitalize transition-all ${difficulty === diff ? 'border-indigo-500 bg-indigo-500/10 text-indigo-300' : 'border-slate-800 text-slate-500'}`}>
-                    {diff}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Board */}
+      <div className="relative" style={{ width: 290, height: 290 }}>
+        {/* Grid lines */}
+        <svg className="absolute inset-0" width="290" height="290">
+          {[96,193].map(x => <line key={`v${x}`} x1={x} y1={8} x2={x} y2={282} stroke="rgba(74,144,217,0.35)" strokeWidth="2" strokeLinecap="round"/>)}
+          {[96,193].map(y => <line key={`h${y}`} x1={8} y1={y} x2={282} y2={y} stroke="rgba(74,144,217,0.35)" strokeWidth="2" strokeLinecap="round"/>)}
+        </svg>
 
-          {/* Leaderboard stats */}
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-2.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400">Streak:</span>
-              <span className="font-mono font-bold text-cyan-400">{streak} wins</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center text-2xs pt-1 border-t border-slate-900">
-              <div>
-                <p className="text-emerald-400 font-bold">{stats.wins}</p>
-                <p className="text-slate-500 uppercase tracking-wider">Wins</p>
-              </div>
-              <div>
-                <p className="text-rose-400 font-bold">{stats.losses}</p>
-                <p className="text-slate-500 uppercase tracking-wider">Losses</p>
-              </div>
-              <div>
-                <p className="text-slate-300 font-bold">{stats.draws}</p>
-                <p className="text-slate-500 uppercase tracking-wider">Draws</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-3 text-sm rounded-xl" onClick={handleRestart}>
-            <RefreshCw size={14} className="mr-1.5 animate-spin-slow" /> Reset Grid
-          </Button>
-          <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
-            Exit Board
-          </Button>
-        </div>
-      </Card>
-
-      {/* Main Grid Card */}
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] border border-slate-800 rounded-2xl p-6 overflow-hidden bg-slate-950/40 text-white">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider">
-          <HelpCircle size={10} className="text-cyan-400" />
-          <span>NEON STREAKS ENABLED</span>
-        </div>
-
-        <div className="flex items-center gap-3.5 mb-6 bg-slate-900/60 px-4 py-2 rounded-full border border-slate-800/80">
-          <div className="flex items-center gap-1.5 text-xs font-mono font-semibold">
-            {mode === 'single' ? (
-              <>
-                <User size={13} className="text-cyan-400" />
-                <span className="text-cyan-400">Player (X)</span>
-                <span className="text-slate-500">vs</span>
-                <Cpu size={13} className="text-indigo-400" />
-                <span className="text-indigo-400">AI (O)</span>
-              </>
-            ) : (
-              <>
-                <span className={isXNext ? 'text-cyan-400' : 'text-slate-500'}>Player X</span>
-                <span className="text-slate-500">|</span>
-                <span className={!isXNext ? 'text-indigo-400' : 'text-slate-500'}>Player O</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 3x3 Responsive Grid */}
-        <div className="grid grid-cols-3 gap-3 w-full max-w-[280px] aspect-square">
-          {board.map((cell, index) => {
-            const isWinningCell = winningCombo?.includes(index);
+        {/* Cells */}
+        <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+          {board.map((cell, i) => {
+            const isWinCell = winLine.includes(i);
             return (
-              <motion.button
-                key={index}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleCellClick(index)}
-                className={`aspect-square rounded-2xl flex items-center justify-center text-4xl font-black transition-all border outline-none ${
-                  isWinningCell 
-                    ? 'border-yellow-400 bg-yellow-400/20 text-yellow-300 shadow-[0_0_24px_rgba(234,179,8,0.4)]' 
-                    : cell === 'X'
-                      ? 'border-cyan-500 bg-cyan-500/5 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-                      : cell === 'O'
-                        ? 'border-indigo-500 bg-indigo-500/5 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
-                        : 'border-slate-800 hover:border-slate-700 bg-slate-900/30'
-                }`}
+              <motion.button key={i} onClick={() => handleClick(i)}
+                className="flex items-center justify-center rounded-xl transition-colors"
+                whileHover={!cell && !result ? { scale: 1.05, backgroundColor: 'rgba(74,144,217,0.12)' } : {}}
+                whileTap={!cell && !result ? { scale: 0.95 } : {}}
+                style={{ background: isWinCell ? 'rgba(255,215,0,0.12)' : 'transparent', cursor: cell || result ? 'default' : 'pointer' }}
+                animate={animCell === i ? { scale: [1, 1.15, 1] } : {}}
               >
-                <AnimatePresence mode="popLayout">
-                  {cell && (
-                    <motion.span
-                      initial={{ scale: 0.4, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.4, opacity: 0 }}
-                      transition={{ duration: 0.2, type: 'spring', stiffness: 200 }}
-                    >
-                      {cell}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                {getSymbol(cell, i, winLine)}
               </motion.button>
             );
           })}
         </div>
+      </div>
 
-        {winner && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 text-center">
-            <p className="text-sm text-slate-400 uppercase font-mono font-bold tracking-widest mb-2">Round Result</p>
-            <h3 className="text-2xl font-black text-yellow-400 drop-shadow-[0_0_10px_rgba(234,179,8,0.4)]">
-              {winner === 'Draw' ? '🤝 DRAW MATCH' : `🎉 WINNER: PLAYER ${winner}`}
-            </h3>
-          </motion.div>
-        )}
-      </Card>
+      {/* Actions */}
+      <div className="flex gap-3">
+        <Button variant="primary" onClick={reset}>🔄 New Game</Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
+      </div>
     </div>
   );
 }

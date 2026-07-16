@@ -1,5 +1,5 @@
 // Enhanced Match-3 Game Wrapper Component
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { GameBoard } from '@/games/match3/components/GameBoard';
@@ -10,28 +10,22 @@ interface Match3GameProps {
   onClose?: () => void;
 }
 
-export const Match3Game: React.FC<Match3GameProps> = ({ onClose }) => {
-  const { levelId, gameStatus, loadLevel, resetLevel } = useMatch3Store();
+export const Match3Game = ({ onClose }: Match3GameProps) => {
+  const { levelId, loadLevel, resetLevel } = useMatch3Store();
   const [showSettings, setShowSettings] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(true);
 
   useEffect(() => {
-    // Initialize first level
     loadLevel(1);
-  }, []);
+  }, [loadLevel]);
 
   const handleLevelComplete = () => {
-    // Auto-move to next level after 2 seconds
     setTimeout(() => {
       if (levelId < 60) {
         loadLevel(levelId + 1);
       }
     }, 2000);
-  };
-
-  const handleLevelFailed = () => {
-    // Show retry prompt (handled in GameBoard)
   };
 
   return (
@@ -42,7 +36,6 @@ export const Match3Game: React.FC<Match3GameProps> = ({ onClose }) => {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Header */}
       <motion.div
         className="match3-header"
         initial={{ y: -60 }}
@@ -114,7 +107,6 @@ export const Match3Game: React.FC<Match3GameProps> = ({ onClose }) => {
         </div>
       </motion.div>
 
-      {/* Settings Panel */}
       <AnimatePresence>
         {showSettings && (
           <motion.div
@@ -148,7 +140,6 @@ export const Match3Game: React.FC<Match3GameProps> = ({ onClose }) => {
         )}
       </AnimatePresence>
 
-      {/* Main Game Board */}
       <motion.div
         className="game-content"
         initial={{ scale: 0.9, opacity: 0 }}
@@ -157,11 +148,10 @@ export const Match3Game: React.FC<Match3GameProps> = ({ onClose }) => {
       >
         <GameBoard
           onLevelComplete={handleLevelComplete}
-          onLevelFailed={handleLevelFailed}
+          onLevelFailed={() => {}}
         />
       </motion.div>
 
-      {/* Footer */}
       <motion.div
         className="match3-footer"
         initial={{ y: 60 }}

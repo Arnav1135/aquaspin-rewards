@@ -1,5 +1,5 @@
 // Enhanced Game Board Component with Premium Animations and Sound
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMatch3Store } from '@/games/match3/engine/gameState';
 import { CandyType, Position } from '@/games/match3/types';
@@ -46,14 +46,14 @@ interface CandyProps {
   onSelect: (pos: Position) => void;
 }
 
-const Candy: React.FC<CandyProps> = ({
+const Candy = ({
   row,
   col,
   candyType,
   isSelected,
   isMatched,
   onSelect,
-}) => {
+}: CandyProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -106,10 +106,10 @@ interface GameBoardProps {
   onLevelFailed?: () => void;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({
+export const GameBoard = ({
   onLevelComplete,
   onLevelFailed,
-}) => {
+}: GameBoardProps) => {
   const {
     board,
     score,
@@ -143,15 +143,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       audioManager.playSoundEffect(SoundEffect.LEVEL_FAILED);
       onLevelFailed?.();
     }
-  }, [gameStatus]);
+  }, [gameStatus, onLevelComplete, onLevelFailed]);
 
-  // Spawn particles on score change
   useEffect(() => {
     if (score > lastScoreRef.current) {
-      const diff = score - lastScoreRef.current;
       audioManager.playSoundEffect(SoundEffect.MATCH);
       
-      const newParticles = Array(Math.min(5, Math.floor(diff / 100)))
+      const newParticles = Array(Math.min(5, Math.floor((score - lastScoreRef.current) / 100)))
         .fill(null)
         .map((_, i) => ({
           id: `particle-${Date.now()}-${i}`,
@@ -167,7 +165,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [score]);
 
-  // Play cascade sounds
   useEffect(() => {
     if (cascadeCount > lastCascadeRef.current) {
       if (cascadeCount === 1) {

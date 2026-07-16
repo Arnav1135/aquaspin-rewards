@@ -13,37 +13,37 @@ const features = [
     icon: Disc3,
     title: 'Spin to Win',
     description: 'Physics-based spinning wheel with 12 segments. Win up to 500 tokens per spin!',
-    color: '#4A90D9',
+    color: '#66bdf2',
   },
   {
     icon: Zap,
     title: 'Mini Games',
     description: '16 premium games (Mines, Chess, Flappy, Pool, Solitaire, and more) — earn tokens instantly.',
-    color: '#3DDC97',
+    color: '#66bdf2',
   },
   {
     icon: Coins,
     title: 'Real Cashouts',
     description: '1000 tokens = $1 USD. Cash out via UPI or PayPal instantly.',
-    color: '#3DDC97',
+    color: '#66bdf2',
   },
   {
     icon: Trophy,
     title: 'Leaderboard',
     description: 'Compete globally. Top players earn bonus multipliers and special rewards.',
-    color: '#F76C6C',
+    color: '#7b8bc1',
   },
   {
     icon: Shield,
     title: 'Anti-Cheat',
     description: 'Server-side spin logic. Fair for everyone. Audited and secure.',
-    color: '#4A90D9',
+    color: '#66bdf2',
   },
   {
     icon: Star,
     title: 'Daily Streaks',
     description: 'Log in daily for streak bonuses. Day 7 reward: 500 tokens!',
-    color: '#F76C6C',
+    color: '#7b8bc1',
   },
 ];
 
@@ -82,14 +82,14 @@ export function Landing() {
   return (
     <div
       className="min-h-screen overflow-x-hidden pt-16"
-      style={{ background: 'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)' }}
     >
       {/* ── Hero Section ── */}
       <section className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-4 py-16">
         {/* Soft layout background shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[#4A90D9]/8 blur-[100px] animate-float" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-[#3DDC97]/8 blur-[100px] animate-float" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[#66bdf2]/8 blur-[100px] animate-float" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-[#66bdf2]/8 blur-[100px] animate-float" style={{ animationDelay: '1s' }} />
         </div>
 
         <div className="relative max-w-4xl mx-auto text-center z-10">
@@ -103,8 +103,8 @@ export function Landing() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Zap size={14} style={{ color: '#4A90D9' }} />
-            <span className="text-xs font-semibold" style={{ color: '#16213E' }}>
+            <Zap size={14} style={{ color: '#66bdf2' }} />
+            <span className="text-xs font-semibold" style={{ color: '#7b8bc1' }}>
               1000 Tokens = $1 USD • Cashout via UPI / PayPal
             </span>
           </motion.div>
@@ -114,7 +114,7 @@ export function Landing() {
             className="font-black mb-4 leading-tight"
             style={{
               fontSize: 'clamp(2.3rem, 6vw, 4.5rem)',
-              color: '#16213E',
+              color: '#7b8bc1',
               letterSpacing: '-0.03em',
             }}
             initial={{ opacity: 0, y: 20 }}
@@ -166,10 +166,10 @@ export function Landing() {
             transition={{ delay: 0.4 }}
           >
             <div className="flex -space-x-1.5">
-              {['#4A90D9', '#3DDC97', '#F76C6C', '#A8CBEA'].map((c, i) => (
+              {['#66bdf2', '#66bdf2', '#7b8bc1', '#c2e7fa'].map((c, i) => (
                 <div
                   key={i}
-                  className="w-6 h-6 rounded-full border-2 border-[#F4F8FC]"
+                  className="w-6 h-6 rounded-full border-2 border-[#e1eff8]"
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -208,11 +208,11 @@ export function Landing() {
                 animate={{ rotate: 360 }}
                 transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
               >
-                <Disc3 size={44} style={{ color: '#4A90D9' }} />
+                <Disc3 size={44} style={{ color: '#66bdf2' }} />
               </motion.div>
               <p
                 className="font-bold text-xs mt-3.5 tracking-wider animate-pulse"
-                style={{ color: '#4A90D9' }}
+                style={{ color: '#66bdf2' }}
               >
                 SPIN!
               </p>
@@ -241,7 +241,7 @@ export function Landing() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
               >
-                <p className="text-2xl font-bold font-mono" style={{ color: '#16213E' }}>{stat.value}</p>
+                <p className="text-2xl font-bold font-mono" style={{ color: '#7b8bc1' }}>{stat.value}</p>
                 <p className="text-xs font-semibold uppercase tracking-wider mt-1" style={{ color: 'rgba(22,33,62,0.45)' }}>
                   {stat.label}
                 </p>
@@ -255,7 +255,7 @@ export function Landing() {
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold mb-2" style={{ color: '#16213E' }}>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#7b8bc1' }}>
               Designed For Transparency
             </h2>
             <p className="text-sm" style={{ color: 'rgba(22,33,62,0.55)' }}>
@@ -284,7 +284,7 @@ export function Landing() {
                     >
                       <Icon size={18} style={{ color: feature.color }} />
                     </div>
-                    <h3 className="font-bold text-sm mb-1" style={{ color: '#16213E' }}>
+                    <h3 className="font-bold text-sm mb-1" style={{ color: '#7b8bc1' }}>
                       {feature.title}
                     </h3>
                     <p className="text-xs leading-relaxed" style={{ color: 'rgba(22,33,62,0.60)' }}>
@@ -307,7 +307,7 @@ export function Landing() {
         style={{ background: 'rgba(74, 144, 217, 0.04)' }}
       >
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-12" style={{ color: '#16213E' }}>
+          <h2 className="text-2xl font-bold text-center mb-12" style={{ color: '#7b8bc1' }}>
             Earners Feedback
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -323,7 +323,7 @@ export function Landing() {
                   <div>
                     <div className="flex gap-0.5 mb-2.5">
                       {Array.from({ length: t.stars }).map((_, j) => (
-                        <Star key={j} size={12} className="fill-[#3DDC97] text-[#3DDC97]" />
+                        <Star key={j} size={12} className="fill-[#66bdf2] text-[#66bdf2]" />
                       ))}
                     </div>
                     <p className="text-xs mb-4 italic" style={{ color: 'rgba(22,33,62,0.65)' }}>
@@ -332,12 +332,12 @@ export function Landing() {
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t border-[rgba(168,203,234,0.25)]">
                     <div>
-                      <p className="font-bold text-xs" style={{ color: '#16213E' }}>{t.name}</p>
+                      <p className="font-bold text-xs" style={{ color: '#7b8bc1' }}>{t.name}</p>
                       <p className="text-3xs" style={{ color: 'rgba(22,33,62,0.40)' }}>{t.location}</p>
                     </div>
                     <div
                       className="flex items-center gap-1 px-2.5 py-1 rounded-full text-3xs font-semibold font-mono"
-                      style={{ background: 'rgba(61,220,151,0.12)', color: '#3DDC97' }}
+                      style={{ background: 'rgba(61,220,151,0.12)', color: '#66bdf2' }}
                     >
                       <Coins size={10} />
                       {t.tokens}
@@ -353,7 +353,7 @@ export function Landing() {
       {/* ── Final Call to Action ── */}
       <section className="py-20 px-4 text-center">
         <div className="max-w-lg mx-auto space-y-4">
-          <h2 className="text-2xl font-bold" style={{ color: '#16213E' }}>
+          <h2 className="text-2xl font-bold" style={{ color: '#7b8bc1' }}>
             Start Earning Today
           </h2>
           <p className="text-sm max-w-sm mx-auto" style={{ color: 'rgba(22,33,62,0.60)' }}>
@@ -382,18 +382,18 @@ export function Landing() {
           <div className="flex items-center gap-2">
             <div
               className="w-6 h-6 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #4A90D9 0%, #3DDC97 100%)' }}
+              style={{ background: 'linear-gradient(135deg, #66bdf2 0%, #66bdf2 100%)' }}
             >
-              <span className="text-[#16213E] font-bold text-xs">A</span>
+              <span className="text-[#7b8bc1] font-bold text-xs">A</span>
             </div>
-            <span className="font-bold text-xs" style={{ color: '#16213E' }}>
+            <span className="font-bold text-xs" style={{ color: '#7b8bc1' }}>
               AquaSpin Rewards
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs font-semibold" style={{ color: 'rgba(22,33,62,0.50)' }}>
-            <Link to="/legal" className="hover:text-[#4A90D9] transition-colors">Privacy Policy</Link>
-            <Link to="/legal#terms" className="hover:text-[#4A90D9] transition-colors">Terms of Service</Link>
-            <a href="mailto:support@aquaspin.app" className="hover:text-[#4A90D9] transition-colors">Support</a>
+            <Link to="/legal" className="hover:text-[#66bdf2] transition-colors">Privacy Policy</Link>
+            <Link to="/legal#terms" className="hover:text-[#66bdf2] transition-colors">Terms of Service</Link>
+            <a href="mailto:support@aquaspin.app" className="hover:text-[#66bdf2] transition-colors">Support</a>
           </div>
           <p className="text-3xs" style={{ color: 'rgba(22,33,62,0.40)' }}>
             © 2024 AquaSpin Rewards. All rights reserved.

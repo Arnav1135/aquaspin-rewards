@@ -164,7 +164,7 @@ export function ChessGame({ onClose }: Props) {
   const isLastMove = (r:number,c:number) => lastMove && (lastMove.from[0]===r&&lastMove.from[1]===c||lastMove.to[0]===r&&lastMove.to[1]===c);
 
   return (
-    <div className="flex flex-col items-center gap-3 p-4 min-h-screen" style={{background:'linear-gradient(135deg,#0a1628 0%,#16213E 100%)'}}>
+    <div className="flex flex-col items-center gap-3 p-4 min-h-screen" style={{background:'linear-gradient(135deg,#0a1628 0%,#7b8bc1 100%)'}}>
       {/* Captured pieces */}
       {phase==='playing'&&(
         <div className="flex justify-between w-full max-w-sm text-sm">

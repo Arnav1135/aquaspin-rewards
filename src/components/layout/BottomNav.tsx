@@ -19,7 +19,7 @@ export function BottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 lg:hidden safe-bottom"
-      style={{ background: '#16213E', borderTop: '1px solid rgba(74,144,217,0.18)' }}
+      style={{ background: '#7b8bc1', borderTop: '1px solid rgba(74,144,217,0.18)' }}
     >
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
@@ -43,20 +43,20 @@ export function BottomNav() {
                 <Icon
                   size={20}
                   strokeWidth={2}
-                  style={{ color: isActive ? '#4A90D9' : 'rgba(245,248,252,0.45)' }}
+                  style={{ color: isActive ? '#66bdf2' : 'rgba(245,248,252,0.45)' }}
                 />
                 {isActive && (
                   <motion.div
                     layoutId="bottom-nav-indicator"
                     className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                    style={{ background: '#4A90D9' }}
+                    style={{ background: '#66bdf2' }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
               </motion.div>
               <span
                 className="text-2xs font-medium transition-colors duration-200"
-                style={{ color: isActive ? '#4A90D9' : 'rgba(245,248,252,0.40)' }}
+                style={{ color: isActive ? '#66bdf2' : 'rgba(245,248,252,0.40)' }}
               >
                 {item.label}
               </span>

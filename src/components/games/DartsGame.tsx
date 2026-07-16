@@ -55,7 +55,7 @@ export function DartsGame({ onClose }: Props) {
     gs.darts.push({ x: hitX, y: hitY, score: pts, label });
     gs.totalScore += pts; gs.throwsLeft--; gs.lastScore = label;
     // Particles
-    const color = pts >= 50 ? '#FFD700' : pts >= 25 ? '#3DDC97' : pts > 20 ? '#4A90D9' : '#aaa';
+    const color = pts >= 50 ? '#FFD700' : pts >= 25 ? '#66bdf2' : pts > 20 ? '#66bdf2' : '#aaa';
     for (let pi = 0; pi < 10; pi++) {
       const a = Math.random()*Math.PI*2, sp = 2+Math.random()*5;
       gs.particles.push({ x: hitX, y: hitY, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color, r: 2+Math.random()*3 });
@@ -212,14 +212,14 @@ export function DartsGame({ onClose }: Props) {
       ctx.fillStyle = '#aaa'; ctx.font = '12px system-ui';
       ctx.fillText(`Throws: ${gs.throwsLeft} left`, W/2, H-30);
       if (gs.lastScore) {
-        ctx.fillStyle = '#3DDC97'; ctx.font = 'bold 13px system-ui';
+        ctx.fillStyle = '#66bdf2'; ctx.font = 'bold 13px system-ui';
         ctx.fillText(gs.lastScore, W/2, H-10);
       }
 
       // Idle
       if (gs.phase === 'idle') {
         ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.roundRect(W/2-100, CY+50, 200, 100, 20); ctx.fill();
-        ctx.fillStyle = '#F76C6C'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#7b8bc1'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
         ctx.fillText('🎯 DARTS', W/2, CY+85);
         ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '13px system-ui';
         ctx.fillText('Tap when cursor is on target!', W/2, CY+110);

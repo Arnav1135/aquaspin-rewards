@@ -72,7 +72,7 @@ export function ArcheryGame({ onClose }: Props) {
 
     const drawTarget = (x: number, y: number) => {
       const rings = [40, 32, 22, 14, 6];
-      const colors = ['#FFFFFF', '#000000', '#4A90D9', '#F76C6C', '#FFD700'];
+      const colors = ['#FFFFFF', '#000000', '#66bdf2', '#7b8bc1', '#FFD700'];
       rings.forEach((r, i) => {
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fillStyle = colors[i]; ctx.fill();
@@ -82,7 +82,7 @@ export function ArcheryGame({ onClose }: Props) {
 
     const drawArcher = (x: number, y: number) => {
       // body
-      ctx.fillStyle = '#4A90D9';
+      ctx.fillStyle = '#66bdf2';
       ctx.beginPath(); ctx.ellipse(x, y-10, 12, 20, 0, 0, Math.PI*2); ctx.fill();
       // head
       ctx.fillStyle = '#FFDBA0'; ctx.beginPath(); ctx.arc(x, y-36, 10, 0, Math.PI*2); ctx.fill();
@@ -160,9 +160,9 @@ export function ArcheryGame({ onClose }: Props) {
         // Power bar
         const barW = 140, barX = (W - barW) / 2, barY = H - 28;
         ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.roundRect(barX-2, barY-2, barW+4, 18, 9); ctx.fill();
-        const powerColor = gs.power < 40 ? '#3DDC97' : gs.power < 70 ? '#FFD700' : '#F76C6C';
+        const powerColor = gs.power < 40 ? '#66bdf2' : gs.power < 70 ? '#FFD700' : '#7b8bc1';
         const grad = ctx.createLinearGradient(barX, 0, barX+barW, 0);
-        grad.addColorStop(0, '#3DDC97'); grad.addColorStop(0.6, '#FFD700'); grad.addColorStop(1, '#F76C6C');
+        grad.addColorStop(0, '#66bdf2'); grad.addColorStop(0.6, '#FFD700'); grad.addColorStop(1, '#7b8bc1');
         ctx.fillStyle = grad; ctx.beginPath(); ctx.roundRect(barX, barY, barW*gs.power/100, 14, 7); ctx.fill();
         ctx.fillStyle = powerColor; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
         ctx.fillText(`POWER: ${Math.floor(gs.power)}%`, W/2, barY - 5);
@@ -198,7 +198,7 @@ export function ArcheryGame({ onClose }: Props) {
           gs.arrows.push({ x: gs.arrowX, y: gs.arrowY, angle: gs.arrowAngle });
           for (let pi = 0; pi < 14; pi++) {
             const a = Math.random()*Math.PI*2, sp = 2+Math.random()*5;
-            gs.particles.push({ x: gs.arrowX, y: gs.arrowY, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color: pts===100?'#FFD700':'#4A90D9', r: 3+Math.random()*3 });
+            gs.particles.push({ x: gs.arrowX, y: gs.arrowY, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color: pts===100?'#FFD700':'#66bdf2', r: 3+Math.random()*3 });
           }
           playTone(pts >= 80 ? 900 : 600, 0.08, 'sine', 0.15); vibrate(pts >= 80 ? 60 : 20);
           toast.success(label, { duration: 1200 });
@@ -250,7 +250,7 @@ export function ArcheryGame({ onClose }: Props) {
       // Idle
       if (gs.phase === 'idle') {
         ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.roundRect(W/2-105, H/2-55, 210, 115, 20); ctx.fill();
-        ctx.fillStyle = '#4A90D9'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#66bdf2'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
         ctx.fillText('🏹 ARCHERY', W/2, H/2-18);
         ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '13px system-ui';
         ctx.fillText('Tap when power bar peaks!', W/2, H/2+10);

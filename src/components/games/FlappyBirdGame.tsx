@@ -117,7 +117,7 @@ export function FlappyBirdGame({ onClose }: Props) {
 
       // ── Distant hills (parallax layer 1)
       s.hillOffset = (s.hillOffset + (s.phase === 'playing' ? 0.5 * dt : 0)) % W;
-      ctx.fillStyle = '#16213E';
+      ctx.fillStyle = '#7b8bc1';
       for (let i = -1; i < 3; i++) {
         const hx = i * 160 - s.hillOffset % 160;
         ctx.beginPath();

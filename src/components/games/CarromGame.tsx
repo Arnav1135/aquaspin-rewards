@@ -171,7 +171,7 @@ export function CarromGame({ onClose }: Props) {
           const pBarX = BX, pBarY = BY+BH+18;
           ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.roundRect(pBarX-2,pBarY-2,BW+4,16,8); ctx.fill();
           const pwGrad = ctx.createLinearGradient(pBarX,0,pBarX+BW,0);
-          pwGrad.addColorStop(0,'#3DDC97'); pwGrad.addColorStop(0.5,'#FFD700'); pwGrad.addColorStop(1,'#F76C6C');
+          pwGrad.addColorStop(0,'#66bdf2'); pwGrad.addColorStop(0.5,'#FFD700'); pwGrad.addColorStop(1,'#7b8bc1');
           ctx.fillStyle = pwGrad; ctx.beginPath(); ctx.roundRect(pBarX,pBarY,BW*gs.power/100,12,6); ctx.fill();
           ctx.fillStyle = '#fff'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
           ctx.fillText('POWER', W/2, pBarY-4);

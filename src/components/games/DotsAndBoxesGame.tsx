@@ -8,8 +8,8 @@ import toast from 'react-hot-toast';
 interface Props { onClose: () => void }
 
 const GRID = 5; // 5x5 dots = 4x4 boxes
-const PLAYER_COLOR = '#4A90D9';
-const AI_COLOR = '#F76C6C';
+const PLAYER_COLOR = '#66bdf2';
+const AI_COLOR = '#7b8bc1';
 
 type LineKey = string;
 function hKey(r: number, c: number): LineKey { return `h${r}_${c}`; }
@@ -125,7 +125,7 @@ export function DotsAndBoxesGame({ onClose }: Props) {
   const winner = phase==='done' ? (scores.player>scores.ai?'You win! 🎉':scores.player<scores.ai?'AI wins 🤖':"It's a draw! 🤝") : null;
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{ background:'linear-gradient(135deg,#0a1628 0%,#16213E 100%)' }}>
+    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{ background:'linear-gradient(135deg,#0a1628 0%,#7b8bc1 100%)' }}>
       {/* Scores */}
       <div className="flex gap-5 mt-2">
         {[{label:'You',val:scores.player,color:PLAYER_COLOR},{label:'AI',val:scores.ai,color:AI_COLOR}].map(s=>(
@@ -198,7 +198,7 @@ export function DotsAndBoxesGame({ onClose }: Props) {
           {/* Dots */}
           {Array.from({length:GRID},(_, r)=>Array.from({length:GRID},(_,c)=>{
             const {x,y}=getPos(r,c);
-            return <circle key={`d${r}_${c}`} cx={x+DOT/2} cy={y+DOT/2} r={6} fill="#A8CBEA"/>;
+            return <circle key={`d${r}_${c}`} cx={x+DOT/2} cy={y+DOT/2} r={6} fill="#c2e7fa"/>;
           }))}
 
           {/* Box labels */}

@@ -299,7 +299,7 @@
 .status-content h2 {
   font-size: 32px;
   margin-bottom: 10px;
-  color: #16213e;
+  color: #7b8bc1;
   font-weight: 900;
 }
 
@@ -312,7 +312,7 @@
 .final-score {
   font-size: 24px;
   font-weight: 700;
-  color: #4a90d9;
+  color: #66bdf2;
 }
 
 .star-rating {
@@ -366,7 +366,7 @@
 
 .btn-exit {
   background: linear-gradient(135deg, #e0e0e0 0%, #f0f0f0 100%);
-  color: #16213e;
+  color: #7b8bc1;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 

@@ -116,7 +116,7 @@ export function MathsQuizGame({ onClose }: Props) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [question, phase]);
 
-  const opColor = { '+': '#3DDC97', '-': '#F76C6C', '×': '#4A90D9', '÷': '#F97316' };
+  const opColor = { '+': '#66bdf2', '-': '#7b8bc1', '×': '#66bdf2', '÷': '#F97316' };
   const timeRatio = timeLeft / Math.max(5, 15 - level);
 
   return (
@@ -143,7 +143,7 @@ export function MathsQuizGame({ onClose }: Props) {
           {/* Timer bar */}
           <div className="w-full max-w-sm h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)' }}>
             <motion.div className="h-full rounded-full"
-              style={{ background: timeRatio > 0.5 ? '#3DDC97' : timeRatio > 0.25 ? '#FFD700' : '#F76C6C' }}
+              style={{ background: timeRatio > 0.5 ? '#66bdf2' : timeRatio > 0.25 ? '#FFD700' : '#7b8bc1' }}
               animate={{ width: `${timeRatio*100}%` }}
               transition={{ duration: 0.3 }}
             />
@@ -178,8 +178,8 @@ export function MathsQuizGame({ onClose }: Props) {
               let border = 'rgba(255,255,255,0.15)';
               let color = '#fff';
               if (chosen !== null) {
-                if (c === question.answer) { bg = 'rgba(61,220,151,0.25)'; border = '#3DDC97'; color = '#3DDC97'; }
-                else if (c === chosen) { bg = 'rgba(247,108,108,0.25)'; border = '#F76C6C'; color = '#F76C6C'; }
+                if (c === question.answer) { bg = 'rgba(61,220,151,0.25)'; border = '#66bdf2'; color = '#66bdf2'; }
+                else if (c === chosen) { bg = 'rgba(247,108,108,0.25)'; border = '#7b8bc1'; color = '#7b8bc1'; }
               }
               return (
                 <motion.button key={i} onClick={() => answer(c)}

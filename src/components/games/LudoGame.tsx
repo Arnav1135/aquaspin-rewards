@@ -167,7 +167,7 @@ export function LudoGame({ onClose }: Props) {
 
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{ background:'linear-gradient(135deg,#0a1628 0%,#16213E 100%)' }}>
+    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{ background:'linear-gradient(135deg,#0a1628 0%,#7b8bc1 100%)' }}>
       {/* Header */}
       <div className="flex gap-3 mt-1 flex-wrap justify-center">
         {COLORS.map(c => {

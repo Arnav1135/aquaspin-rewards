@@ -82,8 +82,8 @@ export function GameFrame({
           <div className="flex items-center gap-3 text-xs font-mono" style={{ color: 'rgba(245,248,252,0.75)' }}>
             {score !== undefined && (
               <span className="flex items-center gap-1">
-                <Trophy size={11} style={{ color: '#3DDC97' }} />
-                <span style={{ color: '#3DDC97', fontWeight: 700 }}>{score}</span>
+                <Trophy size={11} style={{ color: '#66bdf2' }} />
+                <span style={{ color: '#66bdf2', fontWeight: 700 }}>{score}</span>
               </span>
             )}
             {level !== undefined && (
@@ -92,7 +92,7 @@ export function GameFrame({
             {lives !== undefined && (
               <span className="flex items-center gap-0.5">
                 {Array.from({ length: Math.min(lives, 5) }).map((_, i) => (
-                  <span key={i} style={{ color: '#F76C6C', fontSize: '10px' }}>♥</span>
+                  <span key={i} style={{ color: '#7b8bc1', fontSize: '10px' }}>♥</span>
                 ))}
               </span>
             )}
@@ -156,7 +156,7 @@ export function GameFrame({
               title="Close Game"
               style={{ background: 'rgba(247,108,108,0.25)', borderColor: 'rgba(247,108,108,0.35)' }}
             >
-              <X size={14} strokeWidth={2} style={{ color: '#F76C6C' }} />
+              <X size={14} strokeWidth={2} style={{ color: '#7b8bc1' }} />
             </button>
           </div>
         </div>
@@ -188,9 +188,9 @@ export function GameFrame({
                   className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
                   style={{ background: 'rgba(245,248,252,0.12)', border: '2px solid rgba(245,248,252,0.25)' }}
                 >
-                  <Pause size={28} style={{ color: '#F5F8FC' }} />
+                  <Pause size={28} style={{ color: '#FFFFFF' }} />
                 </div>
-                <p style={{ color: '#F5F8FC', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
+                <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
                   Game Paused
                 </p>
                 <button

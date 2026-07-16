@@ -1,34 +1,29 @@
 // src/pages/Dashboard.tsx
-// Fintech-grade gaming dashboard — navy/sky/teal palette, reference layout
+// Fintech-grade gaming dashboard matching the visual structural layout of the reference image.
 
-import { useState } from 'react';
+// import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Disc3, Zap, Trophy, Flame, Gamepad2, TrendingUp,
-  Gift, Coins, Calendar, ArrowUpRight,
-  ArrowDownRight, Wallet, MoreHorizontal
+  Menu, User, Plus, Disc3, Trophy, Gamepad2,
+  Wallet, MoreHorizontal, Plane, ShoppingBag, Gift
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
-import { getSpinHistory, getDailyRewardStatus, claimDailyReward } from '@/lib/supabase';
-import { LevelBadge } from '@/components/ui/ProgressBar';
-import { Button } from '@/components/ui/Button';
+import { getSpinHistory } from '@/lib/supabase';
 import { BannerAd } from '@/components/ads/BannerAd';
-import { DAILY_REWARD_SCHEDULE, formatRelativeTime } from '@/types/database';
+import { formatRelativeTime } from '@/types/database';
 import { formatTokens } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 const CARD_ANIM = { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 } };
 
 export function Dashboard() {
-  const { profile, isGuest, refreshProfile } = useAuthStore();
+  const { profile, isGuest } = useAuthStore();
   const { openCashoutModal } = useUIStore();
-  const [claimingReward, setClaimingReward] = useState(false);
 
-  const cashoutProgress = profile ? Math.min((profile.tokens / 1000) * 100, 100) : 0;
-  const dayInCycle = ((profile?.streak ?? 0) % 7) || 7;
+  // dayInCycle removed
 
   const { data: spinHistoryData } = useQuery({
     queryKey: ['spin-history', profile?.id],
@@ -37,397 +32,195 @@ export function Dashboard() {
     staleTime: 30_000,
   });
 
-  const { data: dailyRewardData, refetch: refetchDailyReward } = useQuery({
-    queryKey: ['daily-reward', profile?.id],
-    queryFn: () => profile ? getDailyRewardStatus(profile.id).then(r => r.data) : null,
-    enabled: !!profile && !isGuest,
-    staleTime: 60_000,
-  });
-
-  const hasClaimedDailyReward = dailyRewardData && dailyRewardData.length > 0;
-  const todayReward = DAILY_REWARD_SCHEDULE.find(d => d.day === dayInCycle);
-
-  const handleClaimDailyReward = async () => {
-    if (!profile || hasClaimedDailyReward || claimingReward) return;
-    setClaimingReward(true);
-    const tokensToAward = todayReward?.tokens ?? 50;
-    const { error } = await claimDailyReward(profile.id, profile.streak, tokensToAward);
-    if (error) {
-      toast.error('Failed to claim reward. Please try again.');
-    } else {
-      toast.success(`Daily reward claimed! +${tokensToAward} tokens! 🎉`);
-      await refreshProfile();
-      await refetchDailyReward();
-    }
-    setClaimingReward(false);
-  };
+  // Removed daily reward query and handleClaimDailyReward as it was removed from the UI
 
   return (
     <div
-      className="min-h-screen pt-20 pb-28 px-4"
-      style={{ background: 'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)' }}
+      className="min-h-screen relative pb-0"
+      style={{ background: 'var(--c-app-bg)' }}
     >
-      <div className="max-w-2xl mx-auto space-y-5">
-
-        {/* ── Welcome + Wallet Card (Primary Navy) ── */}
-        <motion.div
-          className="card-navy on-navy p-6 rounded-3xl"
-          {...CARD_ANIM}
-          transition={{ delay: 0 }}
-        >
-          <div className="flex items-start justify-between mb-5">
-            <div>
-              <p className="text-xs font-medium mb-1" style={{ color: 'rgba(245,248,252,0.55)' }}>
-                {isGuest ? 'Guest Wallet' : 'My Wallet'}
-              </p>
-              <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#F5F8FC' }}>
-                {isGuest ? 'Welcome! 👋' : `Hey, ${profile?.username?.split(' ')[0] ?? 'Player'}! 👋`}
-              </h1>
-            </div>
-            {profile?.streak && profile.streak > 0 ? (
-              <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                style={{ background: 'rgba(247,108,108,0.20)', border: '1px solid rgba(247,108,108,0.30)' }}
-              >
-                <Flame size={14} style={{ color: '#F76C6C' }} />
-                <span className="font-bold text-sm" style={{ color: '#F76C6C' }}>
-                  {profile.streak}d
-                </span>
-              </div>
-            ) : null}
+      <div className="max-w-2xl mx-auto flex flex-col min-h-screen relative overflow-hidden">
+        
+        {/* ── Top Glass Header ── */}
+        <div className="px-6 py-6 flex justify-between items-center z-10 sticky top-0 backdrop-blur-md">
+          <button className="p-2 -ml-2 rounded-full text-[var(--c-navy-dark)]">
+            <Menu size={24} />
+          </button>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white shadow-md overflow-hidden border-2 border-white">
+             {profile?.avatar_url ? (
+               <img src={profile.avatar_url} alt="User" className="w-full h-full object-cover" />
+             ) : (
+               <User size={20} className="text-[var(--c-navy-dark)]" />
+             )}
           </div>
+        </div>
 
-          {/* Balance + Cashout */}
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-xs mb-1" style={{ color: 'rgba(245,248,252,0.45)' }}>Token Balance</p>
-              <div className="flex items-center gap-2">
-                <Coins size={20} style={{ color: '#3DDC97' }} />
-                <span className="text-3xl font-bold font-mono" style={{ color: '#F5F8FC' }}>
-                  {formatTokens(profile?.tokens ?? 0)}
-                </span>
-              </div>
-            </div>
-            {profile && profile.tokens >= 1000 && (
-              <Button
-                variant="success"
-                size="sm"
+        <div className="px-6 flex-1 flex flex-col z-10 pb-10">
+          
+          {/* ── Visa-Style Cards Row ── */}
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x no-scrollbar -mx-6 px-6">
+            
+            {/* Add Button */}
+            <div className="flex flex-col justify-center snap-center">
+              <button 
                 onClick={openCashoutModal}
-                id="cashout-btn"
+                className="w-[45px] h-[80px] rounded-[24px] flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 border border-white/10"
+                style={{ background: 'var(--c-navy-dark)', color: 'white' }}
               >
-                <TrendingUp size={14} /> Cash Out
-              </Button>
-            )}
-          </div>
-
-          {/* Cashout progress bar */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-2xs" style={{ color: 'rgba(245,248,252,0.45)' }}>
-              <span>{formatTokens(profile?.tokens ?? 0)} / 1,000 for cashout</span>
-              <span>{Math.round(cashoutProgress)}%</span>
+                <Plus size={20} />
+              </button>
             </div>
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ background: 'rgba(245,248,252,0.12)' }}
+
+            {/* Main Token Balance Card (Slate Blue) */}
+            <motion.div
+              className="relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
+              style={{ background: 'var(--c-navy)', boxShadow: '0 10px 25px rgba(123,139,193,0.3)' }}
+              {...CARD_ANIM}
+              transition={{ delay: 0.1 }}
             >
-              <motion.div
-                className="h-full rounded-full"
-                style={{
-                  background: cashoutProgress >= 100
-                    ? 'linear-gradient(90deg, #3DDC97, #2bc47e)'
-                    : 'linear-gradient(90deg, #4A90D9, #3DDC97)',
-                  boxShadow: '0 0 8px rgba(61,220,151,0.35)',
-                }}
-                initial={{ width: 0 }}
-                animate={{ width: `${cashoutProgress}%` }}
-                transition={{ duration: 1, ease: 'easeOut' }}
-              />
-            </div>
+              {/* Overlapping Circle Pattern */}
+              <div className="absolute top-0 right-0 w-36 h-36 rounded-full border border-white/10 -translate-y-12 translate-x-12 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-44 h-44 rounded-full border border-white/10 translate-y-12 -translate-x-12 pointer-events-none" />
+              
+              <div className="flex justify-between items-center z-10">
+                <div className="w-9 h-6 bg-white/20 rounded-[6px] backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                   <div className="w-4 h-[2px] bg-white rounded-full opacity-50" />
+                </div>
+              </div>
+              
+              <div className="z-10 mt-auto pb-2">
+                <h3 className="text-white text-2xl font-bold font-mono tracking-tight">
+                  {formatTokens(profile?.tokens ?? 0)}
+                </h3>
+                <p className="text-white/60 text-xs mt-1 font-medium tracking-widest uppercase">
+                  Tokens
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Secondary USD Value Card (Cyan Blue) */}
+            <motion.div
+              className="relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
+              style={{ background: 'var(--c-sky)', boxShadow: '0 10px 25px rgba(102,189,242,0.3)' }}
+              {...CARD_ANIM}
+              transition={{ delay: 0.2 }}
+            >
+              {/* Overlapping Circle Pattern */}
+              <div className="absolute top-10 -right-10 w-36 h-36 rounded-full border border-white/20 pointer-events-none" />
+              <div className="absolute -bottom-12 left-5 w-44 h-44 rounded-full border border-white/20 pointer-events-none" />
+              
+              <div className="flex justify-end items-center z-10">
+                 <div className="flex -space-x-3">
+                    <div className="w-7 h-7 rounded-full bg-white/40" />
+                    <div className="w-7 h-7 rounded-full bg-white/80" />
+                 </div>
+              </div>
+              
+              <div className="z-10 mt-auto pb-2">
+                <h3 className="text-white text-2xl font-bold font-mono tracking-tight">
+                  ${((profile?.tokens ?? 0) / 1000).toFixed(2)}
+                </h3>
+                <p className="text-white/70 text-xs mt-1 font-medium tracking-widest uppercase">
+                  USD Value
+                </p>
+              </div>
+            </motion.div>
+            
+            {/* Spacer for overflow */}
+            <div className="w-2 flex-shrink-0" />
           </div>
 
-          {/* Level badge */}
-          {profile && !isGuest && (
-            <div className="mt-4">
-              <LevelBadge level={profile.level} xp={profile.xp} />
-            </div>
-          )}
-        </motion.div>
-
-        {/* ── Win / Loss Stats (Income / Expense style) ── */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            {
-              label: 'Total Won',
-              value: formatTokens(profile?.total_earned ?? 0),
-              icon: ArrowUpRight,
-              color: '#3DDC97',
-              bg: 'rgba(61,220,151,0.10)',
-              border: 'rgba(61,220,151,0.22)',
-            },
-            {
-              label: 'USD Value',
-              value: `$${((profile?.tokens ?? 0) / 1000).toFixed(2)}`,
-              icon: ArrowDownRight,
-              color: '#F76C6C',
-              bg: 'rgba(247,108,108,0.10)',
-              border: 'rgba(247,108,108,0.22)',
-            },
-          ].map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div
-                key={stat.label}
-                className="p-4 rounded-2xl"
-                style={{ background: stat.bg, border: `1px solid ${stat.border}` }}
-                {...CARD_ANIM}
-                transition={{ delay: 0.08 * (i + 1) }}
-              >
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
-                  style={{ background: stat.bg, border: `1px solid ${stat.border}` }}
-                >
-                  <Icon size={18} style={{ color: stat.color }} />
-                </div>
-                <p className="text-2xs font-medium mb-0.5" style={{ color: 'rgba(22,33,62,0.55)' }}>
-                  {stat.label}
-                </p>
-                <p className="font-bold text-lg font-mono" style={{ color: stat.color }}>
-                  {stat.value}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* ── Quick Stats Row ── */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Streak',  value: `${profile?.streak ?? 0} days`, icon: Flame, color: '#F76C6C' },
-            { label: 'Level',   value: `Lv ${profile?.level ?? 1}`,    icon: Zap,   color: '#4A90D9' },
-          ].map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div
-                key={stat.label}
-                className="card-white p-4 flex items-center gap-3"
-                {...CARD_ANIM}
-                transition={{ delay: 0.12 * (i + 1) }}
-              >
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${stat.color}15` }}
-                >
-                  <Icon size={18} style={{ color: stat.color }} />
-                </div>
-                <div>
-                  <p className="text-2xs font-medium" style={{ color: 'rgba(22,33,62,0.50)' }}>{stat.label}</p>
-                  <p className="font-bold text-sm" style={{ color: '#16213E' }}>{stat.value}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* ── Quick Actions Row (circular icon-btn style) ── */}
-        <motion.div
-          className="card-white p-5"
-          {...CARD_ANIM}
-          transition={{ delay: 0.15 }}
-        >
-          <div className="section-header">
-            <h3 className="section-title">Quick Actions</h3>
-            <MoreHorizontal size={16} style={{ color: 'rgba(22,33,62,0.35)' }} />
+          {/* ── Activities / Quick Actions ── */}
+          <div className="mt-8 mb-6 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-[var(--c-navy-dark)]">Activities</h2>
+            <MoreHorizontal size={20} className="text-[var(--c-navy-dark)] opacity-40" />
           </div>
-          <div className="grid grid-cols-4 gap-3">
+
+          <div className="flex justify-between items-start px-2">
             {[
               { to: '/wheel', icon: Disc3,    label: 'Spin' },
               { to: '/games', icon: Gamepad2, label: 'Games' },
               { to: '/profile', icon: Trophy, label: 'Ranks' },
               { to: '/shop',  icon: Wallet,   label: 'Shop' },
-            ].map(({ to, icon: Icon, label }) => (
-              <Link key={to} to={to} className="flex flex-col items-center gap-2">
-                <div className="icon-btn" style={{ background: '#16213E' }}>
-                  <Icon size={20} strokeWidth={2} style={{ color: '#F5F8FC' }} />
-                </div>
-                <span className="text-2xs font-semibold" style={{ color: '#16213E' }}>{label}</span>
-              </Link>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* ── Featured Game Banner (large navy card) ── */}
-        <motion.div
-          className="card-navy on-navy relative overflow-hidden"
-          style={{ borderRadius: 28, padding: '1.5rem' }}
-          {...CARD_ANIM}
-          transition={{ delay: 0.18 }}
-        >
-          {/* Decorative glow */}
-          <div
-            className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl pointer-events-none"
-            style={{ background: 'rgba(74,144,217,0.25)', transform: 'translate(30%, -30%)' }}
-          />
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <div
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ background: '#3DDC97' }}
-                />
-                <span className="text-2xs font-semibold" style={{ color: '#3DDC97' }}>LIVE</span>
-              </div>
-              <h2 className="text-lg font-bold" style={{ color: '#F5F8FC' }}>Mini Games Hub</h2>
-              <p className="text-sm mt-0.5" style={{ color: 'rgba(245,248,252,0.55)' }}>
-                16 premium games available
-              </p>
-            </div>
-            <Gamepad2 size={32} style={{ color: 'rgba(74,144,217,0.6)' }} />
-          </div>
-          <Link to="/games">
-            <Button variant="sky" size="sm" className="font-semibold">
-              Play Now <ArrowUpRight size={14} />
-            </Button>
-          </Link>
-        </motion.div>
-
-        {/* ── Daily Streak Calendar ── */}
-        {!isGuest && (
-          <motion.div
-            className="card-white p-5"
-            {...CARD_ANIM}
-            transition={{ delay: 0.20 }}
-          >
-            <div className="section-header">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} style={{ color: '#4A90D9' }} />
-                <h3 className="section-title">Daily Streak</h3>
-              </div>
-              <span
-                className="badge-chip badge-sky"
+            ].map(({ to, icon: Icon, label }, i) => (
+              <motion.div
+                key={label}
+                {...CARD_ANIM}
+                transition={{ delay: 0.3 + (i * 0.1) }}
               >
-                {profile?.streak ?? 0}d streak
-              </span>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1.5 mb-4">
-              {DAILY_REWARD_SCHEDULE.map((day) => {
-                const isCurrent = day.day === dayInCycle;
-                const isPast = (profile?.streak ?? 0) >= day.day;
-                return (
-                  <div
-                    key={day.day}
-                    className="flex flex-col items-center gap-1 p-2 rounded-xl text-center"
-                    style={{
-                      background: isCurrent
-                        ? 'rgba(74,144,217,0.12)'
-                        : isPast
-                        ? 'rgba(61,220,151,0.08)'
-                        : 'rgba(22,33,62,0.04)',
-                      border: `1px solid ${isCurrent ? 'rgba(74,144,217,0.30)' : isPast ? 'rgba(61,220,151,0.20)' : 'rgba(22,33,62,0.08)'}`,
+                <Link to={to} className="flex flex-col items-center gap-3 group">
+                  <div 
+                    className="w-[64px] h-[64px] rounded-[24px] flex items-center justify-center transition-all group-hover:scale-105"
+                    style={{ 
+                      background: 'var(--c-navy)', 
+                      boxShadow: '0 8px 20px rgba(123, 139, 193, 0.25)',
                     }}
                   >
-                    <span className="text-2xs font-semibold" style={{ color: 'rgba(22,33,62,0.45)' }}>
-                      D{day.day}
-                    </span>
-                    <Coins
-                      size={12}
-                      style={{ color: isCurrent ? '#4A90D9' : isPast ? '#3DDC97' : 'rgba(22,33,62,0.25)' }}
-                    />
-                    <span
-                      className="text-2xs font-bold"
-                      style={{ color: isCurrent ? '#4A90D9' : isPast ? '#3DDC97' : 'rgba(22,33,62,0.30)' }}
-                    >
-                      {day.tokens}
-                    </span>
+                    <div className="p-[10px] rounded-full border-[1.5px] border-white/40">
+                      <Icon size={20} strokeWidth={2} style={{ color: '#FFFFFF' }} />
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-
-            <Button
-              variant={hasClaimedDailyReward ? 'ghost' : 'primary'}
-              fullWidth
-              disabled={!!hasClaimedDailyReward}
-              loading={claimingReward}
-              onClick={handleClaimDailyReward}
-              id="daily-reward-btn"
-            >
-              {hasClaimedDailyReward ? (
-                '✓ Today\'s reward claimed!'
-              ) : (
-                <>
-                  <Gift size={16} />
-                  Claim Day {dayInCycle} Reward (+{todayReward?.tokens ?? 50} tokens)
-                </>
-              )}
-            </Button>
-          </motion.div>
-        )}
-
-        {/* ── Recent Activity (Transactions panel style) ── */}
-        {spinHistoryData && spinHistoryData.length > 0 && (
-          <motion.div
-            className="card-white p-5"
-            {...CARD_ANIM}
-            transition={{ delay: 0.22 }}
-          >
-            <div className="section-header">
-              <h3 className="section-title">Recent Spins</h3>
-              <MoreHorizontal size={16} style={{ color: 'rgba(22,33,62,0.35)' }} />
-            </div>
-            <div>
-              {(spinHistoryData as any[]).slice(0, 5).map((spin: any) => (
-                <div key={spin.id} className="history-row">
-                  <div
-                    className="history-icon"
-                    style={{ background: 'rgba(74,144,217,0.12)', border: '1px solid rgba(74,144,217,0.20)' }}
-                  >
-                    <Disc3 size={18} style={{ color: '#4A90D9' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: '#16213E' }}>
-                      {spin.segment}
-                    </p>
-                    <p className="text-2xs" style={{ color: 'rgba(22,33,62,0.45)' }}>
-                      {formatRelativeTime(spin.created_at)}
-                    </p>
-                  </div>
-                  <span className="font-mono font-bold text-sm" style={{ color: '#3DDC97' }}>
-                    +{spin.reward}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── Guest Upgrade Prompt ── */}
-        {isGuest && (
-          <motion.div
-            className="card-sky p-5"
-            {...CARD_ANIM}
-            transition={{ delay: 0.24 }}
-          >
-            <div className="flex items-start gap-3">
-              <span className="text-2xl flex-shrink-0">🎮</span>
-              <div>
-                <h3 className="font-bold mb-1" style={{ color: '#16213E' }}>
-                  Save Your Progress
-                </h3>
-                <p className="text-sm mb-3" style={{ color: 'rgba(22,33,62,0.65)' }}>
-                  Create a free account to join leaderboards and cash out your earnings.
-                </p>
-                <Link to="/auth">
-                  <Button variant="primary" size="sm" id="upgrade-account-btn">
-                    Sign Up Free — Get 500 Bonus Tokens
-                  </Button>
+                  <span className="text-xs font-semibold text-[var(--c-navy-dark)] opacity-80">{label}</span>
                 </Link>
-              </div>
-            </div>
-          </motion.div>
-        )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
 
-        <BannerAd />
+        {/* ── Bottom Drawer (Transactions / Recent Games) ── */}
+        <motion.div 
+          className="w-full bg-[var(--c-navy)] mt-auto pt-6 px-6 pb-28 relative z-20 flex-1 min-h-[300px]"
+          style={{ borderRadius: '40px 40px 0 0', boxShadow: '0 -10px 40px rgba(123, 139, 193, 0.4)' }}
+          initial={{ y: 200, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 120, delay: 0.5 }}
+        >
+          {/* Drag Handle */}
+          <div className="w-12 h-[3px] bg-white/20 rounded-full mx-auto mb-8" />
+
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-lg font-bold text-white">Transactions</h2>
+            <MoreHorizontal size={20} className="text-white/50" />
+          </div>
+
+          <div className="space-y-6">
+             {/* Map over recent spin history to show transactions */}
+             {spinHistoryData && spinHistoryData.length > 0 ? (
+                (spinHistoryData as any[]).slice(0, 4).map((spin: any, index: number) => {
+                  const icons = [Plane, ShoppingBag, Gamepad2, Gift];
+                  const Icon = icons[index % icons.length];
+                  
+                  return (
+                    <div key={spin.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div 
+                          className="w-12 h-12 rounded-[18px] flex items-center justify-center border border-white/20"
+                          style={{ background: 'rgba(255,255,255,0.1)' }}
+                        >
+                          <Icon size={20} className="text-[var(--c-sky)]" />
+                        </div>
+                        <div>
+                          <p className="text-white font-semibold text-sm">Game Reward</p>
+                          <p className="text-white/50 text-xs mt-1">{formatRelativeTime(spin.created_at)}</p>
+                        </div>
+                      </div>
+                      <span className="text-white font-mono text-sm">
+                        +{spin.reward}
+                      </span>
+                    </div>
+                  );
+                })
+             ) : (
+                <div className="text-center py-4">
+                  <p className="text-white/50 text-sm">No recent transactions</p>
+                </div>
+             )}
+          </div>
+          
+          <div className="mt-8">
+             <BannerAd />
+          </div>
+        </motion.div>
       </div>
     </div>
   );

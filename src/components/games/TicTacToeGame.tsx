@@ -129,7 +129,7 @@ export function TicTacToeGame({ onClose }: Props) {
   }, [board, result, aiThinking, xTurn, mode, place, handleResult]);
 
   // Symbol styles
-  const XColor = '#4A90D9', OColor = '#F76C6C';
+  const XColor = '#66bdf2', OColor = '#7b8bc1';
   const getSymbol = (cell: Cell, idx: number, line: number[]) => {
     const isWin = line.includes(idx);
     if (cell === 'X') return (
@@ -153,13 +153,13 @@ export function TicTacToeGame({ onClose }: Props) {
   const statusText = result === 'draw' ? "It's a Draw!" : result ? (result.winner === 'X' ? (mode === 'ai' ? '🎉 You Win!' : '❌ X Wins!') : (mode === 'ai' ? '🤖 AI Wins!' : '⭕ O Wins!')) : aiThinking ? '🤖 AI thinking...' : xTurn ? (mode === 'ai' ? 'Your turn (X)' : "❌ X's turn") : (mode === 'ai' ? '🤖 AI turn' : "⭕ O's turn");
 
   return (
-    <div className="flex flex-col items-center gap-5 p-4 min-h-screen" style={{ background: 'linear-gradient(135deg,#0a1628 0%,#16213E 60%,#1a3a6b 100%)' }}>
+    <div className="flex flex-col items-center gap-5 p-4 min-h-screen" style={{ background: 'linear-gradient(135deg,#0a1628 0%,#7b8bc1 60%,#1a3a6b 100%)' }}>
       {/* Mode toggle */}
       <div className="flex gap-2 mt-2">
         {(['ai','pvp'] as const).map(m => (
           <button key={m} onClick={() => { setMode(m); reset(); }}
             className="px-5 py-2 rounded-xl font-semibold text-sm transition-all"
-            style={{ background: mode === m ? '#4A90D9' : 'rgba(255,255,255,0.08)', color: '#fff', border: mode === m ? 'none' : '1px solid rgba(255,255,255,0.15)' }}>
+            style={{ background: mode === m ? '#66bdf2' : 'rgba(255,255,255,0.08)', color: '#fff', border: mode === m ? 'none' : '1px solid rgba(255,255,255,0.15)' }}>
             {m === 'ai' ? '🤖 vs AI' : '👥 2 Player'}
           </button>
         ))}

@@ -253,7 +253,7 @@ export function PoolGame({ onClose }: Props) {
         const barX = W/2-70, barY = H-22;
         ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.roundRect(barX-2, barY-2, 144, 14, 7); ctx.fill();
         const pwGrad = ctx.createLinearGradient(barX, 0, barX+140, 0);
-        pwGrad.addColorStop(0,'#3DDC97'); pwGrad.addColorStop(0.5,'#FFD700'); pwGrad.addColorStop(1,'#F76C6C');
+        pwGrad.addColorStop(0,'#66bdf2'); pwGrad.addColorStop(0.5,'#FFD700'); pwGrad.addColorStop(1,'#7b8bc1');
         ctx.fillStyle = pwGrad; ctx.beginPath(); ctx.roundRect(barX, barY, 140*(gs.power/100), 10, 5); ctx.fill();
       }
 
@@ -274,7 +274,7 @@ export function PoolGame({ onClose }: Props) {
       // Idle
       if (gs.phase === 'idle') {
         ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.beginPath(); ctx.roundRect(W/2-100, H/2-55, 200, 115, 20); ctx.fill();
-        ctx.fillStyle = '#3DDC97'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#66bdf2'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
         ctx.fillText('🎱 POOL', W/2, H/2-18);
         ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '13px system-ui';
         ctx.fillText('Aim & drag to set power, release!', W/2, H/2+10);

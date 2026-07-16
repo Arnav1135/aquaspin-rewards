@@ -132,7 +132,7 @@ export function SudokuGame({ onClose }: Props) {
   const sameValue = (r:number,c:number) => selected && grid[selected[0]]?.[selected[1]]?.value>0 && grid[r]?.[c]?.value===grid[selected[0]]?.[selected[1]]?.value;
 
   return (
-    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{background:'linear-gradient(135deg,#0a1628 0%,#16213E 100%)'}}>
+    <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{background:'linear-gradient(135deg,#0a1628 0%,#7b8bc1 100%)'}}>
       {phase !== 'idle' && (
         <>
           {/* Stats bar */}
@@ -160,7 +160,7 @@ export function SudokuGame({ onClose }: Props) {
                       style={{
                         width:35,height:35,background:bg,
                         borderRight:c%3===2&&c!==8?'2px solid rgba(74,144,217,0.4)':'1px solid rgba(255,255,255,0.08)',
-                        color: cell.error?'#F76C6C':cell.given?'#A8CBEA':'#fff',
+                        color: cell.error?'#7b8bc1':cell.given?'#c2e7fa':'#fff',
                         fontWeight: cell.given?700:500, fontSize: cell.value?'16px':'9px',
                       }}>
                       {cell.value > 0 ? (
@@ -170,7 +170,7 @@ export function SudokuGame({ onClose }: Props) {
                       ) : cell.notes.size > 0 ? (
                         <div className="grid grid-cols-3 gap-0 w-full h-full p-0.5">
                           {[1,2,3,4,5,6,7,8,9].map(n=>(
-                            <span key={n} style={{fontSize:'7px',color:cell.notes.has(n)?'#4A90D9':'transparent',lineHeight:'11px',textAlign:'center'}}>{n}</span>
+                            <span key={n} style={{fontSize:'7px',color:cell.notes.has(n)?'#66bdf2':'transparent',lineHeight:'11px',textAlign:'center'}}>{n}</span>
                           ))}
                         </div>
                       ) : null}
@@ -197,7 +197,7 @@ export function SudokuGame({ onClose }: Props) {
           <div className="flex gap-2">
             <button onClick={()=>setNotesMode(!notesMode)}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-              style={{background:notesMode?'rgba(74,144,217,0.4)':'rgba(255,255,255,0.08)',color:notesMode?'#4A90D9':'#aaa',border:`1px solid ${notesMode?'#4A90D9':'rgba(255,255,255,0.1)'}`}}>
+              style={{background:notesMode?'rgba(74,144,217,0.4)':'rgba(255,255,255,0.08)',color:notesMode?'#66bdf2':'#aaa',border:`1px solid ${notesMode?'#66bdf2':'rgba(255,255,255,0.1)'}`}}>
               ✏️ Notes {notesMode?'ON':'OFF'}
             </button>
             <button onClick={handleHint}
@@ -223,7 +223,7 @@ export function SudokuGame({ onClose }: Props) {
             {(['Easy','Medium','Hard'] as const).map(d=>(
               <button key={d} onClick={()=>setDifficulty(d)}
                 className="px-4 py-2 rounded-xl text-sm font-semibold"
-                style={{background:difficulty===d?'#4A90D9':'rgba(255,255,255,0.08)',color:'#fff',border:difficulty===d?'none':'1px solid rgba(255,255,255,0.15)'}}>
+                style={{background:difficulty===d?'#66bdf2':'rgba(255,255,255,0.08)',color:'#fff',border:difficulty===d?'none':'1px solid rgba(255,255,255,0.15)'}}>
                 {d}
               </button>
             ))}

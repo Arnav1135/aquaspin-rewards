@@ -48,13 +48,13 @@ const GAMES = [
   },
   {
     key: 'plinko',      title: 'Plinko',      emoji: '🔴',  category: 'Casino',
-    reward: 'Up to 170x',    difficulty: 'Easy',   color: '#4A90D9',
+    reward: 'Up to 170x',    difficulty: 'Easy',   color: '#66bdf2',
     desc: 'Drop a ball through pegs and score high outer multipliers!',
     thumbnail: '/thumbnails/plinko.jpg',
   },
   {
     key: 'crash',       title: 'Crash',       emoji: '📈',  category: 'Casino',
-    reward: 'Up to 10,000x+',difficulty: 'Hard',   color: '#3DDC97',
+    reward: 'Up to 10,000x+',difficulty: 'Hard',   color: '#66bdf2',
     desc: 'Cash out before the rocket crashes to secure your multiplier!',
     thumbnail: '/thumbnails/crash.jpg',
   },
@@ -66,7 +66,7 @@ const GAMES = [
   },
   {
     key: 'roulette',    title: 'Roulette',    emoji: '🎡',  category: 'Casino',
-    reward: 'Up to 14x',     difficulty: 'Easy',   color: '#F76C6C',
+    reward: 'Up to 14x',     difficulty: 'Easy',   color: '#7b8bc1',
     desc: 'Bet Red (2x), Black (2x), or Green (14x) on the spin wheel.',
     thumbnail: '/thumbnails/roulette.jpg',
   },
@@ -84,7 +84,7 @@ const GAMES = [
   },
   {
     key: 'flip',        title: 'Coin Flip',   emoji: '🪙',  category: 'Casino',
-    reward: '1.96x Bet',     difficulty: 'Easy',   color: '#A8CBEA',
+    reward: '1.96x Bet',     difficulty: 'Easy',   color: '#c2e7fa',
     desc: 'Flip a coin and guess Heads or Tails for 1.96x payout.',
     thumbnail: '/thumbnails/flip.jpg',
   },
@@ -109,50 +109,50 @@ const GAMES = [
   },
   {
     key: 'archery',     title: 'Archery',     emoji: '🏹',  category: 'Arcade',
-    reward: 'High Score',    difficulty: 'Medium', color: '#3DDC97',
+    reward: 'High Score',    difficulty: 'Medium', color: '#66bdf2',
     desc: 'Aim your arrow accounting for wind and gravity. Hit the bullseye!',
     thumbnail: '/thumbnails/archery.jpg',
   },
   {
     key: 'darts',       title: 'Darts',       emoji: '🎯',  category: 'Arcade',
-    reward: 'Best Score',    difficulty: 'Easy',   color: '#F76C6C',
+    reward: 'Best Score',    difficulty: 'Easy',   color: '#7b8bc1',
     desc: 'Swipe to throw darts. Hit doubles and trebles for big scores!',
     thumbnail: '/thumbnails/darts.jpg',
   },
   {
     key: 'pool',        title: 'Pool',        emoji: '🎱',  category: 'Arcade',
-    reward: 'Table Clear',   difficulty: 'Medium', color: '#3DDC97',
+    reward: 'Table Clear',   difficulty: 'Medium', color: '#66bdf2',
     desc: 'Aim and strike the cue ball. Pocket all colored balls to win!',
     thumbnail: '/thumbnails/pool.jpg',
   },
   {
     key: 'clicker',     title: 'Clicker Rush',emoji: '👆',  category: 'Arcade',
-    reward: '10–50 tokens',  difficulty: 'Easy',   color: '#4A90D9',
+    reward: '10–50 tokens',  difficulty: 'Easy',   color: '#66bdf2',
     desc: 'Click as fast as possible in 10 seconds! Earn tokens per click.',
     thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
   },
   {
     key: 'tap',         title: 'Tap Challenge',emoji: '✨', category: 'Arcade',
-    reward: '15–80 tokens',  difficulty: 'Hard',   color: '#A8CBEA',
+    reward: '15–80 tokens',  difficulty: 'Hard',   color: '#c2e7fa',
     desc: 'Tap glowing targets before they vanish. Speed test!',
     thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
   },
   // === BOARD / PUZZLE ===
   {
     key: 'chess',       title: 'Chess',       emoji: '♟️',  category: 'Board',
-    reward: 'Victory',       difficulty: 'Hard',   color: '#4A90D9',
+    reward: 'Victory',       difficulty: 'Hard',   color: '#66bdf2',
     desc: 'Play classical chess against AI or pass-and-play locally.',
     thumbnail: '/thumbnails/chess.jpg',
   },
   {
     key: 'solitaire',   title: 'Solitaire',   emoji: '🃏',  category: 'Board',
-    reward: 'Clear Board',   difficulty: 'Medium', color: '#3DDC97',
+    reward: 'Clear Board',   difficulty: 'Medium', color: '#66bdf2',
     desc: 'Classic Klondike solitaire. Sort cards from Ace to King!',
     thumbnail: '/thumbnails/solitaire.jpg',
   },
   {
     key: 'tictactoe',   title: 'Tic Tac Toe', emoji: '❌',  category: 'Board',
-    reward: 'Win Streak',    difficulty: 'Easy',   color: '#4A90D9',
+    reward: 'Win Streak',    difficulty: 'Easy',   color: '#66bdf2',
     desc: 'Three in a row wins! Play against AI or a friend locally.',
     thumbnail: '/thumbnails/tictactoe.jpg',
   },
@@ -171,7 +171,7 @@ const GAMES = [
   // === TRIVIA / QUIZ ===
   {
     key: 'mathsquiz',   title: 'Maths Blitz', emoji: '🔢',  category: 'Quiz',
-    reward: 'High Score',    difficulty: 'Medium', color: '#4A90D9',
+    reward: 'High Score',    difficulty: 'Medium', color: '#66bdf2',
     desc: 'Rapid-fire maths challenges: Arithmetic, Algebra, Geometry!',
     thumbnail: '/thumbnails/mathsquiz.jpg',
   },
@@ -202,9 +202,9 @@ type Category = 'All' | 'Casino' | 'Arcade' | 'Board' | 'Quiz' | 'Puzzle';
 const CATEGORIES: Category[] = ['All', 'Casino', 'Arcade', 'Board', 'Quiz', 'Puzzle'];
 
 const DIFFICULTY_COLOR: Record<string, string> = {
-  Easy:   '#3DDC97',
-  Medium: '#4A90D9',
-  Hard:   '#F76C6C',
+  Easy:   '#66bdf2',
+  Medium: '#66bdf2',
+  Hard:   '#7b8bc1',
 };
 
 export function MiniGames() {
@@ -287,7 +287,7 @@ export function MiniGames() {
   return (
     <div
       className="min-h-screen pt-20 pb-28 px-4"
-      style={{ background: 'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)' }}
     >
       <div className="max-w-5xl mx-auto">
 
@@ -295,8 +295,8 @@ export function MiniGames() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Gamepad2 size={20} style={{ color: '#4A90D9' }} />
-              <h1 className="text-2xl font-bold" style={{ color: '#16213E' }}>Game Library</h1>
+              <Gamepad2 size={20} style={{ color: '#66bdf2' }} />
+              <h1 className="text-2xl font-bold" style={{ color: '#7b8bc1' }}>Game Library</h1>
             </div>
             <p className="text-sm" style={{ color: 'rgba(22,33,62,0.55)' }}>
               {GAMES.length} games across Casino, Arcade, Board & Quiz
@@ -315,7 +315,7 @@ export function MiniGames() {
             <Search size={14} style={{ color: 'rgba(22,33,62,0.40)' }} />
             <input
               className="bg-transparent text-sm outline-none flex-1"
-              style={{ color: '#16213E' }}
+              style={{ color: '#7b8bc1' }}
               placeholder="Search games..."
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -351,7 +351,7 @@ export function MiniGames() {
               <div
                 className="rounded-3xl overflow-hidden"
                 style={{
-                  background: '#16213E',
+                  background: '#7b8bc1',
                   padding: 10,
                   boxShadow: '0 6px 20px rgba(22,33,62,0.14)',
                   transition: 'all 0.25s',
@@ -403,7 +403,7 @@ export function MiniGames() {
                 <div className="flex items-start justify-between gap-1">
                   <h3
                     className="font-semibold text-sm leading-tight group-hover:opacity-80 transition-opacity"
-                    style={{ color: '#16213E' }}
+                    style={{ color: '#7b8bc1' }}
                   >
                     {game.title}
                   </h3>
@@ -429,7 +429,7 @@ export function MiniGames() {
 
         {filtered.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-lg font-semibold" style={{ color: '#16213E' }}>No games found</p>
+            <p className="text-lg font-semibold" style={{ color: '#7b8bc1' }}>No games found</p>
             <p className="text-sm mt-1" style={{ color: 'rgba(22,33,62,0.45)' }}>Try a different search or category.</p>
           </div>
         )}
@@ -441,7 +441,7 @@ export function MiniGames() {
           <motion.div
             ref={overlayRef}
             className="fixed inset-0 z-50 flex flex-col"
-            style={{ background: 'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)' }}
+            style={{ background: 'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -450,14 +450,14 @@ export function MiniGames() {
             <div
               className="flex items-center justify-between px-4 py-3 flex-shrink-0"
               style={{
-                background: '#16213E',
+                background: '#7b8bc1',
                 borderBottom: '1px solid rgba(74,144,217,0.18)',
               }}
             >
               <div className="flex items-center gap-2.5">
                 <span className="text-lg">{activeGameMeta?.emoji}</span>
                 <div>
-                  <p className="font-semibold text-sm leading-none" style={{ color: '#F5F8FC' }}>
+                  <p className="font-semibold text-sm leading-none" style={{ color: '#FFFFFF' }}>
                     {activeGameMeta?.title}
                   </p>
                   <p className="text-2xs mt-0.5" style={{ color: 'rgba(245,248,252,0.45)' }}>
@@ -473,9 +473,9 @@ export function MiniGames() {
                   style={{ background: 'rgba(74,144,217,0.20)', borderColor: 'rgba(74,144,217,0.35)' }}
                 >
                   {isFullscreen ? (
-                    <Minimize2 size={16} strokeWidth={2} style={{ color: '#4A90D9' }} />
+                    <Minimize2 size={16} strokeWidth={2} style={{ color: '#66bdf2' }} />
                   ) : (
-                    <Maximize2 size={16} strokeWidth={2} style={{ color: '#4A90D9' }} />
+                    <Maximize2 size={16} strokeWidth={2} style={{ color: '#66bdf2' }} />
                   )}
                 </button>
                 <button
@@ -484,7 +484,7 @@ export function MiniGames() {
                   aria-label="Close game"
                   style={{ background: 'rgba(247,108,108,0.20)', borderColor: 'rgba(247,108,108,0.35)' }}
                 >
-                  <X size={16} strokeWidth={2} style={{ color: '#F76C6C' }} />
+                  <X size={16} strokeWidth={2} style={{ color: '#7b8bc1' }} />
                 </button>
               </div>
             </div>

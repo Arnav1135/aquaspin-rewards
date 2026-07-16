@@ -51,7 +51,7 @@ export function Sidebar() {
           <motion.aside
             className="fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col overflow-y-auto lg:hidden"
             style={{
-              background: '#16213E',
+              background: '#7b8bc1',
               borderRight: '1px solid rgba(74,144,217,0.18)',
               boxShadow: '8px 0 32px rgba(22,33,62,0.30)',
             }}
@@ -68,11 +68,11 @@ export function Sidebar() {
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #4A90D9 0%, #3DDC97 100%)' }}
+                  style={{ background: 'linear-gradient(135deg, #66bdf2 0%, #66bdf2 100%)' }}
                 >
-                  <Gamepad size={16} strokeWidth={2} style={{ color: '#16213E' }} />
+                  <Gamepad size={16} strokeWidth={2} style={{ color: '#7b8bc1' }} />
                 </div>
-                <span className="font-bold text-sm" style={{ color: '#F5F8FC' }}>
+                <span className="font-bold text-sm" style={{ color: '#FFFFFF' }}>
                   AquaSpin
                 </span>
               </div>
@@ -103,13 +103,13 @@ export function Sidebar() {
                       className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
                       style={{
                         backgroundColor: getAvatarColor(profile.id),
-                        color: '#16213E',
+                        color: '#7b8bc1',
                       }}
                     >
                       {getInitials(profile.username)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate" style={{ color: '#F5F8FC' }}>
+                      <p className="font-semibold text-sm truncate" style={{ color: '#FFFFFF' }}>
                         {profile.username ?? 'Player'}
                       </p>
                       <p className="text-2xs" style={{ color: 'rgba(245,248,252,0.50)' }}>
@@ -120,8 +120,8 @@ export function Sidebar() {
 
                   {/* Token display */}
                   <div className="flex items-center gap-1.5 mb-2.5">
-                    <Coins size={14} style={{ color: '#3DDC97' }} />
-                    <span className="font-mono font-bold text-sm" style={{ color: '#3DDC97' }}>
+                    <Coins size={14} style={{ color: '#66bdf2' }} />
+                    <span className="font-mono font-bold text-sm" style={{ color: '#66bdf2' }}>
                       {formatTokens(profile.tokens)}
                     </span>
                     <span className="text-2xs" style={{ color: 'rgba(245,248,252,0.45)' }}>
@@ -175,7 +175,7 @@ export function Sidebar() {
                     className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                     style={{
                       background: isActive ? 'rgba(74,144,217,0.18)' : 'transparent',
-                      color: isActive ? '#4A90D9' : 'rgba(245,248,252,0.60)',
+                      color: isActive ? '#66bdf2' : 'rgba(245,248,252,0.60)',
                     }}
                     onMouseEnter={e => {
                       if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(245,248,252,0.05)';
@@ -193,7 +193,7 @@ export function Sidebar() {
                         className="text-2xs px-2 py-0.5 rounded-full font-semibold"
                         style={{
                           background: 'rgba(74,144,217,0.22)',
-                          color: '#4A90D9',
+                          color: '#66bdf2',
                         }}
                       >
                         {item.badge}

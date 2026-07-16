@@ -1,0 +1,56 @@
+# AquaSpin Rewards Docker Compose Configuration
+# Production-ready setup with multi-stage builds, health checks, and networking
+
+version: '3.8'
+
+services:
+  # Main AquaSpin application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aquaspin-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - aquaspin-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "com.aquaspin.service=app"
+      - "com.aquaspin.version=1.0.0"
+
+  # Optional: Nginx reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    container_name: aquaspin-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - aquaspin-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  aquaspin-network:
+    driver: bridge
+
+volumes:
+  app-cache:

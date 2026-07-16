@@ -1,9 +1,10 @@
 // src/pages/MiniGames.tsx
 // Complete gaming hub — 16 games, fintech UI, GameFrame visibility protection
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gamepad2, X, Search } from 'lucide-react';
+import { Gamepad2, X, Search, Maximize2, Minimize2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // Free-play & classic games
 import { ClickerGame } from '@/components/games/ClickerGame';
@@ -42,124 +43,148 @@ const GAMES = [
     key: 'mines',       title: 'Mines',       emoji: '💣',  category: 'Casino',
     reward: 'Up to 1,000x+', difficulty: 'Medium', color: '#FFD700',
     desc: 'Click tiles to find gems. Avoid hidden mines and cash out early!',
+    thumbnail: '/thumbnails/mines.jpg',
   },
   {
     key: 'plinko',      title: 'Plinko',      emoji: '🔴',  category: 'Casino',
     reward: 'Up to 170x',    difficulty: 'Easy',   color: '#4A90D9',
     desc: 'Drop a ball through pegs and score high outer multipliers!',
+    thumbnail: '/thumbnails/plinko.jpg',
   },
   {
     key: 'crash',       title: 'Crash',       emoji: '📈',  category: 'Casino',
     reward: 'Up to 10,000x+',difficulty: 'Hard',   color: '#3DDC97',
     desc: 'Cash out before the rocket crashes to secure your multiplier!',
+    thumbnail: '/thumbnails/crash.jpg',
   },
   {
     key: 'limbo',       title: 'Limbo',       emoji: '🚀',  category: 'Casino',
     reward: 'Up to 100,000x', difficulty: 'Medium', color: '#F97316',
     desc: 'Set your target multiplier and roll. High multiplier wins!',
+    thumbnail: '/thumbnails/limbo.jpg',
   },
   {
     key: 'roulette',    title: 'Roulette',    emoji: '🎡',  category: 'Casino',
     reward: 'Up to 14x',     difficulty: 'Easy',   color: '#F76C6C',
     desc: 'Bet Red (2x), Black (2x), or Green (14x) on the spin wheel.',
+    thumbnail: '/thumbnails/roulette.jpg',
   },
   {
     key: 'dragontiger', title: 'Dragon Tiger',emoji: '🎴',  category: 'Casino',
     reward: 'Up to 11x',     difficulty: 'Easy',   color: '#A855F7',
     desc: 'Bet on Dragon, Tiger, or Tie for the higher card.',
+    thumbnail: '/thumbnails/dragontiger.jpg',
   },
   {
     key: 'chicken',     title: 'Chicken',     emoji: '🍗',  category: 'Casino',
     reward: 'Up to 1,000x+', difficulty: 'Medium', color: '#FFB800',
     desc: 'Lift covers to find chicken. Avoid bones. Cash out early!',
+    thumbnail: '/thumbnails/chicken.jpg',
   },
   {
     key: 'flip',        title: 'Coin Flip',   emoji: '🪙',  category: 'Casino',
     reward: '1.96x Bet',     difficulty: 'Easy',   color: '#A8CBEA',
     desc: 'Flip a coin and guess Heads or Tails for 1.96x payout.',
+    thumbnail: '/thumbnails/flip.jpg',
   },
   // === ARCADE / SKILL ===
   {
     key: 'flappy',      title: 'Flappy Bird', emoji: '🐦',  category: 'Arcade',
     reward: 'High Score',    difficulty: 'Hard',   color: '#FFD700',
     desc: 'Fly through pipe gaps without crashing. Classic endless runner!',
+    thumbnail: '/thumbnails/archery.jpg', // fallback
   },
   {
     key: 'knife',       title: 'Knife Hit',   emoji: '🗡️', category: 'Arcade',
     reward: 'Stage Clear',   difficulty: 'Medium', color: '#6366F1',
     desc: 'Throw knives at a rotating log. Hit apples for bonus points!',
+    thumbnail: '/thumbnails/knife.jpg',
   },
   {
     key: 'chickenjump', title: 'Chicken Jump', emoji: '🐔', category: 'Arcade',
     reward: 'High Score',    difficulty: 'Easy',   color: '#F97316',
     desc: 'Jump over obstacles in this endless side-scrolling runner!',
+    thumbnail: '/thumbnails/chicken.jpg', // fallback
   },
   {
     key: 'archery',     title: 'Archery',     emoji: '🏹',  category: 'Arcade',
     reward: 'High Score',    difficulty: 'Medium', color: '#3DDC97',
     desc: 'Aim your arrow accounting for wind and gravity. Hit the bullseye!',
+    thumbnail: '/thumbnails/archery.jpg',
   },
   {
     key: 'darts',       title: 'Darts',       emoji: '🎯',  category: 'Arcade',
     reward: 'Best Score',    difficulty: 'Easy',   color: '#F76C6C',
     desc: 'Swipe to throw darts. Hit doubles and trebles for big scores!',
+    thumbnail: '/thumbnails/darts.jpg',
   },
   {
     key: 'pool',        title: 'Pool',        emoji: '🎱',  category: 'Arcade',
     reward: 'Table Clear',   difficulty: 'Medium', color: '#3DDC97',
     desc: 'Aim and strike the cue ball. Pocket all colored balls to win!',
+    thumbnail: '/thumbnails/pool.jpg',
   },
   {
     key: 'clicker',     title: 'Clicker Rush',emoji: '👆',  category: 'Arcade',
     reward: '10–50 tokens',  difficulty: 'Easy',   color: '#4A90D9',
     desc: 'Click as fast as possible in 10 seconds! Earn tokens per click.',
+    thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
   },
   {
     key: 'tap',         title: 'Tap Challenge',emoji: '✨', category: 'Arcade',
     reward: '15–80 tokens',  difficulty: 'Hard',   color: '#A8CBEA',
     desc: 'Tap glowing targets before they vanish. Speed test!',
+    thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
   },
   // === BOARD / PUZZLE ===
   {
     key: 'chess',       title: 'Chess',       emoji: '♟️',  category: 'Board',
     reward: 'Victory',       difficulty: 'Hard',   color: '#4A90D9',
     desc: 'Play classical chess against AI or pass-and-play locally.',
+    thumbnail: '/thumbnails/chess.jpg',
   },
   {
     key: 'solitaire',   title: 'Solitaire',   emoji: '🃏',  category: 'Board',
     reward: 'Clear Board',   difficulty: 'Medium', color: '#3DDC97',
     desc: 'Classic Klondike solitaire. Sort cards from Ace to King!',
+    thumbnail: '/thumbnails/solitaire.jpg',
   },
   {
     key: 'tictactoe',   title: 'Tic Tac Toe', emoji: '❌',  category: 'Board',
     reward: 'Win Streak',    difficulty: 'Easy',   color: '#4A90D9',
     desc: 'Three in a row wins! Play against AI or a friend locally.',
+    thumbnail: '/thumbnails/tictactoe.jpg',
   },
   {
     key: 'dots',        title: 'Dots & Boxes', emoji: '⬜', category: 'Board',
     reward: 'Most Boxes',    difficulty: 'Medium', color: '#A855F7',
     desc: 'Complete boxes by drawing lines to claim territory. Beats AI!',
+    thumbnail: '/thumbnails/dots.jpg',
   },
   {
     key: 'memory',      title: 'Memory Match', emoji: '🧠', category: 'Board',
     reward: '25–100 tokens', difficulty: 'Medium', color: '#FFD700',
     desc: 'Flip cards to find matching pairs. Complete the board to win!',
+    thumbnail: '/thumbnails/sudoku.jpg', // fallback
   },
   // === TRIVIA / QUIZ ===
   {
     key: 'mathsquiz',   title: 'Maths Blitz', emoji: '🔢',  category: 'Quiz',
     reward: 'High Score',    difficulty: 'Medium', color: '#4A90D9',
     desc: 'Rapid-fire maths challenges: Arithmetic, Algebra, Geometry!',
+    thumbnail: '/thumbnails/mathsquiz.jpg',
   },
   {
     key: 'sudoku',      title: 'Sudoku',      emoji: '🔢',  category: 'Quiz',
     reward: 'Time Record',   difficulty: 'Hard',   color: '#6366F1',
     desc: 'Fill the 9×9 grid. Uses pencil marks, hints, and error limits.',
+    thumbnail: '/thumbnails/sudoku.jpg',
   },
   {
     key: 'quiz',        title: 'Trivia Quiz',  emoji: '🎯', category: 'Quiz',
     reward: '5–150 tokens',  difficulty: 'Medium', color: '#A855F7',
     desc: '10 questions across topics. Each correct answer earns tokens!',
+    thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
   },
 ] as const;
 
@@ -178,6 +203,27 @@ export function MiniGames() {
   const [activeGame, setActiveGame] = useState<GameKey>(null);
   const [category, setCategory] = useState<Category>('All');
   const [search, setSearch] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      overlayRef.current?.requestFullscreen().catch((err) => {
+        toast.error("Fullscreen not supported or blocked");
+        console.error(err);
+      });
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   const filtered = GAMES.filter(g => {
     const matchCat = category === 'All' || g.category === category;
@@ -221,7 +267,12 @@ export function MiniGames() {
     }
   };
 
-  const close = () => setActiveGame(null);
+  const close = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setActiveGame(null);
+  };
 
   return (
     <div
@@ -311,17 +362,25 @@ export function MiniGames() {
                     background: `radial-gradient(circle at 50% 110%, ${game.color}35, rgba(22,33,62,0.95))`,
                   }}
                 >
+                  <img
+                    src={game.thumbnail}
+                    alt={game.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                   {/* Glow orb */}
                   <div
                     className="absolute w-16 h-16 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity"
                     style={{ background: game.color }}
                   />
-                  <span className="text-4xl z-10 transition-transform duration-300 group-hover:scale-110">
+                  <span className="text-4xl z-10 transition-transform duration-300 group-hover:scale-110 pointer-events-none">
                     {game.emoji}
                   </span>
                   {/* Category badge — smart contrast: always white-on-navy */}
                   <span
-                    className="absolute top-2 right-2 badge-chip badge-chip-dark"
+                    className="absolute top-2 right-2 badge-chip badge-chip-dark z-10"
                     style={{ fontSize: '0.55rem' }}
                   >
                     {game.category}
@@ -370,6 +429,7 @@ export function MiniGames() {
       <AnimatePresence>
         {activeGame && (
           <motion.div
+            ref={overlayRef}
             className="fixed inset-0 z-50 flex flex-col"
             style={{ background: 'linear-gradient(160deg, #F4F8FC 0%, #E4EEF9 100%)' }}
             initial={{ opacity: 0 }}
@@ -395,14 +455,28 @@ export function MiniGames() {
                   </p>
                 </div>
               </div>
-              <button
-                className="game-control-btn"
-                onClick={close}
-                aria-label="Close game"
-                style={{ background: 'rgba(247,108,108,0.20)', borderColor: 'rgba(247,108,108,0.35)' }}
-              >
-                <X size={16} strokeWidth={2} style={{ color: '#F76C6C' }} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="game-control-btn"
+                  onClick={toggleFullscreen}
+                  aria-label="Toggle fullscreen"
+                  style={{ background: 'rgba(74,144,217,0.20)', borderColor: 'rgba(74,144,217,0.35)' }}
+                >
+                  {isFullscreen ? (
+                    <Minimize2 size={16} strokeWidth={2} style={{ color: '#4A90D9' }} />
+                  ) : (
+                    <Maximize2 size={16} strokeWidth={2} style={{ color: '#4A90D9' }} />
+                  )}
+                </button>
+                <button
+                  className="game-control-btn"
+                  onClick={close}
+                  aria-label="Close game"
+                  style={{ background: 'rgba(247,108,108,0.20)', borderColor: 'rgba(247,108,108,0.35)' }}
+                >
+                  <X size={16} strokeWidth={2} style={{ color: '#F76C6C' }} />
+                </button>
+              </div>
             </div>
 
             {/* ── Game Content inside protection frame ── */}

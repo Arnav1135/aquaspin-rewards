@@ -189,7 +189,7 @@ const GAMES = [
   },
   // === PUZZLE / MATCH-3 ===
   {
-    key: 'match3',      title: 'Candy Crush',  emoji: '🍬', category: 'Puzzle',
+    key: 'match3',      title: 'Sweet Match',  emoji: '🍬', category: 'Puzzle',
     reward: '60 Levels',     difficulty: 'Hard',   color: '#FF6B6B',
     desc: 'Match 3+ candies in this epic 60-level puzzle adventure!',
     thumbnail: '/thumbnails/candy.jpg',

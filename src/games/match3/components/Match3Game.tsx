@@ -59,7 +59,7 @@ export const Match3Game: React.FC<Match3GameProps> = ({ onClose }) => {
               🍬
             </motion.div>
             <div className="title-text">
-              <h1>Candy Crush</h1>
+              <h1>Sweet Match</h1>
               <p>Level {levelId} of 60</p>
             </div>
           </div>

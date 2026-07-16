@@ -5,7 +5,7 @@ import { useMatch3Store } from '@/games/match3/engine/gameState';
 import { CandyType, Position } from '@/games/match3/types';
 import { ParticleSystem } from '@/games/match3/components/ParticleSystem';
 import { audioManager, SoundEffect } from '@/games/match3/utils/audioManager';
-import './GameBoard.css';
+import '@/games/match3/styles/GameBoard.css';
 
 const CANDY_COLORS: Record<CandyType, string> = {
   [CandyType.EMPTY]: 'transparent',
@@ -133,7 +133,7 @@ export const GameBoard = ({
     if (board.length === 0) {
       loadLevel(1);
     }
-  }, []);
+  }, [board.length, loadLevel]);
 
   useEffect(() => {
     if (gameStatus === 'levelComplete') {
@@ -189,9 +189,7 @@ export const GameBoard = ({
           audioManager.playSoundEffect(SoundEffect.SWAP);
           swapCandies(selectedPos, { row, col });
           
-          const centerX = (selectedPos.col + col) / 2 * 50 + 25;
-          const centerY = (selectedPos.row + row) / 2 * 50 + 25;
-          spawnMatchParticles(centerX, centerY, CANDY_COLORS[board[row][col].candyType]);
+          spawnMatchParticles(CANDY_COLORS[board[row][col].candyType]);
           
           setSelectedPos(null);
         } else {
@@ -212,7 +210,7 @@ export const GameBoard = ({
     }
   };
 
-  const spawnMatchParticles = (x: number, y: number, color: string) => {
+  const spawnMatchParticles = (color: string) => {
     const newParticles = Array(8)
       .fill(null)
       .map((_, i) => ({
@@ -339,7 +337,7 @@ export const GameBoard = ({
                   candyType={cell.candyType}
                   isSelected={isSelected}
                   isMatched={false}
-                  onSelect={handleCandyClick}
+                  onSelect={({ row, col }) => handleCandyClick(row, col)}
                 />
               </div>
             );

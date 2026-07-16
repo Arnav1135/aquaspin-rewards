@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Settings, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { GameBoard } from '@/games/match3/components/GameBoard';
 import { useMatch3Store } from '@/games/match3/engine/gameState';
-import './Match3Game.css';
+import '@/games/match3/styles/Match3Game.css';
 
 interface Match3GameProps {
   onClose?: () => void;

@@ -15,7 +15,7 @@ import { getSpinHistory } from '@/lib/supabase';
 import { BannerAd } from '@/components/ads/BannerAd';
 import { formatRelativeTime } from '@/types/database';
 import { formatTokens } from '@/lib/utils';
-import toast from 'react-hot-toast';
+// toast removed
 
 const CARD_ANIM = { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 } };
 

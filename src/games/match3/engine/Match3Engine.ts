@@ -6,7 +6,6 @@ import {
   Cell,
   Position,
   Match,
-  GameState,
   LevelConfig,
 } from '@/games/match3/types';
 
@@ -24,7 +23,7 @@ export class Match3Engine {
       return config.initialBoard.map(row => [...row]);
     }
 
-    let board: Cell[][] = Array(height)
+    const board: Cell[][] = Array(height)
       .fill(null)
       .map(() =>
         Array(width)
@@ -225,7 +224,7 @@ export class Match3Engine {
     board: Cell[][],
     matches: Match[]
   ): { board: Cell[][]; scorePoints: number } {
-    let boardCopy = board.map(row => [...row]);
+    const boardCopy = board.map(row => [...row]);
     let scorePoints = 0;
 
     matches.forEach(match => {
@@ -278,7 +277,9 @@ export class Match3Engine {
         }
       } else if (firstCell.specialType === SpecialType.COLOR_BOMB) {
         // Rulebook 3: Clear all candies of target color
-        const targetColor = match.positions[1]?.candyType || CandyType.RED;
+        const targetPosition = match.positions[1] ?? match.positions[0];
+        const targetColor =
+          boardCopy[targetPosition.row][targetPosition.col].candyType || CandyType.RED;
         for (let r = 0; r < boardCopy.length; r++) {
           for (let c = 0; c < boardCopy[r].length; c++) {
             if (boardCopy[r][c].candyType === targetColor) {
@@ -377,7 +378,7 @@ export class Match3Engine {
    */
   static shuffleBoard(board: Cell[][]): Cell[][] {
     let attempts = 0;
-    let shuffled = board.map(row => [...row]);
+    const shuffled = board.map(row => [...row]);
 
     while (!this.hasValidMoves(shuffled) && attempts < 100) {
       for (let row = 0; row < shuffled.length; row++) {

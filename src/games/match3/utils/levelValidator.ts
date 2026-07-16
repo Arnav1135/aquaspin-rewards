@@ -1,7 +1,6 @@
 // Level Solvability Testing & Validation
 import { Match3Engine } from '@/games/match3/engine/Match3Engine';
 import { LEVELS } from '@/games/match3/levels/levelData';
-import { GameState } from '@/games/match3/types';
 
 interface TestResult {
   levelId: number;

@@ -1,7 +1,7 @@
 // Game State Management with Zustand - Enhanced with Animation Support
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { GameState, Position, LevelConfig, CandyType } from '@/games/match3/types';
+import { GameState, Position, LevelConfig } from '@/games/match3/types';
 import { Match3Engine } from '@/games/match3/engine/Match3Engine';
 import { LEVELS } from '@/games/match3/levels/levelData';
 
@@ -113,10 +113,8 @@ export const useMatch3Store = create<Match3Store>()(
         draft.animatingPositions = new Set();
       });
 
-      while (true) {
-        const matches = Match3Engine.findMatches(board);
-        if (matches.length === 0) break;
-
+      let matches = Match3Engine.findMatches(board);
+      while (matches.length > 0) {
         cascadeCount++;
 
         // Mark matched positions as animating
@@ -144,6 +142,7 @@ export const useMatch3Store = create<Match3Store>()(
         // Apply gravity and refill
         const gravityBoard = Match3Engine.applyGravity(specialBoard);
         board = Match3Engine.refillBoard(gravityBoard);
+        matches = Match3Engine.findMatches(board);
       }
 
       set((draft) => {

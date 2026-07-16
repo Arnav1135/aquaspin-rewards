@@ -1,7 +1,7 @@
 // Particle System Component for Visual Effects
 import React from 'react';
 import { motion } from 'framer-motion';
-import './ParticleSystem.css';
+import '@/games/match3/styles/ParticleSystem.css';
 
 interface Particle {
   id: string;

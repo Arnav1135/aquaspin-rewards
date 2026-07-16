@@ -20,6 +20,11 @@ interface AudioConfig {
   musicVolume: number;
 }
 
+type WebkitAudioWindow = Window &
+  typeof globalThis & {
+    webkitAudioContext?: typeof AudioContext;
+  };
+
 class AudioManager {
   private config: AudioConfig = {
     enabled: true,
@@ -28,7 +33,6 @@ class AudioManager {
   };
 
   private audioContext: AudioContext | null = null;
-  private soundCache: Map<SoundEffect, AudioBuffer> = new Map();
   private currentMusicOscillators: OscillatorNode[] = [];
 
   constructor() {
@@ -37,18 +41,19 @@ class AudioManager {
 
   private initAudioContext() {
     if (typeof window !== 'undefined' && !this.audioContext) {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextConstructor =
+        window.AudioContext || (window as WebkitAudioWindow).webkitAudioContext;
+      if (AudioContextConstructor) {
+        this.audioContext = new AudioContextConstructor();
+      }
     }
   }
 
   /**
    * Play a sound effect using Web Audio API
    */
-  playSoundEffect(effect: SoundEffect, frequency: number = 440) {
+  playSoundEffect(effect: SoundEffect) {
     if (!this.config.enabled || !this.audioContext) return;
-
-    const context = this.audioContext;
-    const now = context.currentTime;
 
     switch (effect) {
       case SoundEffect.SWAP:

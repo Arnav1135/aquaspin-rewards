@@ -197,38 +197,67 @@ export function CrashGame({ onClose }: CrashGameProps) {
       ctx.shadowBlur = 0;
     });
 
-    // Spacecraft Model Rendering
-    if (!crashed && gameState === 'climbing') {
+    // Spacecraft Model Rendering (4D visuals)
+    if (!crashed) {
       const prevPt = points[Math.max(0, points.length - 2)];
+      // add a small wiggle for 4D vibration
+      const vibeX = (Math.random() - 0.5) * 2;
+      const vibeY = (Math.random() - 0.5) * 2;
       const angle = Math.atan2(prevPt.py - lastPt.py, lastPt.px - prevPt.px);
       
       ctx.save();
-      ctx.translate(lastPt.px, lastPt.py);
+      ctx.translate(lastPt.px + vibeX, lastPt.py + vibeY);
       ctx.rotate(-angle);
       
-      // Draw a sleek metallic spacecraft shape
-      ctx.fillStyle = '#e2e8f0'; // slate hulls
+      // 4D Shadow
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = 'rgba(0, 240, 255, 0.6)';
+
+      // 4D Hull - Multi-layered gradient
+      const hullGrad = ctx.createLinearGradient(-10, -10, 15, 10);
+      hullGrad.addColorStop(0, '#ffffff');
+      hullGrad.addColorStop(0.5, '#60a5fa');
+      hullGrad.addColorStop(1, '#1e3a8a');
+      ctx.fillStyle = hullGrad;
+      
       ctx.beginPath();
-      ctx.moveTo(12, 0);
-      ctx.lineTo(-8, -8);
-      ctx.lineTo(-4, 0);
-      ctx.lineTo(-8, 8);
+      ctx.moveTo(18, 0);    // Nose
+      ctx.lineTo(-10, -12); // Top wing
+      ctx.lineTo(-4, 0);    // Engine base
+      ctx.lineTo(-10, 12);  // Bottom wing
       ctx.closePath();
       ctx.fill();
 
-      // Glowing Cockpit window
-      ctx.fillStyle = '#00f0ff';
+      // 4D Cockpit - Neon Glow
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#00f0ff';
+      ctx.fillStyle = '#cffafe';
       ctx.beginPath();
-      ctx.moveTo(6, 0);
-      ctx.lineTo(-2, -3);
-      ctx.lineTo(-2, 3);
+      ctx.ellipse(4, 0, 8, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4D Engine Thrust - Pulsing flame
+      const thrustScale = 1 + Math.random() * 0.5;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#f97316';
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(-4, 0);
+      ctx.lineTo(-15 * thrustScale, -4);
+      ctx.lineTo(-25 * thrustScale, 0);
+      ctx.lineTo(-15 * thrustScale, 4);
       ctx.closePath();
       ctx.fill();
 
-      // Combustion Engine Glow
-      ctx.fillStyle = '#ff7700';
+      // Bright inner core flame
+      ctx.fillStyle = '#fef08a';
+      ctx.shadowBlur = 10;
       ctx.beginPath();
-      ctx.arc(-5, 0, 3, 0, Math.PI * 2);
+      ctx.moveTo(-4, 0);
+      ctx.lineTo(-10 * thrustScale, -2);
+      ctx.lineTo(-15 * thrustScale, 0);
+      ctx.lineTo(-10 * thrustScale, 2);
+      ctx.closePath();
       ctx.fill();
 
       ctx.restore();

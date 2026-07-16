@@ -1,9 +1,10 @@
-// Enhanced Game Board Component with Premium Animations
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+// Enhanced Game Board Component with Premium Animations and Sound
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMatch3Store } from '@/games/match3/engine/gameState';
 import { CandyType, Position } from '@/games/match3/types';
 import { ParticleSystem } from '@/games/match3/components/ParticleSystem';
+import { audioManager, SoundEffect } from '@/games/match3/utils/audioManager';
 import './GameBoard.css';
 
 const CANDY_COLORS: Record<CandyType, string> = {
@@ -42,7 +43,6 @@ interface CandyProps {
   candyType: CandyType;
   isSelected: boolean;
   isMatched: boolean;
-  onSwap: (pos1: Position, pos2: Position) => void;
   onSelect: (pos: Position) => void;
 }
 
@@ -52,26 +52,21 @@ const Candy: React.FC<CandyProps> = ({
   candyType,
   isSelected,
   isMatched,
-  onSwap,
   onSelect,
 }) => {
-  const candyRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-
-  const handleClick = () => {
-    onSelect({ row, col });
-  };
 
   return (
     <motion.div
-      ref={candyRef}
       className={`candy ${isMatched ? 'matched' : ''} ${isSelected ? 'selected' : ''}`}
-      onClick={handleClick}
+      onClick={() => onSelect({ row, col })}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{
         backgroundColor: CANDY_COLORS[candyType],
-        boxShadow: isSelected ? `0 0 20px ${CANDY_COLORS[candyType]}, ${CANDY_SHADOWS[candyType]}` : CANDY_SHADOWS[candyType],
+        boxShadow: isSelected 
+          ? `0 0 20px ${CANDY_COLORS[candyType]}, ${CANDY_SHADOWS[candyType]}` 
+          : CANDY_SHADOWS[candyType],
         opacity: candyType === CandyType.EMPTY ? 0 : 1,
       }}
       initial={candyType !== CandyType.EMPTY ? { scale: 0.5, y: -30, opacity: 0 } : {}}
@@ -129,10 +124,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   } = useMatch3Store();
 
   const [selectedPos, setSelectedPos] = useState<Position | null>(null);
-  const [matchedPositions, setMatchedPositions] = useState<Set<string>>(new Set());
   const [particles, setParticles] = useState<Array<{ id: string; x: number; y: number; color: string }>>([]);
   const boardRef = useRef<HTMLDivElement>(null);
   const lastScoreRef = useRef(score);
+  const lastCascadeRef = useRef(cascadeCount);
 
   useEffect(() => {
     if (board.length === 0) {
@@ -141,10 +136,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, []);
 
   useEffect(() => {
-    if (gameStatus === 'levelComplete' && onLevelComplete) {
-      onLevelComplete();
-    } else if (gameStatus === 'levelFailed' && onLevelFailed) {
-      onLevelFailed();
+    if (gameStatus === 'levelComplete') {
+      audioManager.playSoundEffect(SoundEffect.LEVEL_COMPLETE);
+      onLevelComplete?.();
+    } else if (gameStatus === 'levelFailed') {
+      audioManager.playSoundEffect(SoundEffect.LEVEL_FAILED);
+      onLevelFailed?.();
     }
   }, [gameStatus]);
 
@@ -152,6 +149,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     if (score > lastScoreRef.current) {
       const diff = score - lastScoreRef.current;
+      audioManager.playSoundEffect(SoundEffect.MATCH);
+      
       const newParticles = Array(Math.min(5, Math.floor(diff / 100)))
         .fill(null)
         .map((_, i) => ({
@@ -168,6 +167,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [score]);
 
+  // Play cascade sounds
+  useEffect(() => {
+    if (cascadeCount > lastCascadeRef.current) {
+      if (cascadeCount === 1) {
+        audioManager.playSoundEffect(SoundEffect.COMBO_1);
+      } else if (cascadeCount === 2) {
+        audioManager.playSoundEffect(SoundEffect.COMBO_2);
+      } else if (cascadeCount >= 3) {
+        audioManager.playSoundEffect(SoundEffect.COMBO_3);
+      }
+      lastCascadeRef.current = cascadeCount;
+    }
+  }, [cascadeCount]);
+
   const handleCandyClick = (row: number, col: number) => {
     if (gameStatus !== 'playing' || !board[row]?.[col]) return;
 
@@ -175,18 +188,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const distance = Math.abs(selectedPos.row - row) + Math.abs(selectedPos.col - col);
       
       if (distance === 1) {
-        // Adjacent tile - attempt swap
         if (canSwap(selectedPos, { row, col })) {
+          audioManager.playSoundEffect(SoundEffect.SWAP);
           swapCandies(selectedPos, { row, col });
           
-          // Create swap animation particles
           const centerX = (selectedPos.col + col) / 2 * 50 + 25;
           const centerY = (selectedPos.row + row) / 2 * 50 + 25;
           spawnMatchParticles(centerX, centerY, CANDY_COLORS[board[row][col].candyType]);
           
           setSelectedPos(null);
         } else {
-          // Invalid swap - shake animation
+          audioManager.playSoundEffect(SoundEffect.INVALID_MOVE);
           if (boardRef.current) {
             boardRef.current.style.animation = 'shake 0.4s';
             setTimeout(() => {
@@ -196,7 +208,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           setSelectedPos({ row, col });
         }
       } else {
-        // Different tile - just select it
         setSelectedPos({ row, col });
       }
     } else {
@@ -236,7 +247,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="game-board-container">
-      {/* Animated HUD */}
       <motion.div
         className="game-hud"
         initial={{ y: -20, opacity: 0 }}
@@ -288,15 +298,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               exit={{ scale: 0, rotate: 180 }}
               transition={{ type: 'spring', stiffness: 300 }}
             >
-              <span className="combo-text">
-                Combo ×{cascadeCount}
-              </span>
+              <span className="combo-text">Combo ×{cascadeCount}</span>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.div>
 
-      {/* Game Board Grid */}
       <motion.div
         ref={boardRef}
         className="game-board"
@@ -307,9 +314,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {board.map((row, rowIdx) =>
           row.map((cell, colIdx) => {
             const pos = `${rowIdx}-${colIdx}`;
-            const isMatched = matchedPositions.has(pos);
-            const isSelected =
-              selectedPos?.row === rowIdx && selectedPos?.col === colIdx;
+            const isSelected = selectedPos?.row === rowIdx && selectedPos?.col === colIdx;
 
             return (
               <div
@@ -317,17 +322,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className={`board-cell ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleCandyClick(rowIdx, colIdx)}
               >
-                {/* Cell background with gradient */}
                 <div className="cell-bg" />
 
-                {/* Obstacle rendering */}
                 {cell.obstacle && (
                   <div
                     className={`obstacle obstacle-${cell.obstacle}`}
-                    style={{
-                      opacity: 0.9,
-                      backdropFilter: 'blur(2px)',
-                    }}
+                    style={{ opacity: 0.9, backdropFilter: 'blur(2px)' }}
                   >
                     {cell.obstacle === 1 && '🍮'}
                     {cell.obstacle === 2 && '🍫'}
@@ -336,40 +336,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   </div>
                 )}
 
-                {/* Candy rendering */}
                 <Candy
                   row={rowIdx}
                   col={colIdx}
                   candyType={cell.candyType}
                   isSelected={isSelected}
-                  isMatched={isMatched}
-                  onSwap={() => {}}
+                  isMatched={false}
                   onSelect={handleCandyClick}
                 />
-
-                {/* Match explosion effect */}
-                <AnimatePresence>
-                  {isMatched && (
-                    <motion.div
-                      className="match-explosion"
-                      initial={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 2, opacity: 0 }}
-                      transition={{ duration: 0.4 }}
-                    >
-                      ✨
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             );
           })
         )}
 
-        {/* Particle System */}
         <ParticleSystem particles={particles} />
       </motion.div>
 
-      {/* Game Status Overlay */}
       <AnimatePresence>
         {gameStatus !== 'playing' && (
           <motion.div
@@ -433,16 +415,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <h2>Level Failed</h2>
                 <p className="final-score">Score: {score.toLocaleString()}</p>
                 <div className="button-group">
-                  <button
-                    className="btn-retry"
-                    onClick={() => loadLevel(levelId)}
-                  >
+                  <button className="btn-retry" onClick={() => loadLevel(levelId)}>
                     Retry
                   </button>
-                  <button
-                    className="btn-exit"
-                    onClick={() => loadLevel(1)}
-                  >
+                  <button className="btn-exit" onClick={() => loadLevel(1)}>
                     Exit
                   </button>
                 </div>

@@ -1,4 +1,4 @@
-// Core Match-3 Game Engine
+// Enhanced Match-3 Engine - Complete Rulebook Implementation
 import {
   CandyType,
   SpecialType,
@@ -8,7 +8,6 @@ import {
   Match,
   GameState,
   LevelConfig,
-  ComboInfo,
 } from '@/games/match3/types';
 
 export class Match3Engine {
@@ -16,18 +15,16 @@ export class Match3Engine {
   private static readonly CANDY_COLORS = 6;
 
   /**
-   * Initialize a new game board from level config
+   * Initialize board from level config
    */
   static initializeBoard(config: LevelConfig): Cell[][] {
     const { width, height, obstacles = [] } = config;
     
-    // If custom board provided, use it
     if (config.initialBoard) {
       return config.initialBoard.map(row => [...row]);
     }
 
-    // Generate random board
-    const board: Cell[][] = Array(height)
+    let board: Cell[][] = Array(height)
       .fill(null)
       .map(() =>
         Array(width)
@@ -41,7 +38,7 @@ export class Match3Engine {
 
     // Place obstacles
     obstacles.forEach(({ row, col, type, health }) => {
-      if (board[row] && board[row][col]) {
+      if (board[row]?.[col]) {
         board[row][col].obstacle = type;
         if (health) board[row][col].obstacleHealth = health;
       }
@@ -52,7 +49,7 @@ export class Match3Engine {
   }
 
   /**
-   * Remove any pre-existing matches on a generated board
+   * Remove any pre-existing matches (Rulebook 11: Fairness)
    */
   private static removeInitialMatches(board: Cell[][]): Cell[][] {
     let matches = this.findMatches(board);
@@ -77,27 +74,23 @@ export class Match3Engine {
   }
 
   /**
-   * Check if a swap would create a valid match
+   * Rulebook 2: Validate swap creates at least one match
    */
   static isValidSwap(board: Cell[][], pos1: Position, pos2: Position): boolean {
-    // Swaps must be adjacent
     const distance = Math.abs(pos1.row - pos2.row) + Math.abs(pos1.col - pos2.col);
     if (distance !== 1) return false;
 
-    // Perform swap
     const tempBoard = board.map(row => [...row]);
     [tempBoard[pos1.row][pos1.col], tempBoard[pos2.row][pos2.col]] = [
       tempBoard[pos2.row][pos2.col],
       tempBoard[pos1.row][pos1.col],
     ];
 
-    // Check if matches exist after swap
-    const matches = this.findMatches(tempBoard);
-    return matches.length > 0;
+    return this.findMatches(tempBoard).length > 0;
   }
 
   /**
-   * Find all matches on the board
+   * Rulebook 2: Find all matches (3+ identical candies)
    */
   static findMatches(board: Cell[][]): Match[] {
     const height = board.length;
@@ -175,12 +168,9 @@ export class Match3Engine {
   }
 
   /**
-   * Determine special candy type from match length and shape
+   * Rulebook 3: Create special candies based on match length
    */
-  private static determineSpecial(
-    board: Cell[][],
-    match: Match
-  ): SpecialType {
+  private static determineSpecial(match: Match): SpecialType {
     if (match.matchLength >= 5) return SpecialType.COLOR_BOMB;
     if (match.matchLength === 4) {
       return match.direction === 'horizontal'
@@ -191,39 +181,45 @@ export class Match3Engine {
   }
 
   /**
-   * Clear matches and update board
+   * Rulebook 2 & 3: Clear matched candies and create specials
    */
   static clearMatches(board: Cell[][], matches: Match[]): {
     board: Cell[][];
     scorePoints: number;
+    specialCandies: Array<{ pos: Position; special: SpecialType }>;
   } {
     const boardCopy = board.map(row => [...row]);
     let scorePoints = 0;
+    const specialCandies: Array<{ pos: Position; special: SpecialType }> = [];
 
-    // Mark all matched cells as empty
     matches.forEach(match => {
+      const special = this.determineSpecial(match);
+      const pivotPos = match.positions[0];
+
       match.positions.forEach(({ row, col }) => {
-        const special = this.determineSpecial(boardCopy, match);
         boardCopy[row][col] = {
           candyType: CandyType.EMPTY,
-          specialType: special,
+          specialType: SpecialType.NONE,
           obstacle: boardCopy[row][col].obstacle,
         };
-        scorePoints += 50; // Base points per candy
+        scorePoints += 50;
       });
-    });
 
-    // Award bonus for special candies created
-    matches.forEach(match => {
+      if (special !== SpecialType.NONE) {
+        boardCopy[pivotPos.row][pivotPos.col].specialType = special;
+        specialCandies.push({ pos: pivotPos, special });
+      }
+
+      // Bonus points for special creations
       if (match.matchLength === 4) scorePoints += 100;
       if (match.matchLength >= 5) scorePoints += 250;
     });
 
-    return { board: boardCopy, scorePoints };
+    return { board: boardCopy, scorePoints, specialCandies };
   }
 
   /**
-   * Apply special candy effects
+   * Rulebook 4: Apply special candy effects (striped, wrapped, color bomb)
    */
   static applySpecialCandies(
     board: Cell[][],
@@ -236,44 +232,52 @@ export class Match3Engine {
       const firstCell = boardCopy[match.positions[0].row][match.positions[0].col];
 
       if (firstCell.specialType === SpecialType.STRIPED_H) {
-        // Clear entire row
+        // Rulebook 3: Clear entire row
         const { row } = match.positions[0];
         for (let col = 0; col < boardCopy[row].length; col++) {
-          boardCopy[row][col] = {
-            candyType: CandyType.EMPTY,
-            specialType: SpecialType.NONE,
-            obstacle: boardCopy[row][col].obstacle,
-          };
-          scorePoints += 75;
+          if (boardCopy[row][col].candyType !== CandyType.EMPTY) {
+            boardCopy[row][col] = {
+              candyType: CandyType.EMPTY,
+              specialType: SpecialType.NONE,
+              obstacle: boardCopy[row][col].obstacle,
+            };
+            scorePoints += 75;
+          }
         }
       } else if (firstCell.specialType === SpecialType.STRIPED_V) {
-        // Clear entire column
+        // Rulebook 3: Clear entire column
         const { col } = match.positions[0];
         for (let row = 0; row < boardCopy.length; row++) {
-          boardCopy[row][col] = {
-            candyType: CandyType.EMPTY,
-            specialType: SpecialType.NONE,
-            obstacle: boardCopy[row][col].obstacle,
-          };
-          scorePoints += 75;
+          if (boardCopy[row][col].candyType !== CandyType.EMPTY) {
+            boardCopy[row][col] = {
+              candyType: CandyType.EMPTY,
+              specialType: SpecialType.NONE,
+              obstacle: boardCopy[row][col].obstacle,
+            };
+            scorePoints += 75;
+          }
         }
       } else if (firstCell.specialType === SpecialType.WRAPPED) {
-        // Clear 3x3 area
+        // Rulebook 3: Clear 3x3 area twice
         const { row, col } = match.positions[0];
-        for (let r = row - 1; r <= row + 1; r++) {
-          for (let c = col - 1; c <= col + 1; c++) {
-            if (r >= 0 && r < boardCopy.length && c >= 0 && c < boardCopy[0].length) {
-              boardCopy[r][c] = {
-                candyType: CandyType.EMPTY,
-                specialType: SpecialType.NONE,
-                obstacle: boardCopy[r][c].obstacle,
-              };
-              scorePoints += 75;
+        for (let iteration = 0; iteration < 2; iteration++) {
+          for (let r = row - 1; r <= row + 1; r++) {
+            for (let c = col - 1; c <= col + 1; c++) {
+              if (r >= 0 && r < boardCopy.length && c >= 0 && c < boardCopy[0].length) {
+                if (boardCopy[r][c].candyType !== CandyType.EMPTY) {
+                  boardCopy[r][c] = {
+                    candyType: CandyType.EMPTY,
+                    specialType: SpecialType.NONE,
+                    obstacle: boardCopy[r][c].obstacle,
+                  };
+                  scorePoints += 75;
+                }
+              }
             }
           }
         }
       } else if (firstCell.specialType === SpecialType.COLOR_BOMB) {
-        // Clear all candies of target color
+        // Rulebook 3: Clear all candies of target color
         const targetColor = match.positions[1]?.candyType || CandyType.RED;
         for (let r = 0; r < boardCopy.length; r++) {
           for (let c = 0; c < boardCopy[r].length; c++) {
@@ -294,7 +298,7 @@ export class Match3Engine {
   }
 
   /**
-   * Apply gravity - candies fall down
+   * Rulebook 2: Apply gravity - candies fall down
    */
   static applyGravity(board: Cell[][]): Cell[][] {
     const boardCopy = board.map(row => [...row]);
@@ -322,7 +326,7 @@ export class Match3Engine {
   }
 
   /**
-   * Refill empty spaces with new candies
+   * Rulebook 2: Refill empty spaces with new candies
    */
   static refillBoard(board: Cell[][]): Cell[][] {
     const boardCopy = board.map(row => [...row]);
@@ -343,7 +347,7 @@ export class Match3Engine {
   }
 
   /**
-   * Check if there are any valid moves on the board
+   * Rulebook 2: Check if any valid moves exist
    */
   static hasValidMoves(board: Cell[][]): boolean {
     const height = board.length;
@@ -351,20 +355,14 @@ export class Match3Engine {
 
     for (let row = 0; row < height; row++) {
       for (let col = 0; col < width; col++) {
-        // Try right swap
         if (col < width - 1) {
-          if (
-            this.isValidSwap(board, { row, col }, { row, col: col + 1 })
-          ) {
+          if (this.isValidSwap(board, { row, col }, { row, col: col + 1 })) {
             return true;
           }
         }
 
-        // Try down swap
         if (row < height - 1) {
-          if (
-            this.isValidSwap(board, { row, col }, { row: row + 1, col })
-          ) {
+          if (this.isValidSwap(board, { row, col }, { row: row + 1, col })) {
             return true;
           }
         }
@@ -375,14 +373,13 @@ export class Match3Engine {
   }
 
   /**
-   * Shuffle board to create valid moves (auto-shuffle when stuck)
+   * Rulebook 2: Auto-shuffle when no valid moves
    */
   static shuffleBoard(board: Cell[][]): Cell[][] {
     let attempts = 0;
     let shuffled = board.map(row => [...row]);
 
     while (!this.hasValidMoves(shuffled) && attempts < 100) {
-      // Fisher-Yates shuffle
       for (let row = 0; row < shuffled.length; row++) {
         for (let col = 0; col < shuffled[row].length; col++) {
           const randomRow = Math.floor(Math.random() * shuffled.length);
@@ -398,5 +395,23 @@ export class Match3Engine {
     }
 
     return shuffled;
+  }
+
+  /**
+   * Calculate cascade multiplier (Rulebook 8: Scoring)
+   */
+  static calculateComboMultiplier(cascadeCount: number): number {
+    const multipliers = [1, 1.5, 2, 2.5, 3, 4, 5];
+    return multipliers[Math.min(cascadeCount - 1, multipliers.length - 1)];
+  }
+
+  /**
+   * Calculate stars based on score (Rulebook 8: Star Rating)
+   */
+  static calculateStars(score: number, thresholds: [number, number, number]): number {
+    if (score >= thresholds[2]) return 3;
+    if (score >= thresholds[1]) return 2;
+    if (score >= thresholds[0]) return 1;
+    return 0;
   }
 }

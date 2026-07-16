@@ -65,7 +65,7 @@ export function Dashboard() {
               <button 
                 onClick={openCashoutModal}
                 className="w-[45px] h-[80px] rounded-[24px] flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 border border-white/10"
-                style={{ background: 'var(--c-navy-dark)', color: 'white' }}
+                style={{ background: 'var(--c-navy)', color: 'white' }}
               >
                 <Plus size={20} />
               </button>
@@ -74,7 +74,7 @@ export function Dashboard() {
             {/* Main Token Balance Card (Slate Blue) */}
             <motion.div
               className="relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
-              style={{ background: 'var(--c-navy)', boxShadow: '0 10px 25px rgba(123,139,193,0.3)' }}
+              style={{ background: 'var(--c-navy)', boxShadow: '0 10px 25px rgba(132, 146, 196, 0.4)' }}
               {...CARD_ANIM}
               transition={{ delay: 0.1 }}
             >
@@ -101,7 +101,7 @@ export function Dashboard() {
             {/* Secondary USD Value Card (Cyan Blue) */}
             <motion.div
               className="relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
-              style={{ background: 'var(--c-sky)', boxShadow: '0 10px 25px rgba(102,189,242,0.3)' }}
+              style={{ background: 'var(--c-sky)', boxShadow: '0 10px 25px rgba(98, 193, 229, 0.4)' }}
               {...CARD_ANIM}
               transition={{ delay: 0.2 }}
             >
@@ -153,7 +153,7 @@ export function Dashboard() {
                     className="w-[64px] h-[64px] rounded-[24px] flex items-center justify-center transition-all group-hover:scale-105"
                     style={{ 
                       background: 'var(--c-navy)', 
-                      boxShadow: '0 8px 20px rgba(123, 139, 193, 0.25)',
+                      boxShadow: '0 8px 20px rgba(132, 146, 196, 0.25)',
                     }}
                   >
                     <div className="p-[10px] rounded-full border-[1.5px] border-white/40">
@@ -170,7 +170,7 @@ export function Dashboard() {
         {/* ── Bottom Drawer (Transactions / Recent Games) ── */}
         <motion.div 
           className="w-full bg-[var(--c-navy)] mt-auto pt-6 px-6 pb-28 relative z-20 flex-1 min-h-[300px]"
-          style={{ borderRadius: '40px 40px 0 0', boxShadow: '0 -10px 40px rgba(123, 139, 193, 0.4)' }}
+          style={{ borderRadius: '40px 40px 0 0', boxShadow: '0 -10px 40px rgba(132, 146, 196, 0.3)' }}
           initial={{ y: 200, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', damping: 25, stiffness: 120, delay: 0.5 }}

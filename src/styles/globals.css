@@ -9,39 +9,39 @@
 
 /* ── CSS Custom Properties (Exact Fintech Reference) ──────────────────────── */
 :root {
-  /* Color tokens */
-  --c-navy:         #7b8bc1;
-  --c-navy-dark:    #5a6b9c;
-  --c-navy-deeper:  #4a5b8c;
-  --c-sky:          #66bdf2;
-  --c-sky-pale:     #c2e7fa;
+  /* Color tokens - Soft Light Periwinkle/Blue Theme */
+  --c-navy:         #8492C4;
+  --c-navy-dark:    #6C7B9E;
+  --c-navy-deeper:  #5A6B9C;
+  --c-sky:          #62C1E5;
+  --c-sky-pale:     #C2DEFA;
   --c-offwhite:     #FFFFFF;
-  --c-app-bg:       linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%);
-  --c-teal:         #66bdf2;
-  --c-coral:        #7b8bc1;
-  --c-scrim:        rgba(123, 139, 193, 0.4);
-  --c-scrim-heavy:  rgba(123, 139, 193, 0.7);
+  --c-app-bg:       linear-gradient(180deg, #F0F6FA 0%, #C8E3F8 100%);
+  --c-teal:         #62C1E5;
+  --c-coral:        #8492C4;
+  --c-scrim:        rgba(132, 146, 196, 0.2);
+  --c-scrim-heavy:  rgba(132, 146, 196, 0.5);
 
   /* Card dynamic backgrounds */
-  --card-navy-bg:   linear-gradient(135deg, #7b8bc1 0%, #8ba0cd 100%);
-  --card-white-bg:  rgba(255, 255, 255, 0.6);
-  --card-sky-bg:    linear-gradient(135deg, #66bdf2 0%, #85ccf5 100%);
-  --border-white:   rgba(255, 255, 255, 0.8);
-  --border-sky:     rgba(255, 255, 255, 0.5);
-  --text-white-bg:  #2a3b6c;
+  --card-navy-bg:   #8492C4;
+  --card-white-bg:  rgba(194, 222, 250, 0.4);
+  --card-sky-bg:    #62C1E5;
+  --border-white:   rgba(255, 255, 255, 0.6);
+  --border-sky:     rgba(255, 255, 255, 0.3);
+  --text-white-bg:  #6C7B9E;
   --text-sky-bg:    #FFFFFF;
 
   /* Shadows */
-  --shadow-card-navy: 0 8px 32px rgba(123, 139, 193, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-  --shadow-card-sky:  0 8px 32px rgba(102, 189, 242, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.5);
-  --shadow-card-lift: 0 12px 40px rgba(123, 139, 193, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  --shadow-card-navy: 0 10px 30px rgba(132, 146, 196, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  --shadow-card-sky:  0 10px 30px rgba(98, 193, 229, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  --shadow-card-lift: 0 12px 40px rgba(132, 146, 196, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.4);
 
   /* Radius */
-  --r-card-primary:   28px;  /* navy cards */
-  --r-card-secondary: 24px;  /* sky cards */
-  --r-card-sm:        16px;  /* small chips */
-  --r-btn:            12px;  /* buttons */
-  --r-btn-round:      50%;   /* circle icon buttons */
+  --r-card-primary:   32px;  /* smooth rounded cards */
+  --r-card-secondary: 24px;  
+  --r-card-sm:        20px;  
+  --r-btn:            14px;  
+  --r-btn-round:      50%;   
 
   /* Transitions */
   --t-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -115,7 +115,7 @@
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.02em;
-    color: var(--c-navy);
+    color: var(--c-navy-dark);
   }
 }
 
@@ -131,7 +131,7 @@
 
   .card-navy {
     background: var(--card-navy-bg);
-    border: 1px solid rgba(74, 144, 217, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: var(--r-card-primary);
     box-shadow: var(--shadow-card-navy);
     color: var(--c-offwhite);
@@ -150,8 +150,8 @@
   .card-white {
     background: var(--card-white-bg);
     border: 1px solid var(--border-white);
-    border-radius: var(--r-card-secondary);
-    box-shadow: var(--shadow-card-sky);
+    border-radius: var(--r-card-primary);
+    box-shadow: 0 4px 16px rgba(132, 146, 196, 0.08);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     color: var(--text-white-bg);

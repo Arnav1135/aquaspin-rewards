@@ -35,6 +35,7 @@ interface GameFrameProps {
   showBottomScrim?: boolean;
   className?: string;
   canvasClassName?: string;
+  isWarping?: boolean;
 }
 
 export function GameFrame({
@@ -51,6 +52,7 @@ export function GameFrame({
   showBottomScrim = false,
   className,
   canvasClassName,
+  isWarping = false,
 }: GameFrameProps) {
   const [paused, setPaused] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -60,8 +62,9 @@ export function GameFrame({
   return (
     <div
       className={cn(
-        'game-frame relative w-full',
+        'game-frame relative w-full perspective-800',
         fullscreen && 'fixed inset-0 z-[999] rounded-none p-3',
+        isWarping && 'level-warp-active warp-lines',
         className
       )}
     >

@@ -307,7 +307,7 @@ export const GameBoard = ({
 
       <motion.div
         ref={boardRef}
-        className="game-board"
+        className={`game-board ${cascadeCount > 1 ? 'board-tilt-4d' : ''}`}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.3, type: 'spring' }}
@@ -392,9 +392,9 @@ export const GameBoard = ({
                 </div>
                 <button
                   className="btn-next"
-                  onClick={() => levelId < 60 ? loadLevel(levelId + 1) : null}
+                  onClick={() => loadLevel(levelId + 1)}
                 >
-                  {levelId < 60 ? 'Next Level' : 'Game Complete!'}
+                  Next Level
                 </button>
               </motion.div>
             )}

@@ -15,22 +15,23 @@ export const Match3Game = ({ onClose }: Match3GameProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [musicEnabled, setMusicEnabled] = useState(true);
+  const [isWarping, setIsWarping] = useState(false);
 
   useEffect(() => {
     loadLevel(1);
   }, [loadLevel]);
 
   const handleLevelComplete = () => {
+    setIsWarping(true);
     setTimeout(() => {
-      if (levelId < 60) {
-        loadLevel(levelId + 1);
-      }
-    }, 2000);
+      loadLevel(levelId + 1);
+      setIsWarping(false);
+    }, 1800);
   };
 
   return (
     <motion.div
-      className="match3-game-container"
+      className={`match3-game-container ${isWarping ? 'level-warp-active warp-lines perspective-800' : ''}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -53,7 +54,7 @@ export const Match3Game = ({ onClose }: Match3GameProps) => {
             </motion.div>
             <div className="title-text">
               <h1>Sweet Match</h1>
-              <p>Level {levelId} of 60</p>
+              <p>Infinite Level {levelId}</p>
             </div>
           </div>
 
@@ -66,11 +67,11 @@ export const Match3Game = ({ onClose }: Match3GameProps) => {
             <div className="progress-bar">
               <motion.div
                 className="progress-fill"
-                animate={{ width: `${(levelId / 60) * 100}%` }}
+                animate={{ width: `${Math.min(100, (levelId / (levelId + 5)) * 100)}%` }}
                 transition={{ duration: 0.5 }}
               />
             </div>
-            <span className="progress-text">{Math.round((levelId / 60) * 100)}%</span>
+            <span className="progress-text">L{levelId}</span>
           </motion.div>
         </div>
 

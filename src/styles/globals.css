@@ -810,3 +810,37 @@
 .transform-style-3d { transform-style: preserve-3d; }
 .backface-hidden    { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .rotateY-180        { transform: rotateY(180deg); }
+
+/* ── 4D Hyperspace Warp Transitions ─────────────────────────────────────── */
+@keyframes hyperspace-warp {
+  0% { transform: scale(1) translateZ(0); filter: blur(0) brightness(1); opacity: 1; }
+  30% { transform: scale(2.5) translateZ(800px); filter: blur(15px) brightness(3); opacity: 0; }
+  70% { transform: scale(0.2) translateZ(-800px); filter: blur(20px) brightness(4); opacity: 0; }
+  100% { transform: scale(1) translateZ(0); filter: blur(0) brightness(1); opacity: 1; }
+}
+
+.level-warp-active {
+  animation: hyperspace-warp 1.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+  will-change: transform, filter, opacity;
+}
+
+@keyframes hyperspace-lines {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.warp-lines::before {
+  content: '';
+  position: absolute;
+  top: -100%; left: 0; right: 0; bottom: -100%;
+  background: repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(102, 189, 242, 0.4) 40px, rgba(102, 189, 242, 0.4) 80px);
+  animation: hyperspace-lines 0.15s linear infinite;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.level-warp-active.warp-lines::before {
+  opacity: 1;
+}

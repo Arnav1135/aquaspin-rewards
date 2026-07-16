@@ -43,8 +43,29 @@ export const useMatch3Store = create<Match3Store>()(
 
     // Load a level
     loadLevel: (levelId: number) => {
-      const level = LEVELS.find(l => l.id === levelId);
-      if (!level) return;
+      let level = LEVELS.find(l => l.id === levelId);
+      
+      if (!level) {
+        // 4D Procedural Infinite Generation
+        level = {
+          id: levelId,
+          name: `Procedural Zone ${levelId}`,
+          width: 8 + (levelId % 2),
+          height: 8 + (levelId % 2),
+          moveLimit: Math.max(15, 35 - Math.floor(levelId / 5)),
+          objectiveType: levelId % 2 === 0 ? 'score' : 'jelly',
+          objectiveTarget: levelId % 2 === 0 ? levelId * 1000 : 20 + Math.floor(levelId / 2),
+          starThresholds: [levelId * 500, levelId * 1000, levelId * 1500],
+          difficulty: 'hard',
+          world: 6 + Math.floor(levelId / 10),
+          obstacles: Array.from({ length: Math.min(20, 5 + Math.floor(levelId / 2)) }).map(() => ({
+            row: Math.floor(Math.random() * (8 + (levelId % 2))),
+            col: Math.floor(Math.random() * (8 + (levelId % 2))),
+            type: Math.random() > 0.5 ? 4 : 2, // FROSTING(4) or CHOCOLATE(2)
+            health: 1
+          }))
+        };
+      }
 
       const board = Match3Engine.initializeBoard(level);
       

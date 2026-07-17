@@ -15,6 +15,7 @@ import { getSpinHistory } from '@/lib/supabase';
 import { BannerAd } from '@/components/ads/BannerAd';
 import { formatRelativeTime } from '@/types/database';
 import { formatTokens } from '@/lib/utils';
+import { useParallax } from '@/engine/core/useParallax';
 // toast removed
 
 const CARD_ANIM = { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 } };
@@ -22,6 +23,9 @@ const CARD_ANIM = { initial: { opacity: 0, y: 18 }, animate: { opacity: 1, y: 0 
 export function Dashboard() {
   const { profile, isGuest } = useAuthStore();
   const { openCashoutModal } = useUIStore();
+
+  const tokenCardRef = useParallax<HTMLDivElement>(0.8);
+  const usdCardRef = useParallax<HTMLDivElement>(0.5);
 
   // dayInCycle removed
 
@@ -73,7 +77,8 @@ export function Dashboard() {
 
             {/* Main Token Balance Card (Slate Blue) */}
             <motion.div
-              className="relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
+              ref={tokenCardRef as any}
+              className="parallax-layer relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
               style={{ background: 'var(--c-navy)', boxShadow: '0 10px 25px rgba(132, 146, 196, 0.4)' }}
               {...CARD_ANIM}
               transition={{ delay: 0.1 }}
@@ -100,7 +105,8 @@ export function Dashboard() {
 
             {/* Secondary USD Value Card (Cyan Blue) */}
             <motion.div
-              className="relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
+              ref={usdCardRef as any}
+              className="parallax-layer relative w-[200px] h-[240px] rounded-[40px] p-6 flex flex-col justify-between overflow-hidden flex-shrink-0 snap-center"
               style={{ background: 'var(--c-sky)', boxShadow: '0 10px 25px rgba(98, 193, 229, 0.4)' }}
               {...CARD_ANIM}
               transition={{ delay: 0.2 }}

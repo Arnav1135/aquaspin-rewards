@@ -13,6 +13,7 @@ import { useUIStore } from '@/features/uiStore';
 
 import { PerspectiveProvider } from '@/engine/core/PerspectiveProvider';
 import { AmbientBackground } from '@/components/layout/AmbientBackground';
+import { ViewTransitionWrapper } from '@/components/layout/ViewTransitionWrapper';
 
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -142,7 +143,9 @@ export default function App() {
         <ThemeInit />
         <AmbientBackground />
         <PerspectiveProvider>
-          <AppRoutes />
+          <ViewTransitionWrapper>
+            <AppRoutes />
+          </ViewTransitionWrapper>
         </PerspectiveProvider>
 
         {/* Global toast notifications */}

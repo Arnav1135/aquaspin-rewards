@@ -806,6 +806,12 @@
   overflow: hidden;
 }
 
+.parallax-layer {
+  transform: translate3d(var(--parallax-x, 0), var(--parallax-y, 0), 0);
+  transition: transform 0.1s linear;
+  will-change: transform;
+}
+
 .fast-moving {
   filter: drop-shadow(-2px 0 0 rgba(255,50,50,0.4)) drop-shadow(2px 0 0 rgba(50,100,255,0.4));
   transition: filter 0.1s ease-out;

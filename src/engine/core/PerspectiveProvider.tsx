@@ -42,9 +42,7 @@ export function PerspectiveProvider({ children }: { children: React.ReactNode })
       <div 
         className="perspective-container min-h-screen"
         style={{ 
-          transform: 'rotateX(var(--perspective-x, 0deg)) rotateY(var(--perspective-y, 0deg))',
           transformStyle: 'preserve-3d',
-          transition: 'transform 0.1s linear' // smooth micro-stutters
         }}
       >
         {children}

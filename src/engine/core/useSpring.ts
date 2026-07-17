@@ -1,7 +1,6 @@
 // src/engine/core/useSpring.ts
 import { useEffect, useRef, useState } from 'react';
 import { SpringPhysics } from './SpringPhysics';
-import { updateVelocity } from './VelocityTracker';
 
 export function useSpring(targetValue: number, config = { stiffness: 170, damping: 26 }) {
   const [value, setValue] = useState(targetValue);

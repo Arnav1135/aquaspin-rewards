@@ -800,6 +800,27 @@
   h2 { font-size: 1.5rem; }
 }
 
+/* ── 4D AI Engine Classes ────────────────────────────────────────────────── */
+.perspective-root {
+  perspective: 1200px;
+  overflow: hidden;
+}
+
+.fast-moving {
+  filter: drop-shadow(-2px 0 0 rgba(255,50,50,0.4)) drop-shadow(2px 0 0 rgba(50,100,255,0.4));
+  transition: filter 0.1s ease-out;
+}
+
+.glass-blur-motion {
+  backdrop-filter: blur(8px) saturate(180%);
+  transition: backdrop-filter 0.2s ease-out;
+}
+
+.glass-blur-settle {
+  backdrop-filter: blur(18px) saturate(180%);
+  transition: backdrop-filter 0.2s ease-in;
+}
+
 /* ── PWA Standalone Mode ─────────────────────────────────────────────────── */
 @media (display-mode: standalone) {
   body { padding-top: env(safe-area-inset-top); }

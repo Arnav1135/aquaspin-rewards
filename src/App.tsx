@@ -11,6 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
 
+import { PerspectiveProvider } from '@/engine/core/PerspectiveProvider';
+
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -137,7 +139,9 @@ export default function App() {
       <BrowserRouter>
         <AuthInitializer />
         <ThemeInit />
-        <AppRoutes />
+        <PerspectiveProvider>
+          <AppRoutes />
+        </PerspectiveProvider>
 
         {/* Global toast notifications */}
         <Toaster

@@ -1,0 +1,36 @@
+name: AI Autonomous Engine
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'    # Every 6 hours: visual audit
+    - cron: '0 0 * * *'      # Daily: new level generation
+  workflow_dispatch:         # Allow manual trigger
+
+jobs:
+  ai-evolution:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        run: npm ci || npm install
+        
+      - name: Run AI Visual Audit
+        run: npx tsx src/engine/ai/VisualAuditBot.ts
+        
+      - name: Run AI Level Generation
+        run: npx tsx src/engine/ai/LevelGenerator.ts
+        
+      - name: Run AI Commit Bot
+        run: npx tsx src/engine/ai/CommitBot.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

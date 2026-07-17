@@ -6,6 +6,11 @@
   <meta name="theme-color" content="#2b1a38" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <script>
+    if (window.top === window.self) {
+      window.location.href = "/";
+    }
+  </script>
   <title>Candy Crunch Clone</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="src/styles/main.css" />

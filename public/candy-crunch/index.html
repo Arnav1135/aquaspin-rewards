@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#2b1a38" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Candy Crunch Clone</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="src/styles/main.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- Global Overlay (Particles / Popups) -->
+  <div id="global-overlay"></div>
+
+  <!-- Boot / Splash Screen -->
+  <div id="boot-scene" class="scene active flex-center">
+    <div class="logo-bounce">
+      <h1 class="candy-text" data-text="Candy Crunch">Candy Crunch</h1>
+      <p class="subtitle">Saga Clone</p>
+    </div>
+    <div class="loading-bar-container">
+      <div id="loading-bar"></div>
+    </div>
+    <button id="btn-start" class="btn-primary hidden">Play</button>
+  </div>
+
+  <!-- Map Screen -->
+  <div id="map-scene" class="scene">
+    <div class="header-bar">
+      <div class="lives"><span class="icon">❤️</span> <span id="map-lives">5</span></div>
+      <div class="gold"><span class="icon">🏆</span> <span id="map-gold">50</span></div>
+      <button class="settings-btn" onclick="app.sceneManager.showModal('settings')">⚙️</button>
+    </div>
+    <div id="map-scroller">
+      <svg id="map-path" width="100%" height="3000"></svg>
+      <!-- Level nodes injected by MapScene.js -->
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-scene" class="scene">
+    <!-- Top HUD -->
+    <div class="game-hud">
+      <button id="btn-pause" class="btn-circle">⏸</button>
+      <div class="level-target">
+        <div class="label" id="hud-target-label">Score</div>
+        <div class="value" id="hud-target-value">0 / 3000</div>
+      </div>
+      <div class="moves-container">
+        <div class="label">Moves</div>
+        <div class="value" id="hud-moves">25</div>
+      </div>
+    </div>
+
+    <!-- ProgressBar -->
+    <div class="score-progress-container">
+      <div class="stars-bg">
+        <div class="star-slot s1">☆</div>
+        <div class="star-slot s2">☆</div>
+        <div class="star-slot s3">☆</div>
+      </div>
+      <div id="score-progress-bar"></div>
+    </div>
+
+    <!-- Canvas Container -->
+    <div id="game-board-container" class="flex-center">
+      <canvas id="game-canvas" width="720" height="720"></canvas>
+    </div>
+
+    <!-- Booster Bar -->
+    <div class="booster-bar">
+      <button class="booster-btn" data-type="lollipop">
+        <span class="icon">🍭</span><span class="count">3</span>
+      </button>
+      <button class="booster-btn" data-type="switch">
+        <span class="icon">🖐</span><span class="count">2</span>
+      </button>
+      <button class="booster-btn" data-type="ufo">
+        <span class="icon">🛸</span><span class="count">1</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal Container -->
+  <div id="modal-container" class="hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content" id="modal-content">
+      <!-- Injected by Modal.js -->
+    </div>
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

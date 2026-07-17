@@ -34,6 +34,7 @@ import { DragonTigerGame } from '@/components/games/DragonTigerGame';
 import { RouletteGame } from '@/components/games/RouletteGame';
 import { CrashGame } from '@/components/games/CrashGame';
 import { PlinkoGame } from '@/components/games/PlinkoGame';
+import CandyCrushGame from '@/components/games/CandyCrushGame';
 
 // ─────────────────────────────────────────────────────────────
 // Game catalogue
@@ -194,6 +195,12 @@ const GAMES = [
     desc: 'Match 3+ candies in this epic 60-level puzzle adventure!',
     thumbnail: '/thumbnails/candy.jpg',
   },
+  {
+    key: 'candycrush',  title: 'Candy Crunch',  emoji: '🍭', category: 'Puzzle',
+    reward: '150 Levels',    difficulty: 'Hard',   color: '#ff4081',
+    desc: 'Match 3+ candies in this massive 150-level puzzle adventure!',
+    thumbnail: '/thumbnails/candy.jpg',
+  },
 ] as const;
 
 type GameKey = typeof GAMES[number]['key'] | null;
@@ -252,6 +259,7 @@ export function MiniGames() {
       case 'roulette':    return <RouletteGame onClose={close} />;
       case 'crash':       return <CrashGame onClose={close} />;
       case 'plinko':      return <PlinkoGame onClose={close} />;
+      case 'candycrush':  return <CandyCrushGame onBack={close} balance={0} />;
       // Arcade
       case 'clicker':     return <ClickerGame onClose={close} />;
       case 'tap':         return <TapChallenge onClose={close} />;

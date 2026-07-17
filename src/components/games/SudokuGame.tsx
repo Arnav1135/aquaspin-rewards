@@ -228,7 +228,7 @@ export function SudokuGame({ onClose }: Props) {
               </button>
             ))}
           </div>
-          <Button variant="primary" onClick={startGame} className="px-10 py-3 text-lg">🎮 Start</Button>
+          <Button variant="neon" onClick={startGame} className="px-10 py-3 text-lg w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" size="lg">🎮 Start</Button>
         </div>
       )}
 
@@ -238,7 +238,7 @@ export function SudokuGame({ onClose }: Props) {
             <div className="text-4xl">🎉</div>
             <p className="text-white font-bold text-xl">Solved in {formatTime(timer)}!</p>
             {timer === best && <p className="text-yellow-400 text-sm">New Best! 🏆</p>}
-            <Button variant="primary" onClick={startGame} className="mt-3">▶ Play Again</Button>
+            <Button variant="neon" onClick={startGame} className="mt-3 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" size="lg">▶ Play Again</Button>
           </motion.div>
         )}
       </AnimatePresence>

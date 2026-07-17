@@ -331,7 +331,7 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
 
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #1a0a0a 0%, #0a1a0a 50%, #0a0a1a 100%)' }}>
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1a0a0a 0%, #0a1a0a 50%, #0a0a1a 100%)' }}>
       {/* Visual Shimmer overlay on Green Zero hits */}
       {radialShimmer && (
         <div className="absolute inset-0 pointer-events-none z-30 bg-emerald-500/10 shadow-[inset_0_0_80px_rgba(16,185,129,0.4)] animate-pulse" />
@@ -354,24 +354,24 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
             <div className="flex flex-col gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
               <div className="grid grid-cols-2 gap-2">
                 <Button 
-                  variant={betSelection === 'red' ? 'primary' : 'ghost'}
+                  variant={betSelection === 'red' ? 'neon' : 'ghost'}
                   disabled={spinning}
                   onClick={() => { setBetSelection('red'); playTone(400, 0.05, 'sine', 0.1); }}
                   className={`py-3 rounded-lg text-xs font-bold transition-all ${
                     betSelection === 'red' 
-                      ? 'border-red-500 bg-red-500/10 text-red-300' 
+                      ? 'border-red-500 bg-red-500/10 text-red-300 border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)]' 
                       : 'border-slate-800 text-slate-400'
                   }`}
                 >
                   🔴 Red (2x)
                 </Button>
                 <Button 
-                  variant={betSelection === 'black' ? 'primary' : 'ghost'}
+                  variant={betSelection === 'black' ? 'neon' : 'ghost'}
                   disabled={spinning}
                   onClick={() => { setBetSelection('black'); playTone(400, 0.05, 'sine', 0.1); }}
                   className={`py-3 rounded-lg text-xs font-bold transition-all ${
                     betSelection === 'black' 
-                      ? 'border-slate-300 bg-slate-500/10 text-slate-300' 
+                      ? 'border-slate-300 bg-slate-500/10 text-slate-300 border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)]' 
                       : 'border-slate-800 text-slate-400'
                   }`}
                 >
@@ -379,12 +379,12 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
                 </Button>
               </div>
               <Button 
-                variant={betSelection === 'green' ? 'primary' : 'ghost'}
+                variant={betSelection === 'green' ? 'neon' : 'ghost'}
                 disabled={spinning}
                 onClick={() => { setBetSelection('green'); playTone(400, 0.05, 'sine', 0.1); }}
                 className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all ${
                   betSelection === 'green' 
-                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300' 
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)]' 
                     : 'border-slate-800 text-slate-400'
                 }`}
               >

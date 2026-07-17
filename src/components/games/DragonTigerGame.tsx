@@ -69,7 +69,7 @@ function PlayingPlaque({ card, revealed, side, isWinner }: { card: CardData | nu
           }`}>
             <span className="text-xl font-bold">{side === 'dragon' ? '🐉' : '🐯'}</span>
           </div>
-          <span className="absolute text-[8px] tracking-widest text-slate-600 bottom-2 uppercase font-mono">sealed</span>
+          <span className="absolute text-[8px] tracking-widest text-slate-400 font-medium bottom-2 uppercase font-mono">sealed</span>
         </div>
       </motion.div>
     </div>
@@ -288,7 +288,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
   return (
     <ErrorBoundary name="DragonTigerGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #1c0a08 0%, #0a100a 50%, #080a1c 100%)' }}>
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1c0a08 0%, #0a100a 50%, #080a1c 100%)' }}>
         
         {/* Screen Edge Allegiance Red/Blue glow vignette */}
         {betSelection === 'dragon' && !dealing && (
@@ -374,7 +374,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
             <Button variant="neon" size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-yellow-500/40 shadow-lg shadow-yellow-500/20" disabled={dealing || !betSelection || betAmount <= 0 || betAmount > balance} onClick={handleDeal}>
               {dealing ? 'CASTING ELEMENTS...' : 'INVOKE DUEL'}
             </Button>
-            <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
+            <Button variant="ghost" className="w-full text-xs text-slate-400 hover:text-slate-400" onClick={onClose}>
               Close Sanctuary
             </Button>
           </div>
@@ -382,7 +382,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
         {/* Floating ancient altar view */}
         <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] temple-felt rounded-2xl p-5 overflow-hidden">
-          <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
+          <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-400 font-mono tracking-wider z-10">
             <HelpCircle size={10} className="text-yellow-500" />
             <span>ALTAR DECAY: 3.73%</span>
           </div>
@@ -444,7 +444,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
               <motion.div 
                 animate={dealing ? { scale: [1, 1.15, 1], rotate: [0, 180, 360] } : { scale: 1, rotate: 0 }} 
                 transition={{ repeat: dealing ? Infinity : 0, duration: 1.2, ease: 'linear' }}
-                className="text-2xl font-black text-slate-600/50 font-mono select-none"
+                className="text-2xl font-black text-slate-400 font-medium/50 font-mono select-none"
               >
                 {outcome ? (outcome === 'tie' ? '☯️' : outcome === 'dragon' ? '🔥' : '🌀') : 'VS'}
               </motion.div>
@@ -489,8 +489,8 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
                     )}
                   </motion.div>
                 )}
-                {dealing && !dragonCard && <p className="text-xs text-slate-500 animate-pulse uppercase tracking-widest font-mono">Summoning Dragon element...</p>}
-                {dealing && dragonCard && !tigerCard && <p className="text-xs text-slate-500 animate-pulse uppercase tracking-widest font-mono">Summoning Tiger element...</p>}
+                {dealing && !dragonCard && <p className="text-xs text-slate-400 animate-pulse uppercase tracking-widest font-mono">Summoning Dragon element...</p>}
+                {dealing && dragonCard && !tigerCard && <p className="text-xs text-slate-400 animate-pulse uppercase tracking-widest font-mono">Summoning Tiger element...</p>}
               </AnimatePresence>
             </div>
           </div>

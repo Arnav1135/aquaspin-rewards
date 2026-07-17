@@ -314,7 +314,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
 
   return (
     <ErrorBoundary name="CoinFlipGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)' }}>
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)' }}>
         <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
           <div className="space-y-4">
             <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={flipping} />
@@ -357,10 +357,9 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
             </div>
           </div>
           <div className="space-y-2">
-            <Button
-              variant="neon"
+            <Button variant="neon"
               size="lg"
-              className="w-full font-bold py-4 rounded-xl"
+              className="w-full font-bold py-4 rounded-xl w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20"
               disabled={flipping || !selectedSide || betAmount <= 0 || betAmount > balance}
               onClick={handleFlip}
             >

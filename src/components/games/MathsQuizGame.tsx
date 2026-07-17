@@ -205,7 +205,7 @@ export function MathsQuizGame({ onClose }: Props) {
           <div className="flex gap-6 mt-2">
             <div className="text-center"><span className="text-yellow-400 font-bold text-xl">{best}</span><br/><span className="text-white/40 text-xs">Best</span></div>
           </div>
-          <Button variant="primary" onClick={startGame} className="mt-2 px-10 py-3 text-lg">🎮 Start</Button>
+          <Button variant="neon" onClick={startGame} className="mt-2 px-10 py-3 text-lg w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" size="lg">🎮 Start</Button>
         </div>
       )}
 
@@ -216,9 +216,9 @@ export function MathsQuizGame({ onClose }: Props) {
           <div className="flex gap-6">
             <div className="text-center"><span className="text-green-400 font-bold text-2xl">{score}</span><br/><span className="text-white/50 text-xs">Score</span></div>
             <div className="text-center"><span className="text-yellow-400 font-bold text-2xl">{best}</span><br/><span className="text-white/50 text-xs">Best</span></div>
-            <div className="text-center"><span className="text-blue-400 font-bold text-2xl">{correct}/20</span><br/><span className="text-white/50 text-xs">Correct</span></div>
+            <div className="text-center"><span className="text-cyan-300 font-bold text-2xl">{correct}/20</span><br/><span className="text-white/50 text-xs">Correct</span></div>
           </div>
-          <Button variant="primary" onClick={startGame} className="mt-2 px-8 py-3">▶ Play Again</Button>
+          <Button variant="neon" onClick={startGame} className="mt-2 px-8 py-3 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" size="lg">▶ Play Again</Button>
         </div>
       )}
 

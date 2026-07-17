@@ -144,7 +144,7 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
             <p className="text-text-secondary mt-1">{GAME_DURATION} seconds • Build combos for bonus tokens!</p>
           </div>
           <div className="flex flex-col gap-2 max-w-[200px] mx-auto">
-            <Button variant="primary" size="lg" onClick={startGame} id="start-tap-btn">
+            <Button variant="neon" size="lg" onClick={startGame} id="start-tap-btn" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">
               <Zap size={20} /> Start Challenge
             </Button>
             <Button variant="ghost" size="sm" onClick={onClose} className="text-muted text-xs">
@@ -236,7 +236,7 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
             </div>
           </div>
           <div className="flex gap-3">
-            <Button variant="neon" onClick={startGame}>Play Again</Button>
+            <Button variant="neon" onClick={startGame} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">Play Again</Button>
             <Button variant="ghost" onClick={onClose}>Done</Button>
           </div>
         </div>

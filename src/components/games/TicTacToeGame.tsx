@@ -208,7 +208,7 @@ export function TicTacToeGame({ onClose }: Props) {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button variant="primary" onClick={reset}>🔄 New Game</Button>
+        <Button variant="neon" onClick={reset} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">🔄 New Game</Button>
         <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
       </div>
     </div>

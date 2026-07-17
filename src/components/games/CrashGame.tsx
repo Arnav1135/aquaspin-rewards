@@ -41,6 +41,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
   const cashedOutRef = useRef(false);
   const autoCashOutRef = useRef<number | null>(null);
   const socialIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rocketRef = useRef<HTMLDivElement>(null);
   const balance = profile?.tokens ?? 0;
 
   // Custom 4D Sensory States
@@ -197,70 +198,23 @@ export function CrashGame({ onClose }: CrashGameProps) {
       ctx.shadowBlur = 0;
     });
 
-    // Spacecraft Model Rendering (4D visuals)
-    if (!crashed) {
-      const prevPt = points[Math.max(0, points.length - 2)];
-      // add a small wiggle for 4D vibration
-      const vibeX = (Math.random() - 0.5) * 2;
-      const vibeY = (Math.random() - 0.5) * 2;
-      const angle = Math.atan2(prevPt.py - lastPt.py, lastPt.px - prevPt.px);
-      
-      ctx.save();
-      ctx.translate(lastPt.px + vibeX, lastPt.py + vibeY);
-      ctx.rotate(-angle);
-      
-      // 4D Shadow
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = 'rgba(0, 240, 255, 0.6)';
-
-      // 4D Hull - Multi-layered gradient
-      const hullGrad = ctx.createLinearGradient(-10, -10, 15, 10);
-      hullGrad.addColorStop(0, '#ffffff');
-      hullGrad.addColorStop(0.5, '#60a5fa');
-      hullGrad.addColorStop(1, '#1e3a8a');
-      ctx.fillStyle = hullGrad;
-      
-      ctx.beginPath();
-      ctx.moveTo(18, 0);    // Nose
-      ctx.lineTo(-10, -12); // Top wing
-      ctx.lineTo(-4, 0);    // Engine base
-      ctx.lineTo(-10, 12);  // Bottom wing
-      ctx.closePath();
-      ctx.fill();
-
-      // 4D Cockpit - Neon Glow
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = '#00f0ff';
-      ctx.fillStyle = '#cffafe';
-      ctx.beginPath();
-      ctx.ellipse(4, 0, 8, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 4D Engine Thrust - Pulsing flame
-      const thrustScale = 1 + Math.random() * 0.5;
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#f97316';
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.moveTo(-4, 0);
-      ctx.lineTo(-15 * thrustScale, -4);
-      ctx.lineTo(-25 * thrustScale, 0);
-      ctx.lineTo(-15 * thrustScale, 4);
-      ctx.closePath();
-      ctx.fill();
-
-      // Bright inner core flame
-      ctx.fillStyle = '#fef08a';
-      ctx.shadowBlur = 10;
-      ctx.beginPath();
-      ctx.moveTo(-4, 0);
-      ctx.lineTo(-10 * thrustScale, -2);
-      ctx.lineTo(-15 * thrustScale, 0);
-      ctx.lineTo(-10 * thrustScale, 2);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.restore();
+    // Spacecraft Model Rendering (4D visuals moved to DOM overlay for high fidelity)
+    if (rocketRef.current) {
+      if (!crashed) {
+        const rectW = canvas.clientWidth;
+        const rectH = canvas.clientHeight;
+        const domX = (lastPt.px / 500) * rectW;
+        const domY = (lastPt.py / 300) * rectH;
+        
+        const prevPt = points[Math.max(0, points.length - 3)] || lastPt;
+        const angle = Math.atan2(prevPt.py - lastPt.py, lastPt.px - prevPt.px);
+        const angleDeg = -(angle * 180 / Math.PI);
+        
+        rocketRef.current.style.transform = `translate3d(${domX}px, ${domY}px, 0) rotate(${angleDeg}deg)`;
+        rocketRef.current.style.opacity = '1';
+      } else {
+        rocketRef.current.style.opacity = '0';
+      }
     }
 
     // Exploding Crash Sphere
@@ -464,7 +418,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   return (
     <div 
-      className={`flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 ${
+      className={`flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
         tinnitusActive ? 'filter saturate-30 contrast-125' : ''
       }`}
       style={{ transform: getScreenTremor(), background: 'linear-gradient(135deg, #0f1f3d 0%, #0a1628 50%, #0d1a30 100%)' }}
@@ -487,6 +441,14 @@ export function CrashGame({ onClose }: CrashGameProps) {
         @keyframes hudPulse {
           0%, 100% { opacity: 0.95; }
           50% { opacity: 0.8; }
+        }
+        .animate-rocket-wobble {
+          animation: rocket-wobble 0.6s infinite ease-in-out;
+        }
+        @keyframes rocket-wobble {
+          0%, 100% { transform: translateY(0) rotateX(0) rotateY(0); }
+          25% { transform: translateY(-1px) rotateX(25deg) rotateY(15deg); }
+          75% { transform: translateY(1px) rotateX(-25deg) rotateY(-15deg); }
         }
         .abort-switch-cover {
           transform-origin: top;
@@ -565,9 +527,9 @@ export function CrashGame({ onClose }: CrashGameProps) {
                 </div>
                 <div className="h-6" /> {/* Spacer */}
                 <Button 
-                  variant="success" 
+                  variant="neon" 
                   size="lg" 
-                  className="w-full font-black py-3 text-xs rounded-xl disabled:opacity-30 flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 border border-emerald-400/20" 
+                  className="w-full font-bold py-3.5 text-xs rounded-xl disabled:opacity-30 flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/20 border border-cyan-400/40" 
                   disabled={cashedOut || !safetyCoverOpen} 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -577,7 +539,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
                   {cashedOut ? `SECURED: ${earnedTokens} tokens` : 'TRIGGER EMERGENCY ABORT'}
                 </Button>
               </div>
-              <p className="text-[9px] text-slate-500 text-center uppercase tracking-wider font-bold">
+              <p className="text-[9px] text-slate-400 text-center uppercase tracking-wider font-bold">
                 *Hover cover to lift emergency release shield
               </p>
             </div>
@@ -592,7 +554,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
               {gameState === 'crashed' ? 'RELAUNCH SPACECRAFT' : 'Bets Locked: Start Launch'}
             </Button>
           )}
-          <Button variant="ghost" className="w-full text-2xs text-slate-500 hover:text-slate-400 py-1.5" onClick={onClose}>
+          <Button variant="ghost" className="w-full text-2xs text-slate-400 hover:text-slate-400 py-1.5" onClick={onClose}>
             Disconnect Console
           </Button>
         </div>
@@ -649,7 +611,32 @@ export function CrashGame({ onClose }: CrashGameProps) {
         )}
 
         {/* Graph canvas */}
-        <canvas ref={canvasRef} width={500} height={300} className="w-full h-[300px]" />
+        <div className="relative w-full h-[300px]">
+          <canvas ref={canvasRef} width={500} height={300} className="w-full h-full block" />
+          
+          {/* 4D DOM Rocket Overlay */}
+          <div 
+            ref={rocketRef} 
+            className="absolute top-0 left-0 -ml-8 -mt-3 pointer-events-none z-30 transition-opacity duration-150"
+            style={{ opacity: 0, willChange: 'transform' }}
+          >
+            <div className="relative animate-rocket-wobble" style={{ transformStyle: 'preserve-3d', perspective: '800px' }}>
+              {/* Thrust Glow */}
+              <div className="absolute -left-16 top-1/2 -translate-y-1/2 w-20 h-8 bg-gradient-to-r from-transparent via-orange-500/80 to-yellow-300 blur-xl rounded-full animate-pulse" />
+              <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-12 h-3 bg-gradient-to-r from-transparent via-cyan-400 to-white blur-md rounded-full animate-pulse" />
+              
+              {/* Main Hull */}
+              <div className="relative w-16 h-6 bg-gradient-to-r from-slate-200 via-white to-slate-300 rounded-full shadow-[0_0_20px_rgba(0,240,255,0.6)] overflow-hidden border border-slate-100/50">
+                {/* Cockpit */}
+                <div className="absolute right-2 top-1 w-6 h-3 bg-cyan-400/40 border border-cyan-200 rounded-full backdrop-blur-md shadow-[inset_0_0_8px_rgba(0,240,255,1)]" />
+              </div>
+              
+              {/* Wings */}
+              <div className="absolute left-2 -top-2 w-6 h-3 bg-slate-300 rounded-sm transform skew-x-[30deg] border-t border-white/50 shadow-lg" />
+              <div className="absolute left-2 -bottom-2 w-6 h-3 bg-slate-300 rounded-sm transform -skew-x-[30deg] border-b border-white/50 shadow-lg" />
+            </div>
+          </div>
+        </div>
 
         {/* Live Parallel Mission trajectories list */}
         <div className="px-4 pb-3 space-y-1 min-h-[90px] border-t border-slate-900/60 bg-slate-950/40">

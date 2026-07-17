@@ -266,7 +266,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #022c1b 0%, #064e3b 50%, #042f2c 100%)' }}>
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #022c1b 0%, #064e3b 50%, #042f2c 100%)' }}>
       
       {/* Settings Panel */}
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20 text-white animate-fade-in">
@@ -305,7 +305,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
               Surrender Run
             </Button>
           )}
-          <Button variant="ghost" className="w-full text-xs text-slate-500 hover:text-slate-400" onClick={onClose}>
+          <Button variant="ghost" className="w-full text-xs text-slate-400 hover:text-slate-400" onClick={onClose}>
             Exit Panel
           </Button>
         </div>
@@ -439,7 +439,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
                   <p className="text-slate-400">Total Score: <span className="text-cyan-400 font-bold">{score}</span></p>
                   <p className="text-slate-400">Total Moves: <span className="text-indigo-400 font-bold">{moves}</span></p>
                 </div>
-                <Button variant="neon" size="lg" className="w-full animate-bounce" onClick={startNewGame}>
+                <Button variant="neon" size="lg" className="w-full animate-bounce w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" onClick={startNewGame}>
                   Play Again
                 </Button>
               </>
@@ -450,7 +450,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
                 <p className="text-xs text-slate-400 leading-relaxed">
                   Arrange cards in descending order with alternating red and black colors to sort columns, and build foundations from Ace to King.
                 </p>
-                <Button variant="neon" size="lg" className="w-full" onClick={startNewGame}>
+                <Button variant="neon" size="lg" className="w-full w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" onClick={startNewGame}>
                   Start Match
                 </Button>
               </>

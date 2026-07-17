@@ -398,7 +398,8 @@
     padding: 16px;          /* ← minimum 16px navy buffer zone */
     overflow: hidden;
     isolation: isolate;     /* prevent any child color from bleeding out */
-    box-shadow: var(--shadow-card-navy);
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+    border: 1px solid rgba(34, 211, 238, 0.4);
   }
 
   /* The actual canvas/game content area */

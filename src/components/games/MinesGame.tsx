@@ -1,7 +1,7 @@
 // src/components/games/MinesGame.tsx
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, AlertTriangle, Zap, Trophy, Play } from 'lucide-react';
+import { Shield, AlertTriangle, Zap, Trophy } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -284,7 +284,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
 
   return (
     <div 
-      className={`relative flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-screen items-stretch overflow-hidden text-text-primary transition-all duration-300 ${
+      className={`relative flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-screen items-stretch overflow-hidden text-text-primary transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
         vinnitusActive ? 'filter saturate-50 contrast-125' : ''
       }`}
       style={{
@@ -489,10 +489,10 @@ export function MinesGame({ onClose }: MinesGameProps) {
             <>
               {/* Cash out button with glow particle layers */}
               <div className="relative group">
-                <Button
-                  variant="success"
+                <Button 
+                  variant="neon" 
                   size="lg"
-                  className="w-full font-bold py-3.5 text-sm rounded-xl disabled:opacity-30 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 border border-emerald-400/30"
+                  className="w-full font-bold py-3.5 text-xs rounded-xl disabled:opacity-30 flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/20 border border-cyan-400/40"
                   disabled={clicks === 0}
                   onClick={() => handleCashOut()}
                 >
@@ -509,20 +509,20 @@ export function MinesGame({ onClose }: MinesGameProps) {
               </Button>
             </>
           ) : (
-            <Button
-              variant="neon"
+            <Button 
+              variant="neon" 
               size="lg"
-              className="w-full font-bold py-3.5 text-sm rounded-xl shadow-lg shadow-cyan-500/20 border border-cyan-400/40"
-              disabled={betAmount <= 0 || betAmount > balance}
+              className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" 
+              disabled={isPlaying || betAmount <= 0 || betAmount > balance} 
               onClick={startNewGame}
             >
-              <Play size={16} className="mr-1" /> START PROJECTION
+              {gameOver && !hasWon ? 'REINITIALIZE CORE' : 'INITIALIZE SCAN'}
             </Button>
           )}
 
           <Button
             variant="ghost"
-            className="w-full text-2xs text-slate-500 hover:text-slate-400 py-1.5 rounded-lg"
+            className="w-full text-2xs text-slate-400 hover:text-slate-400 py-1.5 rounded-lg"
             onClick={onClose}
           >
             Close Hologram
@@ -530,7 +530,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
         </div>
 
         {/* Footer Info */}
-        <div className="pt-3 border-t border-slate-800 text-2xs text-slate-500 flex justify-between font-mono">
+        <div className="pt-3 border-t border-slate-800 text-2xs text-slate-400 flex justify-between font-mono">
           <span>Safe Path Return: 97%</span>
           <span>Balance: {balance} tokens</span>
         </div>
@@ -588,7 +588,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
               Array.from({ length: 25 }).map((_, i) => (
                 <div key={i} className="hex-cell">
                   <div className="hex-cell-rim" />
-                  <div className="hex-cell-frosted text-slate-600 font-black text-lg">
+                  <div className="hex-cell-frosted text-slate-400 font-medium font-black text-lg">
                     ?
                   </div>
                 </div>
@@ -616,7 +616,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.6 }}
                           className={`hex-cell-frosted text-xl font-bold transition-all duration-300 ${
-                            isPlaying && !gameOver ? 'hex-cell-pulsing-red hover:text-cyan-300 text-slate-400' : 'text-slate-600'
+                            isPlaying && !gameOver ? 'hex-cell-pulsing-red hover:text-cyan-300 text-slate-400' : 'text-slate-400 font-medium'
                           }`}
                           style={{
                             boxShadow: isHovered && isPlaying && !gameOver ? 'inset 0 0 15px rgba(0, 240, 255, 0.4)' : 'none'
@@ -708,7 +708,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
             )}
 
             {!isPlaying && !gameOver && (
-              <p className="text-xs text-slate-500 font-mono tracking-wider flex items-center gap-1.5">
+              <p className="text-xs text-slate-400 font-mono tracking-wider flex items-center gap-1.5">
                 <Shield size={12} className="text-cyan-400" />
                 INITIALIZE CORE AND CHOOSE SAFE COORDINATES
               </p>

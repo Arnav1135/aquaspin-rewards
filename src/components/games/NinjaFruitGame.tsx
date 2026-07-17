@@ -293,8 +293,8 @@ export function NinjaFruitGame({ onClose }: Props) {
         style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.5)', maxWidth: '100%', cursor: 'crosshair' }}
       />
       <div className="flex gap-3">
-        {disp.phase === 'idle' && <Button variant="primary" onClick={startGame}>🎮 Start Game</Button>}
-        {disp.phase === 'dead' && <Button variant="primary" onClick={startGame}>▶ Play Again</Button>}
+        {disp.phase === 'idle' && <Button variant="neon" onClick={startGame} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">🎮 Start Game</Button>}
+        {disp.phase === 'dead' && <Button variant="neon" onClick={startGame} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">▶ Play Again</Button>}
         <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
       </div>
     </div>

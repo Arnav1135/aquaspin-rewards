@@ -382,14 +382,14 @@ export function ArcheryGame({ onClose }: Props) {
 
           {disp.phase === 'idle' && (
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-black/60 rounded-xl z-10 backdrop-blur-sm">
-              <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mb-4 border-2 border-blue-400">
+              <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mb-4 border-2 border-cyan-400/50">
                 <span className="text-3xl">🏹</span>
               </div>
               <h2 className="text-white text-2xl font-bold mb-2">Infinite Archery</h2>
               <p className="text-gray-300 text-center text-sm mb-6 max-w-[250px]">
                 Hit targets to reach the goal score. Wind and target speed scale infinitely!
               </p>
-              <Button onClick={startGame} size="lg" className="w-48 shadow-lg shadow-blue-500/30">
+              <Button onClick={startGame} size="lg" className="w-48 shadow-lg shadow-blue-500/30 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" variant="neon">
                 Play Now
               </Button>
             </div>
@@ -401,14 +401,14 @@ export function ArcheryGame({ onClose }: Props) {
               <div className="flex gap-6 mb-8 text-center mt-4">
                 <div>
                   <p className="text-gray-400 text-sm">Level Reached</p>
-                  <p className="text-blue-400 text-2xl font-bold">{disp.level}</p>
+                  <p className="text-cyan-300 text-2xl font-bold">{disp.level}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Score</p>
                   <p className="text-white text-2xl font-bold">{disp.score}</p>
                 </div>
               </div>
-              <Button onClick={startGame} size="lg" className="w-48 shadow-lg shadow-blue-500/30">
+              <Button onClick={startGame} size="lg" className="w-48 shadow-lg shadow-blue-500/30 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" variant="neon">
                 Play Again
               </Button>
             </div>
@@ -416,7 +416,7 @@ export function ArcheryGame({ onClose }: Props) {
           
           {(disp.phase === 'aiming' || disp.phase === 'flying' || disp.phase === 'result' || disp.phase === 'warp') && (
              <div className="absolute bottom-4 left-0 right-0 flex justify-center z-10 pointer-events-none">
-               <Button onClick={shoot} disabled={disp.phase !== 'aiming'} className="pointer-events-auto opacity-70 hover:opacity-100">
+               <Button onClick={shoot} disabled={disp.phase !== 'aiming'} className="pointer-events-auto opacity-70 hover:opacity-100 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" variant="neon" size="lg">
                  {disp.phase === 'warp' ? 'WARPING...' : 'SHOOT (Space)'}
                </Button>
              </div>

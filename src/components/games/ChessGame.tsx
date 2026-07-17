@@ -227,8 +227,8 @@ export function ChessGame({ onClose }: Props) {
       )}
 
       <div className="flex gap-3 mt-auto">
-        {phase==='idle'&&<Button variant="primary" onClick={reset}>🎮 Start</Button>}
-        {phase!=='idle'&&<Button variant="primary" onClick={reset}>🔄 New Game</Button>}
+        {phase==='idle'&&<Button variant="neon" onClick={reset} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">🎮 Start</Button>}
+        {phase!=='idle'&&<Button variant="neon" onClick={reset} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">🔄 New Game</Button>}
         <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
       </div>
     </div>

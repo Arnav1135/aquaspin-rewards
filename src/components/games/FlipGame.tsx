@@ -106,7 +106,7 @@ export function FlipGame({ onClose }: FlipGameProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl">
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
         <div className="space-y-4">
           <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={isFlipping} />
@@ -147,7 +147,7 @@ export function FlipGame({ onClose }: FlipGameProps) {
         </div>
 
         <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl" disabled={isFlipping || !selection || betAmount <= 0 || betAmount > balance} onClick={handleFlip}>
+          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" disabled={isFlipping || !selection || betAmount <= 0 || betAmount > balance} onClick={handleFlip}>
             {isFlipping ? 'Flipping...' : 'Flip!'}
           </Button>
           <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>Close Game</Button>

@@ -202,7 +202,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
   return (
     <div 
-      className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300"
+      className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl"
       style={{ background: getThemeGradient() }}
     >
       <style>{`
@@ -272,7 +272,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
                   className={`py-1.5 rounded-lg text-3xs font-bold capitalize transition-all ${
                     activeTheme === t
                       ? 'bg-slate-900 border border-orange-500/50 text-orange-400 shadow-md'
-                      : 'text-slate-500 hover:text-slate-300'
+                      : 'text-slate-400 hover:text-slate-300'
                   }`}
                 >
                   {t}
@@ -288,7 +288,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
               {[1, 3, 5, 10, 15].map(n => (
                 <Button key={n} variant={boneCount === n ? 'primary' : 'ghost'} disabled={isPlaying}
                   onClick={() => { setBoneCount(n); playTone(400, 0.05, 'sine', 0.1); }}
-                  className={`py-1.5 text-xs rounded-xl font-bold font-mono ${boneCount === n ? 'border-orange-500/80 bg-orange-500/10 text-orange-300' : 'border-slate-850 text-slate-500'}`}>
+                  className={`py-1.5 text-xs rounded-xl font-bold font-mono ${boneCount === n ? 'border-orange-500/80 bg-orange-500/10 text-orange-300' : 'border-slate-850 text-slate-400'}`}>
                   {n}
                 </Button>
               ))}
@@ -297,7 +297,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
           {/* Chicken confidence rating */}
           <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-bold uppercase font-mono">Confidence:</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Confidence:</span>
             <span className="text-xs font-bold text-orange-300">
               {getConfidenceLevel()}
             </span>
@@ -327,7 +327,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
               START JOURNEY
             </Button>
           )}
-          <Button variant="ghost" className="w-full text-2xs text-slate-500 hover:text-slate-400" onClick={onClose}>
+          <Button variant="ghost" className="w-full text-2xs text-slate-400 hover:text-slate-400" onClick={onClose}>
             Close Sanctuary
           </Button>
         </div>
@@ -335,7 +335,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
       {/* Storybook Farm rope bridge layout */}
       <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] bridge-table rounded-2xl p-6 overflow-hidden">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
+        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-400 font-mono tracking-wider z-10">
           <HelpCircle size={10} className="text-orange-400" />
           <span>FARMHOUSE ADVANTAGE: 3.5%</span>
         </div>
@@ -407,8 +407,8 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
           {/* Vertically sliding hazard thermometer */}
           <div className="flex flex-col items-center gap-1.5 h-[310px] pt-1">
-            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest font-mono" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>DANGER</span>
-            <div className="flex-1 w-2.5 rounded-full bg-slate-950 overflow-hidden flex flex-col justify-end border border-slate-900">
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest font-mono" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>DANGER</span>
+            <div className="flex-1 w-2.5 rounded-full bg-slate-950 overflow-hidden flex flex-col justify-end border border-slate-900 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl">
               <motion.div className="w-full rounded-full" style={{ background: 'linear-gradient(to top, #10b981, #eab308, #ef4444)' }}
                 animate={{ height: `${dangerPct}%` }} transition={{ duration: 0.4 }} />
             </div>
@@ -434,7 +434,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
               </motion.div>
             )}
             {!isPlaying && !gameOver && (
-              <p className="text-2xs text-slate-500 font-mono tracking-wider flex items-center gap-1">
+              <p className="text-2xs text-slate-400 font-mono tracking-wider flex items-center gap-1">
                 <Shield size={11} className="text-orange-400" />
                 INITIATE CORE ELEVATION SYSTEM TO CROSS BRIDGE
               </p>

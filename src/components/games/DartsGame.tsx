@@ -242,7 +242,7 @@ export function DartsGame({ onClose }: Props) {
         onTouchStart={e => { e.preventDefault(); if (disp.phase === 'idle') startGame(); else throw_(); }}
       />
       <div className="flex gap-3">
-        {disp.phase === 'result' && <Button variant="primary" onClick={startGame}>▶ Play Again</Button>}
+        {disp.phase === 'result' && <Button variant="neon" onClick={startGame} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">▶ Play Again</Button>}
         <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
       </div>
     </div>

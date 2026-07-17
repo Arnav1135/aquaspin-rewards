@@ -280,7 +280,7 @@ export function ChickenJumpGame({ onClose }: Props) {
         onTouchStart={e => { e.preventDefault(); jump(); }}
       />
       <div className="flex gap-3">
-        {disp.phase === 'dead' && <Button variant="primary" onClick={restart}>▶ Play Again</Button>}
+        {disp.phase === 'dead' && <Button variant="neon" onClick={restart} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">▶ Play Again</Button>}
         <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
       </div>
     </div>

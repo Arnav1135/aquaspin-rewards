@@ -111,7 +111,7 @@ export function QuizGame({ onClose }: QuizGameProps) {
             <p className="text-[#66bdf2] font-semibold mt-1">+{TOKENS_PER_CORRECT} tokens per correct answer!</p>
           </div>
           <div className="flex flex-col gap-2 max-w-[200px] mx-auto">
-            <Button variant="primary" size="lg" onClick={startGame} id="start-quiz-btn">Start Quiz</Button>
+            <Button variant="neon" size="lg" onClick={startGame} id="start-quiz-btn" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">Start Quiz</Button>
             <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">
               Close Game
             </Button>
@@ -162,7 +162,7 @@ export function QuizGame({ onClose }: QuizGameProps) {
               </div>
 
               {answered && (
-                <Button variant="primary" fullWidth className="mt-4" onClick={handleNext} id="next-question-btn">
+                <Button variant="neon" fullWidth className="mt-4 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" onClick={handleNext} id="next-question-btn" size="lg">
                   {qIndex + 1 >= QUESTIONS.length ? 'See Results' : 'Next Question →'}
                 </Button>
               )}
@@ -186,7 +186,7 @@ export function QuizGame({ onClose }: QuizGameProps) {
             )}
           </div>
           <div className="flex gap-3 justify-center">
-            <Button variant="primary" onClick={startGame}>Play Again</Button>
+            <Button variant="neon" onClick={startGame} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">Play Again</Button>
             <Button variant="ghost" onClick={onClose}>Done</Button>
           </div>
         </motion.div>

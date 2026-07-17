@@ -283,7 +283,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
       {/* Left betting controls */}
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20">
         <div className="space-y-4">
@@ -306,7 +306,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
               <input type="number" step="0.1" min="1.01" max="100000" value={targetMultiplier}
                 onChange={e => setTargetMultiplier(Math.max(1.01, Math.min(parseFloat(e.target.value) || 1.01, 100000)))}
                 disabled={rolling} className="w-full bg-transparent border-0 outline-none text-sm font-mono text-cyan-300 px-3 py-1" />
-              <span className="flex items-center pr-3 text-xs text-slate-500 font-bold">X</span>
+              <span className="flex items-center pr-3 text-xs text-slate-400 font-bold">X</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {presets.map(p => (
@@ -320,7 +320,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
                   className={`py-1.5 rounded-lg text-2xs font-mono font-bold border transition-all ${
                     targetMultiplier === p 
                       ? 'border-purple-500 bg-purple-500/10 text-purple-300' 
-                      : 'border-slate-800 text-slate-500 hover:border-slate-700'
+                      : 'border-slate-800 text-slate-400 hover:border-slate-700'
                   }`}
                 >
                   {p.toFixed(1)}x
@@ -354,7 +354,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
           <Button variant="neon" size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-purple-500/40 shadow-lg shadow-purple-500/20 animate-pulse" disabled={rolling || betAmount <= 0 || betAmount > balance} onClick={handleRoll}>
             {rolling ? 'SLINGSHOT IGNITED' : 'LAUNCH STAR-CORE'}
           </Button>
-          <Button variant="ghost" className="w-full text-2xs text-slate-500 hover:text-slate-400" onClick={onClose}>
+          <Button variant="ghost" className="w-full text-2xs text-slate-400 hover:text-slate-400" onClick={onClose}>
             Close Shaft
           </Button>
         </div>
@@ -369,7 +369,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
         onMouseLeave={handleMouseLeave}
       >
         <canvas ref={canvasRef} width={600} height={400} className="absolute inset-0 w-full h-full" />
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
+        <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-400 font-mono tracking-wider z-10">
           <Navigation size={11} className="text-purple-400" /><span>COSMIC SHIELD: 4%</span>
         </div>
         
@@ -400,7 +400,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
           {/* Star chart constellation logs */}
           <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 backdrop-blur-sm">
             <div className="flex gap-1.5 items-center">
-              <span className="text-[10px] text-slate-500 font-bold uppercase font-mono">Constellation History:</span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase font-mono">Constellation History:</span>
               <div className="flex gap-1">
                 {starChart.map((s, idx) => (
                   <span 
@@ -416,7 +416,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
                 ))}
               </div>
             </div>
-            <span className="text-[9px] text-slate-500 font-bold font-mono">TARGET: {targetMultiplier.toFixed(2)}x</span>
+            <span className="text-[9px] text-slate-400 font-bold font-mono">TARGET: {targetMultiplier.toFixed(2)}x</span>
           </div>
         </div>
       </motion.div>

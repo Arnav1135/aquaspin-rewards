@@ -430,7 +430,7 @@ export function FlappyBirdGame({ onClose }: Props) {
                 Pass pipes to level up. 
                 Beware of moving pipes and gravity shifts!
               </p>
-              <Button onClick={jump} size="lg" className="w-48 shadow-lg shadow-blue-500/30">
+              <Button onClick={jump} size="lg" className="w-48 shadow-lg shadow-blue-500/30 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" variant="neon">
                 Tap to Start
               </Button>
             </div>
@@ -442,14 +442,14 @@ export function FlappyBirdGame({ onClose }: Props) {
               <div className="flex gap-6 mb-8 text-center mt-4">
                  <div>
                   <p className="text-gray-400 text-sm">Level Reached</p>
-                  <p className="text-blue-400 text-2xl font-bold">{display.level}</p>
+                  <p className="text-cyan-300 text-2xl font-bold">{display.level}</p>
                 </div>
                 <div>
                   <p className="text-gray-400 text-sm">Score</p>
                   <p className="text-white text-2xl font-bold">{display.score}</p>
                 </div>
               </div>
-              <Button onClick={restart} size="lg" className="w-48 shadow-lg shadow-blue-500/30">
+              <Button onClick={restart} size="lg" className="w-48 shadow-lg shadow-blue-500/30 w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20" variant="neon">
                 Play Again
               </Button>
             </div>

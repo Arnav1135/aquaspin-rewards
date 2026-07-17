@@ -821,6 +821,12 @@
   transition: backdrop-filter 0.2s ease-in;
 }
 
+@keyframes aurora-shift {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5%) scale(1.05); }
+  100% { transform: translateY(5%) scale(1.1); }
+}
+
 /* ── PWA Standalone Mode ─────────────────────────────────────────────────── */
 @media (display-mode: standalone) {
   body { padding-top: env(safe-area-inset-top); }

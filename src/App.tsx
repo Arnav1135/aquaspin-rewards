@@ -12,6 +12,7 @@ import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
 
 import { PerspectiveProvider } from '@/engine/core/PerspectiveProvider';
+import { AmbientBackground } from '@/components/layout/AmbientBackground';
 
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -139,6 +140,7 @@ export default function App() {
       <BrowserRouter>
         <AuthInitializer />
         <ThemeInit />
+        <AmbientBackground />
         <PerspectiveProvider>
           <AppRoutes />
         </PerspectiveProvider>

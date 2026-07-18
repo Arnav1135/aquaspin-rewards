@@ -3,61 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Candy Crush Clone</title>
+  <title>Candy Crunch</title>
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet" />
+  <script>
+    // Security redirect: prevent external access
+    if (window.top === window.self) { window.location.href = "/"; }
+  </script>
 </head>
 <body>
-  <!-- HUD / Header -->
-  <div class="header">
-    <div class="hud-top">
-      <h1 class="logo-text">CANDY CRUNCH</h1>
-      <div id="objective-container" class="objective-box">
-        <span class="objective-title">OBJECTIVE:</span>
-        <span id="objective-text">REACH THE TARGET!</span>
-      </div>
+  <!-- Header -->
+  <div id="main-header">
+    <div class="logo-row">
+      <span class="logo-text">🍭 CANDY CRUNCH</span>
+      <div id="objective-pill"><span id="obj-text">Reach the Target!</span></div>
     </div>
-    
-    <div class="scoreBoard">
-      <div class="hud-item">
-        <span class="hud-label">LEVEL</span>
-        <span id="level-val" class="hud-value">1</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-label">SCORE</span>
-        <span id="score-val" class="hud-value">0</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-label">TARGET</span>
-        <span id="target-val" class="hud-value">1500</span>
-      </div>
-      <div class="hud-item">
-        <span class="hud-label">MOVES</span>
-        <span id="moves-val" class="hud-value">25</span>
-      </div>
+    <div class="hud-row">
+      <div class="hud-box" id="hud-level"><span class="hud-label">LEVEL</span><span class="hud-val" id="display-level">1</span></div>
+      <div class="hud-box" id="hud-score"><span class="hud-label">SCORE</span><span class="hud-val" id="display-score">0</span></div>
+      <div class="hud-box" id="hud-target"><span class="hud-label">TARGET</span><span class="hud-val" id="display-target">1000</span></div>
+      <div class="hud-box" id="hud-moves"><span class="hud-label">MOVES</span><span class="hud-val" id="display-moves">25</span></div>
     </div>
   </div>
 
-  <!-- Game Board Area -->
-  <div class="grid-wrapper">
-    <div class="grid"></div>
+  <!-- Progress Bar -->
+  <div id="progress-wrap"><div id="progress-bar"><div id="progress-fill"></div></div></div>
+
+  <!-- Board -->
+  <div id="board-wrap">
+    <canvas id="fx-canvas"></canvas>
+    <div id="board"></div>
   </div>
 
-  <!-- Win/Lose Modals -->
-  <div id="level-modal" class="modal hidden">
-    <div class="modal-content">
+  <!-- Particle Overlay -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Modal -->
+  <div id="game-modal" class="modal-hidden">
+    <div class="modal-card">
+      <div class="modal-stars" id="modal-stars">⭐⭐⭐</div>
       <h2 id="modal-title">LEVEL COMPLETE!</h2>
-      <p id="modal-desc">You've reached the target score!</p>
-      <button id="modal-btn" class="btn-primary">NEXT LEVEL</button>
+      <p id="modal-body">Amazing job!</p>
+      <div class="modal-score-box">Score: <span id="modal-score">0</span></div>
+      <button id="modal-btn" class="modal-btn">NEXT LEVEL</button>
     </div>
   </div>
 
-  <script src="script.js"></script>
-  <script>
-    // Security redirect for iframe enforcement
-    if (window.top === window.self) {
-      window.location.href = "/";
-    }
-  </script>
+  <!-- Special Candy Spawn Animation Layer -->
+  <div id="special-spawn-layer"></div>
+
+  <script src="engine.js"></script>
 </body>
 </html>

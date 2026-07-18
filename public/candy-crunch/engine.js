@@ -534,19 +534,31 @@ class SpecialEngine {
   static resolveCombo(c1, c2, cells, W, H, clearFn, cascadeFn) {
     const t1 = c1.candyType, t2 = c2.candyType;
     const isSpecial = t => t !== CANDY_TYPES.NORMAL && t !== CANDY_TYPES.TIMER;
-
     if (!isSpecial(t1) && !isSpecial(t2)) return false;
 
-    // Color Bomb + Color Bomb → full clear
-    if (t1 === CANDY_TYPES.BOMB && t2 === CANDY_TYPES.BOMB) {
-      cells.forEach(c => { if (c.type === CELL_TYPES.NORMAL) clearFn(c, 'bomb-bomb'); });
+    const isStripe  = t => t === CANDY_TYPES.STRIPE_H || t === CANDY_TYPES.STRIPE_V;
+    const isBomb    = t => t === CANDY_TYPES.BOMB;
+    const isWrapped = t => t === CANDY_TYPES.WRAPPED;
+    const isFish    = t => t === CANDY_TYPES.FISH;
+
+    // ── 7) Color Bomb + Color Bomb → clears nearly every candy on the board
+    if (isBomb(t1) && isBomb(t2)) {
+      clearFn(c1, 'clear'); clearFn(c2, 'clear');
+      const normals = cells.filter(c => c.type === CELL_TYPES.NORMAL && c.candyColor);
+      const skip = new Set();
+      while (skip.size < Math.min(4, normals.length))
+        skip.add(normals[Math.floor(Math.random() * normals.length)].idx);
+      normals.forEach(c => { if (!skip.has(c.idx)) clearFn(c, 'bomb-bomb'); });
       return true;
     }
-    // Color Bomb + Striped → all of that color become striped
-    if (t1 === CANDY_TYPES.BOMB || t2 === CANDY_TYPES.BOMB) {
-      const other = t1 === CANDY_TYPES.BOMB ? c2 : c1;
-      const bomb  = t1 === CANDY_TYPES.BOMB ? c1 : c2;
-      if (other.candyType === CANDY_TYPES.STRIPE_H || other.candyType === CANDY_TYPES.STRIPE_V) {
+
+    // ── All Color Bomb combos ─────────────────────────────────────────────
+    if (isBomb(t1) || isBomb(t2)) {
+      const bomb  = isBomb(t1) ? c1 : c2;
+      const other = isBomb(t1) ? c2 : c1;
+
+      // ── 5) Color Bomb + Striped → all of that color become striped & all activate
+      if (isStripe(other.candyType)) {
         clearFn(bomb, 'clear');
         cells.forEach(c => {
           if (c.type === CELL_TYPES.NORMAL && c.candyColor === other.candyColor) {
@@ -554,7 +566,11 @@ class SpecialEngine {
             clearFn(c, 'striped');
           }
         });
-      } else if (other.candyType === CANDY_TYPES.WRAPPED) {
+        return true;
+      }
+
+      // ── 6) Color Bomb + Wrapped → all of that color become wrapped & all activate
+      if (isWrapped(other.candyType)) {
         clearFn(bomb, 'clear');
         cells.forEach(c => {
           if (c.type === CELL_TYPES.NORMAL && c.candyColor === other.candyColor) {
@@ -562,34 +578,51 @@ class SpecialEngine {
             clearFn(c, 'wrapped');
           }
         });
-      } else {
-        // Bomb + normal → clear all of that color
-        const targetColor = other.candyColor;
+        return true;
+      }
+
+      // ── 10) Color Bomb + Fish → ~75% of fish color become fish & activate
+      if (isFish(other.candyType)) {
         clearFn(bomb, 'clear');
         cells.forEach(c => {
-          if (c.type === CELL_TYPES.NORMAL && c.candyColor === targetColor) clearFn(c, 'color-bomb');
+          if (c.type === CELL_TYPES.NORMAL && c.candyColor === other.candyColor && Math.random() < 0.75) {
+            c.candyType = CANDY_TYPES.FISH;
+            clearFn(c, 'fish');
+          }
         });
+        clearFn(other, 'fish');
+        return true;
       }
+
+      // ── 4) Color Bomb + Normal → removes every candy of that color
+      const targetColor = other.candyColor;
+      clearFn(bomb, 'clear');
+      cells.forEach(c => {
+        if (c.type === CELL_TYPES.NORMAL && c.candyColor === targetColor) clearFn(c, 'color-bomb');
+      });
       return true;
     }
-    // Striped + Striped → cross clear
-    if ((t1 === CANDY_TYPES.STRIPE_H || t1 === CANDY_TYPES.STRIPE_V) &&
-        (t2 === CANDY_TYPES.STRIPE_H || t2 === CANDY_TYPES.STRIPE_V)) {
+
+    // ── 1) Striped + Striped → clears one full row AND one full column crossing at activation point
+    if (isStripe(t1) && isStripe(t2)) {
+      clearFn(c1, 'clear'); clearFn(c2, 'clear');
       SpecialEngine.clearRow(c2.row, cells, W, clearFn);
       SpecialEngine.clearCol(c2.col, cells, W, H, clearFn);
+      return true;
+    }
+
+    // ── 2) Wrapped + Wrapped → massive 5×5 double explosion
+    if (isWrapped(t1) && isWrapped(t2)) {
       clearFn(c1, 'clear'); clearFn(c2, 'clear');
-      return true;
-    }
-    // Wrapped + Wrapped → 5×5 double blast
-    if (t1 === CANDY_TYPES.WRAPPED && t2 === CANDY_TYPES.WRAPPED) {
       SpecialEngine.explodeArea(c2.row, c2.col, 2, cells, W, H, clearFn);
-      setTimeout(() => SpecialEngine.explodeArea(c2.row, c2.col, 2, cells, W, H, clearFn), 250);
+      setTimeout(() => SpecialEngine.explodeArea(c2.row, c2.col, 2, cells, W, H, clearFn), 280);
       return true;
     }
-    // Striped + Wrapped → 3 rows + 3 cols
-    if ((t1 === CANDY_TYPES.STRIPE_H || t1 === CANDY_TYPES.STRIPE_V || t2 === CANDY_TYPES.STRIPE_H || t2 === CANDY_TYPES.STRIPE_V) &&
-        (t1 === CANDY_TYPES.WRAPPED || t2 === CANDY_TYPES.WRAPPED)) {
-      const anchor = t2 === CANDY_TYPES.WRAPPED ? c2 : c1;
+
+    // ── 3) Striped + Wrapped → 3 horizontal + 3 vertical blasts centred on activation point
+    if ((isStripe(t1) || isStripe(t2)) && (isWrapped(t1) || isWrapped(t2))) {
+      const anchor = isWrapped(t2) ? c2 : c1;
+      clearFn(c1, 'clear'); clearFn(c2, 'clear');
       for (let dr = -1; dr <= 1; dr++) {
         const rr = anchor.row + dr;
         if (rr >= 0 && rr < H) SpecialEngine.clearRow(rr, cells, W, clearFn);
@@ -598,14 +631,47 @@ class SpecialEngine {
         const cc = anchor.col + dc;
         if (cc >= 0 && cc < W) SpecialEngine.clearCol(cc, cells, W, H, clearFn);
       }
-      clearFn(c1, 'clear'); clearFn(c2, 'clear');
       return true;
     }
-    // Fish combos — activate fish targeting
-    if (t1 === CANDY_TYPES.FISH || t2 === CANDY_TYPES.FISH) {
+
+    // ── Fish combos ────────────────────────────────────────────────────────
+    if (isFish(t1) || isFish(t2)) {
+      const fish  = isFish(t1) ? c1 : c2;
+      const other = isFish(t1) ? c2 : c1;
+
+      // ── 8) Fish + Striped → 3 striped fish swim to targets, each clears full row or column
+      if (isStripe(other.candyType)) {
+        clearFn(fish, 'clear'); clearFn(other, 'clear');
+        for (let i = 0; i < 3; i++) {
+          const avail = cells.filter(c => c.type === CELL_TYPES.NORMAL && c.candyColor);
+          if (!avail.length) break;
+          const t = avail[Math.floor(Math.random() * avail.length)];
+          setTimeout(() => {
+            Math.random() < 0.5
+              ? SpecialEngine.clearRow(t.row, cells, W, clearFn)
+              : SpecialEngine.clearCol(t.col, cells, W, H, clearFn);
+          }, 120 * (i + 1));
+        }
+        return true;
+      }
+
+      // ── 9) Fish + Wrapped → fish explode with wrapped-candy 3×3 power at target
+      if (isWrapped(other.candyType)) {
+        clearFn(fish, 'clear'); clearFn(other, 'clear');
+        for (let i = 0; i < 3; i++) {
+          const avail = cells.filter(c => c.type === CELL_TYPES.NORMAL && c.candyColor);
+          if (!avail.length) break;
+          const t = avail[Math.floor(Math.random() * avail.length)];
+          setTimeout(() => SpecialEngine.explodeArea(t.row, t.col, 1, cells, W, H, clearFn), 140 * (i + 1));
+        }
+        return true;
+      }
+
+      // Default fish activation
       clearFn(c1, 'fish'); clearFn(c2, 'fish');
       return true;
     }
+
     return false;
   }
 
@@ -1036,8 +1102,6 @@ class GameController {
       const cx = rect.left + rect.width / 2;
       const cy = rect.top  + rect.height / 2;
       this.particles.burst(cx, cy, cell.candyColor, 14);
-    });
-
     // Run cascade after clearing animation
     setTimeout(() => {
       this._applyGravity();

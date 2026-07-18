@@ -35,6 +35,9 @@ import { RouletteGame } from '@/components/games/RouletteGame';
 import { CrashGame } from '@/components/games/CrashGame';
 import { PlinkoGame } from '@/components/games/PlinkoGame';
 import CandyCrushGame from '@/components/games/CandyCrushGame';
+import { AGEA, GameGenre, VisualStyle } from '@/engine/AIGameEngineArchitect';
+import { AIGameEnginePanel } from '@/components/AIGameEnginePanel';
+import { Cpu } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
 // Game catalogue
@@ -219,6 +222,7 @@ export function MiniGames() {
   const [category, setCategory] = useState<Category>('All');
   const [search, setSearch] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -228,6 +232,24 @@ export function MiniGames() {
     document.addEventListener('fullscreenchange', handleFsChange);
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
+
+  const activeGameMeta = GAMES.find(g => g.key === activeGame);
+
+  // Autonomous onboarding effect on game selection
+  useEffect(() => {
+    if (activeGame && activeGameMeta) {
+      let genre: GameGenre = 'arcade';
+      if (activeGameMeta.category === 'Casino') genre = 'simulation';
+      else if (activeGameMeta.category === 'Board') genre = 'board';
+      else if (activeGameMeta.category === 'Puzzle') genre = 'puzzle';
+      
+      let style: VisualStyle = '2d-canvas';
+      if (activeGame === 'chess' || activeGame === 'tictactoe' || activeGame === 'solitaire') style = 'dom-css';
+      else if (activeGame === 'candycrush') style = 'svg-vector';
+
+      AGEA.onboardGame(activeGame, activeGameMeta.title, genre, style);
+    }
+  }, [activeGame, activeGameMeta]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -246,7 +268,7 @@ export function MiniGames() {
     return matchCat && matchSearch;
   });
 
-  const activeGameMeta = GAMES.find(g => g.key === activeGame);
+
 
   const renderGame = (key: GameKey, close: () => void) => {
     switch (key) {
@@ -311,23 +333,34 @@ export function MiniGames() {
             </p>
           </div>
 
-          {/* Search */}
-          <div
-            className="flex items-center gap-2 px-3 py-2 rounded-xl"
-            style={{
-              background: 'rgba(255,255,255,0.82)',
-              border: '1.5px solid rgba(168,203,234,0.45)',
-              minWidth: 200,
-            }}
-          >
-            <Search size={14} style={{ color: 'rgba(22,33,62,0.40)' }} />
-            <input
-              className="bg-transparent text-sm outline-none flex-1"
-              style={{ color: '#7b8bc1' }}
-              placeholder="Search games..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+          <div className="flex items-center gap-3">
+            {/* AI Control Panel Toggle Button */}
+            <button
+              onClick={() => setShowPanel(!showPanel)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-cyan-400 bg-[#090b11]/80 hover:bg-[#090b11] border border-cyan-500/30 hover:border-cyan-500/60 shadow-lg shadow-cyan-500/5 transition-all"
+            >
+              <Cpu size={14} className="animate-pulse" />
+              AGE Architect Panel
+            </button>
+
+            {/* Search */}
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-xl"
+              style={{
+                background: 'rgba(255,255,255,0.82)',
+                border: '1.5px solid rgba(168,203,234,0.45)',
+                minWidth: 200,
+              }}
+            >
+              <Search size={14} style={{ color: 'rgba(22,33,62,0.40)' }} />
+              <input
+                className="bg-transparent text-sm outline-none flex-1"
+                style={{ color: '#7b8bc1' }}
+                placeholder="Search games..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
@@ -509,6 +542,16 @@ export function MiniGames() {
               {renderGame(activeGame, close)}
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Engine Architect Control Panel Dashboard */}
+      <AnimatePresence>
+        {showPanel && (
+          <AIGameEnginePanel
+            activeGameId={activeGame}
+            onClose={() => setShowPanel(false)}
+          />
         )}
       </AnimatePresence>
     </div>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <radialGradient id="body-basic-blue" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#A9DBFF"/>
+    <stop offset="45%" stop-color="#3F94E0"/>
+    <stop offset="100%" stop-color="#1F5C9E"/>
+  </radialGradient>
+  <radialGradient id="hl-basic-blue" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-basic-blue" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<ellipse cx="100" cy="176" rx="55" ry="12" fill="url(#shadow-basic-blue)"/>
+
+  <circle cx="100" cy="100" r="66" fill="url(#body-basic-blue)" stroke="#1F5C9E" stroke-width="3" />
+  <ellipse cx="78" cy="68" rx="32" ry="19" fill="url(#hl-basic-blue)" transform="rotate(-25 78 68)"/>
+  <circle cx="128" cy="62" r="7" fill="#FFFFFF" opacity="0.85"/>
+
+</svg>

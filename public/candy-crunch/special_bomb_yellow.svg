@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <radialGradient id="body-bomb-yellow" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#7A7A80"/>
+    <stop offset="45%" stop-color="#3B3B3F"/>
+    <stop offset="100%" stop-color="#18181A"/>
+  </radialGradient>
+  <radialGradient id="hl-bomb-yellow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-bomb-yellow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<ellipse cx="100" cy="176" rx="55" ry="12" fill="url(#shadow-bomb-yellow)"/>
+
+  <defs>
+  <radialGradient id="body-bomb-yellow-dark" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#7A7A80"/>
+    <stop offset="45%" stop-color="#3B3B3F"/>
+    <stop offset="100%" stop-color="#18181A"/>
+  </radialGradient>
+  <radialGradient id="hl-bomb-yellow-dark" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-bomb-yellow-dark" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+  <line x1="100" y1="38" x2="112" y2="12" stroke="#8a5a2a" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="114" cy="10" r="7" fill="#FFB347">
+    <animate attributeName="opacity" values="1;0.4;1" dur="1s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="100" cy="108" r="64" fill="url(#body-bomb-yellow-dark)" stroke="#18181A" stroke-width="3"/>
+  <circle cx="146.0" cy="108.0" r="9" fill="#F2D227" stroke="#B79A12" stroke-width="1.5"/><circle cx="123.0" cy="147.8" r="9" fill="#F2D227" stroke="#B79A12" stroke-width="1.5"/><circle cx="77.0" cy="147.8" r="9" fill="#F2D227" stroke="#B79A12" stroke-width="1.5"/><circle cx="54.0" cy="108.0" r="9" fill="#F2D227" stroke="#B79A12" stroke-width="1.5"/><circle cx="77.0" cy="68.2" r="9" fill="#F2D227" stroke="#B79A12" stroke-width="1.5"/><circle cx="123.0" cy="68.2" r="9" fill="#F2D227" stroke="#B79A12" stroke-width="1.5"/>
+  <ellipse cx="78" cy="76" rx="27" ry="16" fill="url(#hl-bomb-yellow-dark)" transform="rotate(-25 78 76)"/>
+
+</svg>

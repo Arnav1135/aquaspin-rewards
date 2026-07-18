@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <radialGradient id="body-wrapped-purple" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#DDB3FF"/>
+    <stop offset="45%" stop-color="#9B4FD1"/>
+    <stop offset="100%" stop-color="#61258E"/>
+  </radialGradient>
+  <radialGradient id="hl-wrapped-purple" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-wrapped-purple" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<ellipse cx="100" cy="176" rx="55" ry="12" fill="url(#shadow-wrapped-purple)"/>
+
+  <path d="M55 60 L15 40 L30 75 L15 100 L30 125 L15 160 L55 140 Z" fill="#61258E" opacity="0.95"/>
+  <path d="M145 60 L185 40 L170 75 L185 100 L170 125 L185 160 L145 140 Z" fill="#61258E" opacity="0.95"/>
+  <line x1="25" y1="55" x2="48" y2="66" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  <line x1="25" y1="105" x2="48" y2="98" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  <line x1="175" y1="55" x2="152" y2="66" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  <line x1="175" y1="105" x2="152" y2="98" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  <path d="M100 30 L156 62 L156 138 L100 170 L44 138 L44 62 Z" fill="url(#body-wrapped-purple)" stroke="#61258E" stroke-width="3" />
+  <ellipse cx="78" cy="68" rx="26" ry="16" fill="url(#hl-wrapped-purple)" transform="rotate(-25 78 68)"/>
+  <circle cx="122" cy="62" r="6" fill="#FFFFFF" opacity="0.85"/>
+
+</svg>

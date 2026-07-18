@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <radialGradient id="body-striped-red" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#FF8A80"/>
+    <stop offset="45%" stop-color="#E8483A"/>
+    <stop offset="100%" stop-color="#A72B22"/>
+  </radialGradient>
+  <radialGradient id="hl-striped-red" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-striped-red" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<ellipse cx="100" cy="176" rx="55" ry="12" fill="url(#shadow-striped-red)"/>
+
+  <clipPath id="clip-striped-red"><path d="M100 28 C142 28 160 55 158 90 C156 128 150 172 100 172 C50 172 44 128 42 90 C40 55 58 28 100 28 Z"/></clipPath>
+  <path d="M100 28 C142 28 160 55 158 90 C156 128 150 172 100 172 C50 172 44 128 42 90 C40 55 58 28 100 28 Z" fill="url(#body-striped-red)" stroke="none" stroke-width="3" />
+  <g clip-path="url(#clip-striped-red)"><rect x="-40" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="-16" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="8" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="32" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="56" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="80" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="104" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="128" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="152" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="176" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="200" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/><rect x="224" y="0" width="12" height="200" fill="#FFFFFF" opacity="0.85" transform="rotate(35 100 100)"/></g>
+  <path d="M100 28 C142 28 160 55 158 90 C156 128 150 172 100 172 C50 172 44 128 42 90 C40 55 58 28 100 28 Z" fill="none" stroke="#A72B22" stroke-width="3" />
+  <ellipse cx="78" cy="68" rx="32" ry="19" fill="url(#hl-striped-red)" transform="rotate(-25 78 68)"/>
+  <circle cx="128" cy="62" r="7" fill="#FFFFFF" opacity="0.85"/>
+
+</svg>

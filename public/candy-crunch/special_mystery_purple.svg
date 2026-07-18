@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <radialGradient id="body-mystery-purple" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#DDB3FF"/>
+    <stop offset="45%" stop-color="#9B4FD1"/>
+    <stop offset="100%" stop-color="#61258E"/>
+  </radialGradient>
+  <radialGradient id="hl-mystery-purple" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-mystery-purple" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<ellipse cx="100" cy="176" rx="55" ry="12" fill="url(#shadow-mystery-purple)"/>
+
+  <path d="M100 30 L156 62 L156 138 L100 170 L44 138 L44 62 Z" fill="url(#body-mystery-purple)" stroke="#61258E" stroke-width="3" fill-opacity="0.72"/>
+  <text x="100" y="122" font-family="Arial, sans-serif" font-size="66" font-weight="bold"
+        text-anchor="middle" fill="#61258E" fill-opacity="0.55">?</text>
+  <ellipse cx="78" cy="68" rx="32" ry="19" fill="url(#hl-mystery-purple)" transform="rotate(-25 78 68)"/>
+  <circle cx="128" cy="62" r="7" fill="#FFFFFF" opacity="0.85"/>
+
+</svg>

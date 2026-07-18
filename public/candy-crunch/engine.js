@@ -144,236 +144,158 @@ class AILevelEngine {
 /* ═══════════════════════════════════════════════════════════════
    §3  CANDY RENDERER — 4D high-fidelity SVGs
 ═══════════════════════════════════════════════════════════════ */
+/**
+ * CandyRenderer — uses professional SVG files from D:\candy-svg-set-v2
+ * (now copied into public/candy-crunch/).
+ * Falls back to inline SVG only for timer overlay and blockers.
+ */
 class CandyRenderer {
   /**
-   * Returns an SVG <string> for the given color + type.
-   * Each candy is a self-contained SVG with defs (radialGradients + filters).
+   * SVG_CACHE — maps "key" → raw SVG text string.
+   * Preloaded by CandyRenderer.preload() at startup.
    */
-  static render(color, type = CANDY_TYPES.NORMAL, extra = {}) {
-    const p = COLOR_PALETTE[color] || COLOR_PALETTE.red;
-    const id = `${color}_${type}_${Math.random().toString(36).slice(2,6)}`;
-    const defs = CandyRenderer._defs(p, id);
-    const shape = CandyRenderer._shape(color, type, id, p, extra);
-    const highlights = CandyRenderer._highlights(color, type, id);
-    const specialOverlay = CandyRenderer._specialOverlay(type, id, p);
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="width:100%;height:100%;display:block;filter:drop-shadow(0 4px 8px ${p.glow})">
-      <defs>${defs}</defs>
-      ${shape}${highlights}${specialOverlay}
-    </svg>`;
+  static _cache = {};
+  static _loaded = false;
+
+  /** Call once at startup — fetches all 42 SVGs in parallel */
+  static async preload() {
+    const files = [
+      'basic_red','basic_orange','basic_yellow','basic_green','basic_blue','basic_purple',
+      'striped_red','striped_orange','striped_yellow','striped_green','striped_blue','striped_purple',
+      'wrapped_red','wrapped_orange','wrapped_yellow','wrapped_green','wrapped_blue','wrapped_purple',
+      'special_bomb_red','special_bomb_orange','special_bomb_yellow','special_bomb_green','special_bomb_blue','special_bomb_purple',
+      'special_fish_red','special_fish_orange','special_fish_yellow','special_fish_green','special_fish_blue','special_fish_purple',
+      'special_swirl_red','special_swirl_orange','special_swirl_yellow','special_swirl_green','special_swirl_blue','special_swirl_purple',
+      'special_mystery_red','special_mystery_orange','special_mystery_yellow','special_mystery_green','special_mystery_blue','special_mystery_purple',
+    ];
+
+    await Promise.all(files.map(async key => {
+      try {
+        const resp = await fetch(`/candy-crunch/${key}.svg`);
+        if (resp.ok) {
+          let text = await resp.text();
+          // Make SVG fill its container and add drop-shadow
+          text = text.replace(
+            '<svg ',
+            '<svg style="width:100%;height:100%;display:block;overflow:visible;" '
+          );
+          CandyRenderer._cache[key] = text;
+        }
+      } catch(e) { /* silently skip if not found */ }
+    }));
+    CandyRenderer._loaded = true;
   }
 
-  static _defs(p, id) {
-    return `
-      <radialGradient id="rg_${id}" cx="35%" cy="28%" r="65%">
-        <stop offset="0%"   stop-color="${p.light}"/>
-        <stop offset="28%"  stop-color="${p.primary}"/>
-        <stop offset="70%"  stop-color="${p.mid}"/>
-        <stop offset="100%" stop-color="${p.dark}"/>
-      </radialGradient>
-      <radialGradient id="rg2_${id}" cx="60%" cy="70%" r="50%">
-        <stop offset="0%"   stop-color="${p.dark}" stop-opacity="0.5"/>
-        <stop offset="100%" stop-color="${p.dark}" stop-opacity="0"/>
-      </radialGradient>
-      <filter id="blur_${id}" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="1.2"/>
-      </filter>
-      <filter id="glow_${id}" x="-30%" y="-30%" width="160%" height="160%">
-        <feGaussianBlur stdDeviation="3" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>`;
-  }
-
-  static _shape(color, type, id, p, extra) {
-    // Each color has a unique 4D shape
-    switch (color) {
-      // ── Red: Jelly Bean ───────────────────────────────────────
-      case 'red':
-        return `
-          <g filter="url(#glow_${id})">
-            <path d="M 28,32 C 10,44 14,76 44,78 C 70,80 84,58 76,36 C 68,14 46,20 28,32 Z"
-                  fill="url(#rg_${id})" stroke="${p.mid}" stroke-width="1.5"/>
-            <path d="M 28,32 C 10,44 14,76 44,78 C 70,80 84,58 76,36 C 68,14 46,20 28,32 Z"
-                  fill="url(#rg2_${id})"/>
-          </g>`;
-      // ── Orange: Rounded Lozenge ───────────────────────────────
-      case 'orange':
-        return `
-          <g filter="url(#glow_${id})">
-            <rect x="23" y="13" width="54" height="74" rx="27" fill="url(#rg_${id})" stroke="${p.mid}" stroke-width="1.5"/>
-            <rect x="23" y="13" width="54" height="74" rx="27" fill="url(#rg2_${id})"/>
-          </g>`;
-      // ── Yellow: Teardrop / Crown ──────────────────────────────
-      case 'yellow':
-        return `
-          <g filter="url(#glow_${id})">
-            <path d="M50,12 C26,46 18,66 18,74 C18,87 32,92 50,92 C68,92 82,87 82,74 C82,66 74,46 50,12 Z"
-                  fill="${p.mid}" stroke="${p.mid}" stroke-width="1"/>
-            <path d="M50,18 C28,50 22,68 22,74 C22,84 34,88 50,88 C66,88 78,84 78,74 C78,68 72,50 50,18 Z"
-                  fill="url(#rg_${id})"/>
-            <path d="M50,18 C28,50 22,68 22,74 C22,84 34,88 50,88 C66,88 78,84 78,74 C78,68 72,50 50,18 Z"
-                  fill="url(#rg2_${id})"/>
-          </g>`;
-      // ── Green: Rounded Cube ───────────────────────────────────
-      case 'green':
-        return `
-          <g filter="url(#glow_${id})">
-            <rect x="16" y="18" width="68" height="64" rx="16" fill="url(#rg_${id})" stroke="${p.mid}" stroke-width="1.5"/>
-            <rect x="16" y="18" width="68" height="64" rx="16" fill="url(#rg2_${id})"/>
-          </g>`;
-      // ── Blue: 3D Sphere with equatorial band ─────────────────
-      case 'blue':
-        return `
-          <g filter="url(#glow_${id})">
-            <circle cx="50" cy="50" r="40" fill="url(#rg_${id})" stroke="${p.mid}" stroke-width="1.5"/>
-            <circle cx="50" cy="50" r="40" fill="url(#rg2_${id})"/>
-            <path d="M 10,50 Q 50,64 90,50 Q 50,56 10,50 Z" fill="${p.primary}" opacity="0.7"/>
-            <line x1="10" y1="50" x2="90" y2="50" stroke="${p.light}" stroke-width="2.5" stroke-dasharray="none" opacity="0.6"/>
-          </g>`;
-      // ── Purple: Bumpy Flower ──────────────────────────────────
-      case 'purple':
-        return `
-          <g filter="url(#glow_${id})">
-            <g fill="url(#rg_${id})" stroke="${p.mid}" stroke-width="0.8">
-              <circle cx="50" cy="50" r="22"/>
-              <circle cx="50" cy="26" r="14"/>
-              <circle cx="71" cy="38" r="14"/>
-              <circle cx="71" cy="62" r="14"/>
-              <circle cx="50" cy="74" r="14"/>
-              <circle cx="29" cy="62" r="14"/>
-              <circle cx="29" cy="38" r="14"/>
-            </g>
-            <circle cx="50" cy="50" r="22" fill="url(#rg2_${id})"/>
-          </g>`;
-      default: return `<circle cx="50" cy="50" r="40" fill="url(#rg_${id})"/>`;
-    }
-  }
-
-  static _highlights(color, type, id) {
-    // Each candy gets a distinct top-left specular highlight + inner sheen
-    switch (color) {
-      case 'red':
-        return `
-          <path d="M 34,37 C 26,44 27,58 35,56 C 30,50 30,44 34,39 Z" fill="white" opacity="0.72" filter="url(#blur_${id})"/>
-          <ellipse cx="62" cy="44" rx="3" ry="5" fill="white" opacity="0.4" transform="rotate(25 62 44)"/>`;
-      case 'orange':
-        return `
-          <ellipse cx="38" cy="32" rx="5" ry="10" fill="white" opacity="0.55" transform="rotate(-10 38 32)" filter="url(#blur_${id})"/>
-          <ellipse cx="62" cy="25" rx="3" ry="6" fill="white" opacity="0.3" transform="rotate(10 62 25)"/>`;
-      case 'yellow':
-        return `
-          <path d="M 44,34 C 37,48 34,64 37,74 C 39,74 37,58 44,44 Z" fill="white" opacity="0.65" filter="url(#blur_${id})"/>
-          <ellipse cx="62" cy="42" rx="3" ry="5" fill="white" opacity="0.4"/>`;
-      case 'green':
-        return `
-          <rect x="22" y="22" width="52" height="8" rx="4" fill="white" opacity="0.4" filter="url(#blur_${id})"/>
-          <rect x="22" y="28" width="10" height="48" rx="5" fill="white" opacity="0.3"/>`;
-      case 'blue':
-        return `
-          <circle cx="38" cy="36" r="11" fill="white" opacity="0.48" filter="url(#blur_${id})"/>
-          <circle cx="32" cy="30" r="5" fill="white" opacity="0.6"/>`;
-      case 'purple':
-        return `
-          <circle cx="46" cy="22" r="5" fill="white" opacity="0.45" filter="url(#blur_${id})"/>
-          <circle cx="26" cy="34" r="5" fill="white" opacity="0.45" filter="url(#blur_${id})"/>
-          <circle cx="50" cy="50" r="10" fill="white" opacity="0.15"/>`;
-      default: return '';
-    }
-  }
-
-  static _specialOverlay(type, id, p) {
-    switch (type) {
-      // Horizontal stripes
+  /**
+   * _key — maps (color, candyType) → SVG file key.
+   */
+  static _key(color, type) {
+    switch(type) {
       case CANDY_TYPES.STRIPE_H:
-        return `
-          <g opacity="0.88" stroke="white" stroke-linecap="round">
-            <line x1="12" y1="36" x2="88" y2="36" stroke-width="5"/>
-            <line x1="10" y1="50" x2="90" y2="50" stroke-width="6"/>
-            <line x1="12" y1="64" x2="88" y2="64" stroke-width="5"/>
-          </g>`;
-      // Vertical stripes
-      case CANDY_TYPES.STRIPE_V:
-        return `
-          <g opacity="0.88" stroke="white" stroke-linecap="round">
-            <line x1="36" y1="12" x2="36" y2="88" stroke-width="5"/>
-            <line x1="50" y1="10" x2="50" y2="90" stroke-width="6"/>
-            <line x1="64" y1="12" x2="64" y2="88" stroke-width="5"/>
-          </g>`;
-      // Wrapped — diamond outer casing
-      case CANDY_TYPES.WRAPPED:
-        return `
-          <g opacity="0.85">
-            <rect x="20" y="20" width="60" height="60" rx="10" fill="rgba(255,255,255,0.10)"
-                  stroke="rgba(255,255,255,0.8)" stroke-width="3" transform="rotate(45 50 50)"/>
-            <circle cx="50" cy="50" r="6" fill="white" opacity="0.7"/>
-            <line x1="50" y1="15" x2="50" y2="85" stroke="white" stroke-width="2" opacity="0.5" stroke-dasharray="4,3"/>
-            <line x1="15" y1="50" x2="85" y2="50" stroke="white" stroke-width="2" opacity="0.5" stroke-dasharray="4,3"/>
-          </g>`;
-      // Color bomb (chocolate ball with sprinkles)
-      case CANDY_TYPES.BOMB:
-        return `
-          <g>
-            <circle cx="50" cy="50" r="42" fill="url(#rg_${id})" stroke="#3d2010" stroke-width="2"/>
-            <rect x="32" y="26" width="11" height="5" rx="2.5" fill="#ff2244" transform="rotate(25 32 26)"/>
-            <rect x="55" y="28" width="11" height="5" rx="2.5" fill="#00eecc" transform="rotate(-35 55 28)"/>
-            <rect x="25" y="52" width="11" height="5" rx="2.5" fill="#ffe000" transform="rotate(55 25 52)"/>
-            <rect x="48" y="44" width="11" height="5" rx="2.5" fill="#ff7700" transform="rotate(-8 48 44)"/>
-            <rect x="62" y="58" width="11" height="5" rx="2.5" fill="#cc22ff" transform="rotate(42 62 58)"/>
-            <rect x="44" y="68" width="11" height="5" rx="2.5" fill="#0099ff" transform="rotate(-28 44 68)"/>
-            <rect x="28" y="36" width="11" height="5" rx="2.5" fill="white" transform="rotate(78 28 36)"/>
-            <circle cx="38" cy="38" r="9" fill="white" opacity="0.35"/>
-          </g>`;
-      // Swedish fish
-      case CANDY_TYPES.FISH:
-        return `
-          <g>
-            <path d="M 14,50 C 26,34 48,34 68,42 L 84,28 L 78,50 L 84,72 L 68,58 C 48,66 26,66 14,50 Z"
-                  fill="${p.primary}" stroke="${p.mid}" stroke-width="1.5"/>
-            <circle cx="28" cy="46" r="3.5" fill="white" opacity="0.7"/>
-            <line x1="52" y1="36" x2="52" y2="64" stroke="${p.light}" stroke-width="2" opacity="0.5"/>
-            <line x1="60" y1="34" x2="60" y2="66" stroke="${p.light}" stroke-width="1.5" opacity="0.4"/>
-          </g>`;
-      default: return '';
+      case CANDY_TYPES.STRIPE_V:  return `striped_${color}`;
+      case CANDY_TYPES.WRAPPED:   return `wrapped_${color}`;
+      case CANDY_TYPES.BOMB:      return `special_bomb_${color}`;
+      case CANDY_TYPES.FISH:      return `special_fish_${color}`;
+      case CANDY_TYPES.TIMER:     return `basic_${color}`;
+      default:                    return `basic_${color}`;
     }
   }
 
-  /** Timer bomb overlay — drawn ON TOP of normal candy SVG */
-  static renderTimer(color, countdown) {
-    const base = CandyRenderer.render(color, CANDY_TYPES.TIMER);
-    return base.replace('</svg>',
-      `<circle cx="50" cy="50" r="22" fill="rgba(20,10,30,0.85)" stroke="white" stroke-width="2"/>
-       <text x="50" y="57" font-size="20" font-weight="900" fill="${countdown <= 3 ? '#ff2244' : 'white'}"
-             font-family="Fredoka One,sans-serif" text-anchor="middle">${countdown}</text>
-      </svg>`);
+  /**
+   * render — returns HTML string for the candy cell-inner.
+   * If file is in cache, uses that. Otherwise falls back to inline SVG.
+   */
+  static render(color, type = CANDY_TYPES.NORMAL) {
+    const key = CandyRenderer._key(color, type);
+    if (CandyRenderer._cache[key]) {
+      return CandyRenderer._addGlow(CandyRenderer._cache[key], color);
+    }
+    // Fallback inline (used before preload completes)
+    return CandyRenderer._inlineFallback(color, type);
   }
 
-  /** Blocker SVGs */
+  /** Wraps the SVG string with a glow drop-shadow matching the candy colour */
+  static _addGlow(svgText, color) {
+    const p = COLOR_PALETTE[color] || {};
+    const glow = p.glow || 'rgba(255,255,255,0.5)';
+    return svgText.replace(
+      /style="([^"]*width:100%[^"]*)"/,
+      `style="$1;filter:drop-shadow(0 4px 10px ${glow})"`
+    );
+  }
+
+  /** Timer bomb — base candy + countdown circle overlay */
+  static renderTimer(color, countdown) {
+    const base = CandyRenderer.render(color, CANDY_TYPES.NORMAL);
+    const timerOverlay = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"
+           style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+        <circle cx="100" cy="120" r="38" fill="rgba(20,10,30,0.88)" stroke="white" stroke-width="3"/>
+        <text x="100" y="132" font-size="38" font-weight="900"
+              fill="${countdown <= 3 ? '#ff2244' : '#ffe066'}"
+              font-family="Fredoka One,sans-serif" text-anchor="middle">${countdown}</text>
+      </svg>`;
+    return `<div style="position:relative;width:100%;height:100%;">${base}${timerOverlay}</div>`;
+  }
+
+  /** Blocker SVGs — still inline for simplicity */
   static renderBlocker(type, strength) {
     switch (type) {
-      case BLOCKER_TYPES.FROSTING:
-        const fill2 = strength === 2 ? '#e0f7fa' : '#ffffff';
+      case BLOCKER_TYPES.FROSTING: {
+        const fill2   = strength === 2 ? '#d1f0f7' : '#ffffff';
         const stroke2 = strength === 2 ? '#00acc1' : '#ffa726';
-        return `<svg viewBox="0 0 100 100"><rect x="8" y="8" width="84" height="84" rx="14" fill="${fill2}" stroke="${stroke2}" stroke-width="5"/>
-          <path d="M22,50 Q50,12 78,50 Q50,88 22,50 Z" fill="rgba(255,255,255,0.6)"/>
-          <circle cx="50" cy="50" r="9" fill="#e91e63"/>
-          <path d="M30,50 Q50,28 70,50" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="3"/>
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" style="width:100%;height:100%;display:block;">
+          <ellipse cx="100" cy="180" rx="55" ry="12" fill="rgba(0,0,0,0.2)"/>
+          <rect x="25" y="25" width="150" height="150" rx="28" fill="${fill2}" stroke="${stroke2}" stroke-width="8"/>
+          <path d="M45,100 Q100,30 155,100 Q100,170 45,100 Z" fill="rgba(255,255,255,0.55)"/>
+          <circle cx="100" cy="100" r="20" fill="#e91e63"/>
+          <circle cx="80" cy="65" r="14" fill="rgba(255,255,255,0.6)"/>
         </svg>`;
+      }
       case BLOCKER_TYPES.CHOCOLATE:
-        return `<svg viewBox="0 0 100 100"><rect x="8" y="8" width="84" height="84" rx="10" fill="#4e2f1d" stroke="#270f08" stroke-width="4"/>
-          <rect x="16" y="16" width="31" height="31" rx="4" fill="#5d3a24"/><rect x="53" y="16" width="31" height="31" rx="4" fill="#5d3a24"/>
-          <rect x="16" y="53" width="31" height="31" rx="4" fill="#5d3a24"/><rect x="53" y="53" width="31" height="31" rx="4" fill="#5d3a24"/>
-          <circle cx="32" cy="32" r="6" fill="rgba(255,255,255,0.2)"/>
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" style="width:100%;height:100%;display:block;">
+          <ellipse cx="100" cy="184" rx="55" ry="12" fill="rgba(0,0,0,0.25)"/>
+          <rect x="18" y="18" width="164" height="164" rx="18" fill="#4e2f1d" stroke="#27100a" stroke-width="6"/>
+          <rect x="30" y="30" width="62" height="62" rx="8" fill="#5d3a24"/>
+          <rect x="108" y="30" width="62" height="62" rx="8" fill="#5d3a24"/>
+          <rect x="30" y="108" width="62" height="62" rx="8" fill="#5d3a24"/>
+          <rect x="108" y="108" width="62" height="62" rx="8" fill="#5d3a24"/>
+          <circle cx="61" cy="61" r="12" fill="rgba(255,255,255,0.18)"/>
         </svg>`;
       case BLOCKER_TYPES.LICORICE:
-        return `<svg viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" fill="#1a1a1a" stroke="#000" stroke-width="4"/>
-          <circle cx="50" cy="50" r="32" fill="none" stroke="#333" stroke-width="5"/>
-          <circle cx="50" cy="50" r="20" fill="none" stroke="#4d4d4d" stroke-width="4"/>
-          <circle cx="50" cy="50" r="9" fill="#1a1a1a" stroke="#555" stroke-width="2"/>
-          <circle cx="38" cy="36" r="6" fill="white" opacity="0.25"/>
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" style="width:100%;height:100%;display:block;">
+          <ellipse cx="100" cy="184" rx="55" ry="12" fill="rgba(0,0,0,0.25)"/>
+          <circle cx="100" cy="100" r="82" fill="#1a1a1a" stroke="#000" stroke-width="6"/>
+          <circle cx="100" cy="100" r="60" fill="none" stroke="#333" stroke-width="8"/>
+          <circle cx="100" cy="100" r="38" fill="none" stroke="#4d4d4d" stroke-width="7"/>
+          <circle cx="100" cy="100" r="16" fill="#1a1a1a" stroke="#666" stroke-width="4"/>
+          <circle cx="72" cy="68" r="12" fill="white" opacity="0.22"/>
         </svg>`;
       default:
-        return `<svg viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="#666"/></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" style="width:100%;height:100%;display:block;">
+          <rect x="20" y="20" width="160" height="160" rx="20" fill="#666"/>
+        </svg>`;
     }
+  }
+
+  /** Inline fallback SVG for when cache hasn't loaded yet */
+  static _inlineFallback(color, type) {
+    const p = COLOR_PALETTE[color] || COLOR_PALETTE.red;
+    const id = `fb_${color}_${Math.random().toString(36).slice(2,5)}`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"
+       style="width:100%;height:100%;display:block;filter:drop-shadow(0 4px 8px ${p.glow})">
+      <defs>
+        <radialGradient id="fbg_${id}" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="${p.light}"/>
+          <stop offset="50%" stop-color="${p.primary}"/>
+          <stop offset="100%" stop-color="${p.dark}"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="100" cy="180" rx="55" ry="12" fill="rgba(0,0,0,0.2)"/>
+      <circle cx="100" cy="100" r="78" fill="url(#fbg_${id})" stroke="${p.mid}" stroke-width="3"/>
+      <ellipse cx="78" cy="68" rx="30" ry="18" fill="rgba(255,255,255,0.55)" transform="rotate(-25 78 68)"/>
+      <circle cx="128" cy="62" r="10" fill="white" opacity="0.8"/>
+    </svg>`;
   }
 }
 
@@ -1502,8 +1424,13 @@ class GameController {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   §9  BOOTSTRAP
+   §9  BOOTSTRAP — preload all SVGs then start the game
 ═══════════════════════════════════════════════════════════════ */
-window._game = new GameController();
+CandyRenderer.preload().then(() => {
+  window._game = new GameController();
+}).catch(() => {
+  // If preload fails for any reason, still boot the game (uses fallback renderer)
+  window._game = new GameController();
+});
 
 }); // DOMContentLoaded

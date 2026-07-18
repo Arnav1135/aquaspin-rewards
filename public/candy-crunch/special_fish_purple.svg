@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <radialGradient id="body-fish-purple" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#DDB3FF"/>
+    <stop offset="45%" stop-color="#9B4FD1"/>
+    <stop offset="100%" stop-color="#61258E"/>
+  </radialGradient>
+  <radialGradient id="hl-fish-purple" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-fish-purple" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<ellipse cx="100" cy="176" rx="55" ry="12" fill="url(#shadow-fish-purple)"/>
+
+  <path d="M40 100 C50 70 90 55 130 65 C155 72 175 88 178 100
+           C175 112 155 128 130 135 C90 145 50 130 40 100 Z"
+        fill="url(#body-fish-purple)" stroke="#61258E" stroke-width="3"/>
+  <path d="M40 100 L18 80 L26 100 L18 120 Z" fill="#61258E"/>
+  <circle cx="150" cy="90" r="7" fill="#FFFFFF"/>
+  <circle cx="152" cy="90" r="3.5" fill="#222"/>
+  <ellipse cx="90" cy="85" rx="26" ry="14" fill="url(#hl-fish-purple)" transform="rotate(-15 90 85)"/>
+
+</svg>

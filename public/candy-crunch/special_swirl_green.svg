@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<defs>
+  <radialGradient id="body-swirl-green" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="#B0EE8E"/>
+    <stop offset="45%" stop-color="#5FBF3F"/>
+    <stop offset="100%" stop-color="#337A1F"/>
+  </radialGradient>
+  <radialGradient id="hl-swirl-green" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="shadow-swirl-green" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000000" stop-opacity="0.28"/>
+    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<ellipse cx="100" cy="176" rx="55" ry="12" fill="url(#shadow-swirl-green)"/>
+
+  <rect x="35" y="35" width="130" height="130" rx="30" fill="url(#body-swirl-green)" stroke="#337A1F" stroke-width="3" />
+  <path d="M100 100 m0,-52 a52,52 0 0,1 36,90 a33,33 0 0,1 -57,-14 a17,17 0 0,1 23,-12"
+        fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+  <ellipse cx="78" cy="68" rx="28" ry="17" fill="url(#hl-swirl-green)" transform="rotate(-25 78 68)"/>
+  <circle cx="126" cy="62" r="6" fill="#FFFFFF" opacity="0.85"/>
+
+</svg>

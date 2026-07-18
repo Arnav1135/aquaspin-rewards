@@ -383,10 +383,13 @@ export class GameController {
     this.particles.burst(cx, cy, cell.candyColor, 12);
 
     // Fade and shrink
-    cell.inner.animate([
+    const anim = cell.inner.animate([
       { transform: 'scale(1)', opacity: 1 },
       { transform: 'scale(0)', opacity: 0 }
-    ], { duration: ANIM.CLEAR, fill: 'forwards' }).onfinish = () => {
+    ], { duration: ANIM.CLEAR, fill: 'forwards' });
+    
+    anim.onfinish = () => {
+      anim.cancel();
       cell.type = CELL_TYPES.NORMAL;
       cell.candyColor = null;
       cell.candyType = CANDY_TYPES.NORMAL;

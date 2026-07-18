@@ -382,6 +382,11 @@ export class GameController {
     // Burst particles
     this.particles.burst(cx, cy, cell.candyColor, 12);
 
+    // Logical clear immediately to prevent race conditions with GravityEngine
+    cell.type = CELL_TYPES.NORMAL;
+    cell.candyColor = null;
+    cell.candyType = CANDY_TYPES.NORMAL;
+
     // Fade and shrink
     const anim = cell.inner.animate([
       { transform: 'scale(1)', opacity: 1 },
@@ -390,9 +395,6 @@ export class GameController {
     
     anim.onfinish = () => {
       anim.cancel();
-      cell.type = CELL_TYPES.NORMAL;
-      cell.candyColor = null;
-      cell.candyType = CANDY_TYPES.NORMAL;
       cell.clearing = false;
       cell.el.classList.remove('clearing');
       

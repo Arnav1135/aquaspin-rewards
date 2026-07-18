@@ -8,16 +8,50 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <!-- HUD / Header -->
   <div class="header">
-    <h1>CANDY CRUSH CLONE</h1>
+    <div class="hud-top">
+      <h1 class="logo-text">CANDY CRUNCH</h1>
+      <div id="objective-container" class="objective-box">
+        <span class="objective-title">OBJECTIVE:</span>
+        <span id="objective-text">REACH THE TARGET!</span>
+      </div>
+    </div>
+    
     <div class="scoreBoard">
-      <h3>SCORE:</h3>
-      <h1 id="score">0</h1>
+      <div class="hud-item">
+        <span class="hud-label">LEVEL</span>
+        <span id="level-val" class="hud-value">1</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">SCORE</span>
+        <span id="score-val" class="hud-value">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">TARGET</span>
+        <span id="target-val" class="hud-value">1500</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">MOVES</span>
+        <span id="moves-val" class="hud-value">25</span>
+      </div>
     </div>
   </div>
+
+  <!-- Game Board Area -->
   <div class="grid-wrapper">
     <div class="grid"></div>
   </div>
+
+  <!-- Win/Lose Modals -->
+  <div id="level-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="modal-title">LEVEL COMPLETE!</h2>
+      <p id="modal-desc">You've reached the target score!</p>
+      <button id="modal-btn" class="btn-primary">NEXT LEVEL</button>
+    </div>
+  </div>
+
   <script src="script.js"></script>
   <script>
     // Security redirect for iframe enforcement

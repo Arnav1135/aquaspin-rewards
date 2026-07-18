@@ -81,9 +81,9 @@ const config: Config = {
 
         // Semantic text tokens
         text: {
-          primary:   '#16213E',
-          secondary: '#4A90D9',
-          muted:     '#6aaae4',
+          primary:   'var(--text-heading)',
+          secondary: 'var(--text-main)',
+          muted:     '#8ba0cd',
         },
 
         // OLD navy aliases kept so existing pages don't break

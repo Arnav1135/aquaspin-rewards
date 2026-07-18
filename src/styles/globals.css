@@ -22,6 +22,10 @@
   --c-scrim:        rgba(132, 146, 196, 0.2);
   --c-scrim-heavy:  rgba(132, 146, 196, 0.5);
 
+  /* Semantic Text Colors */
+  --text-main:      var(--c-navy);
+  --text-heading:   var(--c-navy-dark);
+
   /* Card dynamic backgrounds */
   --card-navy-bg:   #8492C4;
   --card-white-bg:  rgba(194, 222, 250, 0.4);
@@ -49,28 +53,34 @@
 }
 
 .dark {
-  /* Flipped colors in dark mode */
-  --c-navy:         #FFFFFF;
-  --c-navy-dark:    #e1eff8;
-  --c-navy-deeper:  #cfe5f5;
-  --c-offwhite:     #2a3b6c;
-  --c-app-bg:       linear-gradient(160deg, #1c2642 0%, #4a5b8c 100%);
-  --c-scrim:        rgba(0, 0, 0, 0.5);
-  --c-scrim-heavy:  rgba(0, 0, 0, 0.8);
+  /* High-Contrast Dark Mode */
+  --c-navy:         #5a6b9c; /* Keeps buttons visible */
+  --c-navy-dark:    #4a5b8c;
+  --c-navy-deeper:  #2a3b6c;
+  --c-sky:          #62C1E5;
+  --c-sky-pale:     #1e2d52;
+  --c-offwhite:     #FFFFFF; /* Keeps button text white */
+  --c-app-bg:       linear-gradient(160deg, #0A1128 0%, #16213E 100%);
+  --c-scrim:        rgba(0, 0, 0, 0.6);
+  --c-scrim-heavy:  rgba(0, 0, 0, 0.85);
+
+  /* Semantic Text Colors */
+  --text-main:      #E4EEF9;
+  --text-heading:   #FFFFFF;
 
   /* Card overrides */
-  --card-navy-bg:   linear-gradient(135deg, #4a5b8c 0%, #5a6b9c 100%);
-  --card-white-bg:  rgba(42, 59, 108, 0.6);
-  --card-sky-bg:    linear-gradient(135deg, rgba(102, 189, 242, 0.2) 0%, rgba(42, 59, 108, 0.8) 100%);
+  --card-navy-bg:   linear-gradient(135deg, #1e2d52 0%, #2a3b6c 100%);
+  --card-white-bg:  rgba(30, 45, 82, 0.6);
+  --card-sky-bg:    linear-gradient(135deg, rgba(98, 193, 229, 0.15) 0%, rgba(30, 45, 82, 0.8) 100%);
   --border-white:   rgba(255, 255, 255, 0.15);
-  --border-sky:     rgba(102, 189, 242, 0.25);
-  --text-white-bg:  #FFFFFF;
-  --text-sky-bg:    #c2e7fa;
+  --border-sky:     rgba(98, 193, 229, 0.25);
+  --text-white-bg:  #E4EEF9;
+  --text-sky-bg:    #FFFFFF;
 
   /* Shadows override to look more subtle in dark mode */
-  --shadow-card-navy: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-card-sky:  0 8px 32px rgba(0,0,0,0.4);
-  --shadow-card-lift: 0 12px 40px rgba(0,0,0,0.6);
+  --shadow-card-navy: 0 8px 32px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.05);
+  --shadow-card-sky:  0 8px 32px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.05);
+  --shadow-card-lift: 0 12px 40px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.1);
 }
 
 /* ── Base Reset & Typography ────────────────────────────────────────────── */
@@ -87,7 +97,7 @@
     font-family: 'Poppins', 'Inter', system-ui, sans-serif;
     background: var(--c-app-bg);
     background-attachment: fixed;
-    color: var(--c-navy);
+    color: var(--text-main);
     line-height: 1.6;
     min-height: 100vh;
     min-height: 100dvh;
@@ -115,7 +125,7 @@
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.02em;
-    color: var(--c-navy-dark);
+    color: var(--text-heading);
   }
 }
 

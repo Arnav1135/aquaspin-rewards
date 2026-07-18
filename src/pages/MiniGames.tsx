@@ -38,6 +38,7 @@ import CandyCrushGame from '@/components/games/CandyCrushGame';
 import { AGEA, GameGenre, VisualStyle } from '@/engine/AIGameEngineArchitect';
 import { AIGameEnginePanel } from '@/components/AIGameEnginePanel';
 import { Cpu } from 'lucide-react';
+import { useAuthStore } from '@/features/authStore';
 
 // ─────────────────────────────────────────────────────────────
 // Game catalogue
@@ -224,6 +225,8 @@ export function MiniGames() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  
+  const isOwner = useAuthStore(state => state.isOwner);
 
   useEffect(() => {
     const handleFsChange = () => {
@@ -335,13 +338,15 @@ export function MiniGames() {
 
           <div className="flex items-center gap-3">
             {/* AI Control Panel Toggle Button */}
-            <button
-              onClick={() => setShowPanel(!showPanel)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-cyan-400 bg-[#090b11]/80 hover:bg-[#090b11] border border-cyan-500/30 hover:border-cyan-500/60 shadow-lg shadow-cyan-500/5 transition-all"
-            >
-              <Cpu size={14} className="animate-pulse" />
-              AGE Architect Panel
-            </button>
+            {isOwner && (
+              <button
+                onClick={() => setShowPanel(!showPanel)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-cyan-400 bg-[#090b11]/80 hover:bg-[#090b11] border border-cyan-500/30 hover:border-cyan-500/60 shadow-lg shadow-cyan-500/5 transition-all"
+              >
+                <Cpu size={14} className="animate-pulse" />
+                AGE Architect Panel
+              </button>
+            )}
 
             {/* Search */}
             <div

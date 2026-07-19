@@ -39,12 +39,14 @@ function Rocket3D({
   multiplier, 
   crashed, 
   elapsed, 
-  onPathUpdate 
+  onPathUpdate,
+  gameState
 }: { 
   multiplier: number, 
   crashed: boolean, 
   elapsed: number,
-  onPathUpdate: (p: THREE.Vector3) => void 
+  onPathUpdate: (p: THREE.Vector3) => void,
+  gameState: string
 }) {
   const rocketGroup = useRef<any>(null);
   const rigidBodyRef = useRef<any>(null);
@@ -59,14 +61,18 @@ function Rocket3D({
 
   useFrame((state) => {
     if (!crashed && rocketGroup.current && rigidBodyRef.current) {
+      const isPreparing = gameState === 'betting' || gameState === 'countdown';
+      const actualElapsed = isPreparing ? 0 : elapsed;
+      const actualMult = isPreparing ? 1.0 : multiplier;
+
       // Calculate current ideal position based on exponential curve
-      const idealX = elapsed * scaleX - 10; // offset so it starts left
-      const idealY = (multiplier - 1.0) * scaleY - 2; // offset so it starts bottom
+      const idealX = actualElapsed * scaleX - 10; // offset so it starts left
+      const idealY = (actualMult - 1.0) * scaleY - 2; // offset so it starts bottom
       
       const newPos = new THREE.Vector3(idealX, idealY, 0);
       
       // Calculate pitch angle by looking slightly ahead
-      const nextElapsed = elapsed + 0.1;
+      const nextElapsed = actualElapsed + 0.1;
       const nextMult = Math.pow(Math.E, 0.08 * nextElapsed);
       const nextX = nextElapsed * scaleX - 10;
       const nextY = (nextMult - 1.0) * scaleY - 2;
@@ -79,7 +85,8 @@ function Rocket3D({
       rigidBodyRef.current.setRotation(quat, true);
       
       // Add a slight wobble for turbulence
-      const wobble = Math.sin(state.clock.elapsedTime * 10) * 0.1;
+      let wobble = Math.sin(state.clock.elapsedTime * 10) * 0.1;
+      if (gameState === 'countdown') wobble += (Math.random() - 0.5) * 0.15; // shake during countdown
       rocketGroup.current.position.y = wobble;
       
       onPathUpdate(newPos);
@@ -100,13 +107,13 @@ function Rocket3D({
   return (
     <RigidBody ref={rigidBodyRef} type="kinematicPosition" colliders="hull" restitution={0.5}>
       <group ref={rocketGroup}>
-        <Trail width={1} color={crashed ? '#ef4444' : '#f97316'} length={20} attenuation={(t) => t * t}>
+        {gameState === 'climbing' && <Trail width={1} color={crashed ? '#ef4444' : '#f97316'} length={20} attenuation={(t) => t * t}>
           {/* Exhaust Nozzle to anchor the trail */}
           <mesh position={[-0.8, 0, 0]}>
              <boxGeometry args={[0.1, 0.1, 0.1]} />
              <meshBasicMaterial transparent opacity={0} />
           </mesh>
-        </Trail>
+        </Trail>}
         
         {/* Main Hull */}
         <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
@@ -143,11 +150,19 @@ function Rocket3D({
         </mesh>
         
         {/* Dynamic Engine Glow/Flame */}
-        {!crashed && (
+        {gameState === 'climbing' && (
           <mesh position={[-1.2, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <coneGeometry args={[0.2, 1.5, 16]} />
             <meshBasicMaterial color="#f97316" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
             <pointLight color="#f97316" intensity={2} distance={5} />
+          </mesh>
+        )}
+        {/* Ignition Spark during countdown */}
+        {gameState === 'countdown' && (
+          <mesh position={[-0.9, 0, 0]}>
+            <sphereGeometry args={[0.2, 8, 8]} />
+            <meshBasicMaterial color="#ffaa00" transparent opacity={0.6 + Math.random()*0.4} blending={THREE.AdditiveBlending} />
+            <pointLight color="#ffaa00" intensity={1} distance={2} />
           </mesh>
         )}
       </group>
@@ -534,46 +549,44 @@ export function CrashGame({ onClose }: CrashGameProps) {
         </div>
 
         {gameState === 'countdown' && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-xs uppercase tracking-widest text-orange-400 font-bold animate-pulse">WARPING IGNITION SEQUENCE</p>
-            <motion.h3 
-              key={countdownTicks}
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-8xl font-black text-white font-mono"
-            >
-              {countdownTicks}
-            </motion.h3>
+          <div className="absolute inset-0 bg-transparent z-30 flex flex-col items-center justify-center pointer-events-none">
+            <div className="bg-slate-950/40 backdrop-blur-md px-12 py-8 rounded-3xl border border-cyan-400/20 shadow-[0_0_40px_rgba(0,240,255,0.1)] flex flex-col items-center">
+              <p className="text-sm uppercase tracking-widest text-orange-400 font-bold animate-pulse mb-2">IGNITION SEQUENCE</p>
+              <motion.h3 
+                key={countdownTicks}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-cyan-300 font-mono filter drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]"
+              >
+                T-{countdownTicks}
+              </motion.h3>
+            </div>
           </div>
         )}
 
         <div className="absolute inset-0 z-0">
            <GameEngine3D 
-              enablePhysics={gameState === 'crashed'} // Enable dynamics when crashed
+              enablePhysics={true} // ALWAYS enable dynamics so RigidBody doesn't crash on mount
               cameraPosition={[0, 0, 15]}
               enablePostProcessing={true}
            >
               <GridEnvironment crashed={gameState === 'crashed'} />
               
-              {/* Only show rocket line trail if not in countdown/betting */}
-              {(gameState === 'climbing' || gameState === 'crashed') && (
-                <>
-                  <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
-                  <Rocket3D 
-                    multiplier={multiplier} 
-                    crashed={gameState === 'crashed'} 
-                    elapsed={elapsedSeconds} 
-                    onPathUpdate={handlePathUpdate} 
-                  />
-                  
-                  {gameState === 'crashed' && flightPath.length > 0 && (
-                    <mesh position={flightPath[flightPath.length - 1]}>
-                      <sphereGeometry args={[1.5, 32, 32]} />
-                      <meshBasicMaterial color="#ff4400" transparent opacity={0.6} blending={THREE.AdditiveBlending} />
-                      <pointLight color="#ff0000" intensity={10} distance={20} />
-                    </mesh>
-                  )}
-                </>
+              <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
+              <Rocket3D 
+                multiplier={multiplier} 
+                crashed={gameState === 'crashed'} 
+                elapsed={elapsedSeconds} 
+                onPathUpdate={handlePathUpdate}
+                gameState={gameState}
+              />
+              
+              {gameState === 'crashed' && flightPath.length > 0 && (
+                <mesh position={flightPath[flightPath.length - 1]}>
+                  <sphereGeometry args={[1.5, 32, 32]} />
+                  <meshBasicMaterial color="#ff4400" transparent opacity={0.6} blending={THREE.AdditiveBlending} />
+                  <pointLight color="#ff0000" intensity={10} distance={20} />
+                </mesh>
               )}
               
               <Html center position={[0, 0, 0]} zIndexRange={[100, 0]} className="pointer-events-none">

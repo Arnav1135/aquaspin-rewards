@@ -8,6 +8,7 @@ import { SolvabilityValidator } from './ai/Solvability.js';
 import { FishAI } from './ai/FishAI.js';
 import { HintSystem } from './ai/HintSystem.js';
 import { EventQueue, CascadePredictor } from './core/EventQueue.js';
+import { SpecialEngine } from './core/SpecialEngine.js';
 import { ParticleSystem, VisualEffects } from './visuals/AnimationEngine.js';
 import * as PIXI from 'pixi.js';
 import gsap from 'gsap';
@@ -363,11 +364,27 @@ export class GameController {
     this.isLocked = true;
 
     // Check special combinations
-    const hasCombo = this._resolveCombo(c1, c2);
-    if (hasCombo) {
-      this.moves--;
-      this.movesEl.textContent = this.moves;
-      this._runCascade();
+    const comboBlast = SpecialEngine.resolveSwap(this.board, c1, c2);
+    if (comboBlast) {
+      this._animSwap(c1, c2).then(() => {
+        this.moves--;
+        this.movesEl.textContent = this.moves;
+        
+        VisualEffects.shakeScreen(this.boardEl, 500, 12); // Big shake for special combos
+        
+        comboBlast.forEach(c => {
+          if (!c.clearing && c.hasCandy()) {
+            this.score += 60 * this.cascadeDepth;
+            this._clearCell(c, 'combo');
+          }
+        });
+        
+        this._updateScoreDisplay();
+        
+        setTimeout(() => {
+          this._applyGravity();
+        }, ANIM.CLEAR);
+      });
       return;
     }
 
@@ -389,7 +406,7 @@ export class GameController {
   }
 
   _resolveCombo(c1, c2) {
-    return MatchDetector.detect(this.board, c1, c2).length > 0; // combo wrapper handles validations inside SpecialEngine
+    return SpecialEngine.resolveSwap(this.board, c1, c2) !== null;
   }
 
   _animSwap(c1, c2) {
@@ -495,10 +512,24 @@ export class GameController {
     // Burst particles
     this.particles.burst(cx, cy, cell.candyColor, 12);
 
+    // Get blast radius before we reset the cell properties
+    const specialBlastCells = SpecialEngine.getBlastRadius(this.board, cell);
+
     // Logical clear immediately to prevent race conditions with GravityEngine
     cell.type = CELL_TYPES.NORMAL;
     cell.candyColor = null;
     cell.candyType = CANDY_TYPES.NORMAL;
+
+    // Trigger special blasts
+    if (specialBlastCells.length > 0) {
+      VisualEffects.shakeScreen(this.boardEl, 300, 6);
+      specialBlastCells.forEach(c => {
+        if (!c.clearing && c.hasCandy()) {
+          this.score += 60 * this.cascadeDepth;
+          this._clearCell(c, 'special_blast');
+        }
+      });
+    }
 
     // Fade and shrink (PixiJS)
     gsap.to(cell.sprite.scale, { x: 0, y: 0, duration: ANIM.CLEAR / 1000 });

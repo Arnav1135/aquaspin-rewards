@@ -88,7 +88,7 @@ function AuthInitializer() {
   const { initialize } = useAuthStore();
   useEffect(() => {
     initialize();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
   return null;
 }

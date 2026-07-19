@@ -43,14 +43,14 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
     // Award tokens
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         await (supabase.from('users') as any).update({
           tokens: profile.tokens + earned,
           total_earned: profile.total_earned + earned,
           xp: profile.xp + Math.floor(earned / 2),
         }).eq('id', profile.id);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         await (supabase.from('game_stats') as any).upsert({
           user_id: profile.id,
           games_played: 1,

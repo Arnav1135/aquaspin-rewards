@@ -62,7 +62,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
       if (step >= steps) clearInterval(id);
     }, 30);
     return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [currentMultiplier]);
 
   const startNewGame = async () => {

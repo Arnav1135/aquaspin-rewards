@@ -21,7 +21,7 @@ export function BannerAd({ position = 'bottom', className, clientId, slot }: Ban
     if (!isMockAds && clientId) {
       // Push AdSense ad unit
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
         setLoaded(true);
       } catch {
@@ -69,7 +69,7 @@ export function BannerAd({ position = 'bottom', className, clientId, slot }: Ban
             data-ad-slot={slot ?? 'your-banner-slot-id'}
             data-ad-format="horizontal"
             data-full-width-responsive="true"
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             data-ad-client={clientId ?? (import.meta as any).env.VITE_ADSENSE_CLIENT_ID}
           />
         )

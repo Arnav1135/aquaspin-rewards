@@ -5,9 +5,9 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
 // ── Environment variables ────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string;
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -34,7 +34,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 });
 
 // ── Supabase "any" shorthand for tables not fully typed ──────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const db = supabase as any;
 
 // ── Edge function invoker helper ─────────────────────────────────────────────
@@ -171,7 +171,7 @@ export function subscribeToUserTokens(userId: string, callback: (tokens: number)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (payload: any) => {
         callback(payload.new.tokens);
       }
@@ -200,7 +200,7 @@ export async function claimDailyReward(userId: string, streak: number, tokensToA
 
   if (rewardError) return { error: rewardError.message };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { error: streakError } = await (supabase as any).rpc('update_streak', { p_user_id: userId });
   if (streakError) return { error: streakError.message };
 

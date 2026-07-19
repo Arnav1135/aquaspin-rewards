@@ -89,7 +89,7 @@ export function MemoryGame({ onClose }: MemoryGameProps) {
               playTone(784, 0.3, 'sine', 0.3);
               // Award tokens
               if (profile && !profile.id.startsWith('guest')) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                 
                 (supabase.from('users') as any).update({
                   tokens: profile.tokens + earned,
                   total_earned: profile.total_earned + earned,

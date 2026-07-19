@@ -52,7 +52,7 @@ registerSW({
 // ── Ad SDK initialization ───────────────────────────────────────────────────
 import { loadGoogleAdSense, loadAppLovinSDK } from '@/components/ads/adConfig';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const env = (import.meta as any).env;
 const adsenseClientId = env.VITE_ADSENSE_CLIENT_ID as string | undefined;
 const appLovinKey = env.VITE_APPLOVIN_SDK_KEY as string | undefined;

@@ -49,7 +49,7 @@ export interface AdOptions {
   onError?: (error: string) => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export const isMockAds = (import.meta as any).env.VITE_MOCK_ADS === 'true';
 
 /**

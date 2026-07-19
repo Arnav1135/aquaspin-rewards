@@ -8,9 +8,20 @@ import { SolvabilityValidator } from './ai/Solvability.js';
 import { FishAI } from './ai/FishAI.js';
 import { HintSystem } from './ai/HintSystem.js';
 import { EventQueue, CascadePredictor } from './core/EventQueue.js';
-import { CandyRenderer } from './visuals/CandyRenderer.js';
 import { ParticleSystem, VisualEffects } from './visuals/AnimationEngine.js';
+import * as PIXI from 'pixi.js';
+import gsap from 'gsap';
+import { idbStore } from './core/idbStore.js';
 import { COLORS, COLOR_PALETTE, CELL_TYPES, CANDY_TYPES, BLOCKER_TYPES, LAYER_TYPES, ANIM } from './core/Constants.js';
+
+const STATE = {
+  IDLE: 'IDLE',
+  SWAP: 'SWAP',
+  MATCH: 'MATCH',
+  CASCADE: 'CASCADE',
+  WIN: 'WIN',
+  FAIL: 'FAIL'
+};
 
 export class GameController {
   constructor() {
@@ -27,11 +38,17 @@ export class GameController {
     this.modalBtn = document.getElementById('modal-btn');
     this.modalScore = document.getElementById('modal-score');
     this.modalStars = document.getElementById('modal-stars');
-    this.particleCvs = document.getElementById('particle-canvas');
+    
+    // Pixi setup
+    this.pixiApp = window._pixiApp;
+    this.boardContainer = new PIXI.Container();
+    this.pixiApp.stage.addChild(this.boardContainer);
 
     this.levelGen = new LevelGen();
-    this.particles = new ParticleSystem(this.particleCvs);
     this.eventQueue = new EventQueue(this);
+
+    this.gameState = STATE.IDLE;
+    this.snapshots = []; // For Undo system
 
     this.levelNum = 1;
     this.score = 0;
@@ -49,13 +66,75 @@ export class GameController {
 
     this.modalBtn.addEventListener('click', () => this._onModalBtn());
 
-    // Listeners for global mouse up/move to release swipe correctly
-    document.addEventListener('mousemove', (e) => this._onPointerMove(e));
-    document.addEventListener('mouseup', (e) => this._onPointerUp(e));
-    document.addEventListener('touchmove', (e) => this._onPointerMove(e), { passive: false });
-    document.addEventListener('touchend', (e) => this._onPointerUp(e));
+    // Pixi interaction
+    this.boardContainer.interactive = true;
+    this.boardContainer.on('pointerdown', (e) => this._onPointerDown(e));
+    this.boardContainer.on('pointermove', (e) => this._onPointerMove(e));
+    this.boardContainer.on('pointerup', (e) => this._onPointerUp(e));
+    this.boardContainer.on('pointerupoutside', (e) => this._onPointerUp(e));
+
+    // Pixi Ticker Loop
+    this.pixiApp.ticker.add((delta) => this._tick(delta));
 
     this._startLevel(1);
+    this._loadProgress();
+  }
+
+  async _loadProgress() {
+    try {
+      const savedLevel = await idbStore.get('current_level');
+      if (savedLevel) {
+        this._startLevel(savedLevel);
+      }
+    } catch (e) {
+      console.warn('Could not load progress from IDB', e);
+    }
+  }
+
+  async _saveProgress() {
+    try {
+      await idbStore.set('current_level', this.levelNum);
+    } catch (e) {
+      console.warn('Could not save progress to IDB', e);
+    }
+  }
+
+  _saveSnapshot() {
+    // Deep copy board cells for undo
+    const snapshot = this.board.cells.map(c => ({
+      type: c.type,
+      candyColor: c.candyColor,
+      candyType: c.candyType,
+      layers: { ...c.layers },
+      blocker: { ...c.blocker }
+    }));
+    this.snapshots.push(snapshot);
+    if (this.snapshots.length > 5) this.snapshots.shift(); // keep last 5
+  }
+
+  undo() {
+    if (this.gameState !== STATE.IDLE || this.snapshots.length === 0) return;
+    const snapshot = this.snapshots.pop();
+    snapshot.forEach((snapCell, idx) => {
+      const c = this.board.cells[idx];
+      c.type = snapCell.type;
+      c.candyColor = snapCell.candyColor;
+      c.candyType = snapCell.candyType;
+      c.layers = { ...snapCell.layers };
+      c.blocker = { ...snapCell.blocker };
+      // Note: would need to call _renderCell for Pixi updates here
+    });
+    this.moves++;
+    this._updateScoreDisplay();
+  }
+
+  _tick(delta) {
+    // Variable timestep state machine tick
+    if (this.gameState === STATE.MATCH) {
+      // Process matches
+    } else if (this.gameState === STATE.CASCADE) {
+      // Process gravity
+    }
   }
 
   _startLevel(n) {
@@ -163,8 +242,21 @@ export class GameController {
         el.appendChild(inner);
         this.boardEl.appendChild(el);
 
+        // PixiJS Sprite creation
+        const sprite = new PIXI.Sprite();
+        sprite.x = c * this.cellSize;
+        sprite.y = r * this.cellSize;
+        sprite.width = this.cellSize;
+        sprite.height = this.cellSize;
+        sprite.anchor.set(0.5); // Center anchor for scaling animations
+        // Offset position to account for anchor
+        sprite.x += this.cellSize / 2;
+        sprite.y += this.cellSize / 2;
+        this.boardContainer.addChild(sprite);
+
         cell.el = el;
         cell.inner = inner;
+        cell.sprite = sprite;
 
         this._renderCell(cell);
 
@@ -176,28 +268,36 @@ export class GameController {
   }
 
   _renderCell(cell) {
-    if (!cell.el || !cell.inner) return;
+    if (!cell.el || !cell.inner || !cell.sprite) return;
 
     cell.inner.innerHTML = '';
     cell.el.className = 'cell';
 
-    // 1. Render bottom layers (Jelly)
+    // Sync PixiJS Sprite for Candy
+    if (cell.hasCandy()) {
+      cell.sprite.texture = CandyRenderer.getTexture(cell.candyColor, cell.candyType);
+      cell.sprite.visible = true;
+      
+      // Temporary: Timer text can't easily be a texture in this quick port, 
+      // so we use DOM fallback for timer overlays if needed.
+      if (cell.candyType === CANDY_TYPES.TIMER) {
+         cell.inner.innerHTML += CandyRenderer.renderTimer(cell.candyColor, cell.timerVal);
+      }
+    } else {
+      cell.sprite.visible = false;
+    }
+
+    // 1. Render bottom layers (Jelly) - keep in DOM for now
     if (cell.layers[LAYER_TYPES.JELLY] > 0) {
       cell.inner.innerHTML += CandyRenderer.renderLayerOverlay(LAYER_TYPES.JELLY, cell.layers[LAYER_TYPES.JELLY]);
     }
 
-    // 2. Render middle layer (Candy or Blocker)
+    // 2. Render middle layer Blocker - keep in DOM for now
     if (cell.type === CELL_TYPES.BLOCKER && cell.blocker.type) {
       cell.inner.innerHTML += CandyRenderer.renderBlocker(cell.blocker.type, cell.blocker.health);
-    } else if (cell.hasCandy()) {
-      if (cell.candyType === CANDY_TYPES.TIMER) {
-        cell.inner.innerHTML += CandyRenderer.renderTimer(cell.candyColor, cell.timerVal);
-      } else {
-        cell.inner.innerHTML += CandyRenderer.render(cell.candyColor, cell.candyType);
-      }
-    }
+    } 
 
-    // 3. Render top layers (Ice, Chains, Locks)
+    // 3. Render top layers (Ice, Chains, Locks) - keep in DOM for now
     if (cell.layers[LAYER_TYPES.ICE] > 0) {
       cell.inner.innerHTML += CandyRenderer.renderLayerOverlay(LAYER_TYPES.ICE, cell.layers[LAYER_TYPES.ICE]);
     }
@@ -311,21 +411,34 @@ export class GameController {
 
     const dx = (c2.col - c1.col) * this.cellSize;
     const dy = (c2.row - c1.row) * this.cellSize;
+    
+    // PixiJS animation
+    const p1 = new Promise(resolve => {
+      gsap.fromTo(c1.sprite, 
+        { x: c1.sprite.x + dx, y: c1.sprite.y + dy },
+        { x: c1.sprite.x, y: c1.sprite.y, duration: ANIM.SWAP / 1000, ease: 'power2.out', onComplete: resolve }
+      );
+    });
 
-    const p1 = c1.inner.animate([
+    const p2 = new Promise(resolve => {
+      gsap.fromTo(c2.sprite, 
+        { x: c2.sprite.x - dx, y: c2.sprite.y - dy },
+        { x: c2.sprite.x, y: c2.sprite.y, duration: ANIM.SWAP / 1000, ease: 'power2.out', onComplete: resolve }
+      );
+    });
+
+    // DOM fallback animation (keep in sync)
+    c1.inner.animate([
       { transform: `translate(${dx}px, ${dy}px)` },
       { transform: 'translate(0, 0)' }
     ], { duration: ANIM.SWAP, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
 
-    const p2 = c2.inner.animate([
+    c2.inner.animate([
       { transform: `translate(${-dx}px, ${-dy}px)` },
       { transform: 'translate(0, 0)' }
     ], { duration: ANIM.SWAP, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' });
 
-    return Promise.all([
-      new Promise(resolve => p1.onfinish = resolve),
-      new Promise(resolve => p2.onfinish = resolve)
-    ]);
+    return Promise.all([p1, p2]);
   }
 
   _processMatches(matches, draggedCell) {
@@ -387,24 +500,33 @@ export class GameController {
     cell.candyColor = null;
     cell.candyType = CANDY_TYPES.NORMAL;
 
-    // Fade and shrink
+    // Fade and shrink (PixiJS)
+    gsap.to(cell.sprite.scale, { x: 0, y: 0, duration: ANIM.CLEAR / 1000 });
+    gsap.to(cell.sprite, { 
+      alpha: 0, 
+      duration: ANIM.CLEAR / 1000, 
+      onComplete: () => {
+        cell.clearing = false;
+        cell.el.classList.remove('clearing');
+        cell.sprite.scale.set(1);
+        cell.sprite.alpha = 1;
+        
+        // Damage layers underneath
+        if (cell.layers[LAYER_TYPES.JELLY] > 0) {
+          cell.layers[LAYER_TYPES.JELLY] = 0; // Clear jelly
+        }
+        
+        this._renderCell(cell);
+      }
+    });
+
+    // Fade DOM elements
     const anim = cell.inner.animate([
       { transform: 'scale(1)', opacity: 1 },
       { transform: 'scale(0)', opacity: 0 }
     ], { duration: ANIM.CLEAR, fill: 'forwards' });
     
-    anim.onfinish = () => {
-      anim.cancel();
-      cell.clearing = false;
-      cell.el.classList.remove('clearing');
-      
-      // Damage layers underneath
-      if (cell.layers[LAYER_TYPES.JELLY] > 0) {
-        cell.layers[LAYER_TYPES.JELLY] = 0; // Clear jelly
-      }
-      
-      this._renderCell(cell);
-    };
+    anim.onfinish = () => anim.cancel();
   }
 
   _damageAdjacentBlockers(row, col) {
@@ -446,6 +568,13 @@ export class GameController {
       const dy = -(cell.row - shift.sourceRow) * this.cellSize;
       const dx = -(cell.col - shift.sourceCol) * this.cellSize;
       
+      // PixiJS Sprite Animation
+      gsap.fromTo(cell.sprite, 
+        { x: cell.sprite.x + dx, y: cell.sprite.y + dy },
+        { x: cell.sprite.x, y: cell.sprite.y, duration: ANIM.FALL / 1000, ease: 'power2.inOut' }
+      );
+
+      // DOM fallback animation
       cell.inner.animate([
         { transform: `translate(${dx}px, ${dy}px)` },
         { transform: 'translate(0, 0)' }
@@ -457,6 +586,14 @@ export class GameController {
       const cell = this.board.cells[spawn.cellIdx];
       this._renderCell(cell);
       const dy = -(cell.row - spawn.sourceRow) * this.cellSize;
+      
+      // PixiJS Sprite Animation
+      gsap.fromTo(cell.sprite, 
+        { y: cell.sprite.y + dy, alpha: 0 },
+        { y: cell.sprite.y, alpha: 1, duration: ANIM.SPAWN / 1000, ease: 'back.out(1.5)' }
+      );
+
+      // DOM fallback animation
       cell.inner.animate([
         { transform: `translateY(${dy}px)`, opacity: 0 },
         { transform: 'translateY(0)', opacity: 1 }

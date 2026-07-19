@@ -10,6 +10,15 @@
     // Security redirect: prevent external access
     if (window.top === window.self) { window.location.href = "/"; }
   </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "pixi.js": "https://esm.sh/pixi.js@7.3.2",
+        "gsap": "https://esm.sh/gsap@3.12.5",
+        "idb": "https://esm.sh/idb@8.0.0"
+      }
+    }
+  </script>
 </head>
 <body>
   <!-- Header -->

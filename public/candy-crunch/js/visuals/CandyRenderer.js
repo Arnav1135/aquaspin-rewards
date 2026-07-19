@@ -1,7 +1,9 @@
+import * as PIXI from 'pixi.js';
 import { CANDY_TYPES, CELL_TYPES, BLOCKER_TYPES, LAYER_TYPES, COLOR_PALETTE } from '../core/Constants.js';
 
 export class CandyRenderer {
   static _cache = {};
+  static _textures = {};
   static _loaded = false;
 
   /** Call once at startup — fetches all 42 SVGs in parallel */
@@ -21,12 +23,14 @@ export class CandyRenderer {
         const resp = await fetch(`/candy-crunch/${key}.svg`);
         if (resp.ok) {
           let text = await resp.text();
-          // Make SVG fill its container and enable overflow
-          text = text.replace(
-            '<svg ',
-            '<svg style="width:100%;height:100%;display:block;overflow:visible;" '
-          );
+          text = text.replace('<svg ', '<svg style="width:100%;height:100%;display:block;overflow:visible;" ');
           CandyRenderer._cache[key] = text;
+          
+          // Generate a base texture directly from SVG Data URI
+          const dataUri = 'data:image/svg+xml;charset=utf8,' + encodeURIComponent(text);
+          CandyRenderer._textures[key] = PIXI.Texture.from(dataUri, {
+            resourceOptions: { scale: 2 } // Increase scale for higher res rendering in WebGL
+          });
         }
       } catch (e) {
         console.warn(`Failed to pre-fetch SVG: ${key}`, e);
@@ -47,6 +51,16 @@ export class CandyRenderer {
     }
   }
 
+  static getTexture(color, type = CANDY_TYPES.NORMAL) {
+    const key = CandyRenderer._key(color, type);
+    if (CandyRenderer._textures[key]) {
+      return CandyRenderer._textures[key];
+    }
+    // Fallback: create a temporary texture if missing
+    return PIXI.Texture.WHITE;
+  }
+
+  // Legacy DOM render method (keep for blockers/layers temporarily)
   static render(color, type = CANDY_TYPES.NORMAL) {
     const key = CandyRenderer._key(color, type);
     if (CandyRenderer._cache[key]) {

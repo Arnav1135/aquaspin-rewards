@@ -40,10 +40,20 @@ export class GameController {
     this.modalScore = document.getElementById('modal-score');
     this.modalStars = document.getElementById('modal-stars');
     
-    // Pixi setup
-    this.pixiApp = window._pixiApp;
-    this.boardContainer = new PIXI.Container();
-    this.pixiApp.stage.addChild(this.boardContainer);
+    this.pixiApp = new PIXI.Application({
+      view: this.pixiCanvas,
+      width: this.board.W * this.cellSize,
+      height: this.board.H * this.cellSize,
+      transparent: true,
+      resolution: window.devicePixelRatio || 1,
+      autoDensity: true
+    });
+
+    this.pixiContainer = new PIXI.Container();
+    this.pixiApp.stage.addChild(this.pixiContainer);
+    
+    // Initialize Hyper 3D Shaders
+    VisualEffects.initShaders(this.pixiApp, this.pixiContainer);
 
     this.levelGen = new LevelGen();
     this.eventQueue = new EventQueue(this);
@@ -149,6 +159,10 @@ export class GameController {
     this.cascadeDepth = 0;
     this.isLocked = false;
     this.levelStartTime = Date.now();
+    
+    VisualEffects.toggleGodrays(false);
+
+    this.levelEl.textContent = this.levelNum;
 
     // Responsive grid sizing
     const maxPx = Math.min(window.innerWidth * 0.96, window.innerHeight * 0.62, 540);
@@ -250,10 +264,10 @@ export class GameController {
         sprite.width = this.cellSize;
         sprite.height = this.cellSize;
         sprite.anchor.set(0.5); // Center anchor for scaling animations
-        // Offset position to account for anchor
         sprite.x += this.cellSize / 2;
         sprite.y += this.cellSize / 2;
-        this.boardContainer.addChild(sprite);
+        this.pixiContainer.addChild(sprite);
+        VisualEffects.applyBevel(sprite);
 
         cell.el = el;
         cell.inner = inner;
@@ -371,6 +385,12 @@ export class GameController {
         this.movesEl.textContent = this.moves;
         
         VisualEffects.shakeScreen(this.boardEl, 500, 12); // Big shake for special combos
+        
+        const rect = this.boardEl.getBoundingClientRect();
+        const centerCell = comboBlast.find(c => c === c1 || c === c2) || comboBlast[0];
+        if (centerCell) {
+          VisualEffects.triggerShockwave(centerCell.col * this.cellSize + this.cellSize/2, centerCell.row * this.cellSize + this.cellSize/2);
+        }
         
         comboBlast.forEach(c => {
           if (!c.clearing && c.hasCandy()) {
@@ -523,6 +543,8 @@ export class GameController {
     // Trigger special blasts
     if (specialBlastCells.length > 0) {
       VisualEffects.shakeScreen(this.boardEl, 300, 6);
+      VisualEffects.triggerShockwave(cx - rect.left, cy - rect.top);
+      
       specialBlastCells.forEach(c => {
         if (!c.clearing && c.hasCandy()) {
           this.score += 60 * this.cascadeDepth;
@@ -684,6 +706,7 @@ export class GameController {
     this.isLocked = true;
     this._clearHints();
     this.particles.confetti(80);
+    VisualEffects.toggleGodrays(true);
 
     this.levelGen.recordResult(this.levelNum, true, this.score, this.config.target, this.moves, this.config.moves);
 

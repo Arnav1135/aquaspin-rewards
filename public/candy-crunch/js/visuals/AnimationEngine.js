@@ -1,4 +1,9 @@
 import { COLOR_PALETTE } from '../core/Constants.js';
+import * as PIXI from 'pixi.js';
+import { AdvancedBloomFilter } from '@pixi/filter-advanced-bloom';
+import { ShockwaveFilter } from '@pixi/filter-shockwave';
+import { GodrayFilter } from '@pixi/filter-godray';
+import { BevelFilter } from '@pixi/filter-bevel';
 
 export class Particle {
   constructor() {
@@ -174,6 +179,46 @@ export class ParticleSystem {
 }
 
 export class VisualEffects {
+  static initShaders(app, mainContainer) {
+    if (!this.bloom) {
+      this.bloom = new AdvancedBloomFilter({
+        threshold: 0.6,
+        bloomScale: 1.5,
+        brightness: 1.2,
+        blur: 8,
+        quality: 4
+      });
+      this.shockwaves = [];
+      this.godrays = new GodrayFilter({
+        angle: 30,
+        gain: 0.5,
+        lacunarity: 2.5,
+        time: 0
+      });
+      this.godrays.enabled = false;
+      this.mainContainer = mainContainer;
+      
+      // Apply bloom globally
+      mainContainer.filters = [this.bloom];
+      
+      app.ticker.add((delta) => {
+        if (this.godrays.enabled) {
+          this.godrays.time += delta * 0.01;
+        }
+        
+        // Update shockwaves
+        for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+          const sw = this.shockwaves[i];
+          sw.time += delta * 0.02;
+          if (sw.time > 1.5) {
+            this.shockwaves.splice(i, 1);
+            this.mainContainer.filters = this.mainContainer.filters.filter(f => f !== sw);
+          }
+        }
+      });
+    }
+  }
+
   static shakeScreen(boardEl, duration = 300, intensity = 8) {
     const startTime = Date.now();
     
@@ -189,5 +234,44 @@ export class VisualEffects {
       }
     }
     shake();
+  }
+
+  static triggerShockwave(x, y) {
+    if (!this.mainContainer) return;
+    const shockwave = new ShockwaveFilter([x, y], {
+      amplitude: 30,
+      wavelength: 160,
+      speed: 500,
+      brightness: 1.2,
+      radius: -1
+    });
+    shockwave.time = 0;
+    this.shockwaves.push(shockwave);
+    this.mainContainer.filters.push(shockwave);
+  }
+
+  static toggleGodrays(enabled) {
+    if (!this.mainContainer) return;
+    this.godrays.enabled = enabled;
+    if (enabled && !this.mainContainer.filters.includes(this.godrays)) {
+      this.mainContainer.filters.push(this.godrays);
+    } else if (!enabled) {
+      this.mainContainer.filters = this.mainContainer.filters.filter(f => f !== this.godrays);
+    }
+  }
+
+  static applyBevel(sprite) {
+    if (!this.bevel) {
+      this.bevel = new BevelFilter({
+        rotation: 45,
+        thickness: 2,
+        lightColor: 0xffffff,
+        lightAlpha: 0.7,
+        shadowColor: 0x000000,
+        shadowAlpha: 0.5
+      });
+    }
+    if (!sprite.filters) sprite.filters = [];
+    sprite.filters.push(this.bevel);
   }
 }

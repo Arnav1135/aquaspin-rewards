@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+
 import { CANDY_TYPES, CELL_TYPES, BLOCKER_TYPES, LAYER_TYPES, COLOR_PALETTE } from '../core/Constants.js';
 
 export class CandyRenderer {

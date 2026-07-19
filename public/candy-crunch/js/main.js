@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+
 import { CandyRenderer } from './visuals/CandyRenderer.js';
 import { GameController } from './GameController.js';
 

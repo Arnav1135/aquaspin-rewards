@@ -1,5 +1,5 @@
 import { COLOR_PALETTE } from '../core/Constants.js';
-import * as PIXI from 'pixi.js';
+
 import { AdvancedBloomFilter } from '@pixi/filter-advanced-bloom';
 import { ShockwaveFilter } from '@pixi/filter-shockwave';
 import { GodrayFilter } from '@pixi/filter-godray';

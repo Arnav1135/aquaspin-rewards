@@ -10,8 +10,8 @@ import { HintSystem } from './ai/HintSystem.js';
 import { EventQueue, CascadePredictor } from './core/EventQueue.js';
 import { SpecialEngine } from './core/SpecialEngine.js';
 import { ParticleSystem, VisualEffects } from './visuals/AnimationEngine.js';
-import * as PIXI from 'pixi.js';
-import gsap from 'gsap';
+
+
 import { idbStore } from './core/idbStore.js';
 import { COLORS, COLOR_PALETTE, CELL_TYPES, CANDY_TYPES, BLOCKER_TYPES, LAYER_TYPES, ANIM } from './core/Constants.js';
 

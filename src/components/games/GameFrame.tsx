@@ -1,18 +1,15 @@
 // src/components/games/GameFrame.tsx
 // ═══════════════════════════════════════════════════════════════════════════
-// UNIVERSAL GAME VISIBILITY PROTECTION FRAME - NOW IN FULL 3D!
+// UNIVERSAL GAME VISIBILITY PROTECTION FRAME - RESPONSIVE 2D CONTAINER
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { type ReactNode, useState, useRef } from 'react';
+import { type ReactNode, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, Pause, Play, Volume2, VolumeX, RotateCcw,
   Maximize2, Minimize2, Trophy, MoreHorizontal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import * as THREE from 'three';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Html, Environment, PresentationControls, ContactShadows } from '@react-three/drei';
 
 interface GameFrameProps {
   children: ReactNode;
@@ -29,66 +26,6 @@ interface GameFrameProps {
   className?: string;
   canvasClassName?: string;
   isWarping?: boolean;
-}
-
-function ArcadeCabinet({ children, fullscreen }: { children: ReactNode, fullscreen: boolean }) {
-  const group = useRef<THREE.Group>(null);
-  
-  // A gentle breathing/floating effect if not in fullscreen
-  useFrame((state) => {
-    if (group.current && !fullscreen) {
-      group.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.05;
-    } else if (group.current && fullscreen) {
-      group.current.position.y = 0;
-      group.current.rotation.set(0, 0, 0);
-    }
-  });
-
-  return (
-    <PresentationControls 
-      global={!fullscreen} 
-      config={{ mass: 2, tension: 500 }} 
-      snap={{ mass: 4, tension: 1500 }} 
-      rotation={[0, 0, 0]} 
-      polar={fullscreen ? [0,0] : [-Math.PI / 12, Math.PI / 12]} 
-      azimuth={fullscreen ? [0,0] : [-Math.PI / 6, Math.PI / 6]}
-    >
-      <group ref={group}>
-        
-        {/* Floating Screen Bezel */}
-        <mesh position={[0, 0, -0.05]} castShadow receiveShadow>
-          <boxGeometry args={[fullscreen ? 0 : 3.8, fullscreen ? 0 : 4.8, 0.1]} />
-          <meshStandardMaterial color="#0A1428" metalness={0.8} roughness={0.2} />
-        </mesh>
-        
-        {/* Glowing Rim */}
-        {!fullscreen && (
-          <mesh position={[0, 0, -0.06]}>
-            <boxGeometry args={[3.85, 4.85, 0.05]} />
-            <meshBasicMaterial color="#66bdf2" />
-          </mesh>
-        )}
-
-        {/* HTML Projection (The actual game) */}
-        <Html 
-          transform 
-          occlude 
-          distanceFactor={fullscreen ? 1.05 : 1.45}
-          position={[0, 0, 0]}
-          style={{
-            width: fullscreen ? '100vw' : '360px',
-            height: fullscreen ? '100vh' : '460px',
-            background: '#0D1B36',
-            borderRadius: fullscreen ? '0px' : '16px',
-            overflow: 'hidden',
-            boxShadow: fullscreen ? 'none' : 'inset 0 0 20px rgba(0,0,0,0.8)'
-          }}
-        >
-          {children}
-        </Html>
-      </group>
-    </PresentationControls>
-  );
 }
 
 export function GameFrame({
@@ -112,18 +49,18 @@ export function GameFrame({
 
   const handlePause = () => setPaused(p => !p);
 
-  // The 2D DOM Content that will be projected into the 3D Html block
-  const TwoDimensionalGameContent = (
+  return (
     <div
       className={cn(
-        'relative w-full h-full flex flex-col',
+        'w-full h-full min-h-[500px] flex flex-col relative overflow-hidden bg-navy-900 rounded-2xl shadow-2xl border border-slate-800',
+        fullscreen ? 'fixed inset-0 z-[9999] rounded-none border-none' : '',
         isWarping && 'level-warp-active warp-lines',
         className
       )}
     >
       {/* ── Top Scrim Bar ── */}
       {showTopScrim && (
-        <div className="game-scrim-bar game-scrim-bar-top z-50 absolute top-0 left-0 right-0">
+        <div className="game-scrim-bar game-scrim-bar-top z-50 absolute top-0 left-0 right-0 h-[44px] flex items-center justify-between px-3">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-xs font-semibold tracking-wide truncate" style={{ color: 'rgba(245,248,252,0.90)' }}>
               {title}
@@ -176,7 +113,7 @@ export function GameFrame({
       {/* ── Game Canvas Area ── */}
       <div
         className={cn(
-          'flex-1 relative w-full h-full',
+          'flex-1 relative w-full h-full bg-[#0D1B36]',
           showTopScrim && 'pt-[44px]',
           showBottomScrim && 'pb-[44px]',
           canvasClassName
@@ -207,31 +144,12 @@ export function GameFrame({
       
       {/* ── Optional Bottom Scrim ── */}
       {showBottomScrim && (
-        <div className="game-scrim-bar game-scrim-bar-bottom absolute bottom-0 left-0 right-0 z-50">
+        <div className="game-scrim-bar game-scrim-bar-bottom absolute bottom-0 left-0 right-0 z-50 h-[44px] flex items-center justify-center">
           <div className="flex items-center justify-center w-full gap-2 text-xs" style={{ color: 'rgba(245,248,252,0.60)' }}>
             <MoreHorizontal size={14} />
           </div>
         </div>
       )}
-    </div>
-  );
-
-  return (
-    <div className={cn(
-      "w-full flex items-center justify-center overflow-hidden",
-      fullscreen ? "fixed inset-0 z-[9999] bg-navy-900" : "relative h-[550px]"
-    )}>
-      <Canvas shadows camera={{ position: [0, 0, 5], fov: 50 }}>
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 10]} intensity={1.5} castShadow />
-        <Environment preset="city" />
-        
-        <ArcadeCabinet fullscreen={fullscreen}>
-          {TwoDimensionalGameContent}
-        </ArcadeCabinet>
-
-        {!fullscreen && <ContactShadows position={[0, -2.5, 0]} opacity={0.6} scale={10} blur={2} far={4} color="#000000" />}
-      </Canvas>
     </div>
   );
 }

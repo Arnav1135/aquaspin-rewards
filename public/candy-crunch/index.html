@@ -10,15 +10,9 @@
     // Security redirect: prevent external access
     if (window.top === window.self) { window.location.href = "/"; }
   </script>
-  <script type="importmap">
-    {
-      "imports": {
-        "pixi.js": "https://esm.sh/pixi.js@7.3.2",
-        "gsap": "https://esm.sh/gsap@3.12.5",
-        "idb": "https://esm.sh/idb@8.0.0"
-      }
-    }
-  </script>
+  <!-- Load Pixi.js and GSAP globally -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 </head>
 <body>
   <!-- Header -->

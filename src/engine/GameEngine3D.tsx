@@ -2,7 +2,9 @@ import { ReactNode } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Environment } from '@react-three/drei';
+import { Environment, PerformanceMonitor } from '@react-three/drei';
+import { Physics } from '@react-three/rapier';
+import { AssetManager } from './core/AssetLoader';
 
 export interface GameEngine3DProps {
   children: ReactNode;
@@ -10,6 +12,7 @@ export interface GameEngine3DProps {
   cameraPosition?: [number, number, number];
   cameraFov?: number;
   environmentPreset?: 'city' | 'night' | 'sunset' | 'dawn' | 'warehouse';
+  enablePhysics?: boolean;
 }
 
 /**
@@ -24,6 +27,7 @@ export function GameEngine3D({
   cameraPosition = [0, 0, 7],
   cameraFov = 50,
   environmentPreset = 'city',
+  enablePhysics = false,
 }: GameEngine3DProps) {
   return (
     <Canvas
@@ -50,8 +54,18 @@ export function GameEngine3D({
       
       {environmentPreset && <Environment preset={environmentPreset} />}
 
-      {/* Game Content */}
-      {children}
+      <PerformanceMonitor onDecline={() => {}} />
+
+      {/* Game Content wrapped in AssetManager (Suspense) and optional Physics */}
+      <AssetManager>
+        {enablePhysics ? (
+          <Physics>
+            {children}
+          </Physics>
+        ) : (
+          children
+        )}
+      </AssetManager>
 
       {/* Optional Post-Processing */}
       {enablePostProcessing ? (

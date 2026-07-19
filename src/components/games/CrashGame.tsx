@@ -1,4 +1,3 @@
-// src/components/games/CrashGame.tsx
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, ShieldAlert } from 'lucide-react';
@@ -10,12 +9,173 @@ import { BetControl } from '@/components/ui/BetControl';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
+import { GameEngine3D } from '@/engine/GameEngine3D';
+import { RigidBody } from '@react-three/rapier';
+import { Html, Line, Trail } from '@react-three/drei';
+import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
+
 interface CrashGameProps { onClose: () => void; }
 type GameState = 'betting' | 'countdown' | 'climbing' | 'crashed' | 'success_aborted';
-type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number; };
 type SocialEntry = { user: string; amount: number; mult: number; };
 
 const FAKE_USERS = ['Raj','Priya','Max','Luna','Kai','Zoe','Arnav','Mia','Dev','Sara'];
+
+// --- 3D Components ---
+
+function RocketFlightPath({ points, crashed }: { points: THREE.Vector3[], crashed: boolean }) {
+  if (points.length < 2) return null;
+  return (
+    <Line 
+      points={points} 
+      color={crashed ? "#ef4444" : "#00F0FF"} 
+      lineWidth={4} 
+      dashed={false} 
+    />
+  );
+}
+
+function Rocket3D({ 
+  multiplier, 
+  crashed, 
+  elapsed, 
+  onPathUpdate 
+}: { 
+  multiplier: number, 
+  crashed: boolean, 
+  elapsed: number,
+  onPathUpdate: (p: THREE.Vector3) => void 
+}) {
+  const rocketGroup = useRef<any>(null);
+  const rigidBodyRef = useRef<any>(null);
+  const [hasTumbled, setHasTumbled] = useState(false);
+  
+  // Create a trail of points based on mathematical curve
+  // x = time (elapsed)
+  // y = multiplier
+  // To keep it visually balanced, scale them.
+  const scaleX = 2.0;
+  const scaleY = 0.5;
+
+  useFrame((state) => {
+    if (!crashed && rocketGroup.current && rigidBodyRef.current) {
+      // Calculate current ideal position based on exponential curve
+      const idealX = elapsed * scaleX - 10; // offset so it starts left
+      const idealY = (multiplier - 1.0) * scaleY - 2; // offset so it starts bottom
+      
+      const newPos = new THREE.Vector3(idealX, idealY, 0);
+      
+      // Calculate pitch angle by looking slightly ahead
+      const nextElapsed = elapsed + 0.1;
+      const nextMult = Math.pow(Math.E, 0.08 * nextElapsed);
+      const nextX = nextElapsed * scaleX - 10;
+      const nextY = (nextMult - 1.0) * scaleY - 2;
+      
+      const angle = Math.atan2(nextY - idealY, nextX - idealX);
+      
+      // Move kinematic rigid body
+      rigidBodyRef.current.setTranslation(newPos, true);
+      const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, angle));
+      rigidBodyRef.current.setRotation(quat, true);
+      
+      // Add a slight wobble for turbulence
+      const wobble = Math.sin(state.clock.elapsedTime * 10) * 0.1;
+      rocketGroup.current.position.y = wobble;
+      
+      onPathUpdate(newPos);
+      setHasTumbled(false);
+    } else if (crashed && !hasTumbled && rigidBodyRef.current) {
+      // Trigger dynamic physics tumble
+      setHasTumbled(true);
+      
+      // Apply explosive impulse
+      rigidBodyRef.current.setBodyType(0, true); // 0 = dynamic
+      
+      // Toss it forward and randomize rotation
+      rigidBodyRef.current.applyImpulse({ x: 5, y: 15, z: (Math.random() - 0.5) * 10 }, true);
+      rigidBodyRef.current.applyTorqueImpulse({ x: Math.random() * 2, y: Math.random() * 2, z: Math.random() * 2 }, true);
+    }
+  });
+
+  return (
+    <RigidBody ref={rigidBodyRef} type="kinematicPosition" colliders="hull" restitution={0.5}>
+      <group ref={rocketGroup}>
+        <Trail width={1} color={crashed ? '#ef4444' : '#f97316'} length={20} attenuation={(t) => t * t}>
+          {/* Exhaust Nozzle to anchor the trail */}
+          <mesh position={[-0.8, 0, 0]}>
+             <boxGeometry args={[0.1, 0.1, 0.1]} />
+             <meshBasicMaterial transparent opacity={0} />
+          </mesh>
+        </Trail>
+        
+        {/* Main Hull */}
+        <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+          <cylinderGeometry args={[0.3, 0.3, 1.5, 16]} />
+          <meshStandardMaterial color="#e2e8f0" metalness={0.6} roughness={0.4} />
+        </mesh>
+        
+        {/* Nose Cone */}
+        <mesh castShadow position={[1.0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+          <coneGeometry args={[0.3, 0.6, 16]} />
+          <meshStandardMaterial color="#ef4444" metalness={0.5} roughness={0.5} />
+        </mesh>
+        
+        {/* Thruster Base */}
+        <mesh castShadow position={[-0.85, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+          <cylinderGeometry args={[0.3, 0.4, 0.2, 16]} />
+          <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
+        </mesh>
+
+        {/* Wings */}
+        <mesh castShadow position={[-0.4, 0.4, 0]} rotation={[0, 0, -Math.PI / 8]}>
+          <boxGeometry args={[0.6, 0.8, 0.1]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
+        </mesh>
+        <mesh castShadow position={[-0.4, -0.4, 0]} rotation={[0, 0, Math.PI / 8]}>
+          <boxGeometry args={[0.6, 0.8, 0.1]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
+        </mesh>
+        
+        {/* Cockpit Window */}
+        <mesh position={[0.4, 0.25, 0]} rotation={[Math.PI / 4, 0, 0]}>
+          <sphereGeometry args={[0.2, 16, 16, 0, Math.PI]} />
+          <meshStandardMaterial color="#00f0ff" metalness={0.9} roughness={0.1} />
+        </mesh>
+        
+        {/* Dynamic Engine Glow/Flame */}
+        {!crashed && (
+          <mesh position={[-1.2, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+            <coneGeometry args={[0.2, 1.5, 16]} />
+            <meshBasicMaterial color="#f97316" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
+            <pointLight color="#f97316" intensity={2} distance={5} />
+          </mesh>
+        )}
+      </group>
+    </RigidBody>
+  );
+}
+
+function GridEnvironment({ crashed }: { crashed: boolean }) {
+  return (
+    <group>
+      {/* Background Plane */}
+      <mesh position={[0, 0, -10]} receiveShadow>
+        <planeGeometry args={[100, 100]} />
+        <meshStandardMaterial color="#061022" metalness={0.2} roughness={0.8} />
+      </mesh>
+      
+      {/* Dynamic Grid Lines */}
+      <gridHelper args={[100, 100, '#00f0ff', '#00f0ff']} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -9.9]} material-transparent material-opacity={0.1} />
+      
+      {/* Global Illumination shift on crash */}
+      <ambientLight intensity={crashed ? 0.2 : 0.6} color={crashed ? '#ff0000' : '#ffffff'} />
+      <directionalLight position={[10, 10, 5]} intensity={1.5} color={crashed ? '#ffaaaa' : '#ffffff'} castShadow />
+    </group>
+  );
+}
+
+
+// --- Main Game Component ---
 
 export function CrashGame({ onClose }: CrashGameProps) {
   const { profile, updateProfile } = useAuthStore();
@@ -28,27 +188,22 @@ export function CrashGame({ onClose }: CrashGameProps) {
   const [socialFeed, setSocialFeed] = useState<SocialEntry[]>([]);
   const [safetyCoverOpen, setSafetyCoverOpen] = useState(false);
   
-  // Historical crash points track
-  const [pastCrashes, setPastCrashes] = useState<number[]>([1.5, 2.4, 4.0, 8.2]);
-
-  // Visual/Animation Refs
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [flightPath, setFlightPath] = useState<THREE.Vector3[]>([]);
+  
   const rAFRef = useRef<number | null>(null);
   const startTimeRef = useRef(0);
   const crashPointRef = useRef(1.0);
-  const particlesRef = useRef<Particle[]>([]);
-  const crashEffectRef = useRef<{ radius: number; opacity: number } | null>(null);
   const cashedOutRef = useRef(false);
   const autoCashOutRef = useRef<number | null>(null);
   const socialIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const rocketRef = useRef<HTMLDivElement>(null);
   const balance = profile?.tokens ?? 0;
 
-  // Custom 4D Sensory States
   const [timeDilationActive, setTimeDilationActive] = useState(false);
   const [tinnitusActive, setTinnitusActive] = useState(false);
   const [countdownTicks, setCountdownTicks] = useState(5);
   const [isAborting, setIsAborting] = useState(false);
+  const [pastCrashes, setPastCrashes] = useState<number[]>([1.5, 2.4, 4.0, 8.2]);
 
   useEffect(() => { autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
   useEffect(() => { cashedOutRef.current = cashedOut; }, [cashedOut]);
@@ -60,188 +215,12 @@ export function CrashGame({ onClose }: CrashGameProps) {
     return '#00F0FF';
   };
 
-  const drawGraph = (elapsed: number, val: number, crashed: boolean) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-
-    // Mission Control Room - deep space blue, slightly lighter for visibility
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-    bgGrad.addColorStop(0, '#0a1628');
-    bgGrad.addColorStop(1, '#061022');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, W, H);
-
-    // Dynamic grid lines - more visible
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-    ctx.lineWidth = 1;
-    const gridGap = 30;
-    for (let x = 40; x < W; x += gridGap) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H - 30); ctx.stroke();
-    }
-    for (let y = 0; y < H - 30; y += gridGap) {
-      ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(W, y); ctx.stroke();
-    }
-
-    // Graph axes
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(40, 0);
-    ctx.lineTo(40, H - 30);
-    ctx.lineTo(W, H - 30);
-    ctx.stroke();
-
-    // Past Crashes "Ghost" Markers along the axes or grid
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-    ctx.font = '8px monospace';
-    const scaleY = (H - 60) / Math.max(2, val * 1.25);
-    pastCrashes.forEach((pc) => {
-      const py = H - 30 - (pc - 1.0) * scaleY;
-      if (py > 20 && py < H - 30) {
-        ctx.beginPath();
-        ctx.arc(42, py, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillText(`👻 ${pc.toFixed(2)}x`, 48, py + 3);
-      }
-    });
-
-    // Altitude readouts on the Y-Axis
-    ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
-    ctx.font = '9px monospace';
-    ctx.textAlign = 'right';
-    const yLabels = [{ v: 1.0, l: '1.0x' }, { v: 2.0, l: '2.0x' }, { v: 5.0, l: '5.0x' }, { v: 10.0, l: '10.0x' }];
-    yLabels.forEach(({ v, l }) => {
-      const py = H - 30 - (v - 1.0) * scaleY;
-      if (py > 10 && py < H - 20) ctx.fillText(l, 35, py + 3);
-    });
-
-    // Flight Curve Calculation
-    const scaleX = (W - 80) / Math.max(8, elapsed * 1.5);
-    const points: { px: number; py: number }[] = [];
-    for (let t = 0; t <= elapsed; t += 0.05) {
-      const v = Math.pow(Math.E, 0.08 * t);
-      points.push({ px: 40 + t * scaleX, py: H - 30 - (v - 1.0) * scaleY });
-    }
-    
-    if (points.length < 2) return;
-    const lastPt = points[points.length - 1];
-
-    // Plasma trail curve fill
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, crashed ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 240, 255, 0.15)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.beginPath();
-    ctx.moveTo(40, H - 30);
-    points.forEach(p => ctx.lineTo(p.px, p.py));
-    ctx.lineTo(lastPt.px, H - 30);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Luminous Plasma flight trail
-    ctx.beginPath();
-    ctx.strokeStyle = crashed ? '#ef4444' : '#00F0FF';
-    ctx.lineWidth = 3;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = crashed ? '#ef4444' : '#00F0FF';
-    points.forEach((p, i) => i === 0 ? ctx.moveTo(p.px, p.py) : ctx.lineTo(p.px, p.py));
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // Drawing Parallel trajectories of other players in flight
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    points.forEach((p, i) => {
-      if (i === 0) ctx.moveTo(p.px, p.py - 15);
-      else ctx.lineTo(p.px, p.py - 15);
-    });
-    ctx.stroke();
-
-    // Sputtering Engine flame particles
-    if (!crashed) {
-      const angle = Math.atan2(
-        points[Math.max(0, points.length - 3)].py - lastPt.py,
-        lastPt.px - points[Math.max(0, points.length - 3)].px
-      );
-      
-      // Add combustion exhaust particles
-      for (let i = 0; i < 2; i++) {
-        particlesRef.current.push({
-          x: lastPt.px - Math.cos(angle) * 10,
-          y: lastPt.py + Math.sin(angle) * 10,
-          vx: -Math.cos(angle) * (2 + Math.random() * 3) + (Math.random() - 0.5) * 1.5,
-          vy: Math.sin(angle) * (2 + Math.random() * 3) + (Math.random() - 0.5) * 1.5,
-          life: 1.0,
-          color: Math.random() > 0.4 ? '#f97316' : '#ef4444',
-          size: 2 + Math.random() * 3
-        });
-      }
-    }
-
-    // Render Particles
-    particlesRef.current = particlesRef.current.filter(p => p.life > 0);
-    particlesRef.current.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.life -= 0.06;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.shadowBlur = p.life * 6;
-      ctx.shadowColor = p.color;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    });
-
-    // Spacecraft Model Rendering (4D visuals moved to DOM overlay for high fidelity)
-    if (rocketRef.current) {
-      if (!crashed) {
-        const rectW = canvas.clientWidth;
-        const rectH = canvas.clientHeight;
-        const domX = (lastPt.px / 500) * rectW;
-        const domY = (lastPt.py / 300) * rectH;
-        
-        const prevPt = points[Math.max(0, points.length - 3)] || lastPt;
-        const angle = Math.atan2(prevPt.py - lastPt.py, lastPt.px - prevPt.px);
-        const angleDeg = -(angle * 180 / Math.PI);
-        
-        rocketRef.current.style.transform = `translate3d(${domX}px, ${domY}px, 0) rotate(${angleDeg}deg)`;
-        rocketRef.current.style.opacity = '1';
-      } else {
-        rocketRef.current.style.opacity = '0';
-      }
-    }
-
-    // Exploding Crash Sphere
-    if (crashEffectRef.current) {
-      const ce = crashEffectRef.current;
-      ctx.save();
-      const gradExplosion = ctx.createRadialGradient(lastPt.px, lastPt.py, 2, lastPt.px, lastPt.py, ce.radius);
-      gradExplosion.addColorStop(0, '#ffffff');
-      gradExplosion.addColorStop(0.3, '#f97316');
-      gradExplosion.addColorStop(1, 'transparent');
-      ctx.fillStyle = gradExplosion;
-      ctx.beginPath();
-      ctx.arc(lastPt.px, lastPt.py, ce.radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-
-      ce.radius += 6;
-      ce.opacity -= 0.04;
-      if (ce.opacity <= 0) crashEffectRef.current = null;
-    }
-  };
-
   const tick = () => {
     const elapsed = (Date.now() - startTimeRef.current) / 1000;
     const currentMult = Math.round(Math.pow(Math.E, 0.08 * elapsed) * 100) / 100;
+    
+    setElapsedSeconds(elapsed);
 
-    // Near-miss check: Check if close to any historical crash points
     let nearMiss = false;
     pastCrashes.forEach(pc => {
       if (Math.abs(currentMult - pc) <= 0.05 && currentMult < pc) {
@@ -249,26 +228,15 @@ export function CrashGame({ onClose }: CrashGameProps) {
       }
     });
 
-    if (nearMiss) {
-      setTimeDilationActive(true);
-      // Trigger visual slow-mo vignette
-    } else {
-      setTimeDilationActive(false);
-    }
+    setTimeDilationActive(nearMiss);
 
     if (currentMult >= crashPointRef.current) {
       setMultiplier(crashPointRef.current);
       setGameState('crashed');
-      crashEffectRef.current = { radius: 15, opacity: 1 };
-      
-      // Update past crash history
       setPastCrashes(prev => [crashPointRef.current, ...prev.slice(0, 3)]);
-
-      drawGraph(elapsed, crashPointRef.current, true);
       
-      // Explosion sequence sound
       playTone(85, 0.5, 'sawtooth', 0.4);
-      playTone(45, 0.8, 'sine', 0.5); // sub-bass rumble
+      playTone(45, 0.8, 'sine', 0.5); 
       vibrate([150, 50, 250, 50, 300]);
       
       setTinnitusActive(true);
@@ -284,9 +252,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
     }
 
     setMultiplier(currentMult);
-    drawGraph(elapsed, currentMult, false);
 
-    // Vibration tremors correlating to flight speed altitude
     if (currentMult > 1.8) {
       const shakeChance = Math.min(0.8, (currentMult / 20));
       if (Math.random() < shakeChance) {
@@ -313,7 +279,6 @@ export function CrashGame({ onClose }: CrashGameProps) {
       toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
     }
 
-    // Countdown state trigger
     setGameState('countdown');
     setCountdownTicks(5);
     setMultiplier(1.0);
@@ -321,24 +286,21 @@ export function CrashGame({ onClose }: CrashGameProps) {
     cashedOutRef.current = false;
     setEarnedTokens(0);
     setSocialFeed([]);
-    particlesRef.current = [];
-    crashEffectRef.current = null;
     setSafetyCoverOpen(false);
+    setFlightPath([]);
+    setElapsedSeconds(0);
 
-    // Tick down countdown
     let ticks = 5;
     const countTimer = setInterval(() => {
       ticks--;
       setCountdownTicks(ticks);
       
-      // Amber Warning sound
       playTone(320, 0.1, 'sine', 0.2);
       vibrate(12);
 
       if (ticks <= 0) {
         clearInterval(countTimer);
         
-        // Launch spacecraft
         setGameState('climbing');
         playTone(392.00, 0.12, 'sine', 0.25);
         setTimeout(() => playTone(523.25, 0.2, 'sine', 0.3), 100);
@@ -374,13 +336,11 @@ export function CrashGame({ onClose }: CrashGameProps) {
     cashedOutRef.current = true;
     setIsAborting(true);
     
-    // Safety cover slam down sound
     playTone(180, 0.15, 'sawtooth', 0.3);
 
     const earned = Math.floor(betAmount * m);
     setEarnedTokens(earned);
 
-    // Sonic boom sound barrier break melody
     toast.success(`🚀 Sound barrier broken at ${m.toFixed(2)}x! +${earned - betAmount} tokens!`);
     playTone(523.25, 0.1, 'sine', 0.3);
     setTimeout(() => playTone(1046.50, 0.2, 'sine', 0.4), 80);
@@ -407,7 +367,6 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   const multColor = getMultColor(multiplier);
 
-  // Vibration Tremor Amplitude for screen shake in styling
   const getScreenTremor = () => {
     if (gameState !== 'climbing') return 'none';
     const intensity = Math.min(5, multiplier * 0.4);
@@ -416,24 +375,30 @@ export function CrashGame({ onClose }: CrashGameProps) {
     return `translate3d(${rx}px, ${ry}px, 0px)`;
   };
 
+  const handlePathUpdate = (p: THREE.Vector3) => {
+    // Keep trail length reasonable
+    setFlightPath(prev => {
+       const newPath = [...prev, p.clone()];
+       if (newPath.length > 50) newPath.shift();
+       return newPath;
+    });
+  };
+
   return (
     <div 
-      className={`flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
+      className={`flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
         tinnitusActive ? 'filter saturate-30 contrast-125' : ''
       }`}
       style={{ transform: getScreenTremor(), background: 'linear-gradient(135deg, #0f1f3d 0%, #0a1628 50%, #0d1a30 100%)' }}
     >
-      {/* Time Dilation Slow-mo Vignette */}
       {timeDilationActive && (
         <div className="absolute inset-0 pointer-events-none z-10 shadow-[inset_0_0_80px_rgba(0,240,255,0.35)] animate-pulse" />
       )}
 
-      {/* Volumetric sonic abort screen flash */}
       {isAborting && (
         <div className="absolute inset-0 pointer-events-none z-30 bg-white/30 transition-all duration-200" />
       )}
 
-      {/* Styled inline sheet */}
       <style>{`
         .hud-digital-readout {
           animation: hudPulse 1.8s infinite ease-in-out;
@@ -442,14 +407,6 @@ export function CrashGame({ onClose }: CrashGameProps) {
           0%, 100% { opacity: 0.95; }
           50% { opacity: 0.8; }
         }
-        .animate-rocket-wobble {
-          animation: rocket-wobble 0.6s infinite ease-in-out;
-        }
-        @keyframes rocket-wobble {
-          0%, 100% { transform: translateY(0) rotateX(0) rotateY(0); }
-          25% { transform: translateY(-1px) rotateX(25deg) rotateY(15deg); }
-          75% { transform: translateY(1px) rotateX(-25deg) rotateY(-15deg); }
-        }
         .abort-switch-cover {
           transform-origin: top;
           transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -457,18 +414,17 @@ export function CrashGame({ onClose }: CrashGameProps) {
         .abort-switch-cover.open {
           transform: rotateX(-120deg);
         }
-        /* 3D Stack chips display container */
         .chip-stack-3d {
           perspective: 200px;
         }
       `}</style>
 
       {/* Left bet control center */}
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/95 border border-slate-800 rounded-2xl shrink-0 z-20">
+      <Card className="w-full lg:w-96 flex flex-col justify-between p-5 space-y-5 bg-slate-900/95 border border-slate-800 rounded-2xl shrink-0 z-20">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 to-yellow-300 uppercase tracking-widest">
-              MISSION CONTROL
+              MISSION CONTROL 3D
             </h2>
             <ShieldAlert size={16} className="text-red-500 animate-pulse" />
           </div>
@@ -476,7 +432,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
           <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={gameState === 'climbing' || gameState === 'countdown'} />
 
           <div className="space-y-1">
-            <span className="text-2xs text-slate-400 font-bold uppercase tracking-wider">AUTO CASHOUT (MULT)</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AUTO CASHOUT (MULT)</span>
             <div className="flex rounded-xl bg-slate-950 p-1.5 border border-slate-800">
               <input type="number" step="0.1" min="1.01" placeholder="Disabled"
                 value={autoCashOut ?? ''}
@@ -487,17 +443,15 @@ export function CrashGame({ onClose }: CrashGameProps) {
             </div>
           </div>
 
-          {/* Potential payout status bar */}
           {gameState === 'climbing' && (
             <div className="text-center p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-              <p className="text-2xs text-slate-500 uppercase tracking-widest mb-0.5">NET WIN VALUE</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">NET WIN VALUE</p>
               <p className="text-2xl font-bold font-mono" style={{ color: multColor }}>
                 +{(betAmount * multiplier).toFixed(0)} tokens
               </p>
             </div>
           )}
 
-          {/* 3D Chip Stack visualization */}
           <div className="chip-stack-3d flex justify-center gap-1 py-1">
             {Array.from({ length: Math.min(8, Math.ceil(betAmount / 50)) }).map((_, i) => (
               <div 
@@ -509,11 +463,9 @@ export function CrashGame({ onClose }: CrashGameProps) {
           </div>
         </div>
 
-        {/* Dynamic Action Triggering */}
         <div className="space-y-2.5">
           {gameState === 'climbing' ? (
             <div className="space-y-2">
-              {/* Abort Switch Safety Cover Lever */}
               <div 
                 className="relative bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center cursor-pointer"
                 onMouseEnter={() => setSafetyCoverOpen(true)}
@@ -525,7 +477,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
                 }`}>
                   SAFETY SHIELD ACTIVE
                 </div>
-                <div className="h-6" /> {/* Spacer */}
+                <div className="h-6" /> 
                 <Button 
                   variant="neon" 
                   size="lg" 
@@ -554,16 +506,16 @@ export function CrashGame({ onClose }: CrashGameProps) {
               {gameState === 'crashed' ? 'RELAUNCH SPACECRAFT' : 'Bets Locked: Start Launch'}
             </Button>
           )}
-          <Button variant="ghost" className="w-full text-2xs text-slate-400 hover:text-slate-400 py-1.5" onClick={onClose}>
+          <Button variant="ghost" className="w-full text-[10px] text-slate-400 hover:text-slate-400 py-1.5" onClick={onClose}>
             Disconnect Console
           </Button>
         </div>
       </Card>
 
-      {/* Holo projection viewport screen */}
-      <Card className="flex-1 flex flex-col relative min-h-[400px] bg-slate-950 border border-slate-900 rounded-2xl overflow-hidden">
-        {/* HUD readout digital overlay */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between z-10 hud-digital-readout pointer-events-none">
+      {/* 3D Holo projection viewport screen */}
+      <Card className="flex-1 flex flex-col relative min-h-[500px] bg-slate-950 border border-slate-900 rounded-2xl overflow-hidden z-20">
+        
+        <div className="absolute top-4 left-4 right-4 flex justify-between z-30 hud-digital-readout pointer-events-none">
           <AnimatePresence mode="wait">
             <motion.h2 
               key={multiplier.toFixed(2)} 
@@ -575,15 +527,14 @@ export function CrashGame({ onClose }: CrashGameProps) {
               {multiplier.toFixed(2)}x
             </motion.h2>
           </AnimatePresence>
-          <div className="flex items-center gap-1.5 text-2xs text-slate-500 font-mono">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
             <AlertTriangle size={11} className="text-red-500 animate-pulse" />
             <span>CRITICAL TRAJECTORY ACTIVE</span>
           </div>
         </div>
 
-        {/* Visual countdown sequence overlay */}
         {gameState === 'countdown' && (
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center pointer-events-none">
             <p className="text-xs uppercase tracking-widest text-orange-400 font-bold animate-pulse">WARPING IGNITION SEQUENCE</p>
             <motion.h3 
               key={countdownTicks}
@@ -596,55 +547,60 @@ export function CrashGame({ onClose }: CrashGameProps) {
           </div>
         )}
 
-        {/* Red crashed warning overlay */}
-        {gameState === 'crashed' && (
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }}
-            className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none bg-red-950/20 backdrop-blur-3xs"
-          >
-            <div className="text-center">
-              <p className="text-4xl font-black text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]">💥 CORE RUPTURED</p>
-              <p className="text-sm text-red-300 font-mono mt-1">Telemetry terminated at {crashPointRef.current}x</p>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Graph canvas */}
-        <div className="relative w-full h-[300px]">
-          <canvas ref={canvasRef} width={500} height={300} className="w-full h-full block" />
-          
-          {/* 4D DOM Rocket Overlay */}
-          <div 
-            ref={rocketRef} 
-            className="absolute top-0 left-0 -ml-8 -mt-3 pointer-events-none z-30 transition-opacity duration-150"
-            style={{ opacity: 0, willChange: 'transform' }}
-          >
-            <div className="relative animate-rocket-wobble" style={{ transformStyle: 'preserve-3d', perspective: '800px' }}>
-              {/* Thrust Glow */}
-              <div className="absolute -left-16 top-1/2 -translate-y-1/2 w-20 h-8 bg-gradient-to-r from-transparent via-orange-500/80 to-yellow-300 blur-xl rounded-full animate-pulse" />
-              <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-12 h-3 bg-gradient-to-r from-transparent via-cyan-400 to-white blur-md rounded-full animate-pulse" />
+        <div className="absolute inset-0 z-0">
+           <GameEngine3D 
+              enablePhysics={gameState === 'crashed'} // Enable dynamics when crashed
+              cameraPosition={[0, 0, 15]}
+              enablePostProcessing={true}
+           >
+              <GridEnvironment crashed={gameState === 'crashed'} />
               
-              {/* Main Hull */}
-              <div className="relative w-16 h-6 bg-gradient-to-r from-slate-200 via-white to-slate-300 rounded-full shadow-[0_0_20px_rgba(0,240,255,0.6)] overflow-hidden border border-slate-100/50">
-                {/* Cockpit */}
-                <div className="absolute right-2 top-1 w-6 h-3 bg-cyan-400/40 border border-cyan-200 rounded-full backdrop-blur-md shadow-[inset_0_0_8px_rgba(0,240,255,1)]" />
-              </div>
+              {/* Only show rocket line trail if not in countdown/betting */}
+              {(gameState === 'climbing' || gameState === 'crashed') && (
+                <>
+                  <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
+                  <Rocket3D 
+                    multiplier={multiplier} 
+                    crashed={gameState === 'crashed'} 
+                    elapsed={elapsedSeconds} 
+                    onPathUpdate={handlePathUpdate} 
+                  />
+                  
+                  {gameState === 'crashed' && flightPath.length > 0 && (
+                    <mesh position={flightPath[flightPath.length - 1]}>
+                      <sphereGeometry args={[1.5, 32, 32]} />
+                      <meshBasicMaterial color="#ff4400" transparent opacity={0.6} blending={THREE.AdditiveBlending} />
+                      <pointLight color="#ff0000" intensity={10} distance={20} />
+                    </mesh>
+                  )}
+                </>
+              )}
               
-              {/* Wings */}
-              <div className="absolute left-2 -top-2 w-6 h-3 bg-slate-300 rounded-sm transform skew-x-[30deg] border-t border-white/50 shadow-lg" />
-              <div className="absolute left-2 -bottom-2 w-6 h-3 bg-slate-300 rounded-sm transform -skew-x-[30deg] border-b border-white/50 shadow-lg" />
-            </div>
-          </div>
+              <Html center position={[0, 0, 0]} zIndexRange={[100, 0]} className="pointer-events-none">
+                <AnimatePresence>
+                  {gameState === 'crashed' && (
+                    <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }} 
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="flex items-center justify-center w-[400px]"
+                    >
+                      <div className="text-center bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-red-500/30">
+                        <p className="text-4xl font-black text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]">💥 CORE RUPTURED</p>
+                        <p className="text-sm text-red-300 font-mono mt-1">Telemetry terminated at {crashPointRef.current}x</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Html>
+           </GameEngine3D>
         </div>
 
-        {/* Live Parallel Mission trajectories list */}
-        <div className="px-4 pb-3 space-y-1 min-h-[90px] border-t border-slate-900/60 bg-slate-950/40">
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 space-y-1 min-h-[90px] border-t border-slate-900/60 bg-slate-950/80 backdrop-blur-sm z-30">
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest py-1">Telemetry feed</p>
           <AnimatePresence>
             {socialFeed.map((e, i) => (
               <motion.div key={e.user+i} initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex justify-between text-2xs text-slate-400 font-mono leading-relaxed">
+                className="flex justify-between text-[10px] text-slate-400 font-mono leading-relaxed">
                 <span className="text-cyan-300">🛰️ {e.user}</span>
                 <span>Aborted bet @ <span className="text-amber-400 font-bold">{e.mult}x</span></span>
               </motion.div>

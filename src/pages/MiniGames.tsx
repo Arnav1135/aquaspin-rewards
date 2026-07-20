@@ -15,6 +15,7 @@ import { TicTacToeGame } from '@/components/games/TicTacToeGame';
 import { MathsQuizGame } from '@/components/games/MathsQuizGame';
 import { SudokuGame } from '@/components/games/SudokuGame';
 import { FlappyBirdGame } from '@/components/games/FlappyBirdGame';
+import { PoolGame } from '@/components/games/pool/PoolGame';
 import { KnifeThrowerGame } from '@/components/games/KnifeThrowerGame';
 import { ChickenJumpGame } from '@/components/games/ChickenJumpGame';
 import { DotsAndBoxesGame } from '@/components/games/DotsAndBoxesGame';
@@ -22,7 +23,7 @@ import { DartsGame } from '@/components/games/DartsGame';
 import { ArcheryGame } from '@/components/games/ArcheryGame';
 import { ChessGame } from '@/components/games/ChessGame';
 import { SolitaireGame } from '@/components/games/SolitaireGame';
-import { PoolGame } from '@/components/games/PoolGame';
+
 import { Match3Game } from '@/games/match3';
 
 // Betting / Casino games

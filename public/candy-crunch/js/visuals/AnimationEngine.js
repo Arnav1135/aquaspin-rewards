@@ -1,9 +1,10 @@
 import { COLOR_PALETTE } from '../core/Constants.js';
 
-import { AdvancedBloomFilter } from '@pixi/filter-advanced-bloom';
-import { ShockwaveFilter } from '@pixi/filter-shockwave';
-import { GodrayFilter } from '@pixi/filter-godray';
-import { BevelFilter } from '@pixi/filter-bevel';
+// Safe resolution of PIXI filters (whether loaded via CDN or global PIXI)
+const AdvancedBloomFilter = window.PIXI?.filters?.AdvancedBloomFilter || class { constructor() {} };
+const ShockwaveFilter = window.PIXI?.filters?.ShockwaveFilter || class { constructor() {} };
+const GodrayFilter = window.PIXI?.filters?.GodrayFilter || class { constructor() {} };
+const BevelFilter = window.PIXI?.filters?.BevelFilter || class { constructor() {} };
 
 export class Particle {
   constructor() {

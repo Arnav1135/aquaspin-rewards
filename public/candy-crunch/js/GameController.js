@@ -40,17 +40,26 @@ export class GameController {
     this.modalScore = document.getElementById('modal-score');
     this.modalStars = document.getElementById('modal-stars');
     
-    this.pixiApp = new PIXI.Application({
-      view: this.pixiCanvas,
-      width: this.board.W * this.cellSize,
-      height: this.board.H * this.cellSize,
-      transparent: true,
+    this.pixiApp = window._pixiApp || new PIXI.Application({
+      width: 500,
+      height: 500,
+      backgroundAlpha: 0,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true
     });
 
     this.pixiContainer = new PIXI.Container();
-    this.pixiApp.stage.addChild(this.pixiContainer);
+    if (this.pixiApp && this.pixiApp.stage) {
+      this.pixiApp.stage.addChild(this.pixiContainer);
+    }
+    this.boardContainer = this.pixiContainer;
+
+    const particleCanvas = document.getElementById('particle-canvas');
+    if (particleCanvas) {
+      this.particles = new ParticleSystem(particleCanvas);
+    } else {
+      this.particles = { burst: () => {}, confetti: () => {} };
+    }
     
     // Initialize Hyper 3D Shaders
     VisualEffects.initShaders(this.pixiApp, this.pixiContainer);
@@ -171,6 +180,10 @@ export class GameController {
     this.boardEl.style.width = boardPx + 'px';
     this.boardEl.style.height = boardPx + 'px';
 
+    if (this.pixiApp && this.pixiApp.renderer) {
+      this.pixiApp.renderer.resize(boardPx, boardPx);
+    }
+
     // HUD Update
     this.levelEl.textContent = n;
     this.scoreEl.textContent = 0;
@@ -288,13 +301,12 @@ export class GameController {
     cell.inner.innerHTML = '';
     cell.el.className = 'cell';
 
-    // Sync PixiJS Sprite for Candy
+    // Sync PixiJS Sprite & DOM element for Candy
     if (cell.hasCandy()) {
       cell.sprite.texture = CandyRenderer.getTexture(cell.candyColor, cell.candyType);
       cell.sprite.visible = true;
+      cell.inner.innerHTML += CandyRenderer.render(cell.candyColor, cell.candyType);
       
-      // Temporary: Timer text can't easily be a texture in this quick port, 
-      // so we use DOM fallback for timer overlays if needed.
       if (cell.candyType === CANDY_TYPES.TIMER) {
          cell.inner.innerHTML += CandyRenderer.renderTimer(cell.candyColor, cell.timerVal);
       }

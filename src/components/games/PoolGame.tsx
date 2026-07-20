@@ -235,11 +235,53 @@ export function PoolGame({ onClose }: Props) {
       // Aim guide
       const cue = gs.balls.find(b => b.isCue && !b.pocketed);
       if (cue && gs.phase === 'aiming') {
-        // Dotted aim line
-        ctx.strokeStyle = 'rgba(255,255,200,0.5)'; ctx.lineWidth = 1; ctx.setLineDash([5,8]);
-        ctx.beginPath(); ctx.moveTo(cue.x, cue.y);
-        ctx.lineTo(cue.x + Math.cos(gs.aimAngle)*200, cue.y + Math.sin(gs.aimAngle)*200);
-        ctx.stroke(); ctx.setLineDash([]);
+        // Redesigned Aim Prediction Trajectory
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)'; 
+        ctx.lineWidth = 1.5; 
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cue.x, cue.y);
+        
+        let simX = cue.x;
+        let simY = cue.y;
+        let simVx = Math.cos(gs.aimAngle);
+        let simVy = Math.sin(gs.aimAngle);
+        
+        // Raycast up to 3 bounces
+        for (let bounce = 0; bounce < 3; bounce++) {
+          let dist = 0;
+          while (dist < 400) {
+            simX += simVx * 5;
+            simY += simVy * 5;
+            dist += 5;
+            
+            // Wall collisions for prediction
+            if (simX < TL || simX > TR || simY < TT || simY > TB) {
+              if (simX < TL) { simX = TL; simVx = -simVx; }
+              else if (simX > TR) { simX = TR; simVx = -simVx; }
+              if (simY < TT) { simY = TT; simVy = -simVy; }
+              else if (simY > TB) { simY = TB; simVy = -simVy; }
+              ctx.lineTo(simX, simY);
+              break;
+            }
+            
+            // Hit a ball?
+            const hitBall = gs.balls.find(b => !b.isCue && !b.pocketed && Math.hypot(b.x - simX, b.y - simY) < b.r + 11);
+            if (hitBall) {
+              ctx.lineTo(simX, simY);
+              // Draw impact ghost ball
+              ctx.arc(simX, simY, 11, 0, Math.PI * 2);
+              dist = 400; // end ray
+              break;
+            }
+          }
+          if (dist >= 400) {
+            ctx.lineTo(simX, simY);
+            break;
+          }
+        }
+        ctx.stroke(); 
+        ctx.setLineDash([]);
 
         // Cue stick
         ctx.save(); ctx.translate(cue.x, cue.y); ctx.rotate(gs.aimAngle+Math.PI);

@@ -136,12 +136,11 @@ function Rocket3D({
     const startX = -12;
     const startY = -4;
     
-    // X increases linearly with elapsed time
-    const x = startX + (t * 2.5);
+    // X increases with constant velocity
+    const x = startX + (t * 3.5);
     
-    // Y follows exponential curve based on elapsed time: y = Math.pow(elapsed, 1.8) * speedFactor
-    // We tie it to multiplier growth
-    const y = startY + Math.pow(t, 1.8) * 0.4;
+    // Y follows an exponential thrust acceleration curve (physics-based powered flight)
+    const y = startY + (Math.exp(t * 0.35) - 1) * 2.0;
     
     return new THREE.Vector3(x, y, 0);
   };

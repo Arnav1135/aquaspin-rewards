@@ -36,7 +36,7 @@ const PEG_RADIUS = 0.15;
 const PEG_SPACING_X = 1.2;
 const PEG_SPACING_Y = 1.0;
 
-function PlinkoBoard({ rows, multipliers, onBallLanded }: { rows: number, multipliers: number[], onBallLanded: (idx: number, id: string) => void }) {
+function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: number, multipliers: number[], onBallLanded: (idx: number, id: string) => void, blinkingIdx: number | null }) {
   const pegPositions = useMemo(() => {
     const positions: THREE.Vector3[] = [];
     for (let r = 0; r <= rows; r++) {
@@ -90,15 +90,23 @@ function PlinkoBoard({ rows, multipliers, onBallLanded }: { rows: number, multip
               <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.5, 0.5]} />
             </RigidBody>
             <Html center position={[0, -0.8, 0]} className="pointer-events-none">
-              <div className={`px-2 py-1 rounded font-bold text-xs shadow-lg backdrop-blur-md ${mult >= 2 ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'}`}>
+              <div className={`px-2 py-1 rounded font-bold text-xs shadow-lg backdrop-blur-md transition-all duration-300 ${mult >= 2 ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'} ${blinkingIdx === i ? 'scale-125 ring-4 ring-yellow-400 brightness-150' : 'scale-100'}`}>
                 {mult}x
               </div>
             </Html>
-            {/* Divider lines */}
-            <mesh position={[PEG_SPACING_X/2, 0, 0]}>
-               <boxGeometry args={[0.1, 1.5, 0.5]} />
-               <meshStandardMaterial color="#1E293B" />
-            </mesh>
+            {/* Divider lines with steep physics cap to prevent stuck balls */}
+            <RigidBody type="fixed" position={[PEG_SPACING_X/2, 0, 0]} colliders="hull">
+               {/* Main vertical divider */}
+               <mesh>
+                 <boxGeometry args={[0.1, 1.5, 0.5]} />
+                 <meshStandardMaterial color="#1E293B" />
+               </mesh>
+               {/* Steep slanted cap so balls roll off */}
+               <mesh position={[0, 0.75, 0]} rotation={[0, 0, Math.PI / 4]}>
+                 <boxGeometry args={[0.15, 0.15, 0.5]} />
+                 <meshStandardMaterial color="#1E293B" />
+               </mesh>
+            </RigidBody>
           </group>
         );
       })}
@@ -143,16 +151,20 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
   const [risk, setRisk] = useState<RiskLevel>('medium');
   const [rows, setRows] = useState(8);
   const [balls, setBalls] = useState<{ id: string, bet: number }[]>([]);
+  const [isDropping, setIsDropping] = useState(false);
+  const [blinkingIdx, setBlinkingIdx] = useState<number | null>(null);
   
   const multipliers = MULTS[risk][rows];
 
   const handleDrop = async () => {
+    if (isDropping) return;
     if (!profile || profile.tokens < betAmount) {
       toast.error('Insufficient tokens');
       return;
     }
 
     try {
+      setIsDropping(true);
       // Deduct bet
       const newBalance = profile.tokens - betAmount;
       (updateProfile as any)({ tokens: newBalance });
@@ -165,6 +177,8 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
     } catch (e) {
       console.error(e);
       toast.error('Transaction failed');
+    } finally {
+      setTimeout(() => setIsDropping(false), 200); // 200ms debounce
     }
   };
 
@@ -178,6 +192,10 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
     
     // Remove immediately so it doesn't double-trigger
     removeBall(ballId);
+    
+    // Trigger multiplier blink
+    setBlinkingIdx(bucketIdx);
+    setTimeout(() => setBlinkingIdx(null), 500);
 
     const mult = multipliers[bucketIdx];
     const winAmount = Math.floor(ball.bet * mult);
@@ -210,7 +228,7 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
             enablePostProcessing={true}
             cameraPosition={[0, 0, 14]}
           >
-            <PlinkoBoard rows={rows} multipliers={multipliers} onBallLanded={handleBallLanded} />
+            <PlinkoBoard rows={rows} multipliers={multipliers} onBallLanded={handleBallLanded} blinkingIdx={blinkingIdx} />
             
             {balls.map(ball => (
               <PlinkoBall 

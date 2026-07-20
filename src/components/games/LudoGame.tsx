@@ -407,11 +407,13 @@ export function LudoGame({ onClose }: Props) {
   const startOnlineMultiplayer = () => {
     setMatchmaking(true);
     setLobbyStatus('Searching for live opponents...');
+    setMatchmaking(true);
+    setLobbyStatus('Searching active players pool...');
     
-    // Simulate matchmaking lobby pairings
-    setTimeout(() => setLobbyStatus('Matching: Anya (Lv. 24) joined...'), 800);
-    setTimeout(() => setLobbyStatus('Matching: Lucas (Lv. 15) joined...'), 1600);
-    setTimeout(() => setLobbyStatus('Matching: Dheeraj (Lv. 42) joined...'), 2400);
+    // Simulate matchmaking lobby pairings randomly
+    setTimeout(() => setLobbyStatus(`Matching: ${['Anya', 'Raj', 'Priya'][Math.floor(Math.random()*3)]} joined...`), 800);
+    setTimeout(() => setLobbyStatus(`Matching: ${['Lucas', 'Max', 'Zoe'][Math.floor(Math.random()*3)]} joined...`), 1600);
+    setTimeout(() => setLobbyStatus(`Matching: ${['Dheeraj', 'Mia', 'Kai'][Math.floor(Math.random()*3)]} joined...`), 2400);
     setTimeout(() => {
       setPlayerConfig({
         red: 'human',
@@ -489,6 +491,7 @@ export function LudoGame({ onClose }: Props) {
               rolling={rolling}
               theme={theme}
               cameraState={cameraState}
+              activeColor={currentColor}
               onRollComplete={handleRollComplete}
               onTokenClick={handleTokenClick}
             />
@@ -589,6 +592,7 @@ interface SceneProps {
   rolling: boolean;
   theme: 'classic' | 'marble' | 'neon';
   cameraState: 'idle' | 'roll' | 'capture' | 'win';
+  activeColor: Color;
   onRollComplete: (val: number) => void;
   onTokenClick: (id: string) => void;
 }
@@ -599,6 +603,7 @@ function SceneContent({
   rolling,
   theme,
   cameraState,
+  activeColor,
   onRollComplete,
   onTokenClick
 }: SceneProps) {
@@ -631,13 +636,31 @@ function SceneContent({
     }
 
     // Camera animation curves using lerps
-    let targetPos = new THREE.Vector3(0, 7.5, 5.5); // Default tilted view
+    // Base position is top-angled, but rotated depending on activeColor
+    const angleMap = { red: 0, blue: -Math.PI/2, green: Math.PI, yellow: Math.PI/2 };
+    const baseAngle = angleMap[activeColor];
+    
+    // Rotate the default offset vector [0, 7.5, 6.0]
+    const defaultOffset = new THREE.Vector3(0, 7.5, 6.5);
+    defaultOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), baseAngle);
+    
+    let targetPos = defaultOffset.clone();
+    
     if (cameraState === 'roll') {
-      targetPos.set(0.0, 5.0, -1.0); // Focus closer to the dice tray
-      cameraTarget.current.set(0.0, 0.1, -4.8);
+      // Don't zoom in so extremely that pieces are hidden. Just pan slightly towards tray.
+      const trayOffset = new THREE.Vector3(0.0, 6.0, 1.0);
+      trayOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), baseAngle);
+      targetPos.copy(trayOffset);
+      
+      const lookOffset = new THREE.Vector3(0, 0, -2.0);
+      lookOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), baseAngle);
+      cameraTarget.current.copy(lookOffset);
     } else if (cameraState === 'capture') {
       // Add slight camera shake peaks
       const shakeAmt = Math.sin(state.clock.elapsedTime * 60) * 0.05;
+      targetPos.x += shakeAmt;
+      targetPos.z += shakeAmt;
+      cameraTarget.current.set(0, 0, 0);
       targetPos.set(shakeAmt, 7.5, 5.5 + shakeAmt);
       cameraTarget.current.set(0, 0, 0);
     } else if (cameraState === 'win') {

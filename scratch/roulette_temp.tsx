@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HelpCircle, Flame, GripHorizontal } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +10,7 @@ import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
-import { Text } from '@react-three/drei';
+import { Html, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
@@ -67,6 +68,7 @@ function CameraController({ gameState }: { gameState: GameState }) {
     camera.position.lerp(targetPos, 0.05);
     
     // Smooth lookAt
+    const currentLook = new THREE.Vector3(0,0,0);
     const cameraQuat = camera.quaternion.clone();
     camera.lookAt(targetLook);
     const targetQuat = camera.quaternion.clone();
@@ -76,44 +78,21 @@ function CameraController({ gameState }: { gameState: GameState }) {
 }
 
 function RouletteBowl() {
-  const diamonds = Array.from({ length: 8 }).map((_, i) => i * (Math.PI / 4));
   return (
     <group>
-      {/* Outer black/dark brown rim base */}
       <mesh position={[0, -0.2, 0]} receiveShadow>
-        <cylinderGeometry args={[4.6, 4.8, 0.8, 64, 1, true]} />
-        <meshStandardMaterial color="#1a0a05" metalness={0.4} roughness={0.6} side={THREE.DoubleSide} />
+        <cylinderGeometry args={[4.2, 4.4, 0.4, 64]} />
+        <meshStandardMaterial color="#2b1105" metalness={0.1} roughness={0.7} />
       </mesh>
-      
-      {/* Outer gold trim top */}
-      <mesh position={[0, 0.22, 0]} receiveShadow>
-        <torusGeometry args={[4.5, 0.1, 16, 64]} />
-        <meshStandardMaterial color="#eab308" metalness={0.9} roughness={0.1} />
+      <mesh position={[0, 0.1, 0]} receiveShadow>
+        <cylinderGeometry args={[4.2, 3.1, 0.4, 64]} />
+        <meshStandardMaterial color="#111" metalness={0.6} roughness={0.4} />
       </mesh>
-
-      {/* Inner slope (dark metal track) */}
-      <mesh position={[0, -0.1, 0]} receiveShadow>
-        <cylinderGeometry args={[4.4, 3.2, 0.6, 64, 1, true]} />
-        <meshStandardMaterial color="#111" metalness={0.6} roughness={0.4} side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* Deflector Diamonds */}
-      {diamonds.map((angle, i) => {
-        const radius = 3.8;
-        const x = Math.sin(angle) * radius;
-        const z = Math.cos(angle) * radius;
-        return (
-          <mesh key={i} position={[x, 0.05, z]} rotation={[Math.PI / 2, 0, angle]} castShadow>
-            <octahedronGeometry args={[0.08, 0]} />
-            <meshStandardMaterial color="#eab308" metalness={1} roughness={0.2} />
-          </mesh>
-        );
-      })}
     </group>
   );
 }
 
-function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, wheelRotRef: any }) {
+function RouletteWheel3D({ gameState, winIdx, wheelRotRef }: { gameState: GameState, winIdx: number | null, wheelRotRef: any }) {
   const currentRotation = useRef(0);
   
   useFrame((_, delta) => {
@@ -132,73 +111,25 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
 
   return (
     <group ref={wheelRotRef}>
-      {/* Inner dark floor base */}
-      <mesh position={[0, 0, 0]} receiveShadow>
-        <cylinderGeometry args={[3.2, 3.2, 0.1, 64]} />
-        <meshStandardMaterial color="#0a0a0a" metalness={0.8} roughness={0.3} />
+      <mesh position={[0, 0.3, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[1, 1.2, 0.4, 32]} />
+        <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.2} />
       </mesh>
 
-      {/* Gold Ring around pockets */}
-      <mesh position={[0, 0.05, 0]} receiveShadow>
-        <torusGeometry args={[2.9, 0.03, 16, 64]} />
-        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
-      </mesh>
-
-      {/* Center Turret (Spindle Base) */}
-      <mesh position={[0, 0.2, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[1.2, 1.6, 0.4, 32]} />
-        <meshStandardMaterial color="#111" metalness={0.8} roughness={0.2} />
-      </mesh>
-
-      <mesh position={[0, 0.4, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[0.3, 1.2, 0.15, 32]} />
-        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
-      </mesh>
-      
-      {/* Center Spindle Tower */}
-      <mesh position={[0, 0.8, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[0.15, 0.2, 0.8, 16]} />
-        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
-      </mesh>
-      <mesh position={[0, 1.2, 0]} receiveShadow castShadow>
-        <sphereGeometry args={[0.25, 32, 32]} />
-        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
-      </mesh>
-
-      {/* Cross bars */}
-      {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
-        <mesh key={i} position={[Math.sin(angle) * 0.4, 0.8, Math.cos(angle) * 0.4]} rotation={[Math.PI / 2, 0, angle]} castShadow>
-          <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
-          <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
-        </mesh>
-      ))}
-
-      {/* Pockets and Numbers Ring */}
       {WHEEL_TILES.map((tile, i) => {
         const angle = i * SECTOR_ANGLE;
-        const isRed = tile.color === 'red';
-        const isGreen = tile.color === 'green';
-        const color = isRed ? '#dc2626' : isGreen ? '#16a34a' : '#111111';
+        const color = tile.color === 'red' ? '#b91c1c' : tile.color === 'green' ? '#047857' : '#1e2d45';
         
         return (
           <group key={i} rotation={[0, angle, 0]}>
-            {/* Number Plate (Outer edge of rotor) */}
-            <mesh position={[0, 0.06, -2.6]} receiveShadow>
-              <boxGeometry args={[0.42, 0.02, 0.5]} />
-              <meshStandardMaterial color={color} metalness={0.3} roughness={0.5} />
+            <mesh position={[0, 0.1, -2.6]} receiveShadow>
+              <boxGeometry args={[0.55, 0.1, 1]} />
+              <meshStandardMaterial color={color} roughness={0.5} />
             </mesh>
-
-            {/* The actual pocket slot (Inner edge) */}
-            <mesh position={[0, 0.04, -2.1]} receiveShadow>
-              <boxGeometry args={[0.33, 0.04, 0.5]} />
-              <meshStandardMaterial color="#050505" metalness={0.8} roughness={0.2} />
-            </mesh>
-            
-            {/* 3D Number Text */}
             <Text
-              position={[0, 0.08, -2.6]}
+              position={[0, 0.16, -2.6]}
               rotation={[-Math.PI / 2, 0, 0]}
-              fontSize={0.22}
+              fontSize={0.25}
               color="white"
               anchorX="center"
               anchorY="middle"
@@ -206,11 +137,9 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
             >
               {tile.num.toString()}
             </Text>
-            
-            {/* Gold Divider Fret (Between pockets) */}
-            <mesh position={[0.22, 0.08, -2.35]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
-              <boxGeometry args={[0.02, 0.1, 1.0]} />
-              <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
+            <mesh position={[0.3, 0.2, -2.6]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
+              <boxGeometry args={[0.04, 0.2, 1]} />
+              <meshStandardMaterial color="#d4af37" metalness={0.8} roughness={0.2} />
             </mesh>
           </group>
         );
@@ -237,9 +166,9 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
       const pocketLocalAngle = winIdx * SECTOR_ANGLE;
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
-      const targetRadius = 2.1; // inner pocket radius
+      const targetRadius = 2.6;
       const targetX = Math.sin(absoluteAngle) * targetRadius;
-      const targetZ = -Math.cos(absoluteAngle) * targetRadius;
+      const targetZ = Math.cos(absoluteAngle) * targetRadius;
       
       ballRef.current.position.lerp(new THREE.Vector3(targetX, 0.15, targetZ), 0.05);
     } else if (gameState === 'PAYOUT') {
@@ -248,9 +177,9 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
       const pocketLocalAngle = winIdx * SECTOR_ANGLE;
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
-      const targetRadius = 2.1; // inner pocket radius
+      const targetRadius = 2.6;
       const targetX = Math.sin(absoluteAngle) * targetRadius;
-      const targetZ = -Math.cos(absoluteAngle) * targetRadius;
+      const targetZ = Math.cos(absoluteAngle) * targetRadius;
       
       ballRef.current.position.set(targetX, 0.15, targetZ);
     } else {
@@ -278,6 +207,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
   const [placedBets, setPlacedBets] = useState<PlacedBet[]>([]);
   const [winIdx, setWinIdx] = useState<number | null>(null);
   
+  const [history, setHistory] = useState<number[]>([]);
   const wheelRef = useRef<any>(null); // To pass to ball for absolute pos tracking
 
   const handlePlaceBet = (type: BetType, label: string, numbers: number[]) => {
@@ -343,6 +273,8 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       }
     });
 
+    setHistory(prev => [...prev.slice(-19), winningNum]);
+
     if (totalWin > 0 || halfRefund > 0) {
       const earned = totalWin + halfRefund;
       toast.success(`Payout: ${earned} tokens! ${halfRefund > 0 ? '(La Partage Applied)' : ''}`);
@@ -398,9 +330,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
             <CameraController gameState={gameState} />
             <group>
                <RouletteBowl />
-               <group ref={wheelRef}>
-                 <RouletteWheel3D gameState={gameState} wheelRotRef={wheelRef} />
-               </group>
+               <RouletteWheel3D gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
                <BallKinematic gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
             </group>
           </GameEngine3D>

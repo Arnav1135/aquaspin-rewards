@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   pixiApp.view.id = 'pixi-board';
   pixiApp.view.style.position = 'absolute';
   pixiApp.view.style.zIndex = '0';
+  pixiApp.view.style.width = '100%';
+  pixiApp.view.style.height = '100%';
+  pixiApp.view.style.objectFit = 'contain';
   boardWrap.insertBefore(pixiApp.view, boardWrap.firstChild);
 
   try {

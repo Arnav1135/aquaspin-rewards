@@ -218,8 +218,9 @@ export function FlappyBirdGame({ onClose }: Props) {
       // Pipes
       if (s.phase === 'playing' || s.phase === 'dead') {
         if (s.phase === 'playing') {
-          // Spawn pipes
-          if (s.frame % Math.max(40, Math.round(90 / dt)) === 0 || s.pipes.length === 0) {
+          // Spawn pipes based on spatial distance to avoid rendering overlap
+          const lastPipe = s.pipes.length > 0 ? s.pipes[s.pipes.length - 1] : null;
+          if (!lastPipe || W - lastPipe.x >= 220) {
             const gapY = 100 + Math.random() * (H - 280);
             const vY = s.movingPipes ? (Math.random() - 0.5) * 1.5 : 0;
             s.pipes.push({ x: W + 20, gapY, scored: false, velocityY: vY });

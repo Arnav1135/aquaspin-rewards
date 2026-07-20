@@ -1,25 +1,58 @@
-import { useRef, Suspense, useEffect } from 'react';
+import { useRef, Suspense } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/cannon';
-import { Environment, OrbitControls } from '@react-three/drei';
+import { Environment } from '@react-three/drei';
+import { EffectComposer, Bloom, N8AO } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
 import { Table } from './Table';
 import { PoolBall, getRackPositions } from './Balls';
-import { CueStick } from './Cue';
+import { CueStick, CueRef } from './Cue';
+import { CameraController } from './CameraController';
+import { PoolUIOverlay } from './PoolUIOverlay';
+import { useFrame } from '@react-three/fiber';
 
 import { usePoolStore } from './store';
 
+function GameManager({ ballsRef }: { ballsRef: React.MutableRefObject<any[]> }) {
+   const stopTimer = useRef(0);
+   
+   useFrame((_state, delta) => {
+      if (usePoolStore.getState().gameState === 'moving') {
+         let maxSpeed = 0;
+         for (let i = 0; i < ballsRef.current.length; i++) {
+            const b = ballsRef.current[i];
+            if (b && b.getSpeed) {
+               const s = b.getSpeed();
+               if (s > maxSpeed) maxSpeed = s;
+            }
+         }
+         
+         // If all balls are moving slower than 0.05 m/s
+         if (maxSpeed < 0.05) {
+             stopTimer.current += delta;
+             if (stopTimer.current > 0.5) { // wait 0.5 sec of rest
+                usePoolStore.getState().resolveTurn();
+                stopTimer.current = 0;
+             }
+         } else {
+             stopTimer.current = 0;
+         }
+      }
+   });
+   return null;
+}
+
 export function PoolGame({ onClose }: { onClose: () => void }) {
   const cueBallRef = useRef<any>(null);
+  const ballsRef = useRef<any[]>([]);
+  const cueStickRef = useRef<CueRef>(null);
   const state = usePoolStore();
   const rackPos = getRackPositions();
 
-  useEffect(() => {
-    usePoolStore.getState().startGame();
-  }, []);
+  // Wait for user to start game from menu
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-[1400px] mx-auto min-h-[calc(100vh-120px)]">
@@ -43,7 +76,7 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
          <Button onClick={onClose} variant="ghost" className="mt-auto">Exit Table</Button>
       </Card>
 
-      <Card className="flex-1 bg-slate-950 border-slate-900 overflow-hidden relative min-h-[600px]">
+      <Card className="flex-1 bg-slate-950 border-slate-900 overflow-hidden relative min-h-[600px] select-none">
         <Canvas 
           shadows
           gl={{
@@ -66,6 +99,7 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
              
              {/* Physics Engine (Layer 2) */}
              <Physics 
+               key={state.gameId}
                gravity={[0, -9.82, 0]} 
                defaultContactMaterial={{ friction: 0.3, restitution: 0.85 }}
                allowSleep
@@ -77,24 +111,36 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
                      key={i} 
                      id={i} 
                      position={pos} 
-                     ref={i === 0 ? cueBallRef : undefined} 
+                     ref={(el) => {
+                        ballsRef.current[i] = el;
+                        if (i === 0) cueBallRef.current = el;
+                     }} 
                    />
                 ))}
                 
                 {state.gameState === 'aiming' && (
-                  <CueStick cueBallRef={cueBallRef} onShoot={(force) => console.log('Shot fired:', force)} />
+                   <CueStick cueBallRef={cueBallRef} ref={cueStickRef} />
                 )}
+                
+                <GameManager ballsRef={ballsRef} />
              </Physics>
 
-             <OrbitControls 
-               minPolarAngle={Math.PI / 6}
-               maxPolarAngle={Math.PI / 2.2}
-               enablePan={false}
-               minDistance={1.2}
-               maxDistance={4}
-             />
+             <CameraController cueBallRef={cueBallRef} />
+             
+             {/* High-End Post Processing Stack */}
+             <EffectComposer multisampling={4}>
+               <N8AO aoRadius={0.1} intensity={2} />
+               <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} />
+             </EffectComposer>
           </Suspense>
         </Canvas>
+        
+        {/* HTML UI Overlay */}
+        <PoolUIOverlay 
+          onShoot={(power) => {
+            if (cueStickRef.current) cueStickRef.current.shoot(power);
+          }}
+        />
       </Card>
     </div>
   );

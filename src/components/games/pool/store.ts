@@ -22,10 +22,13 @@ interface PoolStore {
   isBreakShot: boolean;
   winner: 1 | 2 | null;
   spin: { x: number, y: number };
+  aimAngle: number;
+  shotPower: number;
   
   // Shot Tracking
   currentShotEvents: ShotEvents;
-  
+  gameId: number;
+
   // Actions
   startGame: () => void;
   startShot: () => void;
@@ -34,6 +37,8 @@ interface PoolStore {
   resolveTurn: () => void;
   placeBallInHand: () => void; // call when placing cue ball
   setSpin: (x: number, y: number) => void;
+  setAimAngle: (angle: number) => void;
+  setShotPower: (power: number) => void;
 }
 
 const initialShotEvents: ShotEvents = {
@@ -53,16 +58,20 @@ export const usePoolStore = create<PoolStore>((set) => ({
   isBreakShot: true,
   winner: null,
   spin: { x: 0, y: 0 },
+  aimAngle: 0,
+  shotPower: 0,
   currentShotEvents: { ...initialShotEvents },
+  gameId: 0,
 
-  startGame: () => set({
+  startGame: () => set((state) => ({
+    gameId: state.gameId + 1,
     gameState: 'aiming',
     currentPlayer: 1,
     isBreakShot: true,
     winner: null,
     players: { 1: { id: 1, group: null }, 2: { id: 2, group: null } },
     currentShotEvents: { ...initialShotEvents }
-  }),
+  })),
 
   startShot: () => set({ 
     gameState: 'moving',
@@ -196,5 +205,7 @@ export const usePoolStore = create<PoolStore>((set) => ({
 
   placeBallInHand: () => set({ gameState: 'aiming' }),
   
-  setSpin: (x, y) => set({ spin: { x, y } })
+  setSpin: (x, y) => set({ spin: { x, y } }),
+  setAimAngle: (aimAngle) => set({ aimAngle }),
+  setShotPower: (shotPower) => set({ shotPower })
 }));

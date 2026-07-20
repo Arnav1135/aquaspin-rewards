@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useSphere } from '@react-three/cannon';
 import { usePoolStore } from './store';
+import { audioManager } from './AudioManager';
 
 const BALL_RADIUS = 0.028575; // 57.15mm / 2
 const BALL_MASS = 0.17; // 170g
@@ -65,14 +66,21 @@ export const PoolBall = forwardRef(({ id, position }: { id: number, position: [n
     sleepSpeedLimit: 0.05,
     sleepTimeLimit: 0.5,
     onCollide: (e) => {
-      // Only cue ball (id=0) needs to register first contacts for rules
-      if (id === 0 && e.body.name === 'ball') {
-        const contactId = Number(e.body.userData?.id);
-        if (!isNaN(contactId)) {
-          usePoolStore.getState().registerCollision(0, contactId, false);
+      const v = Math.abs(e.contact.impactVelocity);
+      
+      if (e.body.name === 'ball') {
+        audioManager.playBallHit(v);
+        // Only cue ball (id=0) needs to register first contacts for rules
+        if (id === 0) {
+          const contactId = Number(e.body.userData?.id);
+          if (!isNaN(contactId)) {
+            usePoolStore.getState().registerCollision(0, contactId, false);
+          }
         }
       }
+      
       if (e.body.name === 'cushion') {
+         audioManager.playCushionHit(v);
          usePoolStore.getState().registerCollision(id, -1, true);
       }
     },
@@ -86,7 +94,11 @@ export const PoolBall = forwardRef(({ id, position }: { id: number, position: [n
 
   useEffect(() => {
     if (externalRef) {
-      externalRef.current = { ref, api };
+      externalRef.current = { 
+        ref, 
+        api,
+        getSpeed: () => Math.sqrt(velocity.current[0]**2 + velocity.current[1]**2 + velocity.current[2]**2)
+      };
     }
     const unsubVel = api.velocity.subscribe((v) => (velocity.current = v));
     const unsubAng = api.angularVelocity.subscribe((v) => (angularVelocity.current = v));
@@ -95,6 +107,7 @@ export const PoolBall = forwardRef(({ id, position }: { id: number, position: [n
     const unsubStore = usePoolStore.subscribe((state) => {
       if (state.currentShotEvents.ballsPocketed.includes(id) && !isPocketed.current) {
         isPocketed.current = true;
+        audioManager.playPocketDrop();
         api.position.set(id * 0.1, -1, 0);
         api.velocity.set(0, 0, 0);
         api.angularVelocity.set(0, 0, 0);
@@ -105,6 +118,16 @@ export const PoolBall = forwardRef(({ id, position }: { id: number, position: [n
          if (state.currentShotEvents.ballsPocketed.length === 0) {
             // isPocketed.current = false;
          }
+      }
+      
+      if (id === 0 && state.gameState === 'ballInHand') {
+          isPocketed.current = false;
+          api.position.set(-0.6, BALL_RADIUS, 0);
+          api.velocity.set(0, 0, 0);
+          api.angularVelocity.set(0, 0, 0);
+          api.wakeUp();
+          // Auto transition to aiming after a short delay
+          setTimeout(() => usePoolStore.getState().placeBallInHand(), 100);
       }
     });
 

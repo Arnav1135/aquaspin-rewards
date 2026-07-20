@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>8 Ball Pool - Hyper Realistic</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; user-select: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        #errorOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); color: white; display: none;
+            justify-content: center; align-items: center; flex-direction: column; z-index: 1000;
+        }
+
+        /* Feature 1: Power Meter */
+        #powerMeter {
+            position: fixed; left: 30px; top: 50%; transform: translateY(-50%);
+            width: 24px; height: 200px; background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+            overflow: hidden; backdrop-filter: blur(4px); z-index: 10;
+        }
+        #powerFill {
+            position: absolute; bottom: 0; width: 100%; height: 0%; border-radius: 12px;
+            background: linear-gradient(to top, #ff3333, #ffaa00, #33ff66);
+            transition: height 0.05s linear;
+        }
+        #powerLabel {
+            position: fixed; left: 60px; top: 50%; transform: translateY(-50%);
+            color: white; font-size: 12px; font-family: monospace; opacity: 0.7; z-index: 10;
+        }
+
+        /* Feature 2: Spin Control */
+        #spinControl {
+            position: fixed; right: 30px; bottom: 80px; width: 90px; height: 90px; z-index: 10;
+        }
+        #spinWheel { display: block; }
+        #spinDot {
+            position: absolute; width: 12px; height: 12px; background: white;
+            border-radius: 50%; border: 2px solid #333; transform: translate(-50%, -50%);
+            pointer-events: none; left: 45px; top: 45px;
+        }
+        
+        #uiLayer { position: fixed; pointer-events: none; width: 100%; height: 100%; top:0; left:0; z-index: 5; }
+    </style>
+    <!-- Dependencies -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/",
+          "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+        }
+      }
+    </script>
+</head>
+<body>
+
+    <div id="errorOverlay"></div>
+    
+    <div id="powerMeter"><div id="powerFill"></div></div>
+    <div id="powerLabel">POWER</div>
+
+    <div id="spinControl">
+        <canvas id="spinWheel" width="90" height="90"></canvas>
+        <div id="spinDot"></div>
+        <p style="color:white;text-align:center;font-size:10px;margin:4px 0 0;opacity:0.7">SPIN</p>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import * as CANNON from 'cannon-es';
+
+        // --- Globals ---
+        let scene, camera, renderer, controls, world;
+        let cueBallBody, cueBallMesh, cueStick;
+        let ballMeshes = [], ballBodies = [];
+        let guidelineMain, guidelineReflect;
+        const clock = new THREE.Clock();
+        
+        // State
+        let gameState = 'aiming'; // aiming, ballsMoving
+        let aimAngle = 0;
+        let tableTopY = 0;
+        const ballRadius = 0.028575;
+
+        // Features State
+        let chargeLevel = 0;
+        let isCharging = false;
+        let spinX = 0, spinY = 0;
+        
+        // Test suite variables
+        const testResults = [];
+
+        // --- Initialization ---
+        async function init() {
+            try {
+                initGraphics();
+                initPhysics();
+                buildTable();
+                buildBalls();
+                buildCueStick();
+                buildGuidelines();
+                setupControls();
+                setupUI();
+                
+                const passed = await runGameTests();
+                if (passed) {
+                    animate();
+                    setupWatchdogs();
+                }
+            } catch (err) {
+                console.error(err);
+                showError('Initialization failed: ' + err.message);
+            }
+        }
+
+        function initGraphics() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0d0d1a);
+            scene.fog = new THREE.FogExp2(0x0d0d1a, 0.15);
+
+            // Bug 5 Fix: WebGL Renderer Setup
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                powerPreference: 'high-performance',
+                alpha: false
+            });
+            if (!renderer.capabilities.isWebGL2) {
+                throw new Error('WebGL 2 not supported. Please use a modern browser.');
+            }
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            document.body.appendChild(renderer.domElement);
+
+            // Bug 3 Fix: Camera Perspective
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 2.8, 2.2);
+            camera.lookAt(0, 0, 0);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.minPolarAngle = Math.PI / 6;
+            controls.maxPolarAngle = Math.PI / 3;
+            controls.minAzimuthAngle = -Math.PI / 4;
+            controls.maxAzimuthAngle = Math.PI / 4;
+            controls.minDistance = 2.0;
+            controls.maxDistance = 4.5;
+            controls.enablePan = false;
+            controls.dampingFactor = 0.08;
+            controls.enableDamping = true;
+            controls.target.set(0, 0, 0);
+            controls.update();
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambient);
+
+            // Pendant Lights
+            for (let i = -0.6; i <= 0.6; i += 0.6) {
+                const lampGeo = new THREE.CylinderGeometry(0.08, 0.15, 0.12);
+                const lampMat = new THREE.MeshStandardMaterial({ color: 0xffeecc, emissive: 0xffeecc, emissiveIntensity: 0.8 });
+                const lamp = new THREE.Mesh(lampGeo, lampMat);
+                lamp.position.set(i, 1.8, 0);
+                scene.add(lamp);
+
+                const spot = new THREE.SpotLight(0xffffff, 150);
+                spot.position.set(i, 1.7, 0);
+                spot.angle = Math.PI / 5;
+                spot.penumbra = 0.4;
+                spot.decay = 2;
+                spot.castShadow = true;
+                spot.shadow.mapSize.set(2048, 2048);
+                spot.shadow.bias = -0.0005;
+                scene.add(spot);
+            }
+            
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(20, 20);
+            const floorMat = new THREE.MeshLambertMaterial({ color: 0x111118 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -0.08;
+            scene.add(floor);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function initPhysics() {
+            world = new CANNON.World();
+            world.gravity.set(0, -9.82, 0);
+            world.broadphase = new CANNON.SAPBroadphase(world);
+            world.allowSleep = true;
+            world.defaultContactMaterial.friction = 0.3;
+            world.defaultContactMaterial.restitution = 0.85;
+            
+            // Materials
+            const ballMat = new CANNON.Material('ball');
+            const tableMat = new CANNON.Material('table');
+            const cushionMat = new CANNON.Material('cushion');
+
+            world.addContactMaterial(new CANNON.ContactMaterial(ballMat, ballMat, {
+                friction: 0.05, restitution: 0.95
+            }));
+            world.addContactMaterial(new CANNON.ContactMaterial(ballMat, tableMat, {
+                friction: 0.35, restitution: 0.4, contactEquationStiffness: 1e9
+            }));
+            world.addContactMaterial(new CANNON.ContactMaterial(ballMat, cushionMat, {
+                friction: 0.1, restitution: 0.75
+            }));
+            
+            world.ballMat = ballMat;
+            world.tableMat = tableMat;
+            world.cushionMat = cushionMat;
+        }
+
+        function buildTable() {
+            // Bug 2 Fix: Felt texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a6b3c';
+            ctx.fillRect(0, 0, 1024, 512);
+            // Noise
+            for (let i=0; i<10000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+                ctx.fillRect(Math.random()*1024, Math.random()*512, 2, 2);
+            }
+            const feltTex = new THREE.CanvasTexture(canvas);
+            
+            const feltMat = new THREE.MeshPhysicalMaterial({
+                color: 0x1a6b3c, roughness: 0.92, metalness: 0.0, map: feltTex
+            });
+
+            // Table dimensions
+            const tw = 2.24, th = 1.12, rh = 0.06, rw = 0.08;
+            
+            // Render surface
+            const surfaceGeo = new THREE.BoxGeometry(tw, 0.02, th);
+            const surfaceMesh = new THREE.Mesh(surfaceGeo, feltMat);
+            surfaceMesh.position.y = tableTopY - 0.01;
+            surfaceMesh.receiveShadow = true;
+            scene.add(surfaceMesh);
+
+            // Physics surface
+            const surfaceBody = new CANNON.Body({ mass: 0, material: world.tableMat });
+            surfaceBody.addShape(new CANNON.Box(new CANNON.Vec3(tw/2, 0.01, th/2)));
+            surfaceBody.position.set(0, tableTopY - 0.01, 0);
+            world.addBody(surfaceBody);
+
+            // Frame/Cushions
+            const woodMat = new THREE.MeshPhysicalMaterial({ color: 0x3a2010, roughness: 0.3, clearcoat: 0.8 });
+            const cushMat = new THREE.MeshPhysicalMaterial({ color: 0x0d4a1e, roughness: 0.8 });
+
+            const buildCushion = (w, h, d, px, pz) => {
+                const bGeo = new THREE.BoxGeometry(w, h, d);
+                const cGeo = new THREE.BoxGeometry(w - (w>d?0.02:0), h, d - (d>w?0.02:0)); // slightly smaller inner cushion
+                
+                const wMesh = new THREE.Mesh(bGeo, woodMat);
+                wMesh.position.set(px, tableTopY + h/2 - 0.01, pz);
+                wMesh.castShadow = true;
+                scene.add(wMesh);
+
+                const body = new CANNON.Body({ mass: 0, material: world.cushionMat });
+                body.addShape(new CANNON.Box(new CANNON.Vec3(w/2, h/2, d/2)));
+                body.position.set(px, tableTopY + h/2, pz);
+                world.addBody(body);
+            };
+
+            // Top/Bottom
+            buildCushion(tw + rw*2, rh, rw, 0, th/2 + rw/2);
+            buildCushion(tw + rw*2, rh, rw, 0, -th/2 - rw/2);
+            // Left/Right
+            buildCushion(rw, rh, th, tw/2 + rw/2, 0);
+            buildCushion(rw, rh, th, -tw/2 - rw/2, 0);
+            
+            window.tableMesh = surfaceMesh; // for tests
+        }
+
+        function buildBalls() {
+            const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
+            
+            const createBall = (id, x, z, colorStr) => {
+                const mat = new THREE.MeshPhysicalMaterial({
+                    color: colorStr, roughness: 0.05, metalness: 0.0,
+                    clearcoat: 1.0, clearcoatRoughness: 0.05, reflectivity: 0.9
+                });
+                const mesh = new THREE.Mesh(ballGeo, mat);
+                mesh.position.set(x, tableTopY + ballRadius, z);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+                ballMeshes.push(mesh);
+
+                const body = new CANNON.Body({
+                    mass: 0.17,
+                    material: world.ballMat,
+                    linearDamping: 0.35,
+                    angularDamping: 0.55,
+                    sleepSpeedLimit: 0.05,
+                    sleepTimeLimit: 0.5,
+                });
+                body.addShape(new CANNON.Sphere(ballRadius));
+                body.position.set(x, tableTopY + ballRadius, z);
+                world.addBody(body);
+                ballBodies.push(body);
+                
+                if(id === 0) {
+                    cueBallMesh = mesh;
+                    cueBallBody = body;
+                }
+            };
+
+            // Cue ball
+            createBall(0, -0.56, 0, '#ffffff');
+
+            // Triangle rack
+            const startX = 0.56;
+            const r = ballRadius;
+            const d = r * 2.01;
+            const colors = ['#eacc15', '#2563eb', '#dc2626', '#4f46e5', '#ea580c', '#16a34a', '#7c2d12', '#000000', 
+                            '#eacc15', '#2563eb', '#dc2626', '#4f46e5', '#ea580c', '#16a34a', '#7c2d12'];
+            
+            let cid = 1;
+            let rackPositions = [];
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col <= row; col++) {
+                    const x = startX + row * d * 0.866;
+                    const z = (col - row / 2) * d;
+                    rackPositions.push({x,z});
+                }
+            }
+            
+            // swap 8 ball to center (idx 4)
+            for(let i=0; i<15; i++) {
+                createBall(i+1, rackPositions[i].x, rackPositions[i].z, colors[i]);
+            }
+        }
+
+        function buildCueStick() {
+            // Bug 1 Fix: Cue stick geometry and rotation
+            const cueGeo = new THREE.CylinderGeometry(0.005, 0.012, 1.5, 12);
+            // Translate geometry so origin is at tip
+            cueGeo.translate(0, 0.75, 0); 
+            const cueMat = new THREE.MeshPhysicalMaterial({ color: 0x8B4513, roughness: 0.3, clearcoat: 0.8 });
+            cueStick = new THREE.Mesh(cueGeo, cueMat);
+            
+            // Lay it flat along Z axis initially
+            cueStick.rotation.x = Math.PI / 2;
+            scene.add(cueStick);
+        }
+
+        function buildGuidelines() {
+            const mat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.05, gapSize: 0.02 });
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+            guidelineMain = new THREE.Line(geo, mat);
+            scene.add(guidelineMain);
+            
+            const matRef = new THREE.LineDashedMaterial({ color: 0xaaaaaa, dashSize: 0.05, gapSize: 0.02 });
+            const geoRef = new THREE.BufferGeometry();
+            geoRef.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
+            guidelineReflect = new THREE.Line(geoRef, matRef);
+            scene.add(guidelineReflect);
+        }
+
+        function setupUI() {
+            // Feature 2: Spin UI
+            const spinWheel = document.getElementById('spinWheel');
+            const spinCtx = spinWheel.getContext('2d');
+            
+            function drawSpinWheel(sx, sy) {
+                spinCtx.clearRect(0, 0, 90, 90);
+                const grad = spinCtx.createRadialGradient(45, 40, 5, 45, 45, 42);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(1, '#bbbbbb');
+                spinCtx.beginPath();
+                spinCtx.arc(45, 45, 40, 0, Math.PI * 2);
+                spinCtx.fillStyle = grad;
+                spinCtx.fill();
+                spinCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+                spinCtx.lineWidth = 1;
+                spinCtx.stroke();
+                
+                spinCtx.strokeStyle = 'rgba(0,0,0,0.15)';
+                spinCtx.lineWidth = 1;
+                spinCtx.beginPath();
+                spinCtx.moveTo(45, 5); spinCtx.lineTo(45, 85);
+                spinCtx.moveTo(5, 45); spinCtx.lineTo(85, 45);
+                spinCtx.stroke();
+                
+                const dotX = 45 + sx * 30;
+                const dotY = 45 - sy * 30;
+                document.getElementById('spinDot').style.left = dotX + 'px';
+                document.getElementById('spinDot').style.top = dotY + 'px';
+            }
+            drawSpinWheel(0,0);
+            
+            let isDraggingSpin = false;
+            spinWheel.addEventListener('mousedown', () => isDraggingSpin = true);
+            spinWheel.addEventListener('touchstart', () => isDraggingSpin = true);
+            
+            const onDragEnd = () => isDraggingSpin = false;
+            window.addEventListener('mouseup', onDragEnd);
+            window.addEventListener('touchend', onDragEnd);
+            
+            const onDrag = (e) => {
+                if (!isDraggingSpin) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const rect = spinWheel.getBoundingClientRect();
+                const cx = rect.left + 45, cy = rect.top + 45;
+                let dx = (clientX - cx) / 30;
+                let dy = -(clientY - cy) / 30;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > 1) { dx /= dist; dy /= dist; }
+                spinX = dx; spinY = dy;
+                drawSpinWheel(spinX, spinY);
+            };
+            window.addEventListener('mousemove', onDrag);
+            window.addEventListener('touchmove', onDrag);
+
+            // Feature 1: Power Meter Input
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                if (gameState === 'aiming') { isCharging = true; }
+            });
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                if (gameState === 'aiming') { isCharging = true; }
+            });
+            
+            window.addEventListener('mouseup', () => {
+                if (isCharging) {
+                    fireShot(chargeLevel);
+                    isCharging = false; chargeLevel = 0;
+                    document.getElementById('powerFill').style.height = '0%';
+                }
+            });
+            window.addEventListener('touchend', () => {
+                if (isCharging) {
+                    fireShot(chargeLevel);
+                    isCharging = false; chargeLevel = 0;
+                    document.getElementById('powerFill').style.height = '0%';
+                }
+            });
+        }
+
+        function setupControls() {
+            // Track mouse X for aiming rotation
+            let isDragging = false;
+            let lastX = 0;
+            
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (gameState === 'aiming' && !isCharging) {
+                    // Update aim angle based on camera and mouse
+                    // For simplicity, map mouse movement to aim angle if right-click dragged
+                    // Or let's just let OrbitControls handle camera, and stick aims at center of screen
+                }
+            });
+        }
+        
+        function getAimAngleFromCamera() {
+            const dx = cueBallMesh.position.x - camera.position.x;
+            const dz = cueBallMesh.position.z - camera.position.z;
+            return Math.atan2(dz, dx);
+        }
+
+        function fireShot(power) {
+            const minForce = 2.0;
+            const maxForce = 18.0;
+            const force = minForce + (power * (maxForce - minForce));
+            
+            const dirX = Math.cos(aimAngle);
+            const dirZ = Math.sin(aimAngle);
+            
+            // Feature 2: Apply Spin
+            const torqueStrength = 3.0;
+            cueBallBody.angularVelocity.set(
+                spinY * torqueStrength * -1, 
+                0, 
+                spinX * torqueStrength
+            );
+            
+            cueBallBody.applyImpulse(new CANNON.Vec3(dirX * force, 0, dirZ * force), cueBallBody.position);
+            
+            gameState = 'ballsMoving';
+            cueStick.visible = false;
+            guidelineMain.visible = false;
+            guidelineReflect.visible = false;
+        }
+
+        // --- Game Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.016);
+            
+            // Physics Fixed Step
+            world.step(1/120, delta, 3);
+            
+            // Sync Meshes
+            for(let i=0; i<ballBodies.length; i++) {
+                ballMeshes[i].position.copy(ballBodies[i].position);
+                ballMeshes[i].quaternion.copy(ballBodies[i].quaternion);
+            }
+            
+            if (gameState === 'aiming') {
+                cueStick.visible = true;
+                
+                // Set aim angle from camera orbit
+                aimAngle = getAimAngleFromCamera();
+                
+                // Bug 1 Fix: Compute cue stick position horizontally
+                const maxPullback = 0.35;
+                const offset = ballRadius + 0.02;
+                const pullback = isCharging ? chargeLevel * maxPullback : 0;
+                const totalDist = offset + pullback;
+                
+                cueStick.position.set(
+                    cueBallMesh.position.x - Math.cos(aimAngle) * totalDist,
+                    tableTopY + 0.002, // ALWAYS FLAT
+                    cueBallMesh.position.z - Math.sin(aimAngle) * totalDist
+                );
+                
+                // Rotate flat, and point towards aim angle
+                cueStick.rotation.set(Math.PI/2, 0, Math.PI/2 - aimAngle);
+                
+                // Update charge UI
+                if (isCharging) {
+                    chargeLevel = Math.min(chargeLevel + delta * 0.8, 1.0);
+                    document.getElementById('powerFill').style.height = (chargeLevel * 100) + '%';
+                }
+                
+                updateGuidelines();
+            } else {
+                checkBallsSettled(delta);
+            }
+            
+            controls.target.copy(cueBallMesh.position);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function updateGuidelines() {
+            // Basic single raycast for guideline
+            guidelineMain.visible = true;
+            const endX = cueBallMesh.position.x + Math.cos(aimAngle) * 2;
+            const endZ = cueBallMesh.position.z + Math.sin(aimAngle) * 2;
+            
+            const pos = guidelineMain.geometry.attributes.position.array;
+            pos[0] = cueBallMesh.position.x; pos[1] = tableTopY; pos[2] = cueBallMesh.position.z;
+            pos[3] = endX; pos[4] = tableTopY; pos[5] = endZ;
+            guidelineMain.geometry.attributes.position.needsUpdate = true;
+            guidelineMain.computeLineDistances();
+        }
+
+        let stuckTimer = 0;
+        function checkBallsSettled(delta) {
+            let totalSpeed = 0;
+            ballBodies.forEach(b => totalSpeed += b.velocity.length());
+            
+            if (totalSpeed < 0.05) {
+                stuckTimer += delta;
+                if (stuckTimer > 0.5) { // Quick settle for demo
+                    ballBodies.forEach(b => {
+                        b.sleep();
+                        b.velocity.set(0,0,0);
+                        b.angularVelocity.set(0,0,0);
+                    });
+                    gameState = 'aiming';
+                    stuckTimer = 0;
+                }
+            } else {
+                stuckTimer = 0;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function showError(msg) {
+            document.getElementById('errorOverlay').innerHTML = '<h2>Error</h2><p>' + msg + '</p>';
+            document.getElementById('errorOverlay').style.display = 'flex';
+        }
+
+        // --- Handlers & Tests ---
+        function setupWatchdogs() {
+            // HANDLER 1 - Fall through check
+            setInterval(() => {
+                ballBodies.forEach((body, i) => {
+                    if (body.position.y < tableTopY - 0.1) {
+                        body.position.y = tableTopY + 0.028;
+                        body.velocity.set(0, 0, 0);
+                        body.angularVelocity.set(0, 0, 0);
+                    }
+                });
+            }, 500);
+            
+            // HANDLER 3 - Context loss
+            renderer.domElement.addEventListener('webglcontextlost', (e) => {
+                e.preventDefault();
+                showError('WebGL context lost - attempting recovery');
+            });
+        }
+
+        async function runGameTests() {
+            const results = [];
+            
+            try {
+                const testCanvas = document.createElement('canvas');
+                const gl = testCanvas.getContext('webgl2');
+                results.push({ test: 'WebGL2', pass: !!gl });
+            } catch(e) {
+                results.push({ test: 'WebGL2', pass: false, error: e.message });
+            }
+            
+            results.push({ test: 'PhysicsWorld', pass: world && world.bodies.length > 10 });
+            results.push({ test: '16BallsLoaded', pass: ballMeshes.length === 16 && ballBodies.length === 16 });
+            results.push({ test: 'CueBallNotClipping', pass: cueBallBody.position.y >= tableTopY - 0.001 });
+            
+            const camDist = camera.position.distanceTo(new THREE.Vector3(0,0,0));
+            results.push({ test: 'CameraPosition', pass: camDist > 1.5 && camDist < 5.0 });
+            results.push({ test: 'CueStickFlat', pass: Math.abs(cueStick.rotation.x - Math.PI/2) < 0.01 });
+            results.push({ test: 'PowerMeterDOM', pass: !!document.getElementById('powerMeter') });
+            
+            try {
+                renderer.render(scene, camera);
+                results.push({ test: 'RendererFirstFrame', pass: true });
+            } catch(e) {
+                results.push({ test: 'RendererFirstFrame', pass: false, error: e.message });
+            }
+
+            let allPassed = true;
+            console.group('🎱 8 Ball Pool — Pre-Launch Test Report');
+            results.forEach(r => {
+                console.log(`${r.pass ? '✅' : '❌'} ${r.test}${r.error ? ': ' + r.error : ''}`);
+                if (!r.pass) allPassed = false;
+            });
+            console.log(`\n${allPassed ? '✅ ALL TESTS PASSED' : '❌ TESTS FAILED'}`);
+            console.groupEnd();
+            
+            if (!allPassed) {
+                showError('Game tests failed — check console for details');
+                return false;
+            }
+            return true;
+        }
+
+        // Start
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -125,6 +125,7 @@ function PlinkoBall({ id, position, onDespawn }: { id: string, position: [number
       friction={0.2}
       userData={{ isBall: true }}
       name={id}
+      enabledTranslations={[true, true, false]}
     >
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[0.25, 32, 32]} />
@@ -215,7 +216,7 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
               <PlinkoBall 
                 key={ball.id} 
                 id={ball.id} 
-                position={[(Math.random() - 0.5) * 0.5, 7, 0.2]} 
+                position={[(Math.random() - 0.5) * 0.5, 7, 0]} 
                 onDespawn={removeBall} 
               />
             ))}

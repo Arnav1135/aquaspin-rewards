@@ -78,13 +78,28 @@ function CameraController({ gameState }: { gameState: GameState }) {
 function RouletteBowl() {
   return (
     <group>
+      {/* Outer black polished casing */}
       <mesh position={[0, -0.2, 0]} receiveShadow>
-        <cylinderGeometry args={[4.2, 4.4, 0.4, 64]} />
-        <meshStandardMaterial color="#2b1105" metalness={0.1} roughness={0.7} />
+        <cylinderGeometry args={[4.4, 4.6, 0.8, 64]} />
+        <meshStandardMaterial color="#0a0a0a" metalness={0.8} roughness={0.1} />
       </mesh>
-      <mesh position={[0, 0.1, 0]} receiveShadow>
-        <cylinderGeometry args={[4.2, 3.1, 0.4, 64]} />
-        <meshStandardMaterial color="#111" metalness={0.6} roughness={0.4} />
+      
+      {/* Outer gold rim accent */}
+      <mesh position={[0, 0.2, 0]} receiveShadow>
+        <torusGeometry args={[4.2, 0.05, 16, 64]} />
+        <meshStandardMaterial color="#eab308" metalness={1.0} roughness={0.15} />
+      </mesh>
+
+      {/* Inner ball track (sloped dark wood/metal) */}
+      <mesh position={[0, 0.0, 0]} receiveShadow>
+        <cylinderGeometry args={[4.2, 3.2, 0.4, 64, 1, true]} />
+        <meshStandardMaterial color="#1a1a1a" metalness={0.7} roughness={0.3} />
+      </mesh>
+      
+      {/* Inner gold rim separating track and wheel */}
+      <mesh position={[0, -0.2, 0]} receiveShadow>
+        <torusGeometry args={[3.2, 0.05, 16, 64]} />
+        <meshStandardMaterial color="#eab308" metalness={1.0} roughness={0.15} />
       </mesh>
     </group>
   );
@@ -109,25 +124,63 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
 
   return (
     <group ref={wheelRotRef}>
-      <mesh position={[0, 0.3, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[1, 1.2, 0.4, 32]} />
-        <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.2} />
+      {/* Base black disk under everything */}
+      <mesh position={[0, -0.2, 0]} receiveShadow>
+        <cylinderGeometry args={[3.15, 3.15, 0.1, 64]} />
+        <meshStandardMaterial color="#111" metalness={0.5} roughness={0.5} />
       </mesh>
 
+      {/* Center Gold Cone with ridges */}
+      <mesh position={[0, 0.1, 0]} receiveShadow castShadow>
+        <cylinderGeometry args={[0.3, 1.8, 0.6, 32]} />
+        <meshStandardMaterial color="#eab308" metalness={0.9} roughness={0.2} />
+      </mesh>
+
+      {/* Center Turret (The spinner handle) */}
+      <group position={[0, 0.6, 0]}>
+        {/* Main vertical shaft */}
+        <mesh castShadow>
+          <cylinderGeometry args={[0.15, 0.2, 0.8, 16]} />
+          <meshStandardMaterial color="#fbbf24" metalness={1} roughness={0.1} />
+        </mesh>
+        {/* Top decorative ball */}
+        <mesh position={[0, 0.45, 0]} castShadow>
+          <sphereGeometry args={[0.25, 32, 32]} />
+          <meshStandardMaterial color="#fbbf24" metalness={1} roughness={0.1} />
+        </mesh>
+        {/* 4 Cross arms */}
+        {[0, 1, 2, 3].map((i) => (
+          <group key={i} rotation={[0, (Math.PI / 2) * i, 0]}>
+            <mesh position={[0, 0, 0.4]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.04, 0.04, 0.8, 8]} />
+              <meshStandardMaterial color="#fbbf24" metalness={1} roughness={0.1} />
+            </mesh>
+            <mesh position={[0, 0, 0.8]} castShadow>
+              <sphereGeometry args={[0.08, 16, 16]} />
+              <meshStandardMaterial color="#fbbf24" metalness={1} roughness={0.1} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+
+      {/* Pockets and Numbers */}
       {WHEEL_TILES.map((tile, i) => {
         const angle = i * SECTOR_ANGLE;
-        const color = tile.color === 'red' ? '#b91c1c' : tile.color === 'green' ? '#047857' : '#1e2d45';
+        const color = tile.color === 'red' ? '#dc2626' : tile.color === 'green' ? '#16a34a' : '#111111';
         
         return (
           <group key={i} rotation={[0, angle, 0]}>
-            <mesh position={[0, 0.1, -2.6]} receiveShadow>
-              <boxGeometry args={[0.55, 0.1, 1]} />
-              <meshStandardMaterial color={color} roughness={0.5} />
+            {/* Pocket base (slanted slightly inwards) */}
+            <mesh position={[0, -0.1, -2.5]} rotation={[0.1, 0, 0]} receiveShadow>
+              <boxGeometry args={[0.55, 0.1, 1.2]} />
+              <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
             </mesh>
+            
+            {/* 3D Number Text */}
             <Text
-              position={[0, 0.16, -2.6]}
-              rotation={[-Math.PI / 2, 0, 0]}
-              fontSize={0.25}
+              position={[0, 0.0, -2.7]}
+              rotation={[-Math.PI / 2 + 0.1, 0, 0]}
+              fontSize={0.28}
               color="white"
               anchorX="center"
               anchorY="middle"
@@ -135,9 +188,11 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
             >
               {tile.num.toString()}
             </Text>
-            <mesh position={[0.3, 0.2, -2.6]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
-              <boxGeometry args={[0.04, 0.2, 1]} />
-              <meshStandardMaterial color="#d4af37" metalness={0.8} roughness={0.2} />
+            
+            {/* Divider Fret (Gold) */}
+            <mesh position={[0.3, -0.05, -2.5]} receiveShadow castShadow rotation={[0.1, SECTOR_ANGLE / 2, 0]}>
+              <boxGeometry args={[0.04, 0.15, 1.1]} />
+              <meshStandardMaterial color="#eab308" metalness={0.9} roughness={0.2} />
             </mesh>
           </group>
         );

@@ -46,15 +46,40 @@ function CameraSetup() {
 
 // --- 3D Components ---
 
-function RouletteWheel3D({ spinning, finalRotation, onStopped }: { spinning: boolean, finalRotation: number | null, onStopped: () => void }) {
+function RouletteBowl() {
+  return (
+    <RigidBody type="fixed" colliders="trimesh">
+      {/* Base Wood Rim */}
+      <mesh position={[0, -0.2, 0]} receiveShadow>
+        <cylinderGeometry args={[4.2, 4.4, 0.4, 64]} />
+        <meshStandardMaterial color="#2b1105" metalness={0.1} roughness={0.7} />
+      </mesh>
+      
+      {/* Inner metal slope */}
+      <mesh position={[0, 0.1, 0]} receiveShadow>
+        <cylinderGeometry args={[4.2, 3.1, 0.4, 64]} />
+        <meshStandardMaterial color="#111" metalness={0.6} roughness={0.4} />
+      </mesh>
+      
+      {/* Invisible outer wall to keep ball inside securely */}
+      <mesh visible={false} position={[0, 1, 0]}>
+         <cylinderGeometry args={[4.2, 4.2, 2, 32, 1, true]} />
+      </mesh>
+    </RigidBody>
+  );
+}
+
+function RouletteWheel3D({ spinning, onStopped, onBallAngle }: { spinning: boolean, onStopped: () => void, onBallAngle: (angle: number) => void }) {
   const wheelRef = useRef<any>(null);
   const currentRotation = useRef(0);
   const velocity = useRef(0);
   const state = useRef<'idle' | 'accelerating' | 'spinning' | 'decelerating'>('idle');
+  const spinTimer = useRef(0);
   
   useEffect(() => {
     if (spinning) {
       state.current = 'accelerating';
+      spinTimer.current = 0;
     } else if (state.current !== 'idle') {
       state.current = 'idle';
     }
@@ -64,26 +89,24 @@ function RouletteWheel3D({ spinning, finalRotation, onStopped }: { spinning: boo
     if (!wheelRef.current) return;
     
     if (state.current === 'accelerating') {
-      velocity.current = THREE.MathUtils.lerp(velocity.current, 15, delta * 2);
-      if (velocity.current > 14) state.current = 'spinning';
-    } else if (state.current === 'spinning' && finalRotation !== null) {
-      state.current = 'decelerating';
-    } else if (state.current === 'decelerating' && finalRotation !== null) {
-      // Very basic ease out to target rotation
-      velocity.current = THREE.MathUtils.lerp(velocity.current, 0, delta * 0.8);
-      
-      // Calculate angular distance to target
-      let diff = (finalRotation - (currentRotation.current % (Math.PI * 2)));
-      while (diff < 0) diff += Math.PI * 2;
-      
-      if (velocity.current < 0.5 && diff < 0.1) {
+      velocity.current = THREE.MathUtils.lerp(velocity.current, 10, delta * 2);
+      if (velocity.current > 9.5) state.current = 'spinning';
+    } else if (state.current === 'spinning') {
+      spinTimer.current += delta;
+      // Start decelerating after ball drops and slows down (approx 6 seconds)
+      if (spinTimer.current > 8) {
+        state.current = 'decelerating';
+      }
+    } else if (state.current === 'decelerating') {
+      velocity.current = THREE.MathUtils.lerp(velocity.current, 0, delta * 0.5);
+      if (velocity.current < 0.1) {
         velocity.current = 0;
-        currentRotation.current = finalRotation;
         state.current = 'idle';
+        onBallAngle(currentRotation.current);
         onStopped();
       }
     } else if (state.current === 'idle' && !spinning) {
-      velocity.current = 1.0; // Slow idle spin
+      velocity.current = 1.0; 
     }
 
     currentRotation.current += velocity.current * delta;
@@ -95,24 +118,12 @@ function RouletteWheel3D({ spinning, finalRotation, onStopped }: { spinning: boo
 
   return (
     <RigidBody ref={wheelRef} type="kinematicPosition" position={[0, 0, 0]} colliders={false}>
-      {/* Base Floor Physics */}
-      <CylinderCollider args={[0.05, 4.2]} position={[0, -0.05, 0]} />
+      {/* Spinning Floor Physics */}
+      <CylinderCollider args={[0.05, 3.1]} position={[0, -0.05, 0]} />
       {/* Center Hub Physics */}
       <CylinderCollider args={[0.2, 1.2]} position={[0, 0.2, 0]} />
-
-      {/* Base Wood Rim */}
-      <mesh position={[0, -0.2, 0]} receiveShadow>
-        <cylinderGeometry args={[4.2, 4.4, 0.4, 64]} />
-        <meshStandardMaterial color="#2b1105" metalness={0.1} roughness={0.7} />
-      </mesh>
       
-      {/* Inner metal slope */}
-      <mesh position={[0, 0.1, 0]} receiveShadow>
-        <cylinderGeometry args={[4, 3, 0.2, 64]} />
-        <meshStandardMaterial color="#111" metalness={0.6} roughness={0.4} />
-      </mesh>
-      
-      {/* Center hub */}
+      {/* Center hub Visual */}
       <mesh position={[0, 0.3, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[1, 1.2, 0.4, 32]} />
         <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.2} />
@@ -126,19 +137,19 @@ function RouletteWheel3D({ spinning, finalRotation, onStopped }: { spinning: boo
         return (
           <group key={i} rotation={[0, angle, 0]}>
             {/* Pocket base */}
-            <mesh position={[0, 0.1, -3.5]} receiveShadow>
+            <mesh position={[0, 0.1, -2.6]} receiveShadow>
               <boxGeometry args={[0.55, 0.1, 1]} />
               <meshStandardMaterial color={color} roughness={0.5} />
             </mesh>
             
             {/* Divider Fret */}
-            <mesh position={[0.3, 0.2, -3.5]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
+            <mesh position={[0.3, 0.2, -2.6]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
               <boxGeometry args={[0.04, 0.2, 1]} />
               <meshStandardMaterial color="#d4af37" metalness={0.8} roughness={0.2} />
             </mesh>
 
             {/* Divider Physics */}
-            <CuboidCollider args={[0.02, 0.1, 0.5]} position={[0.3, 0.2, -3.5]} rotation={[0, SECTOR_ANGLE / 2, 0]} />
+            <CuboidCollider args={[0.02, 0.1, 0.5]} position={[0.3, 0.2, -2.6]} rotation={[0, SECTOR_ANGLE / 2, 0]} />
           </group>
         );
       })}
@@ -146,7 +157,7 @@ function RouletteWheel3D({ spinning, finalRotation, onStopped }: { spinning: boo
   );
 }
 
-function BallDrop({ spinning }: { spinning: boolean, targetAngle: number | null }) {
+function BallDrop({ spinning, getBallPos }: { spinning: boolean, getBallPos: (pos: THREE.Vector3) => void }) {
   const ballRef = useRef<any>(null);
   const [active, setActive] = useState(false);
 
@@ -154,24 +165,33 @@ function BallDrop({ spinning }: { spinning: boolean, targetAngle: number | null 
     if (spinning && !active) {
       setActive(true);
       if (ballRef.current) {
-        ballRef.current.setTranslation({ x: 0, y: 1.5, z: 3.8 }, true);
-        ballRef.current.setLinvel({ x: -10, y: 0, z: -5 }, true);
+        // Drop ball on the static outer track
+        ballRef.current.setTranslation({ x: -3.8, y: 0.8, z: 0 }, true);
+        // Tangential orbital velocity to spin around the track
+        ballRef.current.setLinvel({ x: 0, y: 0, z: -18 }, true);
       }
     } else if (!spinning && active) {
-      // The game handles stopping logic. Keep ball where it is.
+      setActive(false);
     }
   }, [spinning, active]);
 
+  useFrame(() => {
+    if (!spinning && ballRef.current) {
+       const pos = ballRef.current.translation();
+       getBallPos(new THREE.Vector3(pos.x, pos.y, pos.z));
+    }
+  });
+
   return (
-    <>
       <RigidBody 
         ref={ballRef}
-        type={spinning ? 'dynamic' : 'fixed'} // lock in place when not spinning
-        position={[0, 2.5, 3.8]} 
+        type="dynamic"
+        position={[0, 0.5, 0]} 
         colliders="ball" 
         restitution={0.4} 
-        friction={0.1}
+        friction={0.2}
         mass={0.1}
+        ccd={true}
         onCollisionEnter={() => {
           if (spinning) (playTone as any)(600 + Math.random() * 200, 'sine', 0.05);
         }}
@@ -181,14 +201,6 @@ function BallDrop({ spinning }: { spinning: boolean, targetAngle: number | null 
           <meshStandardMaterial color="#fffff0" metalness={0.1} roughness={0.1} />
         </mesh>
       </RigidBody>
-      
-      {/* Invisible outer wall to keep ball inside */}
-      <RigidBody type="fixed" colliders="trimesh" position={[0, 0.5, 0]}>
-        <mesh visible={false}>
-           <cylinderGeometry args={[4.2, 4.2, 2, 32, 1, true]} />
-        </mesh>
-      </RigidBody>
-    </>
   );
 }
 
@@ -205,7 +217,7 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
   const actualBetRef = useRef(0);
   
   const [radialShimmer, setRadialShimmer] = useState(false);
-  const [targetRotation, setTargetRotation] = useState<number | null>(null);
+  const ballFinalPos = useRef(new THREE.Vector3(0, 0, 0));
 
   const balance = profile?.tokens ?? 0;
 
@@ -233,7 +245,6 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
     setSpinning(true);
     setOutcome(null);
     setWin(null);
-    setTargetRotation(null);
 
     const nb = balance - actualBetAmount;
     if (currentProfile && !currentProfile.id.startsWith('guest')) {
@@ -245,30 +256,50 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
     }
     
     (updateProfile as any)({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
-
-    // Pick random pocket index
-    const winIdx = Math.floor(Math.random() * 37);
-    
-    // Set target rotation so ball falls in pocket. 
-    // Wheel zero is at angle 0. Pocket i is at i * SECTOR_ANGLE.
-    // The ball drops at roughly z=3.8 (angle = 0 relative to wheel).
-    const finalWheelAngle = (Math.PI * 2) - (winIdx * SECTOR_ANGLE);
-    
-    // Add multiple full rotations before stopping
-    setTargetRotation(finalWheelAngle + (Math.PI * 2 * 3));
     
     (playTone as any)(280, 'sine', 0.2);
   };
 
   const handleWheelStopped = async () => {
     setSpinning(false);
+  };
+  
+  const handleBallAngle = async (wheelRotation: number) => {
+    // Determine which pocket the ball fell into physically
+    let ballAngle = Math.atan2(ballFinalPos.current.x, ballFinalPos.current.z);
+    if (ballAngle < 0) ballAngle += Math.PI * 2;
     
-    // We get the winning tile based on targetRotation math which was pre-calculated
-    // For simplicity, we just recalculate based on the targetRotation we set
-    if (targetRotation === null) return;
+    // Adjust for pocket offset: Pockets are at z=-2.6 when wheel rotation is 0.
+    // In atan2(x, z), z=-2.6, x=0 gives angle PI.
+    // So relative angle is (ballAngle - PI - wheelRotation).
+    let relativeAngle = (ballAngle - Math.PI - (wheelRotation % (Math.PI * 2)));
+    while (relativeAngle < 0) relativeAngle += Math.PI * 2;
+    relativeAngle = relativeAngle % (Math.PI * 2);
     
-    const normalizedAngle = (Math.PI * 2) - (targetRotation % (Math.PI * 2));
-    const winIdx = Math.round(normalizedAngle / SECTOR_ANGLE) % 37;
+    // We reverse it because pockets are drawn at positive angles
+    // Actually, group rotation is [0, angle, 0]. The angle increases counter-clockwise.
+    // If the wheel rotates counter-clockwise, the relative angle changes.
+    // We can just find the closest pocket.
+    let minDiff = Infinity;
+    let winIdx = 0;
+    
+    for (let i = 0; i < 37; i++) {
+       const pocketAngle = i * SECTOR_ANGLE;
+       // difference between relativeAngle and pocketAngle
+       let diff = Math.abs(relativeAngle - pocketAngle);
+       if (diff > Math.PI) diff = (Math.PI * 2) - diff;
+       
+       // Because of symmetry and reverse rotation, we must also check the negative direction
+       let diff2 = Math.abs((Math.PI * 2 - relativeAngle) - pocketAngle);
+       if (diff2 > Math.PI) diff2 = (Math.PI * 2) - diff2;
+       
+       const bestDiff = Math.min(diff, diff2);
+       if (bestDiff < minDiff) {
+         minDiff = bestDiff;
+         winIdx = i;
+       }
+    }
+    
     const tile = WHEEL_TILES[winIdx];
     
     setOutcome(tile);
@@ -397,8 +428,9 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
           >
             <CameraSetup />
             <group>
-               <RouletteWheel3D spinning={spinning} finalRotation={targetRotation} onStopped={handleWheelStopped} />
-               <BallDrop spinning={spinning} targetAngle={targetRotation} />
+               <RouletteBowl />
+               <RouletteWheel3D spinning={spinning} onStopped={handleWheelStopped} onBallAngle={handleBallAngle} />
+               <BallDrop spinning={spinning} getBallPos={(p) => ballFinalPos.current = p} />
             </group>
             
             {/* Overlay */}

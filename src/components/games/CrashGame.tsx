@@ -136,11 +136,14 @@ function Rocket3D({
     const startX = -12;
     const startY = -4;
     
-    // X increases with constant velocity
-    const x = startX + (t * 3.5);
+    // True physics projectile motion (gravity pointing down)
+    // Launch angle and velocity
+    const v0_x = 15.0; // Constant horizontal velocity
+    const v0_y = 25.0; // Initial vertical velocity
+    const g = 1.8;     // Gravity acceleration (downwards)
     
-    // Y follows a physics parabolic ballistic/acceleration curve (quadratic)
-    const y = startY + (t * 0.5) + (t * t * 0.45);
+    const x = startX + (v0_x * t);
+    const y = startY + (v0_y * t) - (0.5 * g * t * t);
     
     return new THREE.Vector3(x, y, 0);
   };
@@ -159,12 +162,9 @@ function Rocket3D({
       // Calculate tangent angle for rotation
       const dy = nextPos.y - newPos.y;
       const dx = nextPos.x - newPos.x;
-      let targetAngle = Math.atan2(dy, dx);
+      const targetAngle = Math.atan2(dy, dx);
       
-      // Minimum pitch angle at launch (approx 15-20 degrees = 0.26 rad)
-      if (targetAngle < 0.26) targetAngle = 0.26;
-      
-      // Smooth lerp rotation (rule 2)
+      // Smooth lerp rotation
       const currentEuler = rocketGroup.current.rotation;
       const currentAngle = currentEuler.z;
       const nextAngle = THREE.MathUtils.lerp(currentAngle, targetAngle, 0.08); // No snapping

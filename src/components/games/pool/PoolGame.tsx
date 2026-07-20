@@ -129,7 +129,7 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
              <CameraController cueBallRef={cueBallRef} />
              
              {/* High-End Post Processing Stack */}
-             <EffectComposer multisampling={0}> {/* Reduced multisampling to 0 for better performance */}
+             <EffectComposer multisampling={0}>
                <N8AO aoRadius={0.1} intensity={2} />
                <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} />
              </EffectComposer>

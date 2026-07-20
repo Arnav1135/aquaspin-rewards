@@ -50,7 +50,7 @@ const GAMES = [
     key: 'mines',       title: 'Mines',       emoji: '💣',  category: 'Casino',
     reward: 'Up to 1,000x+', difficulty: 'Medium', color: '#FFD700',
     desc: 'Click tiles to find gems. Avoid hidden mines and cash out early!',
-    thumbnail: '/thumbnails/mines.jpg',
+    thumbnail: '/thumbnails/mines_premium.jpg',
   },
   {
     key: 'plinko',      title: 'Plinko',      emoji: '🔴',  category: 'Casino',
@@ -62,13 +62,13 @@ const GAMES = [
     key: 'crash',       title: 'Crash',       emoji: '📈',  category: 'Casino',
     reward: 'Up to 10,000x+',difficulty: 'Hard',   color: '#66bdf2',
     desc: 'Cash out before the rocket crashes to secure your multiplier!',
-    thumbnail: '/thumbnails/crash.jpg',
+    thumbnail: '/thumbnails/crash_premium.jpg',
   },
   {
     key: 'limbo',       title: 'Limbo',       emoji: '🚀',  category: 'Casino',
     reward: 'Up to 100,000x', difficulty: 'Medium', color: '#F97316',
     desc: 'Set your target multiplier and roll. High multiplier wins!',
-    thumbnail: '/thumbnails/limbo.jpg',
+    thumbnail: '/thumbnails/limbo_premium.jpg',
   },
   {
     key: 'roulette',    title: 'Roulette',    emoji: '🎡',  category: 'Casino',
@@ -80,7 +80,7 @@ const GAMES = [
     key: 'dragontiger', title: 'Dragon Tiger',emoji: '🎴',  category: 'Casino',
     reward: 'Up to 11x',     difficulty: 'Easy',   color: '#A855F7',
     desc: 'Bet on Dragon, Tiger, or Tie for the higher card.',
-    thumbnail: '/thumbnails/dragontiger.jpg',
+    thumbnail: '/thumbnails/dragontiger_premium.jpg',
   },
   {
     key: 'chicken',     title: 'Chicken',     emoji: '🍗',  category: 'Casino',

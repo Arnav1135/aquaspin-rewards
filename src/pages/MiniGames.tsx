@@ -432,9 +432,7 @@ export function MiniGames() {
                     className="absolute w-16 h-16 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity"
                     style={{ background: game.color }}
                   />
-                  <span className="text-4xl z-10 transition-transform duration-300 group-hover:scale-110 pointer-events-none">
-                    {game.emoji}
-                  </span>
+                  {/* Emoji overlay removed */}
                   {/* Category badge — smart contrast: always white-on-navy */}
                   <span
                     className="absolute top-2 right-2 badge-chip badge-chip-dark z-10"

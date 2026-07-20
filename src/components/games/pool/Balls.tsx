@@ -19,6 +19,7 @@ export function getBallTexture(id: number) {
 
   
   const color = BALL_COLORS[id];
+  const isStripe = id > 8;
 
   if (isStripe) {
     ctx.fillStyle = '#f0f0f0';
@@ -214,8 +215,6 @@ export const PoolBall = forwardRef(({ id, position }: { id: number, position: [n
       api.velocity.set(0, 0, 0);
     }
   });
-
-  const isStripe = id > 8;
 
   return (
     <mesh ref={ref as any} castShadow receiveShadow>

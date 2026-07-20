@@ -169,10 +169,10 @@ const GAMES = [
     thumbnail: '/thumbnails/dots.jpg',
   },
   {
-    key: 'memory',      title: 'Memory Match', emoji: '🧠', category: 'Board',
+    key: 'memory',      title: 'Memory Match', emoji: '🎴', category: 'Board',
     reward: '25–100 tokens', difficulty: 'Medium', color: '#FFD700',
     desc: 'Flip cards to find matching pairs. Complete the board to win!',
-    thumbnail: '/thumbnails/sudoku.jpg', // fallback
+    thumbnail: '/thumbnails/memory.jpg',
   },
   // === TRIVIA / QUIZ ===
   {
@@ -191,7 +191,7 @@ const GAMES = [
     key: 'quiz',        title: 'Trivia Quiz',  emoji: '🎯', category: 'Quiz',
     reward: '5–150 tokens',  difficulty: 'Medium', color: '#A855F7',
     desc: '10 questions across topics. Each correct answer earns tokens!',
-    thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
+    thumbnail: '/thumbnails/quiz.jpg',
   },
   // === PUZZLE / MATCH-3 ===
   {

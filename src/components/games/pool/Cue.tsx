@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { usePoolStore } from './store';
 
 export function CueStick({ cueBallRef, onShoot }: { cueBallRef: any, onShoot: (force: THREE.Vector3) => void }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -36,10 +37,27 @@ export function CueStick({ cueBallRef, onShoot }: { cueBallRef: any, onShoot: (f
       const forceMag = 1.0 + charge * 3.0; // Scaled for Cannon
       const forceX = -Math.cos(angle) * forceMag;
       const forceZ = Math.sin(angle) * forceMag;
+      const spin = usePoolStore.getState().spin;
+      
+      // Calculate contact point offset based on spin
+      // If angle is 0 (shooting +Z), right spin (+X) offsets contact point to -X
+      // We must rotate the offset vector by the aim angle.
+      // Maximum safe offset is slightly less than ball radius.
+      const maxOffset = 0.015;
+      const localOffsetX = -spin.x * maxOffset;
+      const localOffsetY = spin.y * maxOffset; // Up/down spin
+      
+      // Rotate local offset by the current aim angle
+      const worldOffsetX = localOffsetX * Math.cos(angle);
+      const worldOffsetZ = localOffsetX * Math.sin(angle);
       
       if (cueBallRef.current?.api) {
-        cueBallRef.current.api.applyImpulse([forceX, 0, forceZ], [0, 0, 0]);
+        cueBallRef.current.api.applyImpulse(
+          [forceX, 0, forceZ], 
+          [worldOffsetX, localOffsetY, worldOffsetZ] // Contact offset
+        );
       }
+      usePoolStore.getState().startShot();
       onShoot(new THREE.Vector3(forceX, 0, forceZ));
       setCharge(0);
     }

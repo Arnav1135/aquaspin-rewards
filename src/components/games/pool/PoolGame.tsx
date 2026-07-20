@@ -1,4 +1,4 @@
-import { useRef, Suspense } from 'react';
+import { useRef, Suspense, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Canvas } from '@react-three/fiber';
@@ -10,17 +10,36 @@ import { Table } from './Table';
 import { PoolBall, getRackPositions } from './Balls';
 import { CueStick } from './Cue';
 
+import { usePoolStore } from './store';
+
 export function PoolGame({ onClose }: { onClose: () => void }) {
   const cueBallRef = useRef<any>(null);
-  
+  const state = usePoolStore();
   const rackPos = getRackPositions();
+
+  useEffect(() => {
+    usePoolStore.getState().startGame();
+  }, []);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-[1400px] mx-auto min-h-[calc(100vh-120px)]">
       
       <Card className="w-full lg:w-80 p-5 bg-slate-900 border-slate-800 shrink-0 flex flex-col gap-4">
          <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 uppercase">8 Ball Pool 3D</h2>
-         <p className="text-sm text-slate-400">Layer 1-10 Implementation Demo</p>
+         <div className="text-sm text-slate-300 space-y-2">
+           <p><strong>State:</strong> {state.gameState}</p>
+           <p><strong>Turn:</strong> Player {state.currentPlayer}</p>
+           <p><strong>P1 Group:</strong> {state.players[1].group || 'Open'}</p>
+           <p><strong>P2 Group:</strong> {state.players[2].group || 'Open'}</p>
+           <p><strong>First Contact:</strong> {state.currentShotEvents.firstContactId ?? 'None'}</p>
+           <p><strong>Potted:</strong> {state.currentShotEvents.ballsPocketed.join(', ') || 'None'}</p>
+         </div>
+         {state.gameState === 'moving' && (
+           <Button onClick={() => state.resolveTurn()}>Debug: Force Stop Balls (Resolve Turn)</Button>
+         )}
+         {state.gameState === 'ballInHand' && (
+           <Button onClick={() => state.placeBallInHand()}>Place Ball In Hand</Button>
+         )}
          <Button onClick={onClose} variant="ghost" className="mt-auto">Exit Table</Button>
       </Card>
 
@@ -62,7 +81,9 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
                    />
                 ))}
                 
-                <CueStick cueBallRef={cueBallRef} onShoot={(f) => console.log('Shot fired:', f)} />
+                {state.gameState === 'aiming' && (
+                  <CueStick cueBallRef={cueBallRef} onShoot={(force) => console.log('Shot fired:', force)} />
+                )}
              </Physics>
 
              <OrbitControls 

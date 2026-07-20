@@ -1,4 +1,5 @@
-import { usePlane, useBox } from '@react-three/cannon';
+import { usePlane, useBox, useCylinder } from '@react-three/cannon';
+import { usePoolStore } from './store';
 
 export function Table() {
   // Felt surface
@@ -39,7 +40,39 @@ export function Table() {
           clearcoatRoughness={0.1}
         />
       </mesh>
+      {/* Pockets */}
+      <Pocket position={[-1.27, -0.05, -0.635]} /> // Top Left
+      <Pocket position={[0, -0.05, -0.68]} />      // Top Center
+      <Pocket position={[1.27, -0.05, -0.635]} />  // Top Right
+      <Pocket position={[-1.27, -0.05, 0.635]} />  // Bottom Left
+      <Pocket position={[0, -0.05, 0.68]} />       // Bottom Center
+      <Pocket position={[1.27, -0.05, 0.635]} />   // Bottom Right
     </group>
+  );
+}
+
+function Pocket({ position }: { position: [number, number, number] }) {
+  const [ref] = useCylinder(() => ({
+    type: 'Static',
+    args: [0.06, 0.06, 0.2, 16], // Slightly larger than ball radius
+    position,
+    isTrigger: true,
+    onCollide: (e) => {
+      const ballId = Number(e.body.userData?.id);
+      if (!isNaN(ballId)) {
+        usePoolStore.getState().registerPocket(ballId);
+        // We also need to move the ball out of play. We can send a message to it or modify its position manually, 
+        // but for now, we'll let the ball fall through since it's a trigger and gravity applies!
+        // Wait, the felt floor plane extends everywhere. 
+        // For a true pocket, it needs to fall. We'll handle visuals in Phase 2/3.
+      }
+    }
+  }));
+  return (
+    <mesh ref={ref as any} position={position}>
+      <cylinderGeometry args={[0.06, 0.06, 0.2, 16]} />
+      <meshBasicMaterial color={0x000000} />
+    </mesh>
   );
 }
 
@@ -48,7 +81,8 @@ function Cushion({ position, size }: { position: [number, number, number], size:
     args: size,
     position,
     material: 'cushion',
-    type: 'Static'
+    type: 'Static',
+    userData: { name: 'cushion' }
   }));
   return (
     <mesh ref={ref as any} receiveShadow castShadow>

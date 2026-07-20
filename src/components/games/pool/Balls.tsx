@@ -1,5 +1,7 @@
-import { forwardRef, useEffect } from 'react';
+import { forwardRef, useEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useSphere } from '@react-three/cannon';
+import { usePoolStore } from './store';
 
 const BALL_RADIUS = 0.028575; // 57.15mm / 2
 const BALL_MASS = 0.17; // 170g
@@ -57,18 +59,83 @@ export const PoolBall = forwardRef(({ id, position }: { id: number, position: [n
     args: [BALL_RADIUS],
     position,
     material: 'ball',
-    linearDamping: 0.35,
-    angularDamping: 0.55,
+    linearDamping: 0.1, // Reduced baseline damping, we will apply manual rolling resistance
+    angularDamping: 0.1,
     allowSleep: true,
     sleepSpeedLimit: 0.05,
     sleepTimeLimit: 0.5,
+    onCollide: (e) => {
+      // Only cue ball (id=0) needs to register first contacts for rules
+      if (id === 0 && e.body.name === 'ball') {
+        const contactId = Number(e.body.userData?.id);
+        if (!isNaN(contactId)) {
+          usePoolStore.getState().registerCollision(0, contactId, false);
+        }
+      }
+      if (e.body.name === 'cushion') {
+         usePoolStore.getState().registerCollision(id, -1, true);
+      }
+    },
+    userData: { id },
   }));
   
+  
+  const velocity = useRef([0, 0, 0]);
+  const angularVelocity = useRef([0, 0, 0]);
+  const isPocketed = useRef(false);
+
   useEffect(() => {
     if (externalRef) {
       externalRef.current = { ref, api };
     }
-  }, [api, ref, externalRef]);
+    const unsubVel = api.velocity.subscribe((v) => (velocity.current = v));
+    const unsubAng = api.angularVelocity.subscribe((v) => (angularVelocity.current = v));
+    
+    // Subscribe to pocketed events
+    const unsubStore = usePoolStore.subscribe((state) => {
+      if (state.currentShotEvents.ballsPocketed.includes(id) && !isPocketed.current) {
+        isPocketed.current = true;
+        api.position.set(id * 0.1, -1, 0);
+        api.velocity.set(0, 0, 0);
+        api.angularVelocity.set(0, 0, 0);
+        api.sleep();
+      }
+      if (state.gameState === 'menu' || state.gameState === 'aiming') {
+         // Reset pocketed state on new game, logic here needs to be more robust for full game
+         if (state.currentShotEvents.ballsPocketed.length === 0) {
+            // isPocketed.current = false;
+         }
+      }
+    });
+
+    return () => {
+      unsubVel();
+      unsubAng();
+      unsubStore();
+    };
+  }, [api, ref, externalRef, id]);
+
+  useFrame((_, delta) => {
+    if (isPocketed.current) return;
+
+    // Apply custom rolling resistance (non-linear deceleration)
+    const [vx, vy, vz] = velocity.current;
+    const speed = Math.sqrt(vx * vx + vz * vz);
+    
+    if (speed > 0.001) {
+      // Pool balls decelerate roughly constantly due to rolling friction
+      const frictionForce = 0.08; // Adjust for realistic felt friction
+      const drop = frictionForce * delta;
+      const multiplier = Math.max(0, speed - drop) / speed;
+      
+      // We apply manual damping by scaling down velocity
+      if (multiplier < 1) {
+        api.velocity.set(vx * multiplier, vy, vz * multiplier);
+      }
+    } else if (speed > 0 && speed <= 0.001) {
+      api.velocity.set(0, 0, 0);
+    }
+  });
 
   const isStripe = id > 8;
 

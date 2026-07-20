@@ -55,9 +55,9 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
   // Wait for user to start game from menu
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-[1400px] mx-auto min-h-[calc(100vh-120px)]">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 w-full h-full absolute inset-0 bg-[#0a0a0a]">
       
-      <Card className="w-full lg:w-80 p-5 bg-slate-900 border-slate-800 shrink-0 flex flex-col gap-4">
+      <Card className="w-full lg:w-80 p-5 bg-slate-900 border-slate-800 shrink-0 flex flex-col gap-4 z-10">
          <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600 uppercase">8 Ball Pool 3D</h2>
          <div className="text-sm text-slate-300 space-y-2">
            <p><strong>State:</strong> {state.gameState}</p>
@@ -76,9 +76,10 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
          <Button onClick={onClose} variant="ghost" className="mt-auto">Exit Table</Button>
       </Card>
 
-      <Card className="flex-1 bg-slate-950 border-slate-900 overflow-hidden relative min-h-[600px] select-none">
+      <Card className="flex-1 bg-slate-950 border-slate-900 overflow-hidden relative w-full h-full min-h-[600px] select-none">
         <Canvas 
           shadows
+          dpr={[1, 2]} // Performance: limits resolution scale on very high res screens
           gl={{
             antialias: true,
             powerPreference: "high-performance",
@@ -128,7 +129,7 @@ export function PoolGame({ onClose }: { onClose: () => void }) {
              <CameraController cueBallRef={cueBallRef} />
              
              {/* High-End Post Processing Stack */}
-             <EffectComposer multisampling={4}>
+             <EffectComposer multisampling={0}> {/* Reduced multisampling to 0 for better performance */}
                <N8AO aoRadius={0.1} intensity={2} />
                <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} />
              </EffectComposer>

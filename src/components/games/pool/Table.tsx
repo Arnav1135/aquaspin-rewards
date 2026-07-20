@@ -27,10 +27,10 @@ export function Table() {
       </mesh>
       
       {/* Rails - Static Boxes for Physics */}
-      <Cushion position={[0, 0.05, -0.685]} size={[2.54, 0.1, 0.1]} /> // Top
-      <Cushion position={[0, 0.05, 0.685]} size={[2.54, 0.1, 0.1]} />  // Bottom
-      <Cushion position={[-1.32, 0.05, 0]} size={[0.1, 0.1, 1.27]} />  // Left
-      <Cushion position={[1.32, 0.05, 0]} size={[0.1, 0.1, 1.27]} />   // Right
+      <Cushion position={[0, 0.05, -0.685]} size={[2.54, 0.1, 0.1]} /> {/* Top */}
+      <Cushion position={[0, 0.05, 0.685]} size={[2.54, 0.1, 0.1]} />  {/* Bottom */}
+      <Cushion position={[-1.32, 0.05, 0]} size={[0.1, 0.1, 1.27]} />  {/* Left */}
+      <Cushion position={[1.32, 0.05, 0]} size={[0.1, 0.1, 1.27]} />   {/* Right */}
       
       {/* Wooden Frame styling */}
       <RoundedBox args={[2.8, 0.2, 1.5]} radius={0.02} smoothness={4} position={[0, -0.1, 0]} receiveShadow castShadow>
@@ -44,12 +44,12 @@ export function Table() {
       </RoundedBox>
       
       {/* Pockets */}
-      <Pocket position={[-1.27, -0.05, -0.635]} /> // Top Left
-      <Pocket position={[0, -0.05, -0.68]} />      // Top Center
-      <Pocket position={[1.27, -0.05, -0.635]} />  // Top Right
-      <Pocket position={[-1.27, -0.05, 0.635]} />  // Bottom Left
-      <Pocket position={[0, -0.05, 0.68]} />       // Bottom Center
-      <Pocket position={[1.27, -0.05, 0.635]} />   // Bottom Right
+      <Pocket position={[-1.27, -0.05, -0.635]} /> {/* Top Left */}
+      <Pocket position={[0, -0.05, -0.68]} />      {/* Top Center */}
+      <Pocket position={[1.27, -0.05, -0.635]} />  {/* Top Right */}
+      <Pocket position={[-1.27, -0.05, 0.635]} />  {/* Bottom Left */}
+      <Pocket position={[0, -0.05, 0.68]} />       {/* Bottom Center */}
+      <Pocket position={[1.27, -0.05, 0.635]} />   {/* Bottom Right */}
     </group>
   );
 }

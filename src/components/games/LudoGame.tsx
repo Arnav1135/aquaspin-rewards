@@ -635,10 +635,18 @@ function SceneContent({
       alphaAttr.needsUpdate = true;
     }
 
-    // Camera animation curves using lerps
-    // Base position is top-angled, but rotated depending on activeColor
+    // Determine camera focus color.
+    // If there's exactly one human player (e.g. VS AI or Online Multiplayer), lock perspective to their color.
+    // Otherwise (Pass and Play), rotate perspective to the active turn.
+    let focusColor = activeColor;
+    const humanPlayers = (Object.keys(playerConfig) as Color[]).filter(c => playerConfig[c] === 'human');
+    if (humanPlayers.length === 1) {
+      focusColor = humanPlayers[0];
+    }
+    
+    // Base position is top-angled, but rotated depending on focusColor
     const angleMap = { red: 0, blue: -Math.PI/2, green: Math.PI, yellow: Math.PI/2 };
-    const baseAngle = angleMap[activeColor];
+    const baseAngle = angleMap[focusColor];
     
     // Rotate the default offset vector [0, 7.5, 6.0]
     const defaultOffset = new THREE.Vector3(0, 7.5, 6.5);
@@ -647,13 +655,10 @@ function SceneContent({
     let targetPos = defaultOffset.clone();
     
     if (cameraState === 'roll') {
-      // Don't zoom in so extremely that pieces are hidden. Just pan slightly towards tray.
-      const trayOffset = new THREE.Vector3(0.0, 6.0, 1.0);
-      trayOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), baseAngle);
-      targetPos.copy(trayOffset);
+      // Don't zoom in at all. Keep the default offset so the whole board is always visible to move pieces!
+      targetPos.copy(defaultOffset);
       
-      const lookOffset = new THREE.Vector3(0, 0, -2.0);
-      lookOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), baseAngle);
+      const lookOffset = new THREE.Vector3(0, 0, 0);
       cameraTarget.current.copy(lookOffset);
     } else if (cameraState === 'capture') {
       // Add slight camera shake peaks

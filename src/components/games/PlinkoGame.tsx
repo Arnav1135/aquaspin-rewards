@@ -157,14 +157,12 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
   const multipliers = MULTS[risk][rows];
 
   const handleDrop = async () => {
-    if (isDropping) return;
     if (!profile || profile.tokens < betAmount) {
       toast.error('Insufficient tokens');
       return;
     }
 
     try {
-      setIsDropping(true);
       // Deduct bet
       const newBalance = profile.tokens - betAmount;
       (updateProfile as any)({ tokens: newBalance });
@@ -177,8 +175,6 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
     } catch (e) {
       console.error(e);
       toast.error('Transaction failed');
-    } finally {
-      setTimeout(() => setIsDropping(false), 200); // 200ms debounce
     }
   };
 

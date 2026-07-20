@@ -139,8 +139,8 @@ function Rocket3D({
     // X increases with constant velocity
     const x = startX + (t * 3.5);
     
-    // Y follows an exponential thrust acceleration curve (physics-based powered flight)
-    const y = startY + (Math.exp(t * 0.35) - 1) * 2.0;
+    // Y follows a physics parabolic ballistic/acceleration curve (quadratic)
+    const y = startY + (t * 0.5) + (t * t * 0.45);
     
     return new THREE.Vector3(x, y, 0);
   };

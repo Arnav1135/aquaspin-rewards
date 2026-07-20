@@ -79,7 +79,6 @@ export class CandyRenderer {
   }
 
   static renderTimer(color, countdown) {
-    const base = CandyRenderer.render(color, CANDY_TYPES.NORMAL);
     const timerOverlay = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"
            style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;">
@@ -88,7 +87,7 @@ export class CandyRenderer {
               fill="${countdown <= 3 ? '#ff2244' : '#ffe066'}"
               font-family="Fredoka One,sans-serif" text-anchor="middle">${countdown}</text>
       </svg>`;
-    return `<div style="position:relative;width:100%;height:100%;">${base}${timerOverlay}</div>`;
+    return `<div style="position:relative;width:100%;height:100%;">${timerOverlay}</div>`;
   }
 
   static renderBlocker(type, strength) {

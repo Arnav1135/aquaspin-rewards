@@ -234,7 +234,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
     } else if (gameState === 'SETTLING') {
       // Deterministic interpolation into target pocket
       const wheelRot = wheelRotRef?.current?.rotation.y || 0;
-      const pocketLocalAngle = winIdx * SECTOR_ANGLE;
+      const pocketLocalAngle = -(winIdx * SECTOR_ANGLE); // Negative because wheel tiles use -angle
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
       const targetRadius = 2.1; // inner pocket radius
@@ -245,7 +245,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
     } else if (gameState === 'PAYOUT') {
       // Stick to pocket
       const wheelRot = wheelRotRef?.current?.rotation.y || 0;
-      const pocketLocalAngle = winIdx * SECTOR_ANGLE;
+      const pocketLocalAngle = -(winIdx * SECTOR_ANGLE);
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
       const targetRadius = 2.1; // inner pocket radius

@@ -23,26 +23,35 @@ export function PoolGame({ onClose }: Props) {
     best: parseInt(localStorage.getItem('pool-best')||'0'),
   });
   const [disp, setDisp] = useState({ score: 0, shots: 0, phase: 'idle' as 'idle'|'aiming'|'shooting'|'win'|'lose', best: parseInt(localStorage.getItem('pool-best')||'0') });
-  const W = 420, H = 520, TABLE_PAD = 30;
+  const W = 360, H = 660, TABLE_PAD = 30;
   const TL = TABLE_PAD, TR = W-TABLE_PAD, TT = TABLE_PAD, TB = H-TABLE_PAD;
 
   const initBalls = useCallback(() => {
     const balls: Ball[] = [];
-    // Cue ball
-    balls.push({ id:0, x:TL+90, y:(TT+TB)/2, vx:0, vy:0, r:11, color:'#fff', num:0, pocketed:false, isCue:true });
-    // Rack triangle at right
-    const rx = TR - 140, ry = (TT+TB)/2;
-    const rows = [[rx,ry],[rx+24,ry-12],[rx+24,ry+12],[rx+48,ry-24],[rx+48,ry],[rx+48,ry+24],[rx+72,ry-36],[rx+72,ry-12],[rx+72,ry+12],[rx+72,ry+36],[rx+96,ry-48],[rx+96,ry-24],[rx+96,ry],[rx+96,ry+24],[rx+96,ry+48]];
+    // Cue ball at bottom
+    balls.push({ id:0, x:W/2, y:TB - 140, vx:0, vy:0, r:11, color:'#fff', num:0, pocketed:false, isCue:true });
+    
+    // Rack triangle pointing down (apex closer to cue ball)
+    const rx = W/2, ry = TT + 180;
+    const r2 = ry - 21.5, r3 = ry - 43, r4 = ry - 64.5, r5 = ry - 86; // 11 radius * Math.sqrt(3) roughly
+    const rows = [
+      [rx,ry],
+      [rx-12,r2], [rx+12,r2],
+      [rx-24,r3], [rx,r3], [rx+24,r3],
+      [rx-36,r4], [rx-12,r4], [rx+12,r4], [rx+36,r4],
+      [rx-48,r5], [rx-24,r5], [rx,r5], [rx+24,r5], [rx+48,r5]
+    ];
     rows.forEach(([bx,by], i) => {
       balls.push({ id:i+1, x:bx, y:by, vx:0, vy:0, r:11, color:BALL_COLORS[i+1], num:i+1, pocketed:false, isCue:false });
     });
-    // Pockets
+    // Pockets: Corners and middle of LONG edges
     const pockets = [
-      { x:TL+6, y:TT+6 }, { x:W/2, y:TT+4 }, { x:TR-6, y:TT+6 },
-      { x:TL+6, y:TB-6 }, { x:W/2, y:TB-4 }, { x:TR-6, y:TB-6 },
+      { x:TL+4, y:TT+4 }, { x:TR-4, y:TT+4 },
+      { x:TL-2, y:H/2 },  { x:TR+2, y:H/2 },
+      { x:TL+4, y:TB-4 }, { x:TR-4, y:TB-4 },
     ];
     return { balls, pockets };
-  }, [TL,TR,TT,TB]);
+  }, [TL,TR,TT,TB,H,W]);
 
   const reset = useCallback(() => {
     const { balls, pockets } = initBalls();

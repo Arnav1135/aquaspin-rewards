@@ -206,7 +206,12 @@ export class GameController {
   }
 
   _buildBoardUI() {
+    // Clear DOM cells, but KEEP the pixi-board canvas if it exists
+    const pixiCanvas = document.getElementById('pixi-board');
     this.boardEl.innerHTML = '';
+    if (pixiCanvas) {
+      this.boardEl.appendChild(pixiCanvas);
+    }
     const cfg = this.config;
     const colors = COLORS.slice(0, cfg.colourCount);
 
@@ -307,8 +312,9 @@ export class GameController {
     if (cell.hasCandy()) {
       cell.sprite.texture = CandyRenderer.getTexture(cell.candyColor, cell.candyType);
       cell.sprite.visible = true;
-      cell.inner.innerHTML += CandyRenderer.render(cell.candyColor, cell.candyType);
       
+      // Do not render the flat DOM SVG since we want 3D PIXI visuals,
+      // EXCEPT for the timer overlay which we still need in DOM.
       if (cell.candyType === CANDY_TYPES.TIMER) {
          cell.inner.innerHTML += CandyRenderer.renderTimer(cell.candyColor, cell.timerVal);
       }

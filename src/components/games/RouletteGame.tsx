@@ -81,8 +81,8 @@ function RouletteBowl() {
     <group>
       {/* Outer black/dark brown rim base */}
       <mesh position={[0, -0.2, 0]} receiveShadow>
-        <cylinderGeometry args={[4.6, 4.8, 0.8, 64]} />
-        <meshStandardMaterial color="#1a0a05" metalness={0.4} roughness={0.6} />
+        <cylinderGeometry args={[4.6, 4.8, 0.8, 64, 1, true]} />
+        <meshStandardMaterial color="#1a0a05" metalness={0.4} roughness={0.6} side={THREE.DoubleSide} />
       </mesh>
       
       {/* Outer gold trim top */}
@@ -91,10 +91,10 @@ function RouletteBowl() {
         <meshStandardMaterial color="#eab308" metalness={0.9} roughness={0.1} />
       </mesh>
 
-      {/* Inner slope (dark metal) */}
+      {/* Inner slope (dark metal track) */}
       <mesh position={[0, -0.1, 0]} receiveShadow>
-        <cylinderGeometry args={[4.4, 3.2, 0.6, 64]} />
-        <meshStandardMaterial color="#111" metalness={0.6} roughness={0.4} />
+        <cylinderGeometry args={[4.4, 3.2, 0.6, 64, 1, true]} />
+        <meshStandardMaterial color="#111" metalness={0.6} roughness={0.4} side={THREE.DoubleSide} />
       </mesh>
 
       {/* Deflector Diamonds */}
@@ -183,20 +183,20 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
         return (
           <group key={i} rotation={[0, angle, 0]}>
             {/* Number Plate (Outer edge of rotor) */}
-            <mesh position={[0, 0.08, -2.6]} receiveShadow>
+            <mesh position={[0, 0.06, -2.6]} receiveShadow>
               <boxGeometry args={[0.42, 0.02, 0.5]} />
               <meshStandardMaterial color={color} metalness={0.3} roughness={0.5} />
             </mesh>
 
             {/* The actual pocket slot (Inner edge) */}
-            <mesh position={[0, 0.04, -2.2]} receiveShadow>
-              <boxGeometry args={[0.35, 0.04, 0.3]} />
+            <mesh position={[0, 0.04, -2.1]} receiveShadow>
+              <boxGeometry args={[0.33, 0.04, 0.5]} />
               <meshStandardMaterial color="#050505" metalness={0.8} roughness={0.2} />
             </mesh>
             
             {/* 3D Number Text */}
             <Text
-              position={[0, 0.10, -2.6]}
+              position={[0, 0.08, -2.6]}
               rotation={[-Math.PI / 2, 0, 0]}
               fontSize={0.22}
               color="white"
@@ -208,8 +208,8 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
             </Text>
             
             {/* Gold Divider Fret (Between pockets) */}
-            <mesh position={[0.22, 0.12, -2.4]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
-              <boxGeometry args={[0.03, 0.15, 0.9]} />
+            <mesh position={[0.22, 0.08, -2.35]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
+              <boxGeometry args={[0.02, 0.1, 1.0]} />
               <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
             </mesh>
           </group>

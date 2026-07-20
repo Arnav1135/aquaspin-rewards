@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody, CylinderCollider, CuboidCollider } from '@react-three/rapier';
-import { Html } from '@react-three/drei';
+import { Html, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
@@ -62,9 +62,11 @@ function RouletteBowl() {
       </mesh>
       
       {/* Invisible outer wall to keep ball inside securely */}
-      <mesh visible={false} position={[0, 1, 0]}>
-         <cylinderGeometry args={[4.2, 4.2, 2, 32, 1, true]} />
+      <mesh visible={false} position={[0, 1.5, 0]}>
+         <cylinderGeometry args={[4.2, 4.2, 3, 32, 1, true]} />
       </mesh>
+      {/* Invisible ceiling to prevent ball from flying out */}
+      <CylinderCollider args={[0.1, 4.2]} position={[0, 1.5, 0]} />
     </RigidBody>
   );
 }
@@ -142,6 +144,19 @@ function RouletteWheel3D({ spinning, onStopped, onBallAngle }: { spinning: boole
               <meshStandardMaterial color={color} roughness={0.5} />
             </mesh>
             
+            {/* 3D Number Text */}
+            <Text
+              position={[0, 0.16, -2.6]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              fontSize={0.25}
+              color="white"
+              anchorX="center"
+              anchorY="middle"
+              font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjQ.ttf"
+            >
+              {tile.num.toString()}
+            </Text>
+            
             {/* Divider Fret */}
             <mesh position={[0.3, 0.2, -2.6]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]}>
               <boxGeometry args={[0.04, 0.2, 1]} />
@@ -165,10 +180,10 @@ function BallDrop({ spinning, getBallPos }: { spinning: boolean, getBallPos: (po
     if (spinning && !active) {
       setActive(true);
       if (ballRef.current) {
-        // Drop ball on the static outer track
-        ballRef.current.setTranslation({ x: -3.8, y: 0.8, z: 0 }, true);
-        // Tangential orbital velocity to spin around the track
-        ballRef.current.setLinvel({ x: 0, y: 0, z: -18 }, true);
+        // Drop ball right on the metal slope track, slightly elevated
+        ballRef.current.setTranslation({ x: -4.0, y: 0.35, z: 0 }, true);
+        // Tangential orbital velocity, dialed in for a smooth orbit
+        ballRef.current.setLinvel({ x: 0, y: -0.5, z: -10 }, true);
       }
     } else if (!spinning && active) {
       setActive(false);

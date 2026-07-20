@@ -23,6 +23,7 @@ import { DartsGame } from '@/components/games/DartsGame';
 import { ArcheryGame } from '@/components/games/ArcheryGame';
 import { ChessGame } from '@/components/games/ChessGame';
 import { SolitaireGame } from '@/components/games/SolitaireGame';
+import { LudoGame } from '@/components/games/LudoGame';
 
 import { Match3Game } from '@/games/match3';
 
@@ -150,6 +151,12 @@ const GAMES = [
     reward: 'Victory',       difficulty: 'Hard',   color: '#66bdf2',
     desc: 'Play classical chess against AI or pass-and-play locally.',
     thumbnail: '/thumbnails/chess.jpg',
+  },
+  {
+    key: 'ludo',        title: 'Ludo King',   emoji: '🎲',  category: 'Board',
+    reward: 'Victory',       difficulty: 'Medium', color: '#66bdf2',
+    desc: 'Upgraded 3D tabletop Ludo game. Play vs AI or pass-and-play!',
+    thumbnail: '/thumbnails/ludo.jpg',
   },
   {
     key: 'solitaire',   title: 'Solitaire',   emoji: '🃏',  category: 'Board',
@@ -298,6 +305,7 @@ export function MiniGames() {
       case 'pool':        return <PoolGame onClose={close} />;
       // Board
       case 'chess':       return <ChessGame onClose={close} />;
+      case 'ludo':        return <LudoGame onClose={close} />;
       case 'solitaire':   return <SolitaireGame onClose={close} />;
       case 'tictactoe':   return <TicTacToeGame onClose={close} />;
       case 'dots':        return <DotsAndBoxesGame onClose={close} />;

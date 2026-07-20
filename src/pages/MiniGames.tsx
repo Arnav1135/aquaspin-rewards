@@ -98,7 +98,7 @@ const GAMES = [
     key: 'flappy',      title: 'Flappy Bird', emoji: '🐦',  category: 'Arcade',
     reward: 'High Score',    difficulty: 'Hard',   color: '#FFD700',
     desc: 'Fly through pipe gaps without crashing. Classic endless runner!',
-    thumbnail: '/thumbnails/archery.jpg', // fallback
+    thumbnail: '/thumbnails/flappy.jpg',
   },
   {
     key: 'knife',       title: 'Knife Hit',   emoji: '🗡️', category: 'Arcade',

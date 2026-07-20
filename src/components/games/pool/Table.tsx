@@ -1,4 +1,5 @@
 import { usePlane, useBox, useCylinder } from '@react-three/cannon';
+import { RoundedBox } from '@react-three/drei';
 import { usePoolStore } from './store';
 
 export function Table() {
@@ -20,26 +21,28 @@ export function Table() {
           color={0x1a6b3c}
           roughness={0.95}
           metalness={0.0}
+          clearcoat={0.1}
+          clearcoatRoughness={0.8}
         />
       </mesh>
       
-      {/* Rails - Static Boxes */}
+      {/* Rails - Static Boxes for Physics */}
       <Cushion position={[0, 0.05, -0.685]} size={[2.54, 0.1, 0.1]} /> // Top
       <Cushion position={[0, 0.05, 0.685]} size={[2.54, 0.1, 0.1]} />  // Bottom
       <Cushion position={[-1.32, 0.05, 0]} size={[0.1, 0.1, 1.27]} />  // Left
       <Cushion position={[1.32, 0.05, 0]} size={[0.1, 0.1, 1.27]} />   // Right
       
       {/* Wooden Frame styling */}
-      <mesh position={[0, -0.05, 0]} receiveShadow>
-        <boxGeometry args={[2.8, 0.1, 1.5]} />
+      <RoundedBox args={[2.8, 0.2, 1.5]} radius={0.02} smoothness={4} position={[0, -0.1, 0]} receiveShadow castShadow>
         <meshPhysicalMaterial 
-          color={0x3a2010}
-          roughness={0.3}
-          metalness={0.1}
-          clearcoat={0.8}
+          color={0x2b1509}
+          roughness={0.2}
+          metalness={0.05}
+          clearcoat={1.0}
           clearcoatRoughness={0.1}
         />
-      </mesh>
+      </RoundedBox>
+      
       {/* Pockets */}
       <Pocket position={[-1.27, -0.05, -0.635]} /> // Top Left
       <Pocket position={[0, -0.05, -0.68]} />      // Top Center
@@ -61,18 +64,27 @@ function Pocket({ position }: { position: [number, number, number] }) {
       const ballId = Number(e.body.userData?.id);
       if (!isNaN(ballId)) {
         usePoolStore.getState().registerPocket(ballId);
-        // We also need to move the ball out of play. We can send a message to it or modify its position manually, 
-        // but for now, we'll let the ball fall through since it's a trigger and gravity applies!
-        // Wait, the felt floor plane extends everywhere. 
-        // For a true pocket, it needs to fall. We'll handle visuals in Phase 2/3.
       }
     }
   }));
   return (
-    <mesh ref={ref as any} position={position}>
-      <cylinderGeometry args={[0.06, 0.06, 0.2, 16]} />
-      <meshBasicMaterial color={0x000000} />
-    </mesh>
+    <group position={position}>
+      {/* Physics trigger */}
+      <mesh ref={ref as any}>
+        <cylinderGeometry args={[0.06, 0.06, 0.2, 16]} />
+        <meshBasicMaterial color={0x000000} transparent opacity={0} />
+      </mesh>
+      {/* Visual Pocket Hole */}
+      <mesh position={[0, 0.06, 0]} rotation={[Math.PI/2, 0, 0]}>
+        <circleGeometry args={[0.06, 32]} />
+        <meshBasicMaterial color={0x000000} />
+      </mesh>
+      {/* Metal trim */}
+      <mesh position={[0, 0.061, 0]} rotation={[Math.PI/2, 0, 0]}>
+        <ringGeometry args={[0.06, 0.08, 32]} />
+        <meshStandardMaterial color={0xd4d4d4} metalness={0.9} roughness={0.1} />
+      </mesh>
+    </group>
   );
 }
 

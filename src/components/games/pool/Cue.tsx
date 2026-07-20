@@ -95,10 +95,43 @@ export const CueStick = forwardRef<CueRef, { cueBallRef: any }>(({ cueBallRef },
   return (
     <group>
       <group ref={groupRef}>
-        <mesh position={[0, 0.05, 0.1]} castShadow>
-          <cylinderGeometry args={[0.005, 0.01, 1.2, 16]} />
-          <meshPhysicalMaterial color={0x8B4513} roughness={0.3} clearcoat={0.8} />
-        </mesh>
+        <group position={[0, 0.05, 0.1]}>
+          {/* Shaft (Wood) */}
+          <mesh position={[0, 0, 0.35]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.006, 0.009, 0.7, 16]} />
+            <meshPhysicalMaterial color={0xe8c396} roughness={0.4} clearcoat={0.5} />
+          </mesh>
+          
+          {/* Wrap / Grip */}
+          <mesh position={[0, 0, 0.85]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.009, 0.010, 0.3, 16]} />
+            <meshPhysicalMaterial color={0x111111} roughness={0.9} />
+          </mesh>
+
+          {/* Butt (Dark Wood) */}
+          <mesh position={[0, 0, 1.1]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.010, 0.012, 0.2, 16]} />
+            <meshPhysicalMaterial color={0x2b1509} roughness={0.2} clearcoat={1.0} />
+          </mesh>
+          
+          {/* Bumper (Rubber) */}
+          <mesh position={[0, 0, 1.21]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.012, 0.010, 0.02, 16]} />
+            <meshPhysicalMaterial color={0x050505} roughness={0.9} />
+          </mesh>
+
+          {/* Ferrule (White plastic) */}
+          <mesh position={[0, 0, -0.01]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.0055, 0.006, 0.02, 16]} />
+            <meshPhysicalMaterial color={0xffffff} roughness={0.2} />
+          </mesh>
+
+          {/* Tip (Blue chalk) */}
+          <mesh position={[0, 0, -0.0225]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+            <cylinderGeometry args={[0.0055, 0.0055, 0.005, 16]} />
+            <meshPhysicalMaterial color={0x1e3a8a} roughness={1.0} />
+          </mesh>
+        </group>
       </group>
       
       {/* Aim Line */}

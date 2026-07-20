@@ -2,6 +2,61 @@ import { forwardRef, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useSphere } from '@react-three/cannon';
 import { usePoolStore } from './store';
+
+import * as THREE from 'three';
+
+const ballTextures = new Map<number, THREE.CanvasTexture | null>();
+
+export function getBallTexture(id: number) {
+  if (id === 0) return null;
+  if (ballTextures.has(id)) return ballTextures.get(id)!;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  
+  const color = BALL_COLORS[id];
+
+  if (isStripe) {
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, 512, 256);
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 64, 512, 128);
+  } else {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, 512, 256);
+  }
+
+  const drawNumberCircle = (x: number, y: number) => {
+    ctx.beginPath();
+    ctx.arc(x, y, 36, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    
+    ctx.font = 'bold 44px Arial';
+    ctx.fillStyle = '#000000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(id.toString(), x, y + 4);
+    
+    if (id === 6 || id === 9) {
+      ctx.fillRect(x - 12, y + 20, 24, 4);
+    }
+  };
+
+  drawNumberCircle(128, 128);
+  drawNumberCircle(384, 128);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 16;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  ballTextures.set(id, tex);
+  return tex;
+}
+
 import { audioManager } from './AudioManager';
 
 const BALL_RADIUS = 0.028575; // 57.15mm / 2
@@ -166,19 +221,14 @@ export const PoolBall = forwardRef(({ id, position }: { id: number, position: [n
     <mesh ref={ref as any} castShadow receiveShadow>
       <sphereGeometry args={[BALL_RADIUS, 32, 32]} />
       <meshPhysicalMaterial 
-        color={BALL_COLORS[id]}
-        roughness={0.05}
+        color={id === 0 ? '#ffffff' : '#ffffff'}
+        map={id !== 0 ? getBallTexture(id) || undefined : undefined}
+        roughness={0.08}
         metalness={0.0}
         clearcoat={1.0}
-        clearcoatRoughness={0.05}
-        reflectivity={0.9}
+        clearcoatRoughness={0.02}
+        reflectivity={1.0}
       />
-      {isStripe && (
-        <mesh>
-          <sphereGeometry args={[BALL_RADIUS + 0.0001, 32, 16, 0, Math.PI*2, Math.PI/3, Math.PI/3]} />
-          <meshPhysicalMaterial color="#ffffff" roughness={0.05} clearcoat={1.0} />
-        </mesh>
-      )}
     </mesh>
   );
 });

@@ -182,28 +182,36 @@ export class ParticleSystem {
 export class VisualEffects {
   static initShaders(app, mainContainer) {
     if (!this.bloom) {
-      this.bloom = new AdvancedBloomFilter({
-        threshold: 0.6,
-        bloomScale: 1.5,
-        brightness: 1.2,
-        blur: 8,
-        quality: 4
-      });
-      this.shockwaves = [];
-      this.godrays = new GodrayFilter({
-        angle: 30,
-        gain: 0.5,
-        lacunarity: 2.5,
-        time: 0
-      });
-      this.godrays.enabled = false;
-      this.mainContainer = mainContainer;
+      const filters = window.PIXI?.filters || {};
       
-      // Apply bloom globally
-      mainContainer.filters = [this.bloom];
+      this.mainContainer = mainContainer;
+      this.shockwaves = [];
+      
+      if (filters.AdvancedBloomFilter) {
+        this.bloom = new filters.AdvancedBloomFilter({
+          threshold: 0.6,
+          bloomScale: 1.5,
+          brightness: 1.2,
+          blur: 8,
+          quality: 4
+        });
+        mainContainer.filters = [this.bloom];
+      } else {
+        mainContainer.filters = [];
+      }
+      
+      if (filters.GodrayFilter) {
+        this.godrays = new filters.GodrayFilter({
+          angle: 30,
+          gain: 0.5,
+          lacunarity: 2.5,
+          time: 0
+        });
+        this.godrays.enabled = false;
+      }
       
       app.ticker.add((delta) => {
-        if (this.godrays.enabled) {
+        if (this.godrays && this.godrays.enabled) {
           this.godrays.time += delta * 0.01;
         }
         
@@ -239,20 +247,23 @@ export class VisualEffects {
 
   static triggerShockwave(x, y) {
     if (!this.mainContainer) return;
-    const shockwave = new ShockwaveFilter([x, y], {
-      amplitude: 30,
-      wavelength: 160,
-      speed: 500,
-      brightness: 1.2,
-      radius: -1
-    });
-    shockwave.time = 0;
-    this.shockwaves.push(shockwave);
-    this.mainContainer.filters.push(shockwave);
+    const filters = window.PIXI?.filters || {};
+    if (filters.ShockwaveFilter) {
+      const shockwave = new filters.ShockwaveFilter([x, y], {
+        amplitude: 30,
+        wavelength: 160,
+        speed: 500,
+        brightness: 1.2,
+        radius: -1
+      });
+      shockwave.time = 0;
+      this.shockwaves.push(shockwave);
+      this.mainContainer.filters.push(shockwave);
+    }
   }
 
   static toggleGodrays(enabled) {
-    if (!this.mainContainer) return;
+    if (!this.mainContainer || !this.godrays) return;
     this.godrays.enabled = enabled;
     if (enabled && !this.mainContainer.filters.includes(this.godrays)) {
       this.mainContainer.filters.push(this.godrays);
@@ -262,8 +273,11 @@ export class VisualEffects {
   }
 
   static applyBevel(sprite) {
+    const filters = window.PIXI?.filters || {};
+    if (!filters.BevelFilter) return;
+    
     if (!this.bevel) {
-      this.bevel = new BevelFilter({
+      this.bevel = new filters.BevelFilter({
         rotation: 45,
         thickness: 2,
         lightColor: 0xffffff,
@@ -273,6 +287,8 @@ export class VisualEffects {
       });
     }
     if (!sprite.filters) sprite.filters = [];
-    sprite.filters.push(this.bevel);
+    if (!sprite.filters.includes(this.bevel)) {
+       sprite.filters.push(this.bevel);
+    }
   }
 }

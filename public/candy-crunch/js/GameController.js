@@ -174,7 +174,9 @@ export class GameController {
     this.levelEl.textContent = this.levelNum;
 
     // Responsive grid sizing
-    const maxPx = Math.min(window.innerWidth * 0.96, window.innerHeight * 0.62, 540);
+    const w = window.innerWidth > 0 ? window.innerWidth : 500;
+    const h = window.innerHeight > 0 ? window.innerHeight : 800;
+    const maxPx = Math.max(300, Math.min(w * 0.96, h * 0.62, 540));
     this.cellSize = Math.floor(maxPx / this.board.W);
     const boardPx = this.cellSize * this.board.W;
     this.boardEl.style.width = boardPx + 'px';

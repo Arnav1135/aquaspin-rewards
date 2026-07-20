@@ -492,6 +492,7 @@ export function LudoGame({ onClose }: Props) {
               theme={theme}
               cameraState={cameraState}
               activeColor={currentColor}
+              playerConfig={playerConfig}
               onRollComplete={handleRollComplete}
               onTokenClick={handleTokenClick}
             />
@@ -593,6 +594,7 @@ interface SceneProps {
   theme: 'classic' | 'marble' | 'neon';
   cameraState: 'idle' | 'roll' | 'capture' | 'win';
   activeColor: Color;
+  playerConfig: Record<Color, PlayerType>;
   onRollComplete: (val: number) => void;
   onTokenClick: (id: string) => void;
 }
@@ -604,6 +606,7 @@ function SceneContent({
   theme,
   cameraState,
   activeColor,
+  playerConfig,
   onRollComplete,
   onTokenClick
 }: SceneProps) {

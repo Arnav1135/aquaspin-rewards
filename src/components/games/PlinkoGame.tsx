@@ -151,7 +151,6 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
   const [risk, setRisk] = useState<RiskLevel>('medium');
   const [rows, setRows] = useState(8);
   const [balls, setBalls] = useState<{ id: string, bet: number }[]>([]);
-  const [isDropping, setIsDropping] = useState(false);
   const [blinkingIdx, setBlinkingIdx] = useState<number | null>(null);
   
   const multipliers = MULTS[risk][rows];

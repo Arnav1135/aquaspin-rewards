@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
@@ -13,7 +13,7 @@ import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody } from '@react-three/rapier';
 import { Html, Line, Trail } from '@react-three/drei';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 
 interface CrashGameProps { onClose: () => void; }
 type GameState = 'betting' | 'countdown' | 'climbing' | 'crashed' | 'success_aborted';
@@ -21,20 +21,94 @@ type SocialEntry = { user: string; amount: number; mult: number; };
 
 const FAKE_USERS = ['Raj','Priya','Max','Luna','Kai','Zoe','Arnav','Mia','Dev','Sara'];
 
-// --- 3D Components ---
+// --- Particle System Class (React Component) ---
+// Renders an explosive particle system using THREE.Points
+function ParticleExplosion({ position, isActive }: { position: THREE.Vector3, isActive: boolean }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  
+  const { positions, velocities, colors } = useMemo(() => {
+    const count = 120; // 80-120 particles
+    const pos = new Float32Array(count * 3);
+    const vel = new Float32Array(count * 3);
+    const col = new Float32Array(count * 3);
+    
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = position.x;
+      pos[i * 3 + 1] = position.y;
+      pos[i * 3 + 2] = position.z;
+      
+      // Randomized explosive outward velocity
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(Math.random() * 2 - 1);
+      const speed = 2 + Math.random() * 8;
+      
+      vel[i * 3] = speed * Math.sin(phi) * Math.cos(theta);
+      vel[i * 3 + 1] = speed * Math.sin(phi) * Math.sin(theta);
+      vel[i * 3 + 2] = speed * Math.cos(phi);
+      
+      // Orange / red fire colors
+      const r = 1.0;
+      const g = 0.3 + Math.random() * 0.4;
+      const b = 0.0;
+      col[i * 3] = r; col[i * 3 + 1] = g; col[i * 3 + 2] = b;
+    }
+    return { positions: pos, velocities: vel, colors: col };
+  }, [position]);
 
+  const [opacity, setOpacity] = useState(1);
+  const timeAlive = useRef(0);
+
+  useFrame((_state, delta) => {
+    if (!isActive || !pointsRef.current) return;
+    
+    timeAlive.current += delta;
+    if (timeAlive.current > 1.2) {
+      setOpacity(0);
+      return;
+    }
+    
+    setOpacity(Math.max(0, 1.0 - (timeAlive.current / 1.2)));
+
+    const posAttr = pointsRef.current.geometry.attributes.position;
+    for (let i = 0; i < 120; i++) {
+      // Apply velocity
+      posAttr.array[i * 3] += velocities[i * 3] * delta;
+      posAttr.array[i * 3 + 1] += velocities[i * 3 + 1] * delta;
+      posAttr.array[i * 3 + 2] += velocities[i * 3 + 2] * delta;
+      
+      // Gravity drag
+      velocities[i * 3 + 1] -= 9.8 * delta; // standard gravity
+    }
+    posAttr.needsUpdate = true;
+  });
+
+  if (!isActive || opacity <= 0) return null;
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={120} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-color" count={120} array={colors} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial size={0.3} vertexColors transparent opacity={opacity} blending={THREE.AdditiveBlending} depthWrite={false} />
+    </points>
+  );
+}
+
+// --- Flight Path renderer ---
 function RocketFlightPath({ points, crashed }: { points: THREE.Vector3[], crashed: boolean }) {
   if (points.length < 2) return null;
   return (
     <Line 
       points={points} 
       color={crashed ? "#ef4444" : "#00F0FF"} 
-      lineWidth={4} 
+      lineWidth={5} 
       dashed={false} 
     />
   );
 }
 
+// --- Main 3D Rocket Component ---
 function Rocket3D({ 
   multiplier, 
   crashed, 
@@ -48,141 +122,165 @@ function Rocket3D({
   onPathUpdate: (p: THREE.Vector3) => void,
   gameState: string
 }) {
-  const rocketGroup = useRef<any>(null);
+  const rocketGroup = useRef<THREE.Group>(null);
   const rigidBodyRef = useRef<any>(null);
-  const [hasTumbled, setHasTumbled] = useState(false);
   
-  // Create a trail of points based on mathematical curve
-  // x = time (elapsed)
-  // y = multiplier
-  // To keep it visually balanced, scale them.
-  const scaleX = 2.0;
-  const scaleY = 0.5;
+  const [explosionTriggered, setExplosionTriggered] = useState(false);
+  const crashPosition = useRef<THREE.Vector3>(new THREE.Vector3());
+  
+  // Camera tracking
+  const { camera } = useThree();
 
-  useFrame((state) => {
+  // --- Trajectory calculation function ---
+  const getTrajectoryPosition = (t: number, _m: number) => {
+    const startX = -12;
+    const startY = -4;
+    
+    // X increases linearly with elapsed time
+    const x = startX + (t * 2.5);
+    
+    // Y follows exponential curve based on elapsed time: y = Math.pow(elapsed, 1.8) * speedFactor
+    // We tie it to multiplier growth
+    const y = startY + Math.pow(t, 1.8) * 0.4;
+    
+    return new THREE.Vector3(x, y, 0);
+  };
+
+  // --- animationLoop (useFrame) ---
+  useFrame((state, _delta) => {
+    // 1. Calculate Trajectory & Smooth Motion Requirements
     if (!crashed && rocketGroup.current && rigidBodyRef.current) {
       const isPreparing = gameState === 'betting' || gameState === 'countdown';
       const actualElapsed = isPreparing ? 0 : elapsed;
       const actualMult = isPreparing ? 1.0 : multiplier;
 
-      // Calculate current ideal position based on exponential curve
-      const idealX = actualElapsed * scaleX - 10; // offset so it starts left
-      const idealY = (actualMult - 1.0) * scaleY - 2; // offset so it starts bottom
+      const newPos = getTrajectoryPosition(actualElapsed, actualMult);
+      const nextPos = getTrajectoryPosition(actualElapsed + 0.1, actualMult); // Look ahead for angle
       
-      const newPos = new THREE.Vector3(idealX, idealY, 0);
+      // Calculate tangent angle for rotation
+      const dy = nextPos.y - newPos.y;
+      const dx = nextPos.x - newPos.x;
+      let targetAngle = Math.atan2(dy, dx);
       
-      // Calculate pitch angle by looking slightly ahead
-      const nextElapsed = actualElapsed + 0.1;
-      const nextMult = Math.pow(Math.E, 0.08 * nextElapsed);
-      const nextX = nextElapsed * scaleX - 10;
-      const nextY = (nextMult - 1.0) * scaleY - 2;
+      // Minimum pitch angle at launch (approx 15-20 degrees = 0.26 rad)
+      if (targetAngle < 0.26) targetAngle = 0.26;
       
-      const angle = Math.atan2(nextY - idealY, nextX - idealX);
+      // Smooth lerp rotation (rule 2)
+      const currentEuler = rocketGroup.current.rotation;
+      const currentAngle = currentEuler.z;
+      const nextAngle = THREE.MathUtils.lerp(currentAngle, targetAngle, 0.08); // No snapping
       
-      // Move kinematic rigid body
+      // Move Kinematic body
       rigidBodyRef.current.setTranslation(newPos, true);
-      const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, angle));
+      const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, nextAngle));
       rigidBodyRef.current.setRotation(quat, true);
-      
-      // Add a slight wobble for turbulence
-      let wobble = Math.sin(state.clock.elapsedTime * 10) * 0.1;
-      if (gameState === 'countdown') wobble += (Math.random() - 0.5) * 0.15; // shake during countdown
+      rocketGroup.current.rotation.z = nextAngle;
+
+      // Add turbulence wobble
+      let wobble = Math.sin(state.clock.elapsedTime * 15) * 0.1;
+      if (gameState === 'countdown') wobble += (Math.random() - 0.5) * 0.15;
       rocketGroup.current.position.y = wobble;
       
       onPathUpdate(newPos);
-      setHasTumbled(false);
-    } else if (crashed && !hasTumbled && rigidBodyRef.current) {
-      // Trigger dynamic physics tumble
-      setHasTumbled(true);
       
-      // Apply explosive impulse
-      rigidBodyRef.current.setBodyType(0, true); // 0 = dynamic
+      // 3. Camera Follow Logic
+      const zoomOut = Math.min(25, 15 + (actualMult * 0.5));
+      const targetCamPos = new THREE.Vector3(newPos.x + 5, newPos.y + 2, zoomOut);
+      camera.position.lerp(targetCamPos, 0.05); // slight lag
       
-      // Toss it forward and randomize rotation
-      rigidBodyRef.current.applyImpulse({ x: 5, y: 15, z: (Math.random() - 0.5) * 10 }, true);
-      rigidBodyRef.current.applyTorqueImpulse({ x: Math.random() * 2, y: Math.random() * 2, z: Math.random() * 2 }, true);
+    } else if (crashed && !explosionTriggered && rigidBodyRef.current) {
+      // --- Crash Handler Function ---
+      setExplosionTriggered(true);
+      crashPosition.current.copy(rocketGroup.current!.position); // Save crash position
+      
+      // Break rocket (simulate tumbling)
+      rigidBodyRef.current.setBodyType(0, true); // Dynamic
+      // Random tumbling impulse
+      rigidBodyRef.current.applyImpulse({ x: 4, y: 10, z: (Math.random() - 0.5) * 10 }, true);
+      rigidBodyRef.current.applyTorqueImpulse({ x: Math.random() * 5, y: Math.random() * 5, z: Math.random() * 5 }, true);
+      
+      // Scale down slightly
+      rocketGroup.current!.scale.set(0.8, 0.8, 0.8);
     }
   });
 
   return (
-    <RigidBody ref={rigidBodyRef} type="kinematicPosition" colliders="hull" restitution={0.5}>
-      <group ref={rocketGroup}>
-        {gameState === 'climbing' && <Trail width={1} color={crashed ? '#ef4444' : '#f97316'} length={20} attenuation={(t) => t * t}>
-          {/* Exhaust Nozzle to anchor the trail */}
-          <mesh position={[-0.8, 0, 0]}>
-             <boxGeometry args={[0.1, 0.1, 0.1]} />
-             <meshBasicMaterial transparent opacity={0} />
+    <>
+      {explosionTriggered && <ParticleExplosion position={rigidBodyRef.current?.translation() || new THREE.Vector3()} isActive={true} />}
+      <RigidBody ref={rigidBodyRef} type="kinematicPosition" colliders="hull" restitution={0.3}>
+        <group ref={rocketGroup}>
+          {gameState === 'climbing' && <Trail width={1.5} color={crashed ? '#ef4444' : '#f97316'} length={30} attenuation={(t) => t * t}>
+            <mesh position={[-1.0, 0, 0]}>
+               <boxGeometry args={[0.1, 0.1, 0.1]} />
+               <meshBasicMaterial transparent opacity={0} />
+            </mesh>
+          </Trail>}
+          
+          <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+            <cylinderGeometry args={[0.4, 0.4, 1.8, 16]} />
+            <meshStandardMaterial color="#e2e8f0" metalness={0.7} roughness={0.3} />
           </mesh>
-        </Trail>}
-        
-        {/* Main Hull */}
-        <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-          <cylinderGeometry args={[0.3, 0.3, 1.5, 16]} />
-          <meshStandardMaterial color="#e2e8f0" metalness={0.6} roughness={0.4} />
-        </mesh>
-        
-        {/* Nose Cone */}
-        <mesh castShadow position={[1.0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-          <coneGeometry args={[0.3, 0.6, 16]} />
-          <meshStandardMaterial color="#ef4444" metalness={0.5} roughness={0.5} />
-        </mesh>
-        
-        {/* Thruster Base */}
-        <mesh castShadow position={[-0.85, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-          <cylinderGeometry args={[0.3, 0.4, 0.2, 16]} />
-          <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
-        </mesh>
+          
+          <mesh castShadow position={[1.2, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+            <coneGeometry args={[0.4, 0.8, 16]} />
+            <meshStandardMaterial color="#ef4444" metalness={0.6} roughness={0.4} />
+          </mesh>
+          
+          <mesh castShadow position={[-1.0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+            <cylinderGeometry args={[0.4, 0.5, 0.3, 16]} />
+            <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
+          </mesh>
 
-        {/* Wings */}
-        <mesh castShadow position={[-0.4, 0.4, 0]} rotation={[0, 0, -Math.PI / 8]}>
-          <boxGeometry args={[0.6, 0.8, 0.1]} />
-          <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
-        </mesh>
-        <mesh castShadow position={[-0.4, -0.4, 0]} rotation={[0, 0, Math.PI / 8]}>
-          <boxGeometry args={[0.6, 0.8, 0.1]} />
-          <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
-        </mesh>
-        
-        {/* Cockpit Window */}
-        <mesh position={[0.4, 0.25, 0]} rotation={[Math.PI / 4, 0, 0]}>
-          <sphereGeometry args={[0.2, 16, 16, 0, Math.PI]} />
-          <meshStandardMaterial color="#00f0ff" metalness={0.9} roughness={0.1} />
-        </mesh>
-        
-        {/* Dynamic Engine Glow/Flame */}
-        {gameState === 'climbing' && (
-          <mesh position={[-1.2, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-            <coneGeometry args={[0.2, 1.5, 16]} />
-            <meshBasicMaterial color="#f97316" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
-            <pointLight color="#f97316" intensity={2} distance={5} />
+          <mesh castShadow position={[-0.5, 0.5, 0]} rotation={[0, 0, -Math.PI / 8]}>
+            <boxGeometry args={[0.8, 1.0, 0.1]} />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
           </mesh>
-        )}
-        {/* Ignition Spark during countdown */}
-        {gameState === 'countdown' && (
-          <mesh position={[-0.9, 0, 0]}>
-            <sphereGeometry args={[0.2, 8, 8]} />
-            <meshBasicMaterial color="#ffaa00" transparent opacity={0.6 + Math.random()*0.4} blending={THREE.AdditiveBlending} />
-            <pointLight color="#ffaa00" intensity={1} distance={2} />
+          <mesh castShadow position={[-0.5, -0.5, 0]} rotation={[0, 0, Math.PI / 8]}>
+            <boxGeometry args={[0.8, 1.0, 0.1]} />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
           </mesh>
-        )}
-      </group>
-    </RigidBody>
+          
+          <mesh position={[0.5, 0.3, 0]} rotation={[Math.PI / 4, 0, 0]}>
+            <sphereGeometry args={[0.25, 16, 16, 0, Math.PI]} />
+            <meshStandardMaterial color="#00f0ff" metalness={0.9} roughness={0.1} />
+          </mesh>
+          
+          {gameState === 'climbing' && !crashed && (
+            <mesh position={[-1.5, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+              <coneGeometry args={[0.3, 2.0, 16]} />
+              <meshBasicMaterial color="#f97316" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
+              <pointLight color="#f97316" intensity={3} distance={10} />
+            </mesh>
+          )}
+        </group>
+      </RigidBody>
+    </>
   );
 }
 
-function GridEnvironment({ crashed }: { crashed: boolean }) {
+// --- Scrolling Grid Environment ---
+function GridEnvironment({ crashed, elapsed: _elapsed }: { crashed: boolean, elapsed: number }) {
+  const gridRef = useRef<THREE.GridHelper>(null);
+  
+  useFrame((_state, delta) => {
+    if (gridRef.current && !crashed) {
+      // Grid scrolls in opposite direction
+      gridRef.current.position.x -= delta * 15;
+      if (gridRef.current.position.x < -20) {
+        gridRef.current.position.x = 0; // seamless loop
+      }
+    }
+  });
+
   return (
     <group>
-      {/* Background Plane */}
-      <mesh position={[0, 0, -10]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
+      <mesh position={[0, 0, -20]} receiveShadow>
+        <planeGeometry args={[200, 200]} />
         <meshStandardMaterial color="#061022" metalness={0.2} roughness={0.8} />
       </mesh>
       
-      {/* Dynamic Grid Lines */}
-      <gridHelper args={[100, 100, '#00f0ff', '#00f0ff']} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -9.9]} material-transparent material-opacity={0.1} />
+      <gridHelper ref={gridRef} args={[200, 100, '#00f0ff', '#00f0ff']} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -19.9]} material-transparent material-opacity={0.15} />
       
-      {/* Global Illumination shift on crash */}
       <ambientLight intensity={crashed ? 0.2 : 0.6} color={crashed ? '#ff0000' : '#ffffff'} />
       <directionalLight position={[10, 10, 5]} intensity={1.5} color={crashed ? '#ffaaaa' : '#ffffff'} castShadow />
     </group>
@@ -205,6 +303,8 @@ export function CrashGame({ onClose }: CrashGameProps) {
   
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [flightPath, setFlightPath] = useState<THREE.Vector3[]>([]);
+  const [flashOpacity, setFlashOpacity] = useState(0);
+  const [shakeActive, setShakeActive] = useState(false);
   
   const rAFRef = useRef<number | null>(null);
   const startTimeRef = useRef(0);
@@ -219,6 +319,8 @@ export function CrashGame({ onClose }: CrashGameProps) {
   const [countdownTicks, setCountdownTicks] = useState(5);
   const [isAborting, setIsAborting] = useState(false);
   const [pastCrashes, setPastCrashes] = useState<number[]>([1.5, 2.4, 4.0, 8.2]);
+  
+  const crashTimeRef = useRef(0);
 
   useEffect(() => { autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
   useEffect(() => { cashedOutRef.current = cashedOut; }, [cashedOut]);
@@ -232,6 +334,8 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   const tick = () => {
     const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    
+    // Multiplier Sync: multiplier = Math.pow(Math.E, growthRate * elapsed)
     const currentMult = Math.round(Math.pow(Math.E, 0.08 * elapsed) * 100) / 100;
     
     setElapsedSeconds(elapsed);
@@ -250,6 +354,11 @@ export function CrashGame({ onClose }: CrashGameProps) {
       setGameState('crashed');
       setPastCrashes(prev => [crashPointRef.current, ...prev.slice(0, 3)]);
       
+      // Trigger screen shake and flash
+      setShakeActive(true);
+      crashTimeRef.current = Date.now();
+      setFlashOpacity(1);
+      
       playTone(85, 0.5, 'sawtooth', 0.4);
       playTone(45, 0.8, 'sine', 0.5); 
       vibrate([150, 50, 250, 50, 300]);
@@ -259,6 +368,9 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
       if (!cashedOutRef.current) toast.error(`💥 CRASHED at ${crashPointRef.current}x!`);
       if (socialIntervalRef.current) clearInterval(socialIntervalRef.current);
+      
+      // Continue loop just for damping the shake and flash
+      rAFRef.current = requestAnimationFrame(crashTick);
       return;
     }
 
@@ -276,6 +388,22 @@ export function CrashGame({ onClose }: CrashGameProps) {
     }
 
     rAFRef.current = requestAnimationFrame(tick);
+  };
+  
+  const crashTick = () => {
+    const timeSinceCrash = (Date.now() - crashTimeRef.current) / 1000;
+    
+    if (timeSinceCrash < 0.3) {
+      setFlashOpacity(1.0 - (timeSinceCrash / 0.3));
+    } else {
+      setFlashOpacity(0);
+    }
+    
+    if (timeSinceCrash > 0.6) {
+       setShakeActive(false);
+    } else {
+       rAFRef.current = requestAnimationFrame(crashTick);
+    }
   };
 
   const handleStartGame = async () => {
@@ -304,6 +432,8 @@ export function CrashGame({ onClose }: CrashGameProps) {
     setSafetyCoverOpen(false);
     setFlightPath([]);
     setElapsedSeconds(0);
+    setFlashOpacity(0);
+    setShakeActive(false);
 
     let ticks = 5;
     const countTimer = setInterval(() => {
@@ -382,8 +512,18 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   const multColor = getMultColor(multiplier);
 
+  // Screen shake on crash
   const getScreenTremor = () => {
-    if (gameState !== 'climbing') return 'none';
+    if (!shakeActive && gameState !== 'climbing') return 'none';
+    if (shakeActive) {
+       // Damped sinusoidal offset
+       const t = (Date.now() - crashTimeRef.current) / 1000;
+       const amplitude = 30;
+       const frequency = 40;
+       const decay = 8;
+       const offset = amplitude * Math.sin(frequency * t) * Math.exp(-decay * t);
+       return `translate3d(${offset}px, ${offset * 0.5}px, 0px)`;
+    }
     const intensity = Math.min(5, multiplier * 0.4);
     const rx = (Math.random() - 0.5) * intensity;
     const ry = (Math.random() - 0.5) * intensity;
@@ -391,10 +531,9 @@ export function CrashGame({ onClose }: CrashGameProps) {
   };
 
   const handlePathUpdate = (p: THREE.Vector3) => {
-    // Keep trail length reasonable
     setFlightPath(prev => {
        const newPath = [...prev, p.clone()];
-       if (newPath.length > 50) newPath.shift();
+       if (newPath.length > 50) newPath.shift(); // Keep trail clean
        return newPath;
     });
   };
@@ -412,6 +551,10 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
       {isAborting && (
         <div className="absolute inset-0 pointer-events-none z-30 bg-white/30 transition-all duration-200" />
+      )}
+      
+      {flashOpacity > 0 && (
+         <div className="absolute inset-0 pointer-events-none z-50 bg-orange-400" style={{ opacity: flashOpacity }} />
       )}
 
       <style>{`
@@ -566,11 +709,11 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
         <div className="absolute inset-0 z-0">
            <GameEngine3D 
-              enablePhysics={true} // ALWAYS enable dynamics so RigidBody doesn't crash on mount
+              enablePhysics={true} 
               cameraPosition={[0, 0, 15]}
               enablePostProcessing={true}
            >
-              <GridEnvironment crashed={gameState === 'crashed'} />
+              <GridEnvironment crashed={gameState === 'crashed'} elapsed={elapsedSeconds} />
               
               <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
               <Rocket3D 
@@ -581,14 +724,6 @@ export function CrashGame({ onClose }: CrashGameProps) {
                 gameState={gameState}
               />
               
-              {gameState === 'crashed' && flightPath.length > 0 && (
-                <mesh position={flightPath[flightPath.length - 1]}>
-                  <sphereGeometry args={[1.5, 32, 32]} />
-                  <meshBasicMaterial color="#ff4400" transparent opacity={0.6} blending={THREE.AdditiveBlending} />
-                  <pointLight color="#ff0000" intensity={10} distance={20} />
-                </mesh>
-              )}
-              
               <Html center position={[0, 0, 0]} zIndexRange={[100, 0]} className="pointer-events-none">
                 <AnimatePresence>
                   {gameState === 'crashed' && (
@@ -597,7 +732,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
                       animate={{ scale: 1, opacity: 1 }}
                       className="flex items-center justify-center w-[400px]"
                     >
-                      <div className="text-center bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-red-500/30">
+                      <div className="text-center bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-red-500/30 mt-[200px]">
                         <p className="text-4xl font-black text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]">💥 CORE RUPTURED</p>
                         <p className="text-sm text-red-300 font-mono mt-1">Telemetry terminated at {crashPointRef.current}x</p>
                       </div>

@@ -1,18 +1,26 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Environment, PerformanceMonitor } from '@react-three/drei';
+import { PerformanceMonitor } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { AssetManager } from './core/AssetLoader';
+import { DeviceCapabilityDetector } from './core/DeviceCapabilityDetector';
+import { EnvironmentAtmosphere } from './core/EnvironmentAtmosphere';
+import { DebugCanvasOverlay, DebugOverlay } from './debug/DebugOverlay';
+import { TouchControls } from './input/TouchControls';
 
 export interface GameEngine3DProps {
   children: ReactNode;
   enablePostProcessing?: boolean;
   cameraPosition?: [number, number, number];
   cameraFov?: number;
-  environmentPreset?: 'city' | 'night' | 'sunset' | 'dawn' | 'warehouse';
+  environmentPreset?: 'city' | 'night' | 'sunset' | 'dawn' | 'warehouse' | 'forest';
   enablePhysics?: boolean;
+  enableDebugOverlay?: boolean;
+  enableTouchControls?: boolean;
+  enableAtmosphere?: boolean;
+  fogColor?: string;
 }
 
 /**
@@ -28,51 +36,73 @@ export function GameEngine3D({
   cameraFov = 50,
   environmentPreset = 'city',
   enablePhysics = false,
+  enableDebugOverlay = false,
+  enableTouchControls = false,
+  enableAtmosphere = true,
+  fogColor,
 }: GameEngine3DProps) {
+  const profile = useMemo(() => DeviceCapabilityDetector.detect(), []);
+
   return (
-    <Canvas
-      shadows={{ type: THREE.PCFSoftShadowMap }}
-      camera={{ position: cameraPosition, fov: cameraFov }}
-      gl={{
-        antialias: true,
-        toneMapping: THREE.ACESFilmicToneMapping,
-        outputColorSpace: THREE.SRGBColorSpace,
-      }}
-    >
-      <ambientLight intensity={0.5} />
-      <directionalLight 
-        position={[10, 20, 10]} 
-        intensity={1.5} 
-        castShadow 
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-far={50}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
-      />
-      
-      {environmentPreset && <Environment preset={environmentPreset} />}
-
-      <PerformanceMonitor onDecline={() => {}} />
-
-      {/* Game Content wrapped in AssetManager (Suspense) and optional Physics */}
-      <AssetManager>
-        {enablePhysics ? (
-          <Physics>
-            {children}
-          </Physics>
-        ) : (
-          children
+    <div className="relative w-full h-full">
+      {/* Three.js Canvas Layer */}
+      <Canvas
+        shadows={{ type: THREE.PCFSoftShadowMap }}
+        camera={{ position: cameraPosition, fov: cameraFov }}
+        dpr={profile.recommendedDpr}
+        gl={{
+          antialias: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          outputColorSpace: THREE.SRGBColorSpace,
+        }}
+      >
+        <ambientLight intensity={0.5} />
+        <directionalLight 
+          position={[10, 20, 10]} 
+          intensity={1.5} 
+          castShadow 
+          shadow-mapSize={[profile.shadowMapSize, profile.shadowMapSize]}
+          shadow-camera-far={50}
+          shadow-camera-left={-10}
+          shadow-camera-right={10}
+          shadow-camera-top={10}
+          shadow-camera-bottom={-10}
+        />
+        
+        {enableAtmosphere && (
+          <EnvironmentAtmosphere
+            preset={environmentPreset}
+            enableFog={!!fogColor}
+            fogColor={fogColor}
+          />
         )}
-      </AssetManager>
 
-      {/* Optional Post-Processing */}
-      {enablePostProcessing ? (
-        <EffectComposer>
-          <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} intensity={1.2} />
-        </EffectComposer>
-      ) : null}
-    </Canvas>
+        <PerformanceMonitor onDecline={() => {}} />
+
+        {/* Game Content wrapped in AssetManager (Suspense) and optional Physics */}
+        <AssetManager>
+          {enablePhysics ? (
+            <Physics>
+              {children}
+            </Physics>
+          ) : (
+            children
+          )}
+        </AssetManager>
+
+        {/* Optional Post-Processing */}
+        {(enablePostProcessing && profile.enablePostProcessing) ? (
+          <EffectComposer>
+            <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} intensity={1.2} />
+          </EffectComposer>
+        ) : null}
+
+        {enableDebugOverlay && <DebugCanvasOverlay />}
+      </Canvas>
+
+      {/* Layered UI / Touch Controls */}
+      {enableTouchControls && profile.isTouch && <TouchControls />}
+      {enableDebugOverlay && <DebugOverlay />}
+    </div>
   );
 }

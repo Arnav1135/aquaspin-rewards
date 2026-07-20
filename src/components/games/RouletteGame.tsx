@@ -10,7 +10,7 @@ import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
-import { RigidBody } from '@react-three/rapier';
+import { RigidBody, CylinderCollider, CuboidCollider } from '@react-three/rapier';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -36,6 +36,13 @@ const WHEEL_TILES: WheelTile[] = [
 ];
 
 const SECTOR_ANGLE = (Math.PI * 2) / 37;
+
+function CameraSetup() {
+  useFrame(({ camera }) => {
+    camera.lookAt(0, 0, 0);
+  });
+  return null;
+}
 
 // --- 3D Components ---
 
@@ -87,7 +94,12 @@ function RouletteWheel3D({ spinning, finalRotation, onStopped }: { spinning: boo
   });
 
   return (
-    <RigidBody ref={wheelRef} type="kinematicPosition" position={[0, 0, 0]} colliders="hull">
+    <RigidBody ref={wheelRef} type="kinematicPosition" position={[0, 0, 0]} colliders={false}>
+      {/* Base Floor Physics */}
+      <CylinderCollider args={[0.05, 4.2]} position={[0, -0.05, 0]} />
+      {/* Center Hub Physics */}
+      <CylinderCollider args={[0.2, 1.2]} position={[0, 0.2, 0]} />
+
       {/* Base Wood Rim */}
       <mesh position={[0, -0.2, 0]} receiveShadow>
         <cylinderGeometry args={[4.2, 4.4, 0.4, 64]} />
@@ -124,6 +136,9 @@ function RouletteWheel3D({ spinning, finalRotation, onStopped }: { spinning: boo
               <boxGeometry args={[0.04, 0.2, 1]} />
               <meshStandardMaterial color="#d4af37" metalness={0.8} roughness={0.2} />
             </mesh>
+
+            {/* Divider Physics */}
+            <CuboidCollider args={[0.02, 0.1, 0.5]} position={[0.3, 0.2, -3.5]} rotation={[0, SECTOR_ANGLE / 2, 0]} />
           </group>
         );
       })}
@@ -152,7 +167,7 @@ function BallDrop({ spinning }: { spinning: boolean, targetAngle: number | null 
       <RigidBody 
         ref={ballRef}
         type={spinning ? 'dynamic' : 'fixed'} // lock in place when not spinning
-        position={[0, 1.5, 3.8]} 
+        position={[0, 2.5, 3.8]} 
         colliders="ball" 
         restitution={0.4} 
         friction={0.1}
@@ -168,9 +183,9 @@ function BallDrop({ spinning }: { spinning: boolean, targetAngle: number | null 
       </RigidBody>
       
       {/* Invisible outer wall to keep ball inside */}
-      <RigidBody type="fixed" colliders="hull" position={[0, 0.5, 0]}>
+      <RigidBody type="fixed" colliders="trimesh" position={[0, 0.5, 0]}>
         <mesh visible={false}>
-           <cylinderGeometry args={[4.2, 4.2, 1, 32, 1, true]} />
+           <cylinderGeometry args={[4.2, 4.2, 2, 32, 1, true]} />
         </mesh>
       </RigidBody>
     </>
@@ -377,11 +392,11 @@ export function RouletteGame({ onClose }: RouletteGameProps) {
         <div className="absolute inset-0 z-0 cursor-move">
           <GameEngine3D 
             enablePhysics={true} 
-            cameraPosition={[0, 6, 8]}
+            cameraPosition={[0, 8, 5]}
             enablePostProcessing={true}
           >
-            {/* Tilt the wheel slightly to look better from above */}
-            <group rotation={[-0.3, 0, 0]}>
+            <CameraSetup />
+            <group>
                <RouletteWheel3D spinning={spinning} finalRotation={targetRotation} onStopped={handleWheelStopped} />
                <BallDrop spinning={spinning} targetAngle={targetRotation} />
             </group>

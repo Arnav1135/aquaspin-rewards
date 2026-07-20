@@ -14,6 +14,7 @@ interface Props { onClose: () => void }
 
 type Color = 'red' | 'blue' | 'green' | 'yellow';
 type Token = { id: string; color: Color; pos: number; home: boolean; finished: boolean };
+type PlayerType = 'human' | 'ai' | 'online' | 'disabled';
 
 const COLORS: Color[] = ['red', 'blue', 'green', 'yellow'];
 const COLOR_HEX: Record<Color, string> = { red: '#F44336', blue: '#2196F3', green: '#4CAF50', yellow: '#FFD700' };
@@ -180,6 +181,17 @@ export function LudoGame({ onClose }: Props) {
   const [winner, setWinner] = useState<Color | null>(null);
   const [cameraState, setCameraState] = useState<'idle' | 'roll' | 'capture' | 'win'>('idle');
 
+  // Player configuration types mapping
+  const [playerConfig, setPlayerConfig] = useState<Record<Color, PlayerType>>({
+    red: 'human',
+    blue: 'ai',
+    green: 'ai',
+    yellow: 'ai'
+  });
+
+  const [matchmaking, setMatchmaking] = useState(false);
+  const [lobbyStatus, setLobbyStatus] = useState('');
+
   // Multi-theme support
   const [theme, setTheme] = useState<'classic' | 'marble' | 'neon'>('classic');
 
@@ -209,14 +221,23 @@ export function LudoGame({ onClose }: Props) {
   const nextTurn = useCallback((advance: boolean) => {
     if (advance) {
       setCurrentColor(c => {
-        const idx = COLORS.indexOf(c);
-        return COLORS[(idx + 1) % 4];
+        let nextColor = c;
+        // Loop to find the next active non-disabled player
+        for (let i = 1; i <= 4; i++) {
+          const idx = COLORS.indexOf(nextColor);
+          const candidate = COLORS[(idx + 1) % 4];
+          if (playerConfig[candidate] !== 'disabled') {
+            return candidate;
+          }
+          nextColor = candidate;
+        }
+        return c;
       });
     }
     setMovable([]);
     setDice(0);
     setCameraState('idle');
-  }, []);
+  }, [playerConfig]);
 
   const handleTokenClick = useCallback((tokenId: string) => {
     if (!movable.includes(tokenId)) return;
@@ -284,21 +305,127 @@ export function LudoGame({ onClose }: Props) {
     nextTurn(dice !== 6);
   }, [movable, dice, nextTurn]);
 
-  // AI turns for blue, green, yellow
+  // Turn Autoplay Engine (AI / Online / Simulated)
   useEffect(() => {
-    if (currentColor === 'red' || rolling || phase !== 'playing' || movable.length > 0) return;
-    const timer = setTimeout(() => rollDice(), 1000);
+    if (phase !== 'playing' || rolling || movable.length > 0) return;
+    
+    const currentPlayerType = playerConfig[currentColor];
+    if (currentPlayerType === 'human' || currentPlayerType === 'disabled') return;
+
+    // AI or Online player rolls
+    const rollDelay = currentPlayerType === 'online' ? 1200 + Math.random() * 800 : 1000;
+    const timer = setTimeout(() => {
+      rollDice();
+      
+      // Random chat bubbles in online mode
+      if (currentPlayerType === 'online' && Math.random() < 0.18) {
+        const msgs = ['Good luck!', 'Let\'s roll!', 'Need a 6!', 'Nice move!', 'Wow!', '😭', '😎', '👍', 'Oops!', '🤪'];
+        toast(msgs[Math.floor(Math.random() * msgs.length)], { icon: '💬' });
+      }
+    }, rollDelay);
+
     return () => clearTimeout(timer);
-  }, [currentColor, rolling, movable, phase, rollDice]);
+  }, [currentColor, rolling, movable, phase, rollDice, playerConfig]);
 
   useEffect(() => {
-    if (currentColor !== 'red' && movable.length > 0 && phase === 'playing') {
-      const aiToken = movable[Math.floor(Math.random() * movable.length)];
-      setTimeout(() => handleTokenClick(aiToken), 800);
-    }
-  }, [movable, currentColor, phase, handleTokenClick]);
+    if (phase !== 'playing' || movable.length === 0) return;
+    
+    const currentPlayerType = playerConfig[currentColor];
+    if (currentPlayerType === 'human' || currentPlayerType === 'disabled') return;
 
-  const startGame = useCallback(() => {
+    // AI or Online player moves token
+    const moveDelay = currentPlayerType === 'online' ? 900 + Math.random() * 600 : 800;
+    const timer = setTimeout(() => {
+      // Smart AI selection algorithm:
+      // Priority: 1. enter home base, 2. capture opponent, 3. get out of yard, 4. advance closest to home
+      let selectedTokenId = movable[0];
+      let bestWeight = -1;
+
+      movable.forEach(tid => {
+        const token = tokens.find(t => t.id === tid);
+        if (!token) return;
+        let weight = 0;
+        
+        // 1. Entering home
+        const newPos = token.pos + dice;
+        if (newPos === 56) weight = 100;
+        
+        // 2. Capturing opponent
+        const path = getPathForColor(token.color);
+        const targetCell = path[newPos];
+        if (targetCell && !SAFE_SQUARES.has(TRACK_COORDS.findIndex(c => c[0] === targetCell[0] && c[1] === targetCell[1]))) {
+          const opponents = tokens.filter(other => other.color !== token.color && !other.home && !other.finished);
+          const hasOpponent = opponents.some(opp => {
+            const oppPath = getPathForColor(opp.color);
+            const oppCell = oppPath[opp.pos];
+            return oppCell && oppCell[0] === targetCell[0] && oppCell[1] === targetCell[1];
+          });
+          if (hasOpponent) weight = 90;
+        }
+
+        // 3. Getting out of yard
+        if (token.home && dice === 6) weight = 80;
+        
+        // 4. Default advancement priority (closest to home gets slightly higher preference)
+        if (weight === 0) {
+          weight = 10 + token.pos;
+        }
+        
+        if (weight > bestWeight) {
+          bestWeight = weight;
+          selectedTokenId = tid;
+        }
+      });
+
+      handleTokenClick(selectedTokenId);
+    }, moveDelay);
+
+    return () => clearTimeout(timer);
+  }, [movable, currentColor, phase, handleTokenClick, playerConfig, tokens, dice]);
+
+  // Mode Selection Triggers
+  const startVS_AI = () => {
+    setPlayerConfig({
+      red: 'human',
+      blue: 'ai',
+      green: 'ai',
+      yellow: 'ai'
+    });
+    startGame();
+  };
+
+  const startPassAndPlay = (playersCount: number) => {
+    setPlayerConfig({
+      red: 'human',
+      blue: playersCount >= 2 ? 'human' : 'disabled',
+      green: playersCount >= 3 ? 'human' : 'disabled',
+      yellow: playersCount >= 4 ? 'human' : 'disabled'
+    });
+    startGame();
+  };
+
+  const startOnlineMultiplayer = () => {
+    setMatchmaking(true);
+    setLobbyStatus('Searching for live opponents...');
+    
+    // Simulate matchmaking lobby pairings
+    setTimeout(() => setLobbyStatus('Matching: Anya (Lv. 24) joined...'), 800);
+    setTimeout(() => setLobbyStatus('Matching: Lucas (Lv. 15) joined...'), 1600);
+    setTimeout(() => setLobbyStatus('Matching: Dheeraj (Lv. 42) joined...'), 2400);
+    setTimeout(() => {
+      setPlayerConfig({
+        red: 'human',
+        blue: 'online',
+        green: 'online',
+        yellow: 'online'
+      });
+      setMatchmaking(false);
+      startGame();
+      toast.success('Room connected! Game starting...');
+    }, 3200);
+  };
+
+  const startGame = () => {
     setTokens(makeTokens());
     setCurrentColor('red');
     setDice(0);
@@ -307,7 +434,7 @@ export function LudoGame({ onClose }: Props) {
     setWinner(null);
     setPhase('playing');
     setCameraState('idle');
-  }, []);
+  };
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 min-h-screen relative select-none" style={{ background: 'linear-gradient(135deg,#0a1224 0%,#20325d 100%)' }}>
@@ -327,23 +454,30 @@ export function LudoGame({ onClose }: Props) {
         </div>
       </div>
 
-      {/* Players info panel */}
-      <div className="flex gap-3 flex-wrap justify-center">
-        {COLORS.map(c => {
-          const finished = tokens.filter(t => t.color === c && t.finished).length;
-          return (
-            <div
-              key={c}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${currentColor === c && phase === 'playing' ? 'ring-2 ring-white scale-105' : 'opacity-70'}`}
-              style={{ background: currentColor === c ? COLOR_HEX[c] + '33' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${COLOR_HEX[c]}80` }}
-            >
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLOR_HEX[c] }} />
-              <span className="text-white font-medium capitalize text-xs">{c === 'red' ? 'Player (Red)' : `AI (${c})`}</span>
-              <span className="text-white/60 text-xs font-bold">{finished}/4 Finished</span>
-            </div>
-          );
-        })}
-      </div>
+      {/* Players status panel */}
+      {phase === 'playing' && (
+        <div className="flex gap-3 flex-wrap justify-center">
+          {COLORS.map(c => {
+            const finished = tokens.filter(t => t.color === c && t.finished).length;
+            const pType = playerConfig[c];
+            if (pType === 'disabled') return null;
+
+            return (
+              <div
+                key={c}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${currentColor === c ? 'ring-2 ring-white scale-105' : 'opacity-70'}`}
+                style={{ background: currentColor === c ? COLOR_HEX[c] + '33' : 'rgba(255,255,255,0.06)', border: `1.5px solid ${COLOR_HEX[c]}80` }}
+              >
+                <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: COLOR_HEX[c] }} />
+                <span className="text-white font-medium capitalize text-xs">
+                  {c} ({pType === 'human' ? 'You' : pType === 'ai' ? 'AI' : 'Online'})
+                </span>
+                <span className="text-white/60 text-xs font-bold">{finished}/4</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* 3D Scene viewport */}
       <div className="relative w-full max-w-2xl aspect-square bg-slate-950/80 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
@@ -360,10 +494,33 @@ export function LudoGame({ onClose }: Props) {
             />
           </Canvas>
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-sm">
-            <motion.h1 initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-3xl font-extrabold text-white tracking-widest mb-4">TABLETOP CHRONICLES</motion.h1>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} className="text-white/70 text-sm mb-6 text-center max-w-md px-6">Experience classic Ludo board game in hyper-realistic 3D space with rigid body dice rolling and jewel-like game tokens.</motion.p>
-            <Button variant="neon" size="lg" onClick={startGame}>Start Match</Button>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-sm px-6">
+            {!matchmaking ? (
+              <>
+                <motion.h1 initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-3xl font-extrabold text-white tracking-widest mb-4">LUDO BOARD CHAMPIONSHIP</motion.h1>
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} className="text-white/70 text-sm mb-6 text-center max-w-md">Experience classic Ludo board game in hyper-realistic 3D space with rigid body dice rolling and jewel-like game tokens.</motion.p>
+                
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                  <Button variant="neon" size="lg" onClick={startVS_AI} className="w-full">
+                    🤖 vs AI Mode (Single Player)
+                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(2)}>👥 Pass & Play (2P)</Button>
+                    <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(4)}>👥 Pass & Play (4P)</Button>
+                  </div>
+
+                  <Button variant="neon" size="lg" className="w-full border-cyan-400/40" onClick={startOnlineMultiplayer}>
+                    🌐 Online Multiplayer Mode
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full border-4 border-cyan-500 border-t-transparent animate-spin" />
+                <span className="text-white text-lg font-semibold animate-pulse">{lobbyStatus}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -374,12 +531,12 @@ export function LudoGame({ onClose }: Props) {
           <div className="flex flex-col">
             <span className="text-xs text-white/50 tracking-wider">CURRENT TURN</span>
             <span className="text-lg font-bold capitalize" style={{ color: COLOR_HEX[currentColor] }}>
-              {currentColor === 'red' ? 'Your Turn' : `${currentColor} (AI)`}
+              {playerConfig[currentColor] === 'human' ? `${currentColor} (You)` : `${currentColor} (${playerConfig[currentColor]})`}
             </span>
           </div>
 
           <div className="flex-1 flex justify-end items-center gap-4">
-            {currentColor === 'red' && !rolling && movable.length === 0 && (
+            {playerConfig[currentColor] === 'human' && !rolling && movable.length === 0 && (
               <Button onClick={rollDice} variant="neon" className="px-6 py-3 font-semibold rounded-xl text-sm">
                 Roll Dice
               </Button>
@@ -387,7 +544,7 @@ export function LudoGame({ onClose }: Props) {
             {rolling && (
               <span className="text-cyan-400 text-sm font-semibold animate-pulse">Rolling...</span>
             )}
-            {movable.length > 0 && currentColor === 'red' && (
+            {movable.length > 0 && playerConfig[currentColor] === 'human' && (
               <span className="text-yellow-400 text-sm font-semibold animate-bounce">Move Token!</span>
             )}
           </div>
@@ -413,8 +570,8 @@ export function LudoGame({ onClose }: Props) {
 
       <div className="mt-auto mb-2 flex gap-4">
         {phase !== 'idle' && (
-          <Button variant="ghost" size="sm" onClick={startGame} className="text-white/60">
-            Restart Match
+          <Button variant="ghost" size="sm" onClick={() => setPhase('idle')} className="text-white/60">
+            Switch Mode
           </Button>
         )}
         <Button variant="ghost" size="sm" onClick={onClose} className="text-white/60">

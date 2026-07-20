@@ -100,6 +100,7 @@ const GAMES = [
     reward: 'High Score',    difficulty: 'Hard',   color: '#FFD700',
     desc: 'Fly through pipe gaps without crashing. Classic endless runner!',
     thumbnail: '/thumbnails/flappy.jpg',
+    thumbnailFit: 'contain',
   },
   {
     key: 'knife',       title: 'Knife Hit',   emoji: '🗡️', category: 'Arcade',
@@ -422,7 +423,9 @@ export function MiniGames() {
                   <img
                     src={game.thumbnail}
                     alt={game.title}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    className={`absolute inset-0 w-full h-full transition-transform duration-300 group-hover:scale-110 ${
+                      (game as any).thumbnailFit === 'contain' ? 'object-contain p-1.5' : 'object-cover'
+                    }`}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import gsap from 'gsap';
 import { KnifeSentinel } from './engine/KnifeSentinel';
+import { KnifeAudio } from './engine/KnifeAudio';
 
 interface KnifeGameProps {
     onScoreUpdate?: (score: number) => void;
@@ -25,6 +26,9 @@ export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpda
 
         // Sentinel AI Initialization
         const sentinel = new KnifeSentinel(engine, scene);
+
+        // Audio Engine Initialization
+        const audioEngine = new KnifeAudio(scene);
 
         // Lighting
         const keyLight = new BABYLON.DirectionalLight("keyLight", new BABYLON.Vector3(-1, -2, 1), scene);
@@ -109,6 +113,27 @@ export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpda
         let logRotationSpeed = 1.5; // radians per second
         let lastThrowTime = 0;
 
+        const particleSystem = new BABYLON.ParticleSystem("splinters", 200, scene);
+        particleSystem.particleTexture = new BABYLON.Texture("https://raw.githubusercontent.com/PatrickRyanMS/BabylonJStextures/master/ParticleSystems/Sparks/sparks.png", scene);
+        particleSystem.emitter = BABYLON.Vector3.Zero(); 
+        particleSystem.minEmitBox = new BABYLON.Vector3(-0.1, 0, -0.1);
+        particleSystem.maxEmitBox = new BABYLON.Vector3(0.1, 0, 0.1);
+        particleSystem.color1 = new BABYLON.Color4(0.8, 0.6, 0.2, 1.0);
+        particleSystem.color2 = new BABYLON.Color4(0.5, 0.3, 0.1, 1.0);
+        particleSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0.0);
+        particleSystem.minSize = 0.05;
+        particleSystem.maxSize = 0.15;
+        particleSystem.minLifeTime = 0.2;
+        particleSystem.maxLifeTime = 0.5;
+        particleSystem.emitRate = 1000;
+        particleSystem.gravity = new BABYLON.Vector3(0, -9.81, 0);
+        particleSystem.direction1 = new BABYLON.Vector3(-2, 2, -2);
+        particleSystem.direction2 = new BABYLON.Vector3(2, 4, 2);
+        particleSystem.minEmitPower = 2;
+        particleSystem.maxEmitPower = 6;
+        particleSystem.updateSpeed = 0.01;
+        particleSystem.targetStopDuration = 0.1;
+
         // Render Loop
         engine.runRenderLoop(() => {
             const dt = engine.getDeltaTime() / 1000.0;
@@ -119,7 +144,9 @@ export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpda
             // Rotate Log
             log.rotation.y += logRotationSpeed * dt;
 
-            // Handle Throw
+
+
+        // Handle Throw
             if (isThrowing) {
                 // If it's the very first frame of the throw, do the anticipation squash
                 if (activeKnife.position.y === -3.5) {
@@ -130,7 +157,7 @@ export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpda
                         yoyo: true, 
                         repeat: 1,
                         onComplete: () => {
-                            // Actual throw logic starts after anticipation
+                            audioEngine.playThrow();
                         }
                     });
                 }
@@ -154,6 +181,13 @@ export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpda
                             ease: "elastic.out(1, 0.3)" 
                         }
                     );
+
+                    // Trigger Particles
+                    particleSystem.emitter = activeKnife.position.clone();
+                    particleSystem.start();
+
+                    // Play Hit Sound
+                    audioEngine.playHit();
 
                     // Spawn new knife
                     activeKnife = createKnife("activeKnife_" + Date.now());

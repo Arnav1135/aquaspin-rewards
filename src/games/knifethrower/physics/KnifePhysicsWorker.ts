@@ -34,12 +34,10 @@ async function initPhysics() {
     setInterval(() => {
         // Rotate log
         const currentRot = logBody.rotation();
-        const nextRot = new RAPIER.Quaternion(currentRot.x, currentRot.y, currentRot.z, currentRot.w);
         // Simplified rotation around Y axis
         const dt = 1 / 120;
-        const angle = currentLogSpeed * dt;
-        const qY = RAPIER.Quaternion.fromAxisAngle({ x: 0, y: 1, z: 0 }, angle);
-        logBody.setNextKinematicRotation(logBody.rotation()); // In a full implementation, multiply quaternions here
+        // const angle = currentLogSpeed * dt; // Used for actual quaternion math
+        logBody.setNextKinematicRotation(currentRot); // In a full implementation, multiply quaternions here
 
         world.step();
 
@@ -79,7 +77,7 @@ onmessage = (e: MessageEvent<PhysicsCommand>) => {
         initPhysics();
     } else if (cmd.type === 'THROW_KNIFE') {
         if (!world) return;
-        const desc = RAPIER.RigidBodyDesc.dynamic().setTranslation(0, cmd.startY, 0).setLinearVelocity({ x: 0, y: 30, z: 0 });
+        const desc = RAPIER.RigidBodyDesc.dynamic().setTranslation(0, cmd.startY, 0).setLinvel(0, 30, 0);
         const body = world.createRigidBody(desc);
         const colDesc = RAPIER.ColliderDesc.cuboid(0.1, 0.75, 0.05); // approximate blade size
         world.createCollider(colDesc, body);

@@ -38,7 +38,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
+        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024, // 30MB
         // Cache all app assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Runtime caching strategy
@@ -80,6 +80,8 @@ export default defineConfig({
           framer: ['framer-motion'],
           query: ['@tanstack/react-query'],
           zustand: ['zustand'],
+          babylon: ['@babylonjs/core'],
+          rapier: ['@dimforge/rapier3d-compat'],
         },
       },
     },

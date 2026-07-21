@@ -2,8 +2,9 @@
 // Complete gaming hub — 16 games, fintech UI, GameFrame visibility protection
 
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gamepad2, X, Search, Maximize2, Minimize2 } from 'lucide-react';
+import { Gamepad2, X, Search, Maximize2, Minimize2, Cpu } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Free-play & classic games
@@ -39,7 +40,6 @@ import { PlinkoGame } from '@/components/games/PlinkoGame';
 import CandyCrushGame from '@/components/games/CandyCrushGame';
 import { AGEA, GameGenre, VisualStyle } from '@/engine/AIGameEngineArchitect';
 import { AIGameEnginePanel } from '@/components/AIGameEnginePanel';
-import { Cpu } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 
 // ─────────────────────────────────────────────────────────────
@@ -228,6 +228,7 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 };
 
 export function MiniGames() {
+  const navigate = useNavigate();
   const [activeGame, setActiveGame] = useState<GameKey>(null);
   const [category, setCategory] = useState<Category>('All');
   const [search, setSearch] = useState('');
@@ -397,7 +398,13 @@ export function MiniGames() {
           {filtered.map((game, i) => (
             <motion.button
               key={game.key}
-              onClick={() => setActiveGame(game.key)}
+              onClick={() => {
+                if (game.key === 'knife') {
+                  navigate('/knifethrower');
+                } else {
+                  setActiveGame(game.key);
+                }
+              }}
               className="text-left group"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}

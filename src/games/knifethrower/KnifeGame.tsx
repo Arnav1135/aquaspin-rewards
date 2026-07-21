@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
+import gsap from 'gsap';
 
 export const KnifeGame: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,6 +70,15 @@ export const KnifeGame: React.FC = () => {
             blade.position.y = 0.75;
             blade.parent = knifeNode;
 
+            // Idle Animation (Subtle hover/shimmer)
+            gsap.to(knifeNode.rotation, {
+                y: 0.1,
+                duration: 2,
+                yoyo: true,
+                repeat: -1,
+                ease: "sine.inOut"
+            });
+
             // Handle
             const handle = BABYLON.MeshBuilder.CreateBox(name + "_handle", { width: 0.3, height: 0.8, depth: 0.2 }, scene);
             const handleMat = new BABYLON.StandardMaterial("handleMat", scene);
@@ -98,6 +108,19 @@ export const KnifeGame: React.FC = () => {
 
             // Handle Throw
             if (isThrowing) {
+                // If it's the very first frame of the throw, do the anticipation squash
+                if (activeKnife.position.y === -3.5) {
+                    gsap.to(activeKnife.position, {
+                        y: "-=0.2", 
+                        duration: 0.05, 
+                        yoyo: true, 
+                        repeat: 1,
+                        onComplete: () => {
+                            // Actual throw logic starts after anticipation
+                        }
+                    });
+                }
+                
                 activeKnife.position.y += 30 * dt; // Throw speed
 
                 // Simple raycast impact detection
@@ -108,6 +131,16 @@ export const KnifeGame: React.FC = () => {
                     activeKnife.position.y = log.position.y - 1.25 + 0.4; // Embed depth
                     activeKnife.setParent(log);
                     
+                    // Embed Wobble Animation (Spring oscillation)
+                    gsap.fromTo(activeKnife.rotation, 
+                        { z: 0.15 },
+                        { 
+                            z: 0, 
+                            duration: 0.4, 
+                            ease: "elastic.out(1, 0.3)" 
+                        }
+                    );
+
                     // Spawn new knife
                     activeKnife = createKnife("activeKnife_" + Date.now());
                     activeKnife.position = new BABYLON.Vector3(0, -3.5, 0);

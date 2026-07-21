@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { KnifeGame } from '../games/knifethrower/KnifeGame';
-import { Button } from '../components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export default function KnifeHitGamePage() {
+export function KnifeHitGamePage() {
   const navigate = useNavigate();
   // State for HUD
   const [score, setScore] = useState(0);

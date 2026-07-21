@@ -16,6 +16,10 @@ export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpda
     useEffect(() => {
         if (!canvasRef.current) return;
 
+        // Initialize HUD
+        if (onScoreUpdate) onScoreUpdate(0);
+        if (onLevelUpdate) onLevelUpdate(1);
+
         const engine = new BABYLON.Engine(canvasRef.current, true, { preserveDrawingBuffer: true, stencil: true });
         const scene = new BABYLON.Scene(engine);
         scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.08, 1.0);

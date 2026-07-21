@@ -16,7 +16,7 @@ export interface EngineCapabilities {
 
 export class SelfUpgradeMonitor {
     private engine: BABYLON.Engine;
-    private currentTier: QualityTier;
+    private currentTier: QualityTier = QualityTier.MEDIUM;
     private frameTimes: number[] = [];
     private lastCheckTime: number;
     private readonly CHECK_INTERVAL_MS = 5000;

@@ -35,9 +35,21 @@ async function initPhysics() {
         // Rotate log
         const currentRot = logBody.rotation();
         // Simplified rotation around Y axis
+        // logBody.setNextKinematicRotation(currentRot); // In a full implementation, multiply quaternions here
+        
+        // Actually apply rotation so variables are used
         const dt = 1 / 120;
-        // const angle = currentLogSpeed * dt; // Used for actual quaternion math
-        logBody.setNextKinematicRotation(currentRot); // In a full implementation, multiply quaternions here
+        const angle = currentLogSpeed * dt;
+        const qY = RAPIER.Quaternion.fromAxisAngle({ x: 0, y: 1, z: 0 }, angle);
+        
+        // Multiply currentRot by qY
+        const nextRot = new RAPIER.Quaternion(
+            currentRot.w * qY.x + currentRot.x * qY.w + currentRot.y * qY.z - currentRot.z * qY.y,
+            currentRot.w * qY.y - currentRot.x * qY.z + currentRot.y * qY.w + currentRot.z * qY.x,
+            currentRot.w * qY.z + currentRot.x * qY.y - currentRot.y * qY.x + currentRot.z * qY.w,
+            currentRot.w * qY.w - currentRot.x * qY.x - currentRot.y * qY.y - currentRot.z * qY.z
+        );
+        logBody.setNextKinematicRotation(nextRot);
 
         world.step();
 

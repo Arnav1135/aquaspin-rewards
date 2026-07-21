@@ -40,7 +40,8 @@ async function initPhysics() {
         // Actually apply rotation so variables are used
         const dt = 1 / 120;
         const angle = currentLogSpeed * dt;
-        const qY = RAPIER.Quaternion.fromAxisAngle({ x: 0, y: 1, z: 0 }, angle);
+        const halfAngle = angle / 2;
+        const qY = new RAPIER.Quaternion(0, Math.sin(halfAngle), 0, Math.cos(halfAngle));
         
         // Multiply currentRot by qY
         const nextRot = new RAPIER.Quaternion(

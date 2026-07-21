@@ -24,6 +24,7 @@ import { Auth } from '@/pages/Auth';
 import { Dashboard } from '@/pages/Dashboard';
 import { WheelGame } from '@/pages/WheelGame';
 import { MiniGames } from '@/pages/MiniGames';
+import { CrashGamePage } from '@/pages/CrashGamePage';
 import { Leaderboard } from '@/pages/Leaderboard';
 import { Profile } from '@/pages/Profile';
 import { Shop } from '@/pages/Shop';
@@ -122,6 +123,7 @@ function AppRoutes() {
           {/* Protected */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/wheel" element={<ProtectedRoute><WheelGame /></ProtectedRoute>} />
+          <Route path="/crash" element={<ProtectedRoute><CrashGamePage /></ProtectedRoute>} />
           <Route path="/games" element={<ProtectedRoute><MiniGames /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

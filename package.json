@@ -12,6 +12,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@babylonjs/core": "^9.17.0",
+    "@dimforge/rapier3d-compat": "^0.19.3",
     "@pixi/particle-emitter": "^5.0.10",
     "@react-three/cannon": "^6.6.0",
     "@react-three/drei": "^9.122.0",

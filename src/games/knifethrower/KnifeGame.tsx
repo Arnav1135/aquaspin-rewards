@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as BABYLON from '@babylonjs/core';
 import gsap from 'gsap';
+import { KnifeSentinel } from './engine/KnifeSentinel';
 
 export const KnifeGame: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -15,6 +16,9 @@ export const KnifeGame: React.FC = () => {
         // Camera setup
         const camera = new BABYLON.FreeCamera("camera", new BABYLON.Vector3(0, 0, -10), scene);
         camera.setTarget(BABYLON.Vector3.Zero());
+
+        // Sentinel AI Initialization
+        const sentinel = new KnifeSentinel(engine, scene);
 
         // Lighting
         const keyLight = new BABYLON.DirectionalLight("keyLight", new BABYLON.Vector3(-1, -2, 1), scene);
@@ -102,6 +106,9 @@ export const KnifeGame: React.FC = () => {
         // Render Loop
         engine.runRenderLoop(() => {
             const dt = engine.getDeltaTime() / 1000.0;
+
+            // Sentinel Micro-Loop Check
+            sentinel.update();
 
             // Rotate Log
             log.rotation.y += logRotationSpeed * dt;

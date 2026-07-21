@@ -36,6 +36,25 @@ export const KnifeGame: React.FC = () => {
         logMat.roughness = 0.8;
         log.material = logMat;
 
+        // -- Phase 4: Post Processing Stack --
+        const defaultPipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene, [camera]);
+        
+        // ACES Tonemapping
+        defaultPipeline.imageProcessing.toneMappingEnabled = true;
+        defaultPipeline.imageProcessing.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+        defaultPipeline.imageProcessing.exposure = 1.2;
+
+        // Bloom for specular highlights
+        defaultPipeline.bloomEnabled = true;
+        defaultPipeline.bloomThreshold = 0.8;
+        defaultPipeline.bloomWeight = 0.5;
+
+        // Vignette
+        defaultPipeline.imageProcessing.vignetteEnabled = true;
+        defaultPipeline.imageProcessing.vignetteWeight = 1.5;
+        defaultPipeline.imageProcessing.vignetteColor = new BABYLON.Color4(0, 0, 0, 1);
+        defaultPipeline.imageProcessing.vignetteBlendMode = BABYLON.ImageProcessingConfiguration.VIGNETTEMODE_MULTIPLY;
+
         // -- The Knife (Procedural Factory) --
         const createKnife = (name: string) => {
             const knifeNode = new BABYLON.TransformNode(name, scene);
@@ -44,8 +63,8 @@ export const KnifeGame: React.FC = () => {
             const blade = BABYLON.MeshBuilder.CreateBox(name + "_blade", { width: 0.2, height: 1.5, depth: 0.05 }, scene);
             const bladeMat = new BABYLON.StandardMaterial("bladeMat", scene);
             bladeMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.85);
-            bladeMat.specularColor = new BABYLON.Color3(1, 1, 1);
-            bladeMat.specularPower = 128; // tight specular lobe
+            bladeMat.specularColor = new BABYLON.Color3(2.0, 2.0, 2.0); // Boosted for bloom
+            bladeMat.specularPower = 256; // Extremely tight specular lobe
             blade.material = bladeMat;
             blade.position.y = 0.75;
             blade.parent = knifeNode;

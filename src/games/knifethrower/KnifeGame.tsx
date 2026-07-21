@@ -3,7 +3,13 @@ import * as BABYLON from '@babylonjs/core';
 import gsap from 'gsap';
 import { KnifeSentinel } from './engine/KnifeSentinel';
 
-export const KnifeGame: React.FC = () => {
+interface KnifeGameProps {
+    onScoreUpdate?: (score: number) => void;
+    onLevelUpdate?: (level: number) => void;
+    onKnivesUpdate?: (knivesLeft: number) => void;
+}
+
+export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpdate, onKnivesUpdate }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
@@ -117,6 +123,7 @@ export const KnifeGame: React.FC = () => {
             if (isThrowing) {
                 // If it's the very first frame of the throw, do the anticipation squash
                 if (activeKnife.position.y === -3.5) {
+                    if (onKnivesUpdate) onKnivesUpdate(6); // Temporary mock deduction
                     gsap.to(activeKnife.position, {
                         y: "-=0.2", 
                         duration: 0.05, 

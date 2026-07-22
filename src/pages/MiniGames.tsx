@@ -2,7 +2,7 @@
 // Complete gaming hub — 16 games, fintech UI, GameFrame visibility protection
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gamepad2, X, Search, Maximize2, Minimize2, Cpu } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -223,7 +223,6 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 };
 
 export function MiniGames() {
-  const navigate = useNavigate();
   const [activeGame, setActiveGame] = useState<GameKey>(null);
   const [category, setCategory] = useState<Category>('All');
   const [search, setSearch] = useState('');

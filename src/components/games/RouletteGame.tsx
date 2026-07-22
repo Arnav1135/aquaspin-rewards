@@ -53,7 +53,7 @@ const BLACK_NUMS = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
 
 // --- 3D Components ---
 
-function CameraController({ gameState }: { gameState: GameState }) {
+function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameState, winIdx: number | null, wheelRotRef: any }) {
   useFrame(({ camera }) => {
     let targetPos = new THREE.Vector3(0, 8, 5);
     let targetLook = new THREE.Vector3(0, 0, 0);
@@ -61,7 +61,27 @@ function CameraController({ gameState }: { gameState: GameState }) {
     if (gameState === 'SPINNING') {
       targetPos.set(4, 5, 4);
     } else if (gameState === 'SETTLING' || gameState === 'PAYOUT') {
-      targetPos.set(0, 3, 2);
+      if (winIdx !== null && wheelRotRef.current) {
+        const wheelRot = wheelRotRef.current.rotation.y;
+        const absoluteAngle = wheelRot + (winIdx * SECTOR_ANGLE);
+        
+        // Position camera behind the winning pocket, looking down at it
+        const camRadius = 4.5;
+        targetPos.set(
+          Math.sin(absoluteAngle) * camRadius,
+          2.5,
+          -Math.cos(absoluteAngle) * camRadius
+        );
+        
+        const ballRadius = 2.1;
+        targetLook.set(
+          Math.sin(absoluteAngle) * ballRadius,
+          0,
+          -Math.cos(absoluteAngle) * ballRadius
+        );
+      } else {
+        targetPos.set(0, 3, 2);
+      }
     }
 
     camera.position.lerp(targetPos, 0.05);
@@ -234,7 +254,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
     } else if (gameState === 'SETTLING') {
       // Deterministic interpolation into target pocket
       const wheelRot = wheelRotRef?.current?.rotation.y || 0;
-      const pocketLocalAngle = -(winIdx * SECTOR_ANGLE); // Negative because wheel tiles use -angle
+      const pocketLocalAngle = (winIdx * SECTOR_ANGLE); 
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
       const targetRadius = 2.1; // inner pocket radius
@@ -245,7 +265,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
     } else if (gameState === 'PAYOUT') {
       // Stick to pocket
       const wheelRot = wheelRotRef?.current?.rotation.y || 0;
-      const pocketLocalAngle = -(winIdx * SECTOR_ANGLE);
+      const pocketLocalAngle = (winIdx * SECTOR_ANGLE);
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
       const targetRadius = 2.1; // inner pocket radius

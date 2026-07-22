@@ -11,12 +11,11 @@ export default function CandyCrushGame({ onBack }: CandyCrushGameProps) {
       title="Candy Crush Saga Clone"
       onClose={onBack}
     >
-      <div className="w-full h-full flex flex-col items-center justify-center relative overflow-hidden bg-[#2b1a38] rounded-2xl">
+      <div className="absolute top-[44px] bottom-0 left-0 right-0 overflow-hidden bg-[#2b1a38] rounded-b-2xl">
         <iframe 
           src="/candy-crunch/index.html" 
-          className="w-full h-full border-none outline-none"
+          className="w-full h-full border-none outline-none block"
           title="Candy Crunch Game"
-          style={{ width: '100%', height: '100%', minHeight: '600px' }}
         />
       </div>
     </GameFrame>

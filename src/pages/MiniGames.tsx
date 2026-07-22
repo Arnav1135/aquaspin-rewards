@@ -26,7 +26,7 @@ import { ChessGame } from '@/components/games/ChessGame';
 import { SolitaireGame } from '@/components/games/SolitaireGame';
 import { LudoGame } from '@/components/games/LudoGame';
 
-import { Match3Game } from '@/games/match3';
+
 
 // Betting / Casino games
 import { CoinFlipScene } from '@/features/coinflip/CoinFlipScene';
@@ -202,12 +202,7 @@ const GAMES = [
     thumbnail: '/thumbnails/quiz.jpg',
   },
   // === PUZZLE / MATCH-3 ===
-  {
-    key: 'match3',      title: 'Sweet Match',  emoji: '🍬', category: 'Puzzle',
-    reward: '60 Levels',     difficulty: 'Hard',   color: '#FF6B6B',
-    desc: 'Match 3+ candies in this epic 60-level puzzle adventure!',
-    thumbnail: '/thumbnails/candy.jpg',
-  },
+
   {
     key: 'candycrush',  title: 'Candy Crunch',  emoji: '🍭', category: 'Puzzle',
     reward: '150 Levels',    difficulty: 'Hard',   color: '#ff4081',
@@ -316,7 +311,7 @@ export function MiniGames() {
       case 'sudoku':      return <SudokuGame onClose={close} />;
       case 'quiz':        return <QuizGame onClose={close} />;
       // Puzzle
-      case 'match3':      return <Match3Game onClose={close} />;
+
       default:            return null;
     }
   };

@@ -135,17 +135,21 @@ function Rocket3D({
   const getTrajectoryPosition = (t: number, _m: number) => {
     const startX = -12;
     const startY = -4;
+    const startZ = 0;
     
-    // True physics projectile motion (gravity pointing down)
-    // Launch angle and velocity
-    const v0_x = 15.0; // Constant horizontal velocity
-    const v0_y = 25.0; // Initial vertical velocity
-    const g = 1.8;     // Gravity acceleration (downwards)
+    // 3D Powered Projectile Motion (Rocket Physics)
+    const v0_x = 10.0; // Horizontal velocity
+    const v0_z = -5.0; // Depth velocity (into the screen)
+    
+    // Rocket thrust overcomes gravity, creating an upward exponential-like curve
+    const v0_y = 2.0; 
+    const thrust_accel_y = 2.5; // Net upward acceleration
     
     const x = startX + (v0_x * t);
-    const y = startY + (v0_y * t) - (0.5 * g * t * t);
+    const y = startY + (v0_y * t) + (0.5 * thrust_accel_y * t * t);
+    const z = startZ + (v0_z * t);
     
-    return new THREE.Vector3(x, y, 0);
+    return new THREE.Vector3(x, y, z);
   };
 
   // --- animationLoop (useFrame) ---
@@ -159,21 +163,28 @@ function Rocket3D({
       const newPos = getTrajectoryPosition(actualElapsed, actualMult);
       const nextPos = getTrajectoryPosition(actualElapsed + 0.1, actualMult); // Look ahead for angle
       
-      // Calculate tangent angle for rotation
+      // Calculate tangent angles for 3D rotation
       const dy = nextPos.y - newPos.y;
       const dx = nextPos.x - newPos.x;
-      const targetAngle = Math.atan2(dy, dx);
+      const dz = nextPos.z - newPos.z;
+      
+      const targetPitch = Math.atan2(dy, dx);
+      const targetYaw = Math.atan2(dz, dx);
       
       // Smooth lerp rotation
       const currentEuler = rocketGroup.current.rotation;
-      const currentAngle = currentEuler.z;
-      const nextAngle = THREE.MathUtils.lerp(currentAngle, targetAngle, 0.08); // No snapping
+      const nextPitch = THREE.MathUtils.lerp(currentEuler.z, targetPitch, 0.08); 
+      const nextYaw = THREE.MathUtils.lerp(currentEuler.y, targetYaw, 0.08); 
       
       // Move Kinematic body
       rigidBodyRef.current.setTranslation(newPos, true);
-      const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, nextAngle));
+      
+      // Euler order ZYX works well here
+      const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, nextYaw, nextPitch, 'ZYX'));
       rigidBodyRef.current.setRotation(quat, true);
-      rocketGroup.current.rotation.z = nextAngle;
+      
+      rocketGroup.current.rotation.z = nextPitch;
+      rocketGroup.current.rotation.y = nextYaw;
 
       // Add turbulence wobble
       let wobble = Math.sin(state.clock.elapsedTime * 15) * 0.1;
@@ -183,8 +194,8 @@ function Rocket3D({
       onPathUpdate(newPos);
       
       // 3. Camera Follow Logic
-      const zoomOut = Math.min(25, 15 + (actualMult * 0.5));
-      const targetCamPos = new THREE.Vector3(newPos.x + 5, newPos.y + 2, zoomOut);
+      const zoomOut = Math.min(30, 18 + (actualMult * 0.8));
+      const targetCamPos = new THREE.Vector3(newPos.x + 8, newPos.y + 4, newPos.z + zoomOut);
       camera.position.lerp(targetCamPos, 0.05); // slight lag
       
     } else if (crashed && !explosionTriggered && rigidBodyRef.current) {

@@ -393,7 +393,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
 
           // Hit detection
           if (s.flyingKnife.y <= logY + LOG_R + 25) { // Impact radius
-            const impactAngle = (-s.logAngle - Math.PI/2) % (Math.PI*2);
+            const impactAngle = (-s.logAngle) % (Math.PI*2);
             const normalizedImpact = impactAngle < 0 ? impactAngle + Math.PI*2 : impactAngle;
 
             // Check hit against Traps

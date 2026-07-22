@@ -394,11 +394,7 @@ export function MiniGames() {
             <motion.button
               key={game.key}
               onClick={() => {
-                if (game.key === 'knife') {
-                  navigate('/knifethrower');
-                } else {
-                  setActiveGame(game.key);
-                }
+                setActiveGame(game.key);
               }}
               className="text-left group"
               initial={{ opacity: 0, y: 12 }}

@@ -58,4 +58,4 @@ export function KnifeHitGamePage() {
       </div>
     </div>
   );
-};
+}

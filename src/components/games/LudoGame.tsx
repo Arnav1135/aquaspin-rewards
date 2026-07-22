@@ -655,7 +655,7 @@ function SceneContent({
     const defaultOffset = new THREE.Vector3(0, 7.5, 6.5);
     defaultOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), baseAngle);
     
-    let targetPos = defaultOffset.clone();
+    const targetPos = defaultOffset.clone();
     
     if (cameraState === 'roll') {
       // Don't zoom in at all. Keep the default offset so the whole board is always visible to move pieces!

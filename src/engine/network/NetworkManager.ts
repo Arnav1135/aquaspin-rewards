@@ -63,7 +63,7 @@ export class NetworkManager {
     });
 
     // Replay remaining unacknowledged inputs for client prediction
-    let predictedPos = [...serverSnapshot.position] as [number, number, number];
+    const predictedPos = [...serverSnapshot.position] as [number, number, number];
     return predictedPos;
   }
 

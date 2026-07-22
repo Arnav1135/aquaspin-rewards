@@ -55,8 +55,8 @@ const BLACK_NUMS = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
 
 function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameState, winIdx: number | null, wheelRotRef: any }) {
   useFrame(({ camera }) => {
-    let targetPos = new THREE.Vector3(0, 8, 5);
-    let targetLook = new THREE.Vector3(0, 0, 0);
+    const targetPos = new THREE.Vector3(0, 8, 5);
+    const targetLook = new THREE.Vector3(0, 0, 0);
 
     if (gameState === 'SPINNING') {
       targetPos.set(4, 5, 4);

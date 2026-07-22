@@ -114,7 +114,7 @@ export const KnifeGame: React.FC<KnifeGameProps> = ({ onScoreUpdate, onLevelUpda
 
         // State variables
         let isThrowing = false;
-        let logRotationSpeed = 1.5; // radians per second
+        const logRotationSpeed = 1.5; // radians per second
         let lastThrowTime = 0;
 
         const particleSystem = new BABYLON.ParticleSystem("splinters", 200, scene);

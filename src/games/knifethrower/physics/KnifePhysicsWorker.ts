@@ -14,7 +14,7 @@ export type PhysicsEvent =
 
 let world: RAPIER.World;
 let logBody: RAPIER.RigidBody;
-let knives: Map<string, { body: RAPIER.RigidBody, embedded: boolean }> = new Map();
+const knives: Map<string, { body: RAPIER.RigidBody, embedded: boolean }> = new Map();
 
 // Game constants
 const LOG_RADIUS = 1.25;

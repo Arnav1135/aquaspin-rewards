@@ -34,6 +34,10 @@ import { registerSW } from 'virtual:pwa-register';
 
 registerSW({
   immediate: true,
+  onNeedRefresh() {
+    console.log('[PWA] New content available, reloading...');
+    window.location.reload();
+  },
   onRegisteredSW(swUrl: string, r: { installing: unknown; update: () => Promise<void> } | undefined) {
     console.log('[PWA] Service Worker registered:', swUrl);
     if (r) {

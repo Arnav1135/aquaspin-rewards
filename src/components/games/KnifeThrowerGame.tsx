@@ -310,7 +310,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
         ctx.save();
         ctx.rotate(t.angle);
         ctx.translate(0, r);
-        drawKnife(0, 0, 0); // pointing outwards
+        drawKnife(0, 0, Math.PI); // pointing outwards (away from center)
         ctx.restore();
       });
 
@@ -319,7 +319,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
         ctx.save();
         ctx.rotate(k.angle);
         ctx.translate(0, r);
-        drawKnife(0, 0, Math.PI); // pointing inwards
+        drawKnife(0, 0, 0); // pointing inwards (towards center)
         ctx.restore();
       });
 

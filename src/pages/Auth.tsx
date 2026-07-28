@@ -6,7 +6,6 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Disc3, Chrome, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
-import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
 type AuthMode = 'login' | 'signup';

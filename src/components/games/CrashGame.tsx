@@ -70,10 +70,10 @@ function RocketExhaust({ rocketGroupRef, isActive }: { rocketGroupRef: React.Ref
         posAttr.array[i * 3 + 1] -= delta * 1.5; // smoke falls a bit
         posAttr.array[i * 3] -= delta * 2; // drift left behind rocket
         
-        // fade color (orange to dark)
+        // fade color (orange to dark) with HDR intensity for Bloom
         const life = Math.max(0, 1.0 - ages[i]);
-        colAttr.array[i * 3] = 1.0 * life; // R
-        colAttr.array[i * 3 + 1] = 0.4 * life; // G
+        colAttr.array[i * 3] = 3.0 * life; // R (Boosted for HDR bloom)
+        colAttr.array[i * 3 + 1] = 1.0 * life; // G
         colAttr.array[i * 3 + 2] = 0.0; // B
       } else {
         colAttr.array[i * 3] = 0;
@@ -107,7 +107,7 @@ function RocketExhaust({ rocketGroupRef, isActive }: { rocketGroupRef: React.Ref
         <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
         <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial size={1.8} vertexColors transparent blending={THREE.AdditiveBlending} depthWrite={false} sizeAttenuation={true} />
+      <pointsMaterial size={1.8} vertexColors transparent blending={THREE.AdditiveBlending} depthWrite={false} sizeAttenuation={true} toneMapped={false} />
     </points>
   );
 }
@@ -137,9 +137,9 @@ function ParticleExplosion({ position, isActive }: { position: THREE.Vector3, is
       vel[i * 3 + 1] = speed * Math.sin(phi) * Math.sin(theta);
       vel[i * 3 + 2] = speed * Math.cos(phi);
       
-      // Orange / red fire colors
-      const r = 1.0;
-      const g = 0.3 + Math.random() * 0.4;
+      // Orange / red fire colors (HDR boosted for bloom)
+      const r = 4.0;
+      const g = 1.0 + Math.random() * 0.5;
       const b = 0.0;
       col[i * 3] = r; col[i * 3 + 1] = g; col[i * 3 + 2] = b;
     }
@@ -181,7 +181,7 @@ function ParticleExplosion({ position, isActive }: { position: THREE.Vector3, is
         <bufferAttribute attach="attributes-position" count={120} array={positions} itemSize={3} />
         <bufferAttribute attach="attributes-color" count={120} array={colors} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial size={0.3} vertexColors transparent opacity={opacity} blending={THREE.AdditiveBlending} depthWrite={false} />
+      <pointsMaterial size={0.3} vertexColors transparent opacity={opacity} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
     </points>
   );
 }
@@ -192,9 +192,10 @@ function RocketFlightPath({ points, crashed }: { points: THREE.Vector3[], crashe
   return (
     <Line 
       points={points} 
-      color={crashed ? "#ef4444" : "#00F0FF"} 
+      color={crashed ? "#ef4444" : "#00FFFF"} 
       lineWidth={5} 
       dashed={false} 
+      toneMapped={false}
     />
   );
 }
@@ -337,7 +338,7 @@ function Rocket3D({
         <group ref={rocketGroup}>
           {/* Engine Thrust Light */}
           {gameState === 'climbing' && (
-            <pointLight position={[-1.2, 0, 0]} color="#f97316" intensity={2.5} distance={15} />
+            <pointLight position={[-1.2, 0, 0]} color="#ff6600" intensity={5.0} distance={15} />
           )}
           
           <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
@@ -375,8 +376,8 @@ function Rocket3D({
           {gameState === 'climbing' && !crashed && (
             <mesh position={[-1.5, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
               <coneGeometry args={[0.3, 2.0, 16]} />
-              <meshBasicMaterial color="#f97316" transparent opacity={0.8} blending={THREE.AdditiveBlending} />
-              <pointLight color="#f97316" intensity={3} distance={10} />
+              <meshBasicMaterial color={[4.0, 1.0, 0.0]} transparent opacity={0.8} blending={THREE.AdditiveBlending} toneMapped={false} />
+              <pointLight color="#ff6600" intensity={4} distance={12} />
             </mesh>
           )}
         </group>

@@ -220,7 +220,16 @@ export function CarromGame({ onClose }: Props) {
               const dx=d2.x-d.x, dy=d2.y-d.y, dist=Math.sqrt(dx*dx+dy*dy);
               if (dist < d.r+d2.r && dist>0) {
                 const nx=dx/dist, ny=dy/dist, rv=(d2.vx-d.vx)*nx+(d2.vy-d.vy)*ny;
-                if (rv<0) { const imp=rv*0.88; d.vx+=imp*nx; d.vy+=imp*ny; d2.vx-=imp*nx; d2.vy-=imp*ny; }
+                if (rv<0) { 
+                  const imp=rv*0.88; d.vx+=imp*nx; d.vy+=imp*ny; d2.vx-=imp*nx; d2.vy-=imp*ny; 
+                  // Particle burst on hard collision
+                  if (Math.abs(imp) > 2.0) {
+                     for (let p=0; p<4; p++) {
+                        const pa = Math.random()*Math.PI*2;
+                        gs.particles.push({x:d.x+nx*d.r, y:d.y+ny*d.r, vx:Math.cos(pa)*2, vy:Math.sin(pa)*2, life:1, color:'#fff', r:1+Math.random()*1.5});
+                     }
+                  }
+                }
                 const ov=(d.r+d2.r-dist)/2; d.x-=nx*ov; d.y-=ny*ov; d2.x+=nx*ov; d2.y+=ny*ov;
                 if (Math.abs(rv)>0.5) playTone(350+Math.random()*150,0.03,'sine',0.05);
               }
@@ -238,15 +247,26 @@ export function CarromGame({ onClose }: Props) {
         }
       }
 
-      // Draw discs
+      // Draw discs with shadow
       gs.discs.filter(d=>!d.pocketed).forEach(d=>{
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 4;
+        
         const grad=ctx.createRadialGradient(d.x-3,d.y-3,1,d.x,d.y,d.r);
         grad.addColorStop(0,'rgba(255,255,255,0.45)'); grad.addColorStop(1,d.color);
         ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
         ctx.fillStyle=grad; ctx.fill();
+        
+        ctx.shadowColor = 'transparent'; // Reset for stroke
         ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=1.5; ctx.stroke();
+        
         if (d.isQueen) { ctx.fillStyle='#FFD700'; ctx.font='bold 9px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Q',d.x,d.y); }
-        if (d.isStriker) { ctx.strokeStyle='rgba(255,200,0,0.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(d.x,d.y,d.r+3,0,Math.PI*2); ctx.stroke(); }
+        if (d.isStriker) { 
+          ctx.strokeStyle='rgba(255,200,0,0.5)'; ctx.lineWidth=2; 
+          ctx.beginPath(); ctx.arc(d.x,d.y,d.r+3,0,Math.PI*2); ctx.stroke(); 
+        }
       });
 
       // Particles

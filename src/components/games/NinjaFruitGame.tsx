@@ -137,6 +137,26 @@ export function NinjaFruitGame({ onClose }: Props) {
       bg.addColorStop(0, '#0a0a1a'); bg.addColorStop(1, '#1a0a2e');
       ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
+      // Parallax Background layers
+      const bgOffset1 = (gs.frame * 0.2) % (W * 2);
+      const bgOffset2 = (gs.frame * 0.5) % (W * 2);
+      
+      // Far trees/bamboo
+      ctx.fillStyle = '#110522';
+      for (let i = 0; i < 5; i++) {
+         const x = (i * 120 - bgOffset1 + W*2) % (W*2) - 100;
+         ctx.fillRect(x, H - 200, 20, 200);
+         ctx.fillRect(x - 5, H - 150, 40, 10);
+      }
+      
+      // Near trees/bamboo
+      ctx.fillStyle = '#0a001a';
+      for (let i = 0; i < 4; i++) {
+         const x = (i * 180 - bgOffset2 + W*2) % (W*2) - 100;
+         ctx.fillRect(x, H - 300, 40, 300);
+         ctx.fillRect(x - 10, H - 200, 70, 15);
+      }
+
       // Red flash
       if (gs.flashRed > 0) {
         ctx.fillStyle = `rgba(255,0,0,${gs.flashRed / 20 * 0.35})`;
@@ -196,14 +216,22 @@ export function NinjaFruitGame({ onClose }: Props) {
         else gs.combo = 0;
       }
 
-      // Particles
+      // Particles (Juice Splatter with Bloom)
+      ctx.globalCompositeOperation = 'lighter';
       gs.particles.forEach((p) => {
         p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.25 * dt; p.life -= 0.04 * dt;
         if (p.life <= 0) return;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI*2);
-        ctx.fillStyle = p.color + Math.floor(p.life * 200).toString(16).padStart(2,'0');
+        // Additive bloom color
+        ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2,'0');
+        ctx.fill();
+        
+        // Splatter glow
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r * p.life * 2, 0, Math.PI*2);
+        ctx.fillStyle = p.color + Math.floor(p.life * 60).toString(16).padStart(2,'0');
         ctx.fill();
       });
+      ctx.globalCompositeOperation = 'source-over';
       gs.particles = gs.particles.filter(p => p.life > 0);
 
       // Slash trail

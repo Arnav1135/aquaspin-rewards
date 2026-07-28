@@ -55,11 +55,10 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
 
   return (
     <group position={[0, 4, 0]}>
-      {/* Backplate */}
       <RigidBody type="fixed">
         <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} receiveShadow>
-          <boxGeometry args={[rows * PEG_SPACING_X + 4, rows * PEG_SPACING_Y + 4, 0.2]} />
-          <meshStandardMaterial color="#0A1428" roughness={0.8} />
+          <boxGeometry args={[rows * PEG_SPACING_X + 4, rows * PEG_SPACING_Y + 4, 0.5]} />
+          <meshStandardMaterial color="#0A1428" roughness={0.9} metalness={0.1} />
         </mesh>
       </RigidBody>
 
@@ -74,8 +73,8 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
         >
           <BallCollider args={[PEG_RADIUS]} />
           <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
-             <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.5, 32]} />
-             <meshStandardMaterial color="#334155" roughness={0.2} metalness={0.8} />
+             <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 32]} />
+             <meshStandardMaterial color="#334155" roughness={0.1} metalness={1.0} emissive="#5AB8EA" emissiveIntensity={0.2} toneMapped={false} />
           </mesh>
         </RigidBody>
       ))}
@@ -147,7 +146,8 @@ function PlinkoBall({ id, position, onDespawn }: { id: string, position: [number
     >
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[0.25, 32, 32]} />
-        <meshStandardMaterial color="#FFD700" metalness={0.9} roughness={0.1} />
+        <meshStandardMaterial color="#FFD700" emissive="#FFD700" emissiveIntensity={1.5} metalness={1.0} roughness={0.0} toneMapped={false} />
+        <pointLight color="#FFD700" intensity={1.5} distance={3} />
       </mesh>
     </RigidBody>
   );

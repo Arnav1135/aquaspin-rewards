@@ -58,16 +58,16 @@ export function FlappyBirdGame({ onClose }: Props) {
     }));
   };
 
-  const spawnParticles = (x: number, y: number, count = 12) => {
-    const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff922b', '#f06fff'];
+  const spawnParticles = (x: number, y: number, count = 12, isDeath = false) => {
+    const colors = isDeath ? ['#ff2a2a', '#ff4d4d', '#ff7373', '#ff0000'] : ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff922b', '#f06fff'];
     for (let i = 0; i < count; i++) {
       stateRef.current.particles.push({
         x, y,
-        vx: (Math.random() - 0.5) * 10,
-        vy: (Math.random() - 0.5) * 10,
+        vx: (Math.random() - 0.5) * (isDeath ? 15 : 10),
+        vy: (Math.random() - 0.5) * (isDeath ? 15 : 10),
         life: 1,
         color: colors[i % colors.length],
-        size: 4 + Math.random() * 5,
+        size: (isDeath ? 6 : 4) + Math.random() * 5,
       });
     }
   };
@@ -151,7 +151,7 @@ export function FlappyBirdGame({ onClose }: Props) {
       s.best = s.score;
       localStorage.setItem('fb-best', String(s.best));
     }
-    spawnParticles(s.bird.x, s.bird.y, 25);
+    spawnParticles(s.bird.x, s.bird.y, 40, true); // Blood splatter
     playTone(300, 0.1, 'sawtooth', 0.2);
     setTimeout(() => playTone(200, 0.2, 'sawtooth', 0.3), 100);
     vibrate(60);
@@ -202,8 +202,19 @@ export function FlappyBirdGame({ onClose }: Props) {
         ctx.fill();
       });
 
-      // Distant hills (parallax)
-      s.hillOffset = (s.hillOffset + ((s.phase === 'playing' || s.phase === 'warp') ? 0.5 * dt : 0)) % W;
+      // Distant clouds (parallax layer 1)
+      s.hillOffset = (s.hillOffset + ((s.phase === 'playing' || s.phase === 'warp') ? 0.3 * dt : 0)) % W;
+      ctx.fillStyle = `rgba(255, 255, 255, 0.2)`;
+      for (let i = -1; i < 3; i++) {
+        const cx = i * 200 - s.hillOffset * 0.5 % 200;
+        ctx.beginPath();
+        ctx.arc(cx + 40, H * 0.25, 30, 0, Math.PI * 2);
+        ctx.arc(cx + 70, H * 0.25, 40, 0, Math.PI * 2);
+        ctx.arc(cx + 100, H * 0.25, 30, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Distant hills (parallax layer 2)
       ctx.fillStyle = `hsl(${hue}, 30%, 45%)`;
       for (let i = -1; i < 3; i++) {
         const hx = i * 160 - s.hillOffset % 160;
@@ -302,7 +313,8 @@ export function FlappyBirdGame({ onClose }: Props) {
       ctx.fillStyle = '#4CAF50';
       ctx.fillRect(0, H - 40, W, 10);
 
-      // Particles
+      // Particles (with additive blending for bloom)
+      ctx.globalCompositeOperation = 'lighter';
       s.particles.forEach(p => {
         p.x += p.vx * dt;
         p.y += p.vy * dt;
@@ -313,9 +325,10 @@ export function FlappyBirdGame({ onClose }: Props) {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           ctx.fill();
-          ctx.globalAlpha = 1;
         }
       });
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
       s.particles = s.particles.filter(p => p.life > 0);
 
       // Bird

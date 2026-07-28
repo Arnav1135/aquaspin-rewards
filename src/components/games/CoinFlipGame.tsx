@@ -41,21 +41,23 @@ function CoinFlip({ side, flipping }: { side: CoinSide; flipping: boolean }) {
     <motion.div
       className="w-24 h-24 rounded-full flex items-center justify-center text-5xl font-bold cursor-default select-none"
       style={{
+        transformStyle: 'preserve-3d',
+        perspective: '1000px',
         background: isHeads
           ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
           : 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
         boxShadow: isHeads
-          ? '0 0 30px rgba(251, 191, 36, 0.5)'
-          : '0 0 30px rgba(168, 85, 247, 0.5)',
+          ? '0 0 40px rgba(251, 191, 36, 0.6), inset 0 0 10px rgba(255,255,255,0.5)'
+          : '0 0 40px rgba(168, 85, 247, 0.6), inset 0 0 10px rgba(255,255,255,0.5)',
       }}
       animate={
         flipping
-          ? { rotateX: [0, 360, 360], rotateZ: [0, 0, 360] }
-          : { rotateX: 0, rotateZ: 0 }
+          ? { rotateX: [0, 1080], rotateZ: [0, 360], scale: [1, 1.2, 1] }
+          : { rotateX: 0, rotateZ: 0, scale: 1 }
       }
-      transition={flipping ? { duration: 1.5, ease: 'easeOut' } : { duration: 0.5 }}
+      transition={flipping ? { duration: 1.5, type: 'spring', stiffness: 50, damping: 10 } : { type: 'spring', stiffness: 300, damping: 20 }}
     >
-      {isHeads ? '👑' : '🪙'}
+      <div style={{ transform: 'translateZ(10px)' }}>{isHeads ? '👑' : '🪙'}</div>
     </motion.div>
   );
 }
@@ -314,8 +316,8 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
 
   return (
     <ErrorBoundary name="CoinFlipGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)' }}>
-        <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
+        <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shrink-0 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="space-y-4">
             <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={flipping} />
             <div className="space-y-2">
@@ -371,7 +373,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
           </div>
         </Card>
 
-        <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] border border-navy-800/80 rounded-2xl p-5 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
+        <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] bg-slate-950/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl p-5 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted">
             <HelpCircle size={10} />
             <span>1% edge</span>

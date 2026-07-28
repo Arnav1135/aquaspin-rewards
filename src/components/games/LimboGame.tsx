@@ -285,7 +285,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
       {/* Left betting controls */}
-      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20">
+      <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shrink-0 z-20 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-400 to-orange-300 tracking-widest uppercase">
@@ -344,8 +344,8 @@ export function LimboGame({ onClose }: LimboGameProps) {
             <div className="flex justify-between text-2xs text-slate-400 font-bold uppercase font-mono">
               <span>Warp Prob</span><span>{winChance.toFixed(2)}%</span>
             </div>
-            <div className="h-1.5 rounded-full bg-slate-950 overflow-hidden">
-              <motion.div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" animate={{ width: `${winChance}%` }} transition={{ duration: 0.4 }} />
+            <div className="h-1.5 rounded-full bg-slate-950/50 overflow-hidden shadow-inner backdrop-blur-sm">
+              <motion.div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-400" animate={{ width: `${winChance}%` }} transition={{ type: "spring", stiffness: 100, damping: 20 }} />
             </div>
           </div>
         </div>
@@ -378,10 +378,10 @@ export function LimboGame({ onClose }: LimboGameProps) {
           <AnimatePresence mode="wait">
             <motion.div 
               key={displayNum}
-              initial={{ scale: 0.85, opacity: 0.8 }} 
-              animate={{ scale: 1, opacity: 1 }} 
-              exit={{ scale: 0.9, opacity: 0.8 }}
-              transition={{ duration: 0.05 }}
+              initial={{ scale: 0.5, opacity: 0, y: 50 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.8, opacity: 0, y: -50 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25, mass: 1.2 }}
             >
               <p className="text-7xl md:text-8xl font-black font-mono tracking-tighter drop-shadow-[0_0_15px_rgba(0,240,255,0.4)]"
                 style={{ color: numColor }}>

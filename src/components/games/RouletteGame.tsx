@@ -161,7 +161,7 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
       {/* Gold Ring around pockets */}
       <mesh position={[0, 0.05, 0]} receiveShadow>
         <torusGeometry args={[2.9, 0.03, 16, 64]} />
-        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.1} />
+        <meshStandardMaterial color="#FFD700" metalness={1.0} roughness={0.1} />
       </mesh>
 
       {/* Center Turret (Spindle Base) */}
@@ -252,17 +252,31 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
       const radius = 3.8;
       ballRef.current.position.set(Math.sin(angle) * radius, 0.35, Math.cos(angle) * radius);
     } else if (gameState === 'SETTLING') {
-      // Deterministic interpolation into target pocket
+      // Realistic spiral and bounce settling physics
       const wheelRot = wheelRotRef?.current?.rotation.y || 0;
       const pocketLocalAngle = (winIdx * SECTOR_ANGLE); 
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
       const targetRadius = 2.1; // inner pocket radius
-      const targetX = -Math.sin(absoluteAngle) * targetRadius;
-      const targetZ = -Math.cos(absoluteAngle) * targetRadius;
       
-      // Increase lerp factor heavily so it tracks the pocket tightly, preventing snap on PAYOUT
-      ballRef.current.position.lerp(new THREE.Vector3(targetX, 0.15, targetZ), 0.25);
+      // time.current represents time spent in SETTLING
+      time.current += delta;
+      
+      // Calculate a decaying spiral
+      const spiralProgress = Math.min(1.0, time.current / 2.0); // 2 seconds to spiral in
+      const currentRadius = THREE.MathUtils.lerp(3.8, targetRadius, spiralProgress);
+      
+      // Add bouncing
+      const bounceHeight = Math.max(0, Math.sin(time.current * 15) * 0.4 * (1 - spiralProgress));
+      const targetY = 0.15 + bounceHeight;
+      
+      // Add spin relative to the wheel
+      const spinAngle = absoluteAngle + (1 - spiralProgress) * Math.PI * 4; // Extra spins while settling
+      
+      const targetX = -Math.sin(spinAngle) * currentRadius;
+      const targetZ = -Math.cos(spinAngle) * currentRadius;
+      
+      ballRef.current.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 0.15);
     } else if (gameState === 'PAYOUT') {
       // Stick to pocket
       const wheelRot = wheelRotRef?.current?.rotation.y || 0;
@@ -277,14 +291,14 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
     } else {
       // Hidden or resting
       ballRef.current.position.set(0, 10, 0); // Hide above
-      time.current = 0;
+      if (gameState === 'SPINNING' || gameState === 'BETTING') time.current = 0;
     }
   });
 
   return (
     <mesh ref={ballRef} castShadow receiveShadow position={[0, 10, 0]}>
       <sphereGeometry args={[0.12, 32, 32]} />
-      <meshStandardMaterial color="#fffff0" metalness={0.1} roughness={0.1} />
+      <meshStandardMaterial color="#ffffff" metalness={1.0} roughness={0.0} />
     </mesh>
   );
 }

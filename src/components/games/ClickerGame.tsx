@@ -113,9 +113,10 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
 
       {phase === 'ready' && (
         <motion.div
-          className="text-center space-y-6 mt-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-6 mt-8 p-8 bg-slate-900/40 backdrop-blur-2xl border border-cyan-400/30 rounded-3xl shadow-[0_8px_32px_rgba(0,240,255,0.15)] max-w-md mx-auto"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
         >
           <div className="text-7xl animate-bounce-gentle">👆</div>
           <div>
@@ -159,7 +160,7 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
           {/* Click area */}
           <div
             ref={gameAreaRef}
-            className="flex-1 min-h-[300px] relative rounded-2xl border-2 border-cyan-neon/40 bg-navy-800 cursor-pointer select-none active:scale-[0.99] transition-transform overflow-hidden flex items-center justify-center"
+            className="flex-1 min-h-[300px] relative rounded-2xl border border-cyan-400/50 bg-slate-900/50 backdrop-blur-lg cursor-pointer select-none active:scale-[0.98] transition-all overflow-hidden flex items-center justify-center shadow-[inset_0_0_30px_rgba(0,240,255,0.1)]"
             onClick={handleClick}
             style={{ boxShadow: `0 0 40px rgba(0, 240, 255, ${0.1 + (clicks / 100) * 0.3})` }}
           >
@@ -186,9 +187,10 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
 
       {phase === 'result' && (
         <motion.div
-          className="text-center space-y-6 mt-8"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          className="text-center space-y-6 mt-8 p-8 bg-slate-900/40 backdrop-blur-2xl border border-gold-500/30 rounded-3xl shadow-[0_8px_32px_rgba(255,215,0,0.15)] max-w-md mx-auto"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 350, damping: 20 }}
         >
           <Trophy size={56} className="text-gold-neon mx-auto" />
           <div>

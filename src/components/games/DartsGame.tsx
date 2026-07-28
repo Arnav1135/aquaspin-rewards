@@ -93,9 +93,14 @@ export function DartsGame({ onClose }: Props) {
     const ctx = canvas.getContext('2d')!;
 
     const drawBoard = () => {
-      // Board bg
+      // Board bg with shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 10;
       ctx.beginPath(); ctx.arc(CX, CY, 180, 0, Math.PI*2);
       ctx.fillStyle = '#1a1a2e'; ctx.fill();
+      ctx.shadowColor = 'transparent'; // reset shadow
       ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke();
 
       // Sector wedges
@@ -179,11 +184,19 @@ export function DartsGame({ onClose }: Props) {
         ctx.strokeStyle = 'rgba(255,50,50,0.8)'; ctx.lineWidth = 2; ctx.stroke();
       }
 
-      // Embedded darts
+      // Embedded darts with shadow
       gs.darts.forEach((d, i) => {
         ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(-Math.PI/4);
+        // Shadow for dart
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = -4;
+        ctx.shadowOffsetY = 8;
+        
         ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -22); ctx.stroke();
+        
+        ctx.shadowColor = 'transparent'; // Reset for flight
         ctx.fillStyle = '#9E9E9E';
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-3, 6); ctx.lineTo(3, 6); ctx.closePath(); ctx.fill();
         // Score pop

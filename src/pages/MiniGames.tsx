@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gamepad2, X, Search, Maximize2, Minimize2, Cpu } from 'lucide-react';
+import { Gamepad2, X, Search, Maximize2, Minimize2, Cpu, Sparkles, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Free-play & classic games
@@ -380,11 +380,15 @@ export function MiniGames() {
         </div>
 
         {/* ── Category Filters (pill style) ── */}
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="flex gap-2 mb-8 flex-wrap">
           {CATEGORIES.map(cat => (
             <button
               key={cat}
-              className={`filter-pill ${category === cat ? 'active' : ''}`}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                category === cat 
+                  ? 'bg-[#5AB8EA] text-white shadow-lg shadow-[#5AB8EA]/30' 
+                  : 'bg-white/50 text-[#7682B9] hover:bg-white border border-[#C7E9F7]'
+              }`}
               onClick={() => setCategory(cat)}
             >
               {cat}
@@ -392,94 +396,105 @@ export function MiniGames() {
           ))}
         </div>
 
-        {/* ── Game Grid ── */}
+        {/* ── Featured Games Carousel (Netflix Style) ── */}
+        {category === 'All' && search === '' && (
+          <div className="mb-12">
+            <h2 className="text-xl font-extrabold text-[#7682B9] mb-4 flex items-center gap-2">
+              <Sparkles className="text-[#5AB8EA]" size={20} />
+              Featured Premium Games
+            </h2>
+            <div className="flex gap-4 overflow-x-auto pb-6 pt-2 snap-x snap-mandatory hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {GAMES.slice(0, 5).map((game, i) => (
+                <motion.button
+                  key={`featured-${game.key}`}
+                  onClick={() => setActiveGame(game.key)}
+                  className="flex-shrink-0 w-[280px] sm:w-[320px] snap-center group relative text-left rounded-3xl overflow-hidden bg-white border border-[#C7E9F7] shadow-lg shadow-[#7682B9]/10"
+                  initial={{ opacity: 0, scale: 0.9, x: 50 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  transition={{ delay: i * 0.1, type: "spring", stiffness: 200, damping: 20 }}
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="h-40 relative overflow-hidden" style={{ background: `radial-gradient(circle at top right, ${game.color}40, transparent)` }}>
+                    <img
+                      src={game.thumbnail}
+                      alt={game.title}
+                      className={`absolute inset-0 w-full h-full transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1 ${
+                        (game as any).thumbnailFit === 'contain' ? 'object-contain p-2' : 'object-cover'
+                      }`}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-black/40 backdrop-blur-md text-white text-xs font-bold border border-white/20">
+                      {game.category}
+                    </span>
+                  </div>
+                  <div className="p-4 relative bg-white">
+                    <div className="absolute -top-6 right-4 w-12 h-12 rounded-xl bg-white shadow-xl flex items-center justify-center text-2xl border border-[#C7E9F7] group-hover:-translate-y-2 transition-transform duration-300">
+                      {game.emoji}
+                    </div>
+                    <h3 className="font-extrabold text-lg text-[#7682B9] mb-1">{game.title}</h3>
+                    <p className="text-xs text-[#7682B9]/70 font-medium mb-3 line-clamp-2 pr-10">{game.desc}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold px-2 py-1 rounded-md" style={{ color: DIFFICULTY_COLOR[game.difficulty], background: `${DIFFICULTY_COLOR[game.difficulty]}20` }}>
+                        {game.difficulty}
+                      </span>
+                      <span className="text-xs font-extrabold text-[#5AB8EA]">{game.reward}</span>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── All Games Grid ── */}
+        <h2 className="text-lg font-bold text-[#7682B9]/80 mb-4">
+          {category === 'All' && search === '' ? 'All Games' : 'Search Results'}
+        </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((game, i) => (
             <motion.button
               key={game.key}
-              onClick={() => {
-                setActiveGame(game.key);
-              }}
-              className="text-left group"
-              initial={{ opacity: 0, y: 12 }}
+              onClick={() => setActiveGame(game.key)}
+              className="text-left group relative bg-white rounded-2xl p-2 border border-[#C7E9F7]/50 shadow-md shadow-[#7682B9]/5 flex flex-col h-full"
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
+              transition={{ delay: i * 0.05, type: "spring", stiffness: 300, damping: 25 }}
+              whileHover={{ y: -4, boxShadow: '0 12px 24px -10px rgba(118,130,185,0.3)' }}
+              whileTap={{ scale: 0.97 }}
             >
-              {/* Fixed navy frame — no game art ever touches app chrome */}
-              <div
-                className="rounded-3xl overflow-hidden"
-                style={{
-                  background: '#7b8bc1',
-                  padding: 10,
-                  boxShadow: '0 6px 20px rgba(22,33,62,0.14)',
-                  transition: 'all 0.25s',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 30px rgba(22,33,62,0.22)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(22,33,62,0.14)';
-                  (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                }}
-              >
-                {/* Art area */}
-                <div
-                  className="rounded-2xl h-28 flex items-center justify-center relative overflow-hidden mb-0"
-                  style={{
-                    background: `radial-gradient(circle at 50% 110%, ${game.color}35, rgba(22,33,62,0.95))`,
-                  }}
-                >
-                  <img
-                    src={game.thumbnail}
-                    alt={game.title}
-                    className={`absolute inset-0 w-full h-full transition-transform duration-300 group-hover:scale-110 ${
-                      (game as any).thumbnailFit === 'contain' ? 'object-contain p-1.5' : 'object-cover'
-                    }`}
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  {/* Glow orb */}
-                  <div
-                    className="absolute w-16 h-16 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity"
-                    style={{ background: game.color }}
-                  />
-                  {/* Emoji overlay removed */}
-                  {/* Category badge — smart contrast: always white-on-navy */}
-                  <span
-                    className="absolute top-2 right-2 badge-chip badge-chip-dark z-10"
-                    style={{ fontSize: '0.55rem' }}
-                  >
-                    {game.category}
-                  </span>
+              {/* Art area */}
+              <div className="rounded-xl h-28 sm:h-32 flex items-center justify-center relative overflow-hidden mb-3 bg-[#E5F2F9]">
+                <img
+                  src={game.thumbnail}
+                  alt={game.title}
+                  className={`absolute inset-0 w-full h-full transition-all duration-500 group-hover:scale-110 ${
+                    (game as any).thumbnailFit === 'contain' ? 'object-contain p-2' : 'object-cover'
+                  }`}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#7682B9]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/90 text-[#7682B9] backdrop-blur-sm shadow-sm">
+                  {game.category}
+                </span>
+                <div className="absolute bottom-2 left-2 translate-y-8 group-hover:translate-y-0 transition-transform duration-300 text-white font-bold text-xs flex items-center gap-1">
+                  <Play size={12} fill="currentColor" /> Play Now
                 </div>
               </div>
 
-              {/* Info strip below frame */}
-              <div className="px-1 pt-2.5 pb-1">
-                <div className="flex items-start justify-between gap-1">
-                  <h3
-                    className="font-semibold text-sm leading-tight group-hover:opacity-80 transition-opacity"
-                    style={{ color: '#7b8bc1' }}
-                  >
-                    {game.title}
+              {/* Info strip */}
+              <div className="px-1 pb-1 flex-1 flex flex-col">
+                <div className="flex items-start justify-between gap-1 mb-1">
+                  <h3 className="font-extrabold text-sm text-[#7682B9] leading-tight group-hover:text-[#5AB8EA] transition-colors">
+                    {game.emoji} {game.title}
                   </h3>
-                  <span
-                    className="badge-chip flex-shrink-0 mt-0.5"
-                    style={{
-                      fontSize: '0.55rem',
-                      color: DIFFICULTY_COLOR[game.difficulty],
-                      background: `${DIFFICULTY_COLOR[game.difficulty]}18`,
-                      border: `1px solid ${DIFFICULTY_COLOR[game.difficulty]}30`,
-                    }}
-                  >
+                </div>
+                <div className="mt-auto flex items-center justify-between pt-2">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ color: DIFFICULTY_COLOR[game.difficulty], background: `${DIFFICULTY_COLOR[game.difficulty]}15` }}>
                     {game.difficulty}
                   </span>
+                  <span className="text-[10px] font-bold text-[#5AB8EA]">{game.reward}</span>
                 </div>
-                <p className="text-2xs mt-0.5 leading-snug" style={{ color: 'rgba(22,33,62,0.50)' }}>
-                  {game.reward}
-                </p>
               </div>
             </motion.button>
           ))}
@@ -498,51 +513,41 @@ export function MiniGames() {
         {activeGame && (
           <motion.div
             ref={overlayRef}
-            className="fixed inset-0 z-50 flex flex-col"
-            style={{ background: 'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex flex-col bg-[#E5F2F9]"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
             {/* ── Overlay Header bar ── */}
             <div
-              className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-              style={{
-                background: '#7b8bc1',
-                borderBottom: '1px solid rgba(74,144,217,0.18)',
-              }}
+              className="flex items-center justify-between px-6 py-4 flex-shrink-0 bg-white/80 backdrop-blur-xl border-b border-[#C7E9F7] shadow-sm z-10"
             >
-              <div className="flex items-center gap-2.5">
-                <span className="text-lg">{activeGameMeta?.emoji}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl drop-shadow-md">{activeGameMeta?.emoji}</span>
                 <div>
-                  <p className="font-semibold text-sm leading-none" style={{ color: '#FFFFFF' }}>
+                  <p className="font-extrabold text-base leading-none text-[#7682B9]">
                     {activeGameMeta?.title}
                   </p>
-                  <p className="text-2xs mt-0.5" style={{ color: 'rgba(245,248,252,0.45)' }}>
+                  <p className="text-xs font-semibold mt-1 text-[#5AB8EA]">
                     {activeGameMeta?.category} · {activeGameMeta?.difficulty}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
-                  className="game-control-btn"
+                  className="w-10 h-10 rounded-full bg-[#E5F2F9] text-[#5AB8EA] hover:bg-[#5AB8EA] hover:text-white flex items-center justify-center transition-colors shadow-sm"
                   onClick={toggleFullscreen}
                   aria-label="Toggle fullscreen"
-                  style={{ background: 'rgba(74,144,217,0.20)', borderColor: 'rgba(74,144,217,0.35)' }}
                 >
-                  {isFullscreen ? (
-                    <Minimize2 size={16} strokeWidth={2} style={{ color: '#66bdf2' }} />
-                  ) : (
-                    <Maximize2 size={16} strokeWidth={2} style={{ color: '#66bdf2' }} />
-                  )}
+                  {isFullscreen ? <Minimize2 size={18} strokeWidth={2.5} /> : <Maximize2 size={18} strokeWidth={2.5} />}
                 </button>
                 <button
-                  className="game-control-btn"
+                  className="w-10 h-10 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm"
                   onClick={close}
                   aria-label="Close game"
-                  style={{ background: 'rgba(247,108,108,0.20)', borderColor: 'rgba(247,108,108,0.35)' }}
                 >
-                  <X size={16} strokeWidth={2} style={{ color: '#7b8bc1' }} />
+                  <X size={18} strokeWidth={2.5} />
                 </button>
               </div>
             </div>

@@ -113,7 +113,7 @@ const GAMES = [
     key: 'chickenjump', title: 'Chicken Jump', emoji: '🐔', category: 'Arcade',
     reward: 'High Score',    difficulty: 'Easy',   color: '#F97316',
     desc: 'Jump over obstacles in this endless side-scrolling runner!',
-    thumbnail: '/thumbnails/chicken.jpg', // fallback
+    thumbnail: '/thumbnails/chickenjump_premium.jpg',
   },
   {
     key: 'archery',     title: 'Archery',     emoji: '🏹',  category: 'Arcade',
@@ -137,13 +137,13 @@ const GAMES = [
     key: 'clicker',     title: 'Clicker Rush',emoji: '👆',  category: 'Arcade',
     reward: '10–50 tokens',  difficulty: 'Easy',   color: '#66bdf2',
     desc: 'Click as fast as possible in 10 seconds! Earn tokens per click.',
-    thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
+    thumbnail: '/thumbnails/clicker_premium.jpg',
   },
   {
     key: 'tap',         title: 'Tap Challenge',emoji: '✨', category: 'Arcade',
     reward: '15–80 tokens',  difficulty: 'Hard',   color: '#c2e7fa',
     desc: 'Tap glowing targets before they vanish. Speed test!',
-    thumbnail: '/thumbnails/mathsquiz.jpg', // fallback
+    thumbnail: '/thumbnails/tap_premium.jpg',
   },
   // === BOARD / PUZZLE ===
   {

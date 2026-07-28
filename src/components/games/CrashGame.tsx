@@ -137,17 +137,13 @@ function Rocket3D({
     const startY = -4;
     const startZ = 0;
     
-    // 3D Powered Projectile Motion (Rocket Physics)
-    const v0_x = 10.0; // Horizontal velocity
-    const v0_z = -5.0; // Depth velocity (into the screen)
-    
-    // Rocket thrust overcomes gravity, creating an upward exponential-like curve
-    const v0_y = 2.0; 
-    const thrust_accel_y = 2.5; // Net upward acceleration
-    
-    const x = startX + (v0_x * t);
-    const y = startY + (v0_y * t) + (0.5 * thrust_accel_y * t * t);
-    const z = startZ + (v0_z * t);
+    // 3D curving motion:
+    // x moves forward at constant speed
+    // y accelerates upward (thrust > gravity)
+    // z sweeps inward and curves back out slightly, creating a true 3D arc
+    const x = startX + (8.0 * t);
+    const y = startY + (2.0 * t) + (1.5 * t * t); 
+    const z = startZ - (4.0 * t) + (0.5 * t * t); // Parabolic sweep in Z
     
     return new THREE.Vector3(x, y, z);
   };

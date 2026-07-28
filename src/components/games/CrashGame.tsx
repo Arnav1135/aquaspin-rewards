@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody } from '@react-three/rapier';
-import { Html, Line } from '@react-three/drei';
+import { Html, Line, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 
@@ -257,37 +257,47 @@ function Rocket3D({
       
       const targetPitch = Math.atan2(dy, dx);
       const targetYaw = Math.atan2(dz, dx);
+      const targetRoll = -targetYaw * 1.5; // Aerodynamic banking into the curve
       
       // Smooth lerp rotation
       const currentEuler = rocketGroup.current.rotation;
       const nextPitch = THREE.MathUtils.lerp(currentEuler.z, targetPitch, 0.08); 
       const nextYaw = THREE.MathUtils.lerp(currentEuler.y, targetYaw, 0.08); 
+      const nextRoll = THREE.MathUtils.lerp(currentEuler.x, targetRoll, 0.08); 
       
       // Move Kinematic body
       rigidBodyRef.current.setTranslation(newPos, true);
       
       // Euler order ZYX works well here
-      const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, nextYaw, nextPitch, 'ZYX'));
+      const quat = new THREE.Quaternion().setFromEuler(new THREE.Euler(nextRoll, nextYaw, nextPitch, 'ZYX'));
       rigidBodyRef.current.setRotation(quat, true);
       
-      rocketGroup.current.rotation.z = nextPitch;
+      rocketGroup.current.rotation.x = nextRoll;
       rocketGroup.current.rotation.y = nextYaw;
+      rocketGroup.current.rotation.z = nextPitch;
 
       // Add turbulence wobble
       let wobble = Math.sin(state.clock.elapsedTime * 15) * 0.1;
+      let sway = Math.cos(state.clock.elapsedTime * 10) * 0.05;
       if (gameState === 'countdown') wobble += (Math.random() - 0.5) * 0.15;
       rocketGroup.current.position.y = wobble;
+      rocketGroup.current.position.z = sway;
       
       onPathUpdate(newPos);
       
-      // 3. Camera Follow Logic (3/4 perspective to show depth)
-      const zoomOut = Math.min(25, 12 + (actualMult * 0.8));
-      // Offset behind (X-10), above (Y+6) and to the side (Z+zoomOut)
-      const targetCamPos = new THREE.Vector3(newPos.x - 10, newPos.y + 6, newPos.z + zoomOut);
+      // 3. Cinematic Camera Orbit
+      // The camera slowly swings from side to side to constantly reveal depth
+      const orbitAngle = Math.PI / 4 + Math.sin(state.clock.elapsedTime * 0.3) * (Math.PI / 5); 
+      const radius = Math.min(25, 12 + (actualMult * 0.8));
+      
+      const offsetX = -radius * Math.cos(orbitAngle);
+      const offsetZ = radius * Math.sin(orbitAngle);
+      
+      const targetCamPos = new THREE.Vector3(newPos.x + offsetX, newPos.y + 6, newPos.z + offsetZ);
       camera.position.lerp(targetCamPos, 0.05); // slight lag
       
       // Look at the rocket (with slight leading offset)
-      camera.lookAt(newPos.x + 2, newPos.y, newPos.z);
+      camera.lookAt(newPos.x + 4, newPos.y, newPos.z);
       
     } else if (crashed) {
       if (!explosionTriggered && rigidBodyRef.current) {
@@ -375,35 +385,90 @@ function Rocket3D({
   );
 }
 
-// --- Scrolling Grid Environment ---
-function GridEnvironment({ crashed, elapsed: _elapsed }: { crashed: boolean, elapsed: number }) {
-  const gridRef = useRef<THREE.GridHelper>(null);
+// --- Space Dust System ---
+function SpaceDust({ speed, isActive }: { speed: number, isActive: boolean }) {
+  const count = 500;
+  const pointsRef = useRef<THREE.Points>(null);
   
+  const { positions } = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 80;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 80;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 80;
+    }
+    return { positions: pos };
+  }, [count]);
+
   useFrame((_state, delta) => {
-    if (gridRef.current && !crashed) {
-      // Grid scrolls in opposite direction
-      gridRef.current.position.x -= delta * 15;
-      if (gridRef.current.position.x < -20) {
-        gridRef.current.position.x = 0; // seamless loop
+    if (!pointsRef.current || !isActive) return;
+    const posAttr = pointsRef.current.geometry.attributes.position;
+    for (let i = 0; i < count; i++) {
+      // Move particles opposite to flight direction to simulate forward speed
+      posAttr.array[i * 3] -= speed * delta * 2;
+      
+      // wrap around
+      if (posAttr.array[i * 3] < -40) {
+        posAttr.array[i * 3] = 40;
+        posAttr.array[i * 3 + 1] = (Math.random() - 0.5) * 80;
+        posAttr.array[i * 3 + 2] = (Math.random() - 0.5) * 80;
       }
     }
+    posAttr.needsUpdate = true;
   });
 
   return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial size={0.2} color="#ffffff" transparent opacity={0.5} blending={THREE.AdditiveBlending} depthWrite={false} sizeAttenuation={true} />
+    </points>
+  );
+}
+
+// --- Passing Rings ---
+function PassingRings({ speed, isActive }: { speed: number, isActive: boolean }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const ringCount = 6;
+  const spacing = 35;
+
+  useFrame((_state, delta) => {
+    if (!groupRef.current || !isActive) return;
+    groupRef.current.children.forEach((ring) => {
+      ring.position.x -= speed * delta * 0.8;
+      if (ring.position.x < -20) {
+        ring.position.x += ringCount * spacing;
+        ring.position.y = (Math.random() - 0.5) * 20;
+        ring.position.z = (Math.random() - 0.5) * 20;
+      }
+    });
+  });
+
+  return (
+    <group ref={groupRef}>
+      {Array.from({ length: ringCount }).map((_, i) => (
+        <mesh key={i} position={[i * spacing, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20]} rotation={[0, Math.PI / 2, 0]}>
+          <torusGeometry args={[8, 0.1, 16, 50]} />
+          <meshBasicMaterial color="#3b82f6" transparent opacity={0.2} wireframe />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// --- Space Environment ---
+function SpaceEnvironment({ crashed, speed }: { crashed: boolean, speed: number }) {
+  return (
     <group>
-      <mesh position={[0, 0, -20]} receiveShadow>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#061022" metalness={0.2} roughness={0.8} />
-      </mesh>
-      
-      <gridHelper ref={gridRef} args={[200, 100, '#00f0ff', '#00f0ff']} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -19.9]} material-transparent material-opacity={0.15} />
-      
+      <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={crashed ? 0 : 1.5} />
+      <SpaceDust speed={speed} isActive={!crashed} />
+      <PassingRings speed={speed} isActive={!crashed} />
       <ambientLight intensity={crashed ? 0.2 : 0.6} color={crashed ? '#ff0000' : '#ffffff'} />
       <directionalLight position={[10, 10, 5]} intensity={1.5} color={crashed ? '#ffaaaa' : '#ffffff'} castShadow />
     </group>
   );
 }
-
 
 // --- Main Game Component ---
 
@@ -830,7 +895,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
               cameraPosition={[0, 0, 15]}
               enablePostProcessing={true}
            >
-              <GridEnvironment crashed={gameState === 'crashed'} elapsed={elapsedSeconds} />
+              <SpaceEnvironment crashed={gameState === 'crashed'} speed={15} />
               
               <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
               <Rocket3D 

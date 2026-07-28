@@ -66,16 +66,16 @@ function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameS
         const absoluteAngle = wheelRot + (winIdx * SECTOR_ANGLE);
         
         // Position camera behind the winning pocket, looking down at it
-        const camRadius = 4.5;
+        const camRadius = 3.8;
         targetPos.set(
-          Math.sin(absoluteAngle) * camRadius,
-          2.5,
+          -Math.sin(absoluteAngle) * camRadius,
+          1.8,
           -Math.cos(absoluteAngle) * camRadius
         );
         
         const ballRadius = 2.1;
         targetLook.set(
-          Math.sin(absoluteAngle) * ballRadius,
+          -Math.sin(absoluteAngle) * ballRadius,
           0,
           -Math.cos(absoluteAngle) * ballRadius
         );
@@ -217,7 +217,7 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
             {/* 3D Number Text */}
             <Text
               position={[0, 0.08, -2.6]}
-              rotation={[-Math.PI / 2, 0, 0]}
+              rotation={[-Math.PI / 2, 0, Math.PI]}
               fontSize={0.22}
               color="white"
               anchorX="center"
@@ -258,7 +258,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
       const targetRadius = 2.1; // inner pocket radius
-      const targetX = Math.sin(absoluteAngle) * targetRadius;
+      const targetX = -Math.sin(absoluteAngle) * targetRadius;
       const targetZ = -Math.cos(absoluteAngle) * targetRadius;
       
       ballRef.current.position.lerp(new THREE.Vector3(targetX, 0.15, targetZ), 0.05);
@@ -269,7 +269,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
       const absoluteAngle = wheelRot + pocketLocalAngle;
       
       const targetRadius = 2.1; // inner pocket radius
-      const targetX = Math.sin(absoluteAngle) * targetRadius;
+      const targetX = -Math.sin(absoluteAngle) * targetRadius;
       const targetZ = -Math.cos(absoluteAngle) * targetRadius;
       
       ballRef.current.position.set(targetX, 0.15, targetZ);

@@ -147,9 +147,9 @@ const GAMES = [
   },
   // === BOARD / PUZZLE ===
   {
-    key: 'chess',       title: 'Chess',       emoji: '♟️',  category: 'Board',
+    key: 'chess',       title: 'Chess 3D',       emoji: '♟️',  category: 'Board',
     reward: 'Victory',       difficulty: 'Hard',   color: '#66bdf2',
-    desc: 'Play classical chess against AI or pass-and-play locally.',
+    desc: 'Play classical 3D chess against AI or pass-and-play locally.',
     thumbnail: '/thumbnails/chess.jpg',
   },
   {

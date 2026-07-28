@@ -65,7 +65,15 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
 
       {/* Individual Pegs */}
       {pegPositions.map((pos, idx) => (
-        <RigidBody key={idx} type="fixed" colliders="hull" position={pos}>
+        <RigidBody 
+          key={idx} 
+          type="fixed" 
+          colliders="hull" 
+          position={pos}
+          rotation={[Math.PI / 2, 0, 0]}
+          restitution={0.6}
+          friction={0.1}
+        >
           <mesh receiveShadow castShadow>
              <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.5, 16]} />
              <meshStandardMaterial color="#334155" roughness={0.2} metalness={0.8} />
@@ -154,8 +162,13 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
   const [blinkingIdx, setBlinkingIdx] = useState<number | null>(null);
   
   const multipliers = MULTS[risk][rows];
+  const lastDropTime = useRef(0);
 
   const handleDrop = async () => {
+    const now = Date.now();
+    if (now - lastDropTime.current < 250) return;
+    lastDropTime.current = now;
+
     if (!profile || profile.tokens < betAmount) {
       toast.error('Insufficient tokens');
       return;

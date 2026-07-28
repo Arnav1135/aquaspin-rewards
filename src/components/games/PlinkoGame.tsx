@@ -166,6 +166,10 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   const [betAmount, setBetAmount] = useState(50);
   const [risk, setRisk] = useState<Difficulty>('medium');
   const [rows, setRows] = useState<Rows>(12);
+
+  // Queued Config
+  const [queuedRisk, setQueuedRisk] = useState<Difficulty | null>(null);
+  const [queuedRows, setQueuedRows] = useState<Rows | null>(null);
   
   // Active State
   const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number }[]>([]);
@@ -180,6 +184,26 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   const [autoTotalWagered, setAutoTotalWagered] = useState(0);
   const [stopOnProfit, setStopOnProfit] = useState<string>('');
   const [stopOnLoss, setStopOnLoss] = useState<string>('');
+  const [onWinRule, setOnWinRule] = useState<'reset' | 'increase'>('reset');
+  const [onWinPct, setOnWinPct] = useState<string>('');
+  const [onLossRule, setOnLossRule] = useState<'reset' | 'increase'>('reset');
+  const [onLossPct, setOnLossPct] = useState<string>('');
+  
+  const isTransitioning = (queuedRisk !== null || queuedRows !== null) && balls.length > 0;
+  
+  useEffect(() => {
+    // If balls have cleared and we have a queued config, apply it
+    if (balls.length === 0) {
+      if (queuedRisk !== null) {
+        setRisk(queuedRisk);
+        setQueuedRisk(null);
+      }
+      if (queuedRows !== null) {
+        setRows(queuedRows);
+        setQueuedRows(null);
+      }
+    }
+  }, [balls.length, queuedRisk, queuedRows]);
   
   const multipliers = useMemo(() => getMultiplierTable(risk, rows), [risk, rows]);
   const autoSessionRef = useRef({ running: false, currentBet: 50, remaining: 0, net: 0, wagered: 0, activeBallsCount: 0 });
@@ -216,7 +240,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   };
 
   const handleDrop = async () => {
-    if (autoRunning) return;
+    if (autoRunning || isTransitioning) return;
     if (!profile || profile.tokens < betAmount) {
       toast.error('Insufficient tokens');
       return;
@@ -236,6 +260,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   };
 
   const handleStartAutobet = () => {
+    if (isTransitioning) return;
     if (!profile || profile.tokens < betAmount) {
       toast.error('Insufficient tokens to start autobet');
       return;
@@ -338,6 +363,15 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
       if (sl && autoSessionRef.current.net <= -sl) {
         stopAutobet("Loss limit reached");
       }
+      
+      // Next bet logic
+      if (mult > 1) { // win
+        autoSessionRef.current.currentBet = onWinRule === 'reset' ? betAmount : autoSessionRef.current.currentBet * (1 + Number(onWinPct) / 100);
+      } else { // loss
+        autoSessionRef.current.currentBet = onLossRule === 'reset' ? betAmount : autoSessionRef.current.currentBet * (1 + Number(onLossPct) / 100);
+      }
+      // Clamp bet 
+      autoSessionRef.current.currentBet = Math.min(5000, Math.max(10, autoSessionRef.current.currentBet));
     }
     
     if (winAmount > 0) {
@@ -428,9 +462,9 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
                   {(['low', 'medium', 'high'] as Difficulty[]).map(r => (
                     <button
                       key={r}
-                      onClick={() => setRisk(r)}
+                      onClick={() => balls.length > 0 ? setQueuedRisk(r) : setRisk(r)}
                       disabled={autoRunning}
-                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all capitalize ${risk === r ? 'bg-white text-slate-800 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all capitalize ${(queuedRisk || risk) === r ? 'bg-white text-slate-800 shadow-md' : 'text-slate-400 hover:text-slate-600'} ${queuedRisk === r ? 'ring-2 ring-blue-300' : ''}`}
                     >
                       {r}
                     </button>
@@ -444,9 +478,9 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
                   {([8, 9, 10, 11, 12, 13, 14, 15, 16] as Rows[]).map(r => (
                     <button
                       key={r}
-                      onClick={() => setRows(r)}
+                      onClick={() => balls.length > 0 ? setQueuedRows(r) : setRows(r)}
                       disabled={autoRunning}
-                      className={`min-w-[32px] flex-1 py-1.5 mx-0.5 text-xs font-bold rounded-lg transition-all ${rows === r ? 'bg-white text-slate-800 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`min-w-[32px] flex-1 py-1.5 mx-0.5 text-xs font-bold rounded-lg transition-all ${(queuedRows || rows) === r ? 'bg-white text-slate-800 shadow-md' : 'text-slate-400 hover:text-slate-600'} ${queuedRows === r ? 'ring-2 ring-blue-300' : ''}`}
                     >
                       {r}
                     </button>
@@ -461,6 +495,34 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
                   <label className="text-xs text-slate-400 font-bold mb-1 block">Number of Bets (0 = ∞)</label>
                   <input type="number" value={autoTotalConfigured} onChange={e => setAutoTotalConfigured(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 transition-colors" />
                 </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold mb-1 block">On Win</label>
+                    <div className="flex gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1">
+                      <select value={onWinRule} onChange={e => setOnWinRule(e.target.value as any)} className="bg-transparent text-xs font-medium text-slate-700 outline-none w-full">
+                        <option value="reset">Reset</option>
+                        <option value="increase">Increase %</option>
+                      </select>
+                    </div>
+                    {onWinRule === 'increase' && (
+                      <input type="number" value={onWinPct} onChange={e => setOnWinPct(e.target.value)} placeholder="%" className="w-full mt-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs outline-none" />
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold mb-1 block">On Loss</label>
+                    <div className="flex gap-1 bg-slate-50 border border-slate-200 rounded-lg p-1">
+                      <select value={onLossRule} onChange={e => setOnLossRule(e.target.value as any)} className="bg-transparent text-xs font-medium text-slate-700 outline-none w-full">
+                        <option value="reset">Reset</option>
+                        <option value="increase">Increase %</option>
+                      </select>
+                    </div>
+                    {onLossRule === 'increase' && (
+                      <input type="number" value={onLossPct} onChange={e => setOnLossPct(e.target.value)} placeholder="%" className="w-full mt-1 bg-white border border-slate-200 rounded-md px-2 py-1 text-xs outline-none" />
+                    )}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-slate-400 font-bold mb-1 block">Stop on Profit</label>
@@ -501,9 +563,10 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
                 size="lg" 
                 fullWidth 
                 onClick={handleDrop}
-                className="py-4 text-lg font-bold bg-blue-500 hover:bg-blue-600 text-white shadow-xl shadow-blue-500/20 border-none rounded-xl"
+                disabled={isTransitioning}
+                className="py-4 text-lg font-bold bg-blue-500 hover:bg-blue-600 text-white shadow-xl shadow-blue-500/20 border-none rounded-xl disabled:opacity-50"
               >
-                Drop Ball
+                {isTransitioning ? 'Transitioning...' : 'Drop Ball'}
               </Button>
             ) : autoRunning ? (
               <Button 

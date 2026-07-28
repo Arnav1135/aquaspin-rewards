@@ -291,7 +291,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
     } else {
       // Hidden or resting
       ballRef.current.position.set(0, 10, 0); // Hide above
-      if (gameState === 'SPINNING' || gameState === 'BETTING') time.current = 0;
+      if (gameState === 'BETTING') time.current = 0;
     }
   });
 

@@ -132,43 +132,53 @@ export interface BucketStyle {
   multiplier: number;
 }
 
+// Helper to interpolate between colors
+function lerpColor(c1: number[], c2: number[], t: number) {
+  return [
+    Math.round(c1[0] + (c2[0] - c1[0]) * t),
+    Math.round(c1[1] + (c2[1] - c1[1]) * t),
+    Math.round(c1[2] + (c2[2] - c1[2]) * t)
+  ];
+}
+
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [0, 0, 0];
+}
+
 export function generateColors(difficulty: Difficulty, multipliers: number[]): BucketStyle[] {
   const logM = multipliers.map(m => Math.log10(Math.max(m, 0.1)));
   const minLog = Math.min(...logM);
   const maxLog = Math.max(...logM);
-  
   const range = maxLog === minLog ? 1 : maxLog - minLog;
-  
-  const params = {
-    low: { h1: 195, h2: 205, s1: 65, s2: 80, l1: 38, l2: 78 },
-    medium: { h1: 95, h2: 110, s1: 55, s2: 85, l1: 32, l2: 75 },
-    high: { h1: 285, h2: 305, s1: 55, s2: 80, l1: 30, l2: 82 }
-  }[difficulty];
+
+  const palettes = {
+    low: ['#7DF9E9', '#5CC9E8', '#3AAEDD', '#2E93D6', '#1E6FC9', '#0D4FA8'],
+    medium: ['#C6F24C', '#A0E639', '#6FCB3A', '#4FB33B', '#3B9C3C', '#2E8B33'],
+    high: ['#F2A6E8', '#D97BE0', '#C24DD6', '#A02FCB', '#7E1FB8', '#5A159E']
+  };
+
+  const colors = palettes[difficulty].map(hexToRgb);
 
   return multipliers.map((m, i) => {
-    const t = (logM[i] - minLog) / range;
-    const h = params.h1 + (params.h2 - params.h1) * t;
-    const s = params.s1 + (params.s2 - params.s1) * t;
-    const l = params.l1 + (params.l2 - params.l1) * t;
+    const t = 1.0 - ((logM[i] - minLog) / range); // 0 = brightest (edge), 1 = darkest (center)
     
-    const bgColor = `hsl(${h.toFixed(0)}, ${s.toFixed(0)}%, ${l.toFixed(0)}%)`;
+    // Map t to the color array
+    const maxIdx = colors.length - 1;
+    const scaledT = t * maxIdx;
+    const idx1 = Math.floor(scaledT);
+    const idx2 = Math.min(maxIdx, idx1 + 1);
+    const fraction = scaledT - idx1;
     
-    const c = (1 - Math.abs(2 * (l/100) - 1)) * (s/100);
-    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    const mMatch = (l/100) - c / 2;
-    let r = 0, g = 0, b = 0;
-    if (h >= 0 && h < 60) { r=c; g=x; b=0; }
-    else if (h >= 60 && h < 120) { r=x; g=c; b=0; }
-    else if (h >= 120 && h < 180) { r=0; g=c; b=x; }
-    else if (h >= 180 && h < 240) { r=0; g=x; b=c; }
-    else if (h >= 240 && h < 300) { r=x; g=0; b=c; }
-    else { r=c; g=0; b=x; }
+    const rgb = lerpColor(colors[idx1], colors[idx2], fraction);
+    const bgColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
     
-    const r2 = (r + mMatch) * 255;
-    const g2 = (g + mMatch) * 255;
-    const b2 = (b + mMatch) * 255;
-    const lum = 0.2126 * (r2/255) + 0.7152 * (g2/255) + 0.0722 * (b2/255);
-    
+    // Text contrast
+    const lum = 0.2126 * (rgb[0]/255) + 0.7152 * (rgb[1]/255) + 0.0722 * (rgb[2]/255);
     const textColor = lum > 0.5 ? '#0f172a' : '#ffffff';
 
     return {

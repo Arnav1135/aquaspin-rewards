@@ -1,10 +1,10 @@
 import React from 'react';
-import { CrashGame } from '@/games/crash/CrashGame';
+import { CrashGame } from '@/components/games/CrashGame';
 
 export const CrashGamePage: React.FC = () => {
     return (
         <div style={{ width: '100%', height: '100vh', overflow: 'hidden' }}>
-            <CrashGame />
+            <CrashGame onClose={() => {}} />
         </div>
     );
 };

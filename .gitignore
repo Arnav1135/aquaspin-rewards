@@ -44,3 +44,10 @@ run-schema.ps1
 setup-supabase.ps1
 patch-games.cjs
 casino-games/
+UnityChess/Library/
+UnityChess/Temp/
+UnityChess/Logs/
+UnityChess/UserSettings/
+public/UnityChessBuild/
+TempModels/
+

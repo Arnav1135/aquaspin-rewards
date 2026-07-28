@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody } from '@react-three/rapier';
-import { Html, Line, Trail } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 
@@ -20,6 +20,97 @@ type GameState = 'betting' | 'countdown' | 'climbing' | 'crashed' | 'success_abo
 type SocialEntry = { user: string; amount: number; mult: number; };
 
 const FAKE_USERS = ['Raj','Priya','Max','Luna','Kai','Zoe','Arnav','Mia','Dev','Sara'];
+
+// --- Shockwave Class ---
+function Shockwave({ position, isActive }: { position: THREE.Vector3, isActive: boolean }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+  
+  useFrame((_state, delta) => {
+    if (!isActive || !meshRef.current || !materialRef.current) return;
+    meshRef.current.scale.x += delta * 50;
+    meshRef.current.scale.y += delta * 50;
+    meshRef.current.scale.z += delta * 50;
+    materialRef.current.opacity = Math.max(0, materialRef.current.opacity - delta * 1.5);
+  });
+
+  if (!isActive) return null;
+  return (
+    <mesh ref={meshRef} position={position}>
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshBasicMaterial ref={materialRef} color="#00f0ff" transparent opacity={0.8} depthWrite={false} blending={THREE.AdditiveBlending} wireframe />
+    </mesh>
+  );
+}
+
+// --- Rocket Exhaust System ---
+function RocketExhaust({ rocketGroupRef, isActive }: { rocketGroupRef: React.RefObject<THREE.Group>, isActive: boolean }) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const count = 300;
+  
+  const { positions, ages, colors } = useMemo(() => {
+    return {
+      positions: new Float32Array(count * 3),
+      ages: new Float32Array(count).fill(999), // 999 means dead
+      colors: new Float32Array(count * 3)
+    };
+  }, []);
+
+  let nextIdx = useRef(0);
+
+  useFrame((_state, delta) => {
+    if (!pointsRef.current) return;
+    const posAttr = pointsRef.current.geometry.attributes.position;
+    const colAttr = pointsRef.current.geometry.attributes.color;
+    
+    // Update existing particles
+    for (let i = 0; i < count; i++) {
+      if (ages[i] < 1.0) {
+        ages[i] += delta * 1.5; // Life duration ~0.66s
+        posAttr.array[i * 3 + 1] -= delta * 1.5; // smoke falls a bit
+        posAttr.array[i * 3] -= delta * 2; // drift left behind rocket
+        
+        // fade color (orange to dark)
+        const life = Math.max(0, 1.0 - ages[i]);
+        colAttr.array[i * 3] = 1.0 * life; // R
+        colAttr.array[i * 3 + 1] = 0.4 * life; // G
+        colAttr.array[i * 3 + 2] = 0.0; // B
+      } else {
+        colAttr.array[i * 3] = 0;
+        colAttr.array[i * 3 + 1] = 0;
+        colAttr.array[i * 3 + 2] = 0;
+      }
+    }
+    
+    // Spawn new particles if active
+    if (isActive && rocketGroupRef.current) {
+       for(let j=0; j<4; j++) {
+         const idx = nextIdx.current;
+         nextIdx.current = (nextIdx.current + 1) % count;
+         
+         const spawnPos = new THREE.Vector3(-1.2, 0, 0); // Engine nozzle offset
+         spawnPos.applyMatrix4(rocketGroupRef.current.matrixWorld);
+         
+         posAttr.array[idx * 3] = spawnPos.x + (Math.random()-0.5)*0.6;
+         posAttr.array[idx * 3 + 1] = spawnPos.y + (Math.random()-0.5)*0.6;
+         posAttr.array[idx * 3 + 2] = spawnPos.z + (Math.random()-0.5)*0.6;
+         ages[idx] = 0;
+       }
+    }
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial size={1.8} vertexColors transparent blending={THREE.AdditiveBlending} depthWrite={false} sizeAttenuation={true} />
+    </points>
+  );
+}
 
 // --- Particle System Class (React Component) ---
 // Renders an explosive particle system using THREE.Points
@@ -189,42 +280,59 @@ function Rocket3D({
       
       onPathUpdate(newPos);
       
-      // 3. Camera Follow Logic
-      const zoomOut = Math.min(30, 18 + (actualMult * 0.8));
-      const targetCamPos = new THREE.Vector3(newPos.x + 8, newPos.y + 4, newPos.z + zoomOut);
+      // 3. Camera Follow Logic (3/4 perspective to show depth)
+      const zoomOut = Math.min(25, 12 + (actualMult * 0.8));
+      // Offset behind (X-10), above (Y+6) and to the side (Z+zoomOut)
+      const targetCamPos = new THREE.Vector3(newPos.x - 10, newPos.y + 6, newPos.z + zoomOut);
       camera.position.lerp(targetCamPos, 0.05); // slight lag
       
-    } else if (crashed && !explosionTriggered && rigidBodyRef.current) {
-      // --- Crash Handler Function ---
-      setExplosionTriggered(true);
-      crashPosition.current.copy(rocketGroup.current!.position); // Save crash position
+      // Look at the rocket (with slight leading offset)
+      camera.lookAt(newPos.x + 2, newPos.y, newPos.z);
       
-      // Break rocket (simulate tumbling)
-      rigidBodyRef.current.setBodyType(0, true); // Dynamic
-      // Random tumbling impulse
-      rigidBodyRef.current.applyImpulse({ x: 4, y: 10, z: (Math.random() - 0.5) * 10 }, true);
-      rigidBodyRef.current.applyTorqueImpulse({ x: Math.random() * 5, y: Math.random() * 5, z: Math.random() * 5 }, true);
+    } else if (crashed) {
+      if (!explosionTriggered && rigidBodyRef.current) {
+        // --- Crash Handler Function ---
+        setExplosionTriggered(true);
+        crashPosition.current.copy(rocketGroup.current!.position); // Save crash position
+        
+        // Break rocket (simulate tumbling)
+        rigidBodyRef.current.setBodyType(0, true); // Dynamic
+        // Random tumbling impulse
+        rigidBodyRef.current.applyImpulse({ x: 8, y: 15, z: (Math.random() - 0.5) * 15 }, true);
+        rigidBodyRef.current.applyTorqueImpulse({ x: Math.random() * 10, y: Math.random() * 10, z: Math.random() * 10 }, true);
+        
+        // Scale down slightly
+        rocketGroup.current!.scale.set(0.8, 0.8, 0.8);
+      }
       
-      // Scale down slightly
-      rocketGroup.current!.scale.set(0.8, 0.8, 0.8);
+      // Camera shake during crash
+      const shakeX = (Math.random() - 0.5) * 1.5;
+      const shakeY = (Math.random() - 0.5) * 1.5;
+      camera.position.x += shakeX * 0.1;
+      camera.position.y += shakeY * 0.1;
+      camera.lookAt(crashPosition.current);
     }
   });
 
   return (
     <>
-      {explosionTriggered && <ParticleExplosion position={rigidBodyRef.current?.translation() || new THREE.Vector3()} isActive={true} />}
+      {explosionTriggered && (
+        <>
+          <ParticleExplosion position={crashPosition.current} isActive={true} />
+          <Shockwave position={crashPosition.current} isActive={true} />
+        </>
+      )}
+      <RocketExhaust rocketGroupRef={rocketGroup} isActive={gameState === 'climbing'} />
       <RigidBody ref={rigidBodyRef} type="kinematicPosition" colliders="hull" restitution={0.3}>
         <group ref={rocketGroup}>
-          {gameState === 'climbing' && <Trail width={1.5} color={crashed ? '#ef4444' : '#f97316'} length={30} attenuation={(t) => t * t}>
-            <mesh position={[-1.0, 0, 0]}>
-               <boxGeometry args={[0.1, 0.1, 0.1]} />
-               <meshBasicMaterial transparent opacity={0} />
-            </mesh>
-          </Trail>}
+          {/* Engine Thrust Light */}
+          {gameState === 'climbing' && (
+            <pointLight position={[-1.2, 0, 0]} color="#f97316" intensity={2.5} distance={15} />
+          )}
           
           <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <cylinderGeometry args={[0.4, 0.4, 1.8, 16]} />
-            <meshStandardMaterial color="#e2e8f0" metalness={0.7} roughness={0.3} />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.8} roughness={0.2} />
           </mesh>
           
           <mesh castShadow position={[1.2, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
@@ -234,8 +342,11 @@ function Rocket3D({
           
           <mesh castShadow position={[-1.0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <cylinderGeometry args={[0.4, 0.5, 0.3, 16]} />
-            <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
+            <meshStandardMaterial color="#1e293b" metalness={0.9} roughness={0.1} />
           </mesh>
+
+          {/* Rim light to highlight 3D volume */}
+          <pointLight position={[0, 3, 2]} intensity={1.5} color="#60a5fa" distance={10} />
 
           <mesh castShadow position={[-0.5, 0.5, 0]} rotation={[0, 0, -Math.PI / 8]}>
             <boxGeometry args={[0.8, 1.0, 0.1]} />

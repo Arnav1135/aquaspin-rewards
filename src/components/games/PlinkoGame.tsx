@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Coins } from 'lucide-react';
+import { X, Coins, Play, Square } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -12,31 +12,18 @@ import { Html } from '@react-three/drei';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-type RiskLevel = 'low' | 'medium' | 'high';
-
-const MULTS: Record<RiskLevel, Record<number, number[]>> = {
-  low: { 
-    8: [5.6, 1.6, 1.1, 1.0, 0.5, 1.0, 1.1, 1.6, 5.6], 
-    10: [8.9, 3.0, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 3.0, 8.9], 
-    12: [10, 5, 2, 1.6, 1.1, 1.0, 0.5, 1.0, 1.1, 1.6, 2, 5, 10] 
-  },
-  medium: { 
-    8: [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13], 
-    10: [22, 5, 2, 1.4, 0.9, 0.4, 0.9, 1.4, 2, 5, 22], 
-    12: [33, 11, 4, 2, 1.1, 0.6, 0.3, 0.6, 1.1, 2, 4, 11, 33] 
-  },
-  high: { 
-    8: [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29], 
-    10: [76, 10, 3, 0.9, 0.3, 0.2, 0.3, 0.9, 3, 10, 76], 
-    12: [170, 33, 11, 4, 2, 0.2, 0.2, 0.2, 2, 4, 11, 33, 170] 
-  }
-};
+import { Difficulty, Rows, getMultiplierTable, generateColors } from './plinko/plinkoConfig';
+import { generateOutcome } from './plinko/outcomeEngine';
+import { getBiasImpulse, PathSteeringState } from './plinko/pathSteering';
 
 const PEG_RADIUS = 0.15;
 const PEG_SPACING_X = 1.2;
 const PEG_SPACING_Y = 1.0;
 
-function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: number, multipliers: number[], onBallLanded: (idx: number, id: string) => void, blinkingIdx: number | null }) {
+function PlinkoBoard({ rows, difficulty, onBallLanded, blinkingIdx }: { rows: Rows, difficulty: Difficulty, onBallLanded: (idx: number, id: string) => void, blinkingIdx: number | null }) {
+  const multipliers = useMemo(() => getMultiplierTable(difficulty, rows), [difficulty, rows]);
+  const colors = useMemo(() => generateColors(difficulty, multipliers), [difficulty, multipliers]);
+
   const pegPositions = useMemo(() => {
     const positions: THREE.Vector3[] = [];
     for (let r = 0; r <= rows; r++) {
@@ -54,11 +41,12 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
   const bucketY = -(rows * PEG_SPACING_Y) - 1.5;
 
   return (
-    <group position={[0, 4, 0]}>
+    <group position={[0, rows > 12 ? 6 : 4, 0]} scale={rows > 12 ? 0.8 : 1}>
       <RigidBody type="fixed">
         <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} receiveShadow>
           <boxGeometry args={[rows * PEG_SPACING_X + 4, rows * PEG_SPACING_Y + 4, 0.5]} />
-          <meshStandardMaterial color="#0A1428" roughness={0.9} metalness={0.1} />
+          {/* Light Mode Board Background */}
+          <meshStandardMaterial color="#F0F4F8" roughness={0.7} metalness={0.1} />
         </mesh>
       </RigidBody>
 
@@ -70,17 +58,18 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
           position={pos}
           restitution={0.6}
           friction={0.1}
+          userData={{ isPeg: true }}
         >
           <BallCollider args={[PEG_RADIUS]} />
           <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
              <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 32]} />
-             <meshStandardMaterial color="#334155" roughness={0.1} metalness={1.0} emissive="#5AB8EA" emissiveIntensity={0.2} toneMapped={false} />
+             <meshStandardMaterial color="#94A3B8" roughness={0.2} metalness={0.8} />
           </mesh>
         </RigidBody>
       ))}
 
       {/* Buckets/Sensors */}
-      {multipliers.map((mult, i) => {
+      {colors.map((style, i) => {
         const x = startBucketX + i * PEG_SPACING_X;
         return (
           <group key={`bucket-${i}`} position={[x, bucketY, 0]}>
@@ -96,24 +85,24 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
               <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.5, 0.5]} />
             </RigidBody>
             <Html center position={[0, -0.8, 0]} className="pointer-events-none">
-              <div className={`px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg backdrop-blur-md transition-all duration-300 ${mult >= 2 ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'} ${blinkingIdx === i ? 'scale-125 ring-2 ring-yellow-400 brightness-150' : 'scale-100'}`}>
-                {mult}x
+              <div 
+                className={`px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg transition-all duration-300 ${blinkingIdx === i ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'}`}
+                style={{ backgroundColor: style.backgroundColor, color: style.color, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}
+              >
+                {style.multiplier}x
               </div>
             </Html>
-            {/* Divider lines with steep physics cap to prevent stuck balls */}
+            
             <RigidBody type="fixed" position={[PEG_SPACING_X/2, 0, 0]} colliders={false}>
                <CuboidCollider args={[0.05, 0.75, 0.25]} />
                <BallCollider args={[0.08]} position={[0, 0.75, 0]} />
-               
-               {/* Main vertical divider */}
                <mesh>
                  <boxGeometry args={[0.1, 1.5, 0.5]} />
-                 <meshStandardMaterial color="#1E293B" />
+                 <meshStandardMaterial color="#E2E8F0" />
                </mesh>
-               {/* Round cap so balls roll off */}
                <mesh position={[0, 0.75, 0]}>
                  <sphereGeometry args={[0.08, 16, 16]} />
-                 <meshStandardMaterial color="#1E293B" />
+                 <meshStandardMaterial color="#E2E8F0" />
                </mesh>
             </RigidBody>
           </group>
@@ -123,15 +112,31 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
   );
 }
 
-function PlinkoBall({ id, position, onDespawn }: { id: string, position: [number, number, number], onDespawn: (id: string) => void }) {
+function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, position: [number, number, number], steeringState: PathSteeringState, onDespawn: (id: string) => void }) {
   const rbRef = useRef<any>(null);
+  const steerRef = useRef<PathSteeringState>({ ...steeringState });
+  const lastHitTime = useRef(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       onDespawn(id);
-    }, 15000); // 15s max lifetime failsafe
+    }, 15000);
     return () => clearTimeout(timer);
   }, [id, onDespawn]);
+
+  const handleCollision = (e: any) => {
+    if (e.other.rigidBodyObject?.userData?.isPeg) {
+      const now = Date.now();
+      // debounce multiple collisions on the same peg slightly
+      if (now - lastHitTime.current < 50) return;
+      lastHitTime.current = now;
+
+      if (rbRef.current) {
+        const impulse = getBiasImpulse(steerRef.current);
+        rbRef.current.applyImpulse(impulse, true);
+      }
+    }
+  };
 
   return (
     <RigidBody 
@@ -143,73 +148,197 @@ function PlinkoBall({ id, position, onDespawn }: { id: string, position: [number
       userData={{ isBall: true }}
       name={id}
       enabledTranslations={[true, true, false]}
+      onCollisionEnter={handleCollision}
     >
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[0.25, 32, 32]} />
-        <meshStandardMaterial color="#FFD700" emissive="#FFD700" emissiveIntensity={1.5} metalness={1.0} roughness={0.0} toneMapped={false} />
-        <pointLight color="#FFD700" intensity={1.5} distance={3} />
+        <meshStandardMaterial color="#FF6B6B" emissive="#FF6B6B" emissiveIntensity={0.5} metalness={0.2} roughness={0.1} />
+        <pointLight color="#FF6B6B" intensity={1.0} distance={2} />
       </mesh>
     </RigidBody>
   );
 }
 
-interface PlinkoGameProps { onClose: () => void; }
-
-export function PlinkoGame({ onClose }: PlinkoGameProps) {
+export function PlinkoGame({ onClose }: { onClose: () => void }) {
   const { profile, updateProfile } = useAuthStore();
+  
+  // Game Config
   const [betAmount, setBetAmount] = useState(50);
-  const [risk, setRisk] = useState<RiskLevel>('medium');
-  const [rows, setRows] = useState(8);
-  const [balls, setBalls] = useState<{ id: string, bet: number, startX: number }[]>([]);
+  const [risk, setRisk] = useState<Difficulty>('medium');
+  const [rows, setRows] = useState<Rows>(12);
+  
+  // Active State
+  const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number }[]>([]);
   const [blinkingIdx, setBlinkingIdx] = useState<number | null>(null);
   
-  const multipliers = MULTS[risk][rows];
-  const lastDropTime = useRef(0);
+  // Autobet State
+  const [autobetMode, setAutobetMode] = useState(false);
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoBetsRemaining, setAutoBetsRemaining] = useState<number>(0); // 0 = infinite
+  const [autoTotalConfigured, setAutoTotalConfigured] = useState<number>(0);
+  const [autoNetProfit, setAutoNetProfit] = useState(0);
+  const [autoTotalWagered, setAutoTotalWagered] = useState(0);
+  const [stopOnProfit, setStopOnProfit] = useState<string>('');
+  const [stopOnLoss, setStopOnLoss] = useState<string>('');
+  
+  const multipliers = useMemo(() => getMultiplierTable(risk, rows), [risk, rows]);
+  const autoSessionRef = useRef({ running: false, currentBet: 50, remaining: 0, net: 0, wagered: 0, activeBallsCount: 0 });
+
+  const stopAutobet = useCallback((reason: string) => {
+    setAutoRunning(false);
+    autoSessionRef.current.running = false;
+    toast(`Autobet Stopped: ${reason}`);
+  }, []);
+
+  const spawnBall = async (bet: number) => {
+    if (!profile) return false;
+    
+    // RNG Generation
+    const clientSeed = 'aqua-' + Math.random().toString(36).substring(7);
+    const serverSeed = 'server-' + Date.now(); // In real app, this is pre-committed
+    const nonce = Date.now();
+    
+    const outcome = await generateOutcome(serverSeed, clientSeed, nonce, rows);
+    const payout = bet * multipliers[outcome.targetBucket];
+    
+    const id = Math.random().toString(36).substr(2, 9);
+    const startX = (Math.random() - 0.5) * 0.5;
+    
+    const steer: PathSteeringState = {
+      path: outcome.path,
+      currentRow: 0,
+      targetBucket: outcome.targetBucket,
+      totalRows: rows
+    };
+    
+    setBalls(prev => [...prev, { id, bet, startX, steer, payout }]);
+    return true;
+  };
 
   const handleDrop = async () => {
-    const now = Date.now();
-    if (now - lastDropTime.current < 250) return;
-    lastDropTime.current = now;
-
+    if (autoRunning) return;
     if (!profile || profile.tokens < betAmount) {
       toast.error('Insufficient tokens');
       return;
     }
 
     try {
-      // Deduct bet
       const newBalance = profile.tokens - betAmount;
       (updateProfile as any)({ tokens: newBalance });
       await (supabase.from('users') as any).update({ tokens: newBalance }).eq('id', profile.id);
       
       (playTone as any)(440, 'sine', 0.1);
-      
-      const id = Math.random().toString(36).substr(2, 9);
-      const startX = (Math.random() - 0.5) * 0.5;
-      setBalls(prev => [...prev, { id, bet: betAmount, startX }]);
+      await spawnBall(betAmount);
     } catch (e) {
       console.error(e);
       toast.error('Transaction failed');
     }
   };
 
+  const handleStartAutobet = () => {
+    if (!profile || profile.tokens < betAmount) {
+      toast.error('Insufficient tokens to start autobet');
+      return;
+    }
+    
+    setAutoRunning(true);
+    setAutoNetProfit(0);
+    setAutoTotalWagered(0);
+    
+    autoSessionRef.current = {
+      running: true,
+      currentBet: betAmount,
+      remaining: autoTotalConfigured,
+      net: 0,
+      wagered: 0,
+      activeBallsCount: 0
+    };
+    
+    // Kick off loop
+    runAutobetLoop();
+  };
+  
+  const runAutobetLoop = async () => {
+    const s = autoSessionRef.current;
+    if (!s.running) return;
+    
+    // Don't spawn if we have too many active balls (throttle)
+    if (s.activeBallsCount >= 5) {
+      setTimeout(runAutobetLoop, 200);
+      return;
+    }
+    
+    if (s.remaining === 0 && autoTotalConfigured !== 0) {
+      stopAutobet("Completed");
+      return;
+    }
+    
+    const currentProf = profile?.tokens || 0;
+    if (currentProf < s.currentBet) {
+      stopAutobet("Insufficient balance");
+      return;
+    }
+    
+    // Deduct
+    const newBal = currentProf - s.currentBet;
+    (updateProfile as any)({ tokens: newBal });
+    
+    // Spawn
+    s.activeBallsCount++;
+    await spawnBall(s.currentBet);
+    
+    s.wagered += s.currentBet;
+    s.net -= s.currentBet;
+    setAutoTotalWagered(s.wagered);
+    setAutoNetProfit(s.net);
+    
+    if (autoTotalConfigured > 0) {
+      s.remaining--;
+      setAutoBetsRemaining(s.remaining);
+    }
+    
+    if (s.running) {
+      setTimeout(runAutobetLoop, 800); // interval between drops
+    }
+  };
+
   const removeBall = useCallback((id: string) => {
     setBalls(prev => prev.filter(b => b.id !== id));
+    autoSessionRef.current.activeBallsCount = Math.max(0, autoSessionRef.current.activeBallsCount - 1);
   }, []);
 
   const handleBallLanded = useCallback(async (bucketIdx: number, ballId: string) => {
     const ball = balls.find(b => b.id === ballId);
     if (!ball) return;
     
-    // Remove immediately so it doesn't double-trigger
     removeBall(ballId);
     
-    // Trigger multiplier blink
+    // Validate Layer 4 landed bucket vs Layer 1 Outcome
+    if (bucketIdx !== ball.steer.targetBucket) {
+      console.error(`[Plinko Bug] Ball ${ballId} landed in ${bucketIdx} but Outcome Engine decided ${ball.steer.targetBucket}`);
+      // In production, we honor the server outcome regardless of physics anomaly, but we try to animate it close.
+      bucketIdx = ball.steer.targetBucket; 
+    }
+    
     setBlinkingIdx(bucketIdx);
     setTimeout(() => setBlinkingIdx(null), 500);
 
     const mult = multipliers[bucketIdx];
-    const winAmount = Math.floor(ball.bet * mult);
+    const winAmount = ball.payout;
+    
+    if (autoSessionRef.current.running) {
+      autoSessionRef.current.net += winAmount;
+      setAutoNetProfit(autoSessionRef.current.net);
+      
+      const sp = Number(stopOnProfit);
+      if (sp && autoSessionRef.current.net >= sp) {
+        stopAutobet("Profit target reached");
+      }
+      const sl = Number(stopOnLoss);
+      if (sl && autoSessionRef.current.net <= -sl) {
+        stopAutobet("Loss limit reached");
+      }
+    }
     
     if (winAmount > 0) {
       (playTone as any)(mult >= 2 ? 600 : 300, 'sine', 0.2);
@@ -226,26 +355,29 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
         console.error(e);
       }
     }
-  }, [balls, multipliers, profile, updateProfile, removeBall]);
+  }, [balls, multipliers, profile, updateProfile, removeBall, stopAutobet, stopOnProfit, stopOnLoss]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-md">
-      <Card className="relative w-full max-w-4xl h-[85vh] flex flex-col md:flex-row gap-0 overflow-hidden shadow-2xl border-navy-600 bg-navy-900 rounded-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/40 backdrop-blur-3xl">
+      <Card className="relative w-full max-w-5xl h-[85vh] flex flex-col md:flex-row gap-0 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-200/60 bg-white/70 backdrop-blur-2xl rounded-3xl">
         
         {/* Left Side: 3D Canvas */}
-        <div className="relative flex-1 h-[50vh] md:h-full bg-navy-950 overflow-hidden">
+        <div className="relative flex-1 h-[50vh] md:h-full bg-slate-100/50 overflow-hidden shadow-inner">
           <GameEngine3D 
             enablePhysics={true} 
-            enablePostProcessing={true}
-            cameraPosition={[0, 0, 14]}
+            enablePostProcessing={false} // Light mode prefers clean, crisp renders over bloom
+            cameraPosition={[0, 0, 15]}
           >
-            <PlinkoBoard rows={rows} multipliers={multipliers} onBallLanded={handleBallLanded} blinkingIdx={blinkingIdx} />
+            <ambientLight intensity={1.2} />
+            <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
+            <PlinkoBoard rows={rows} difficulty={risk} onBallLanded={handleBallLanded} blinkingIdx={blinkingIdx} />
             
             {balls.map(ball => (
               <PlinkoBall 
                 key={ball.id} 
                 id={ball.id} 
-                position={[ball.startX, 7, 0]} 
+                position={[ball.startX, rows > 12 ? 9 : 7, 0]} 
+                steeringState={ball.steer}
                 onDespawn={removeBall} 
               />
             ))}
@@ -253,70 +385,147 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
           
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-50 p-2 text-white bg-red-500/20 hover:bg-red-500/50 rounded-full backdrop-blur-md transition-colors"
+            className="absolute top-4 right-4 z-50 p-2 text-slate-500 bg-white/50 hover:bg-white shadow-sm rounded-full backdrop-blur-md transition-colors"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Right Side: Controls */}
-        <div className="w-full md:w-80 p-6 flex flex-col justify-between bg-navy-900 border-l border-navy-700 h-[35vh] md:h-full overflow-y-auto">
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-display font-bold text-white flex items-center gap-2">
-                <span className="text-cyan-400">●</span> 3D Plinko
-              </h2>
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-navy-800 rounded-full border border-navy-600">
-                <Coins size={14} className="text-gold-400" />
-                <span className="text-sm font-medium text-white">{profile?.tokens.toLocaleString()}</span>
-              </div>
+        <div className="w-full md:w-80 p-6 flex flex-col bg-white border-l border-slate-200 h-[35vh] md:h-full overflow-y-auto">
+          
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex space-x-1 bg-slate-100 p-1 rounded-xl">
+              <button 
+                onClick={() => !autoRunning && setAutobetMode(false)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${!autobetMode ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400 hover:text-slate-600'} ${autoRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Manual
+              </button>
+              <button 
+                onClick={() => !autoRunning && setAutobetMode(true)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${autobetMode ? 'bg-white shadow-sm text-slate-800' : 'text-slate-400 hover:text-slate-600'} ${autoRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Auto
+              </button>
             </div>
-
-            <BetControl betAmount={betAmount} setBetAmount={setBetAmount} minBet={10} maxBet={5000} />
-
-            <div className="mt-6 space-y-4">
-              <div>
-                <label className="text-xs text-navy-300 font-medium mb-2 block uppercase tracking-wider">Risk Level</label>
-                <div className="flex bg-navy-800 p-1 rounded-lg">
-                  {(['low', 'medium', 'high'] as RiskLevel[]).map(r => (
-                    <button
-                      key={r}
-                      onClick={() => setRisk(r)}
-                      className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${risk === r ? 'bg-navy-600 text-white shadow-sm' : 'text-navy-400 hover:text-white'}`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-navy-300 font-medium mb-2 block uppercase tracking-wider">Rows</label>
-                <div className="flex bg-navy-800 p-1 rounded-lg">
-                  {[8, 10, 12].map(r => (
-                    <button
-                      key={r}
-                      onClick={() => setRows(r)}
-                      className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors ${rows === r ? 'bg-navy-600 text-white shadow-sm' : 'text-navy-400 hover:text-white'}`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-200 shadow-sm">
+              <Coins size={14} className="text-yellow-500" />
+              <span className="text-sm font-bold text-slate-700">{profile?.tokens.toLocaleString()}</span>
             </div>
           </div>
 
+          <div className="flex-1 space-y-6">
+            <div className={autoRunning ? 'opacity-50 pointer-events-none transition-opacity' : ''}>
+              <BetControl betAmount={betAmount} setBetAmount={setBetAmount} minBet={10} maxBet={5000} disabled={autoRunning} />
+            </div>
+
+            <div className={`space-y-4 ${autoRunning ? 'opacity-50 pointer-events-none transition-opacity' : ''}`}>
+              <div>
+                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-widest">Risk</label>
+                <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner">
+                  {(['low', 'medium', 'high'] as Difficulty[]).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setRisk(r)}
+                      disabled={autoRunning}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all capitalize ${risk === r ? 'bg-white text-slate-800 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-widest">Rows</label>
+                <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner overflow-x-auto">
+                  {([8, 9, 10, 11, 12, 13, 14, 15, 16] as Rows[]).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setRows(r)}
+                      disabled={autoRunning}
+                      className={`min-w-[32px] flex-1 py-1.5 mx-0.5 text-xs font-bold rounded-lg transition-all ${rows === r ? 'bg-white text-slate-800 shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {autobetMode && (
+              <div className={`space-y-4 pt-4 border-t border-slate-100 ${autoRunning ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div>
+                  <label className="text-xs text-slate-400 font-bold mb-1 block">Number of Bets (0 = ∞)</label>
+                  <input type="number" value={autoTotalConfigured} onChange={e => setAutoTotalConfigured(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 transition-colors" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold mb-1 block">Stop on Profit</label>
+                    <input type="number" value={stopOnProfit} onChange={e => setStopOnProfit(e.target.value)} placeholder="0.00" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 font-bold mb-1 block">Stop on Loss</label>
+                    <input type="number" value={stopOnLoss} onChange={e => setStopOnLoss(e.target.value)} placeholder="0.00" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none" />
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {autoRunning && (
+              <div className="pt-4 border-t border-slate-100 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Profit</span>
+                  <span className={`font-bold ${autoNetProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {autoNetProfit >= 0 ? '+' : ''}{autoNetProfit.toFixed(0)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Wagered</span>
+                  <span className="font-bold text-slate-700">{autoTotalWagered}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Bets Left</span>
+                  <span className="font-bold text-slate-700">{autoTotalConfigured === 0 ? '∞' : autoBetsRemaining}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="mt-6">
-            <Button 
-              variant="primary" 
-              size="lg" 
-              fullWidth 
-              onClick={handleDrop}
-              className="py-4 text-lg font-bold shadow-[0_0_20px_rgba(0,240,255,0.3)]"
-            >
-              Drop Ball
-            </Button>
+            {!autobetMode ? (
+              <Button 
+                variant="primary" 
+                size="lg" 
+                fullWidth 
+                onClick={handleDrop}
+                className="py-4 text-lg font-bold bg-blue-500 hover:bg-blue-600 text-white shadow-xl shadow-blue-500/20 border-none rounded-xl"
+              >
+                Drop Ball
+              </Button>
+            ) : autoRunning ? (
+              <Button 
+                variant="primary" 
+                size="lg" 
+                fullWidth 
+                onClick={() => stopAutobet("Manual stop")}
+                className="py-4 text-lg font-bold bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 border-none rounded-xl flex items-center justify-center gap-2"
+              >
+                <Square fill="currentColor" size={18} /> Stop Autobet
+              </Button>
+            ) : (
+              <Button 
+                variant="primary" 
+                size="lg" 
+                fullWidth 
+                onClick={handleStartAutobet}
+                className="py-4 text-lg font-bold bg-green-500 hover:bg-green-600 text-white shadow-xl shadow-green-500/20 border-none rounded-xl flex items-center justify-center gap-2"
+              >
+                <Play fill="currentColor" size={18} /> Start Autobet
+              </Button>
+            )}
           </div>
         </div>
 

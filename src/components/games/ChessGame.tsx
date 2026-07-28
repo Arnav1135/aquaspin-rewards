@@ -1,9 +1,12 @@
 import React from 'react';
 import { Unity, useUnityContext } from 'react-unity-webgl';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+interface ChessGameProps {
+  onClose?: () => void;
+}
 
-export const ChessGame: React.FC = () => {
+export const ChessGame: React.FC<ChessGameProps> = ({ onClose }) => {
   const { unityProvider, isLoaded, loadingProgression } = useUnityContext({
     loaderUrl: "/UnityChessBuild/Build/UnityChessBuild.loader.js",
     dataUrl: "/UnityChessBuild/Build/UnityChessBuild.data",
@@ -20,9 +23,9 @@ export const ChessGame: React.FC = () => {
           <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
             Chess 3D
           </CardTitle>
-          <CardDescription className="text-gray-400 text-lg">
-            Powered by custom FIDE Rules Engine, Unity WebGL, and StabilityManager
-          </CardDescription>
+          <p className="text-gray-400 text-lg">
+            Master the board against AI or play with a friend locally.
+          </p>
         </CardHeader>
         <CardContent>
           <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-gray-700 shadow-[0_0_50px_rgba(0,200,255,0.15)] bg-gray-900">
@@ -49,13 +52,18 @@ export const ChessGame: React.FC = () => {
               <span className="font-bold text-white">Controls:</span> Click to select piece, click destination to move.
             </div>
             <div className="flex gap-4">
-              <Button variant="outline" className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white">
+              <Button variant="ghost" className="border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white">
                 Pass & Play
               </Button>
-              <Button variant="default" className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)]">
+              <Button variant="neon" className="bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.5)]">
                 vs AI Bot
               </Button>
             </div>
+          </div>
+          <div className="pt-4 border-t border-white/10">
+            <Button variant="neon" className="w-full bg-red-600 hover:bg-red-700 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]" onClick={onClose}>
+              Quit Match
+            </Button>
           </div>
         </CardContent>
       </Card>

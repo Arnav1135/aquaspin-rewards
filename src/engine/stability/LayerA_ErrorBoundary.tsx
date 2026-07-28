@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ReactNode, ErrorInfo } from 'react';
 import { RecoveryCoordinator } from './RecoveryCoordinator';
 
 interface Props {
@@ -24,7 +24,7 @@ export class LayerA_ErrorBoundary extends Component<Props, State> {
     return { hasError: true, recoveryAttempts: 0 };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, _errorInfo: ErrorInfo) {
     // Increment recovery attempts
     this.setState(prev => {
       const attempts = prev.recoveryAttempts + 1;

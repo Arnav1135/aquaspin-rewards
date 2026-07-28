@@ -1,4 +1,4 @@
-import { Token, Color, SAFE_SQUARES, TRACK_COORDS, getPathForColor } from '../../components/games/LudoGame';
+import { Token, SAFE_SQUARES, TRACK_COORDS, getPathForColor } from '../../components/games/LudoGame';
 
 export type BotDifficulty = 'Easy' | 'Medium' | 'Hard';
 

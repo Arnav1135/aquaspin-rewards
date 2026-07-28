@@ -3,6 +3,9 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { playTone, vibrate } from '@/lib/utils';
+import { LayerA_ErrorBoundary } from '../../engine/stability/LayerA_ErrorBoundary';
+import { RecoveryCoordinator } from '../../engine/stability/RecoveryCoordinator';
+import { ChaosTestRunner } from '../../engine/stability/ChaosTestRunner';
 import toast from 'react-hot-toast';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -12,8 +15,8 @@ import { gsap } from 'gsap';
 
 interface Props { onClose: () => void }
 
-type Color = 'red' | 'blue' | 'green' | 'yellow';
-type Token = { id: string; color: Color; pos: number; home: boolean; finished: boolean };
+export type Color = 'red' | 'blue' | 'green' | 'yellow';
+export type Token = { id: string; color: Color; pos: number; home: boolean; finished: boolean };
 type PlayerType = 'human' | 'ai' | 'online' | 'disabled';
 
 const COLORS: Color[] = ['red', 'blue', 'green', 'yellow'];
@@ -21,10 +24,10 @@ const COLOR_HEX: Record<Color, string> = { red: '#F44336', blue: '#2196F3', gree
 
 // START_POS: Red: 0, Blue: 13, Green: 26, Yellow: 39
 const START_POS: Record<Color, number> = { red: 0, blue: 13, green: 26, yellow: 39 };
-const SAFE_SQUARES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+export const SAFE_SQUARES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 
 // 52 track cell coordinates [row, col] clockwise starting from red start [6, 1]
-const TRACK_COORDS: [number, number][] = [
+export const TRACK_COORDS: [number, number][] = [
   [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
   [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
   [0, 7],
@@ -55,7 +58,7 @@ function getYardCellCoords(color: Color, tokenId: string): [number, number] {
 }
 
 // Returns the 57-step path of cell coordinates [row, col] for a player color
-function getPathForColor(color: Color): [number, number][] {
+export function getPathForColor(color: Color): [number, number][] {
   const path: [number, number][] = [];
   const startIdx = START_POS[color];
   // 51 cells on the main loop
@@ -175,6 +178,15 @@ export function LudoGame({ onClose }: Props) {
   const [phase, setPhase] = useState<'idle' | 'playing' | 'done'>('idle');
   const [tokens, setTokens] = useState<Token[]>(makeTokens());
   const [currentColor, setCurrentColor] = useState<Color>('red');
+  
+  // Stability Engine Hooks
+  const [debugStats, setDebugStats] = useState(() => RecoveryCoordinator.getStats());
+  const [chaosCrash, setChaosCrash] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = RecoveryCoordinator.subscribe(setDebugStats);
+    return () => { unsubscribe(); };
+  }, []);
   const [dice, setDice] = useState(0);
   const [rolling, setRolling] = useState(false);
   const [movable, setMovable] = useState<string[]>([]);
@@ -484,19 +496,22 @@ export function LudoGame({ onClose }: Props) {
       {/* 3D Scene viewport */}
       <div className="relative w-full max-w-2xl aspect-square bg-slate-950/80 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
         {phase !== 'idle' ? (
-          <Canvas shadows>
-            <SceneContent
-              tokens={tokens}
-              movable={movable}
-              rolling={rolling}
-              theme={theme}
-              cameraState={cameraState}
-              activeColor={currentColor}
-              playerConfig={playerConfig}
-              onRollComplete={handleRollComplete}
-              onTokenClick={handleTokenClick}
-            />
-          </Canvas>
+          <LayerA_ErrorBoundary onSoftReset={() => setChaosCrash(false)}>
+            {chaosCrash && (() => { throw new Error("Chaos Test: Simulated Render Crash in LudoGame") })()}
+            <Canvas shadows camera={{ position: [0, 8, 4], fov: 45 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
+              <SceneContent
+                tokens={tokens}
+                movable={movable}
+                rolling={rolling}
+                theme={theme}
+                cameraState={cameraState}
+                activeColor={currentColor}
+                playerConfig={playerConfig}
+                onRollComplete={handleRollComplete}
+                onTokenClick={handleTokenClick}
+              />
+            </Canvas>
+          </LayerA_ErrorBoundary>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-sm px-6">
             {!matchmaking ? (
@@ -525,6 +540,42 @@ export function LudoGame({ onClose }: Props) {
                 <span className="text-white text-lg font-semibold animate-pulse">{lobbyStatus}</span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Debug HUD Overlay */}
+        {phase !== 'idle' && (
+          <div className="absolute top-4 right-4 z-40 bg-black/80 p-3 rounded-lg border border-red-500/30 text-xs text-white max-w-xs font-mono">
+            <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-1">
+              <span className="text-red-400 font-bold">Stability Engine v2</span>
+              <span className="bg-white/10 px-1 rounded text-white/50">{debugStats.currentQuality} Tier</span>
+            </div>
+            <div className="flex gap-4 mb-2 opacity-70">
+              <div>
+                <div className="text-white/40">Total</div>
+                <div>{debugStats.total}</div>
+              </div>
+              <div>
+                <div className="text-white/40">Layer A</div>
+                <div>{debugStats.breakdown['Layer A']}</div>
+              </div>
+            </div>
+            {debugStats.recent.length > 0 && (
+              <div className="border-t border-white/10 pt-1 mt-1 opacity-50">
+                <div className="text-[10px] text-white/40">Recent Log:</div>
+                {debugStats.recent.map((r: any, i: number) => (
+                  <div key={i} className="truncate">T{r.severity} - {r.failureMode}</div>
+                ))}
+              </div>
+            )}
+            <button 
+              onClick={() => {
+                ChaosTestRunner.runLayerATest(() => setChaosCrash(true));
+              }}
+              className="w-full mt-2 py-1 bg-red-900/50 hover:bg-red-800 text-red-200 rounded border border-red-500/30 transition-colors"
+            >
+              🧪 Inject Layer A Fault
+            </button>
           </div>
         )}
       </div>

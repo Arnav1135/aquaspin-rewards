@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
-import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 
 export type QualityTier = 'Ultra' | 'High' | 'Medium' | 'Low' | 'Potato';
@@ -127,7 +126,7 @@ export const StabilityProvider: React.FC<StabilityProviderProps> = ({ children }
   useEffect(() => {
     // Note: React Three Fiber handles webglcontextlost automatically to some extent,
     // but we add a custom listener to the document to show the recovery UI
-    const onContextLost = (e: Event) => {
+    const onContextLost = (_e: Event) => {
       console.error('Stability Engine: WebGL Context Lost!');
       setIsContextLost(true);
       setRecoveries(r => r + 1);

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
 import { GameEngine3D } from '@/engine/GameEngine3D';
-import { RigidBody, CuboidCollider } from '@react-three/rapier';
+import { RigidBody, CuboidCollider, BallCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { playTone, vibrate } from '@/lib/utils';
@@ -68,14 +68,13 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
         <RigidBody 
           key={idx} 
           type="fixed" 
-          colliders="hull" 
           position={pos}
-          rotation={[Math.PI / 2, 0, 0]}
           restitution={0.6}
           friction={0.1}
         >
-          <mesh receiveShadow castShadow>
-             <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.5, 16]} />
+          <BallCollider args={[PEG_RADIUS]} />
+          <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
+             <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.5, 32]} />
              <meshStandardMaterial color="#334155" roughness={0.2} metalness={0.8} />
           </mesh>
         </RigidBody>
@@ -98,7 +97,7 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
               <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.5, 0.5]} />
             </RigidBody>
             <Html center position={[0, -0.8, 0]} className="pointer-events-none">
-              <div className={`px-2 py-1 rounded font-bold text-xs shadow-lg backdrop-blur-md transition-all duration-300 ${mult >= 2 ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'} ${blinkingIdx === i ? 'scale-125 ring-4 ring-yellow-400 brightness-150' : 'scale-100'}`}>
+              <div className={`px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg backdrop-blur-md transition-all duration-300 ${mult >= 2 ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'} ${blinkingIdx === i ? 'scale-125 ring-2 ring-yellow-400 brightness-150' : 'scale-100'}`}>
                 {mult}x
               </div>
             </Html>

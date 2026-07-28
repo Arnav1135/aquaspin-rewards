@@ -9,41 +9,22 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { gsap } from 'gsap';
-import { LudoBot, BotDifficulty } from '../../engine/ai/LudoBot';
-import { LayerA_ErrorBoundary } from '../../engine/stability/LayerA_ErrorBoundary';
-import { RecoveryCoordinator } from '../../engine/stability/RecoveryCoordinator';
-import { ChaosTestRunner } from '../../engine/stability/ChaosTestRunner';
-import { io, Socket } from 'socket.io-client';
-let socket: Socket | null = null;
-import { Environment } from '@react-three/drei';
-import { EffectComposer, Bloom, SSAO, SMAA, Vignette, ToneMapping } from '@react-three/postprocessing';
-import { BlendFunction } from 'postprocessing';
-import gsap from 'gsap';
-
-import { 
-  StabilityProvider, 
-  RenderErrorBoundary, 
-  StabilityDebugHUD, 
-  StabilityMonitorR3F, 
-  useStability,
-  useWatchdog
-} from '../../engine/stability/StabilityEngine';
 
 interface Props { onClose: () => void }
 
-export type Color = 'red' | 'blue' | 'green' | 'yellow';
-export type Token = { id: string; color: Color; pos: number; home: boolean; finished: boolean };
-export type PlayerType = 'human' | 'ai' | 'online' | 'disabled';
+type Color = 'red' | 'blue' | 'green' | 'yellow';
+type Token = { id: string; color: Color; pos: number; home: boolean; finished: boolean };
+type PlayerType = 'human' | 'ai' | 'online' | 'disabled';
 
 const COLORS: Color[] = ['red', 'blue', 'green', 'yellow'];
 const COLOR_HEX: Record<Color, string> = { red: '#F44336', blue: '#2196F3', green: '#4CAF50', yellow: '#FFD700' };
 
 // START_POS: Red: 0, Blue: 13, Green: 26, Yellow: 39
 const START_POS: Record<Color, number> = { red: 0, blue: 13, green: 26, yellow: 39 };
-export const SAFE_SQUARES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+const SAFE_SQUARES = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
 
 // 52 track cell coordinates [row, col] clockwise starting from red start [6, 1]
-export const TRACK_COORDS: [number, number][] = [
+const TRACK_COORDS: [number, number][] = [
   [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
   [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
   [0, 7],
@@ -74,7 +55,7 @@ function getYardCellCoords(color: Color, tokenId: string): [number, number] {
 }
 
 // Returns the 57-step path of cell coordinates [row, col] for a player color
-export function getPathForColor(color: Color): [number, number][] {
+function getPathForColor(color: Color): [number, number][] {
   const path: [number, number][] = [];
   const startIdx = START_POS[color];
   // 51 cells on the main loop
@@ -191,90 +172,38 @@ class ParticleSystemManager {
 const particleMgr = new ParticleSystemManager();
 
 export function LudoGame({ onClose }: Props) {
-  const [phase, setPhase] = useState<'idle' | 'playing' | 'victory-cinematic' | 'done'>('idle');
+  const [phase, setPhase] = useState<'idle' | 'playing' | 'done'>('idle');
   const [tokens, setTokens] = useState<Token[]>(makeTokens());
   const [currentColor, setCurrentColor] = useState<Color>('red');
   const [dice, setDice] = useState(0);
   const [rolling, setRolling] = useState(false);
   const [movable, setMovable] = useState<string[]>([]);
   const [winner, setWinner] = useState<Color | null>(null);
-  const [cameraState, setCameraState] = useState<'idle' | 'roll' | 'capture' | 'home-push' | 'victory-impact' | 'victory-orbit'>('idle');
-
-  // V2 Phase 2 states
-  const [timeLeft, setTimeLeft] = useState(15);
-  const [photoMode, setPhotoMode] = useState(false);
-  const [emotes, setEmotes] = useState<{ color: Color; emoji: string; id: number }[]>([]);
-  const [replayLog, setReplayLog] = useState<string[]>([]);
-  const [isReplaying, setIsReplaying] = useState(false);
-  const emoteMenuOpen = useRef(false);
-
-  // Stability Engine Hooks
-  const [debugStats, setDebugStats] = useState(() => RecoveryCoordinator.getStats());
-  const [chaosCrash, setChaosCrash] = useState(false);
-
-  useEffect(() => {
-    return RecoveryCoordinator.subscribe(setDebugStats);
-  }, []);
-
-  // V2 Stats Loading
-  const [stats, setStats] = useState(() => {
-    try {
-      const stored = localStorage.getItem('ludo_v2_stats');
-      return stored ? JSON.parse(stored) : { played: 0, won: 0, captures: 0 };
-    } catch {
-      return { played: 0, won: 0, captures: 0 };
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('ludo_v2_stats', JSON.stringify(stats));
-  }, [stats]);
+  const [cameraState, setCameraState] = useState<'idle' | 'roll' | 'capture' | 'win'>('idle');
 
   // Player configuration types mapping
   const [playerConfig, setPlayerConfig] = useState<Record<Color, PlayerType>>({
     red: 'human',
     blue: 'ai',
     green: 'ai',
-    yellow: 'human'
+    yellow: 'ai'
   });
 
   const [matchmaking, setMatchmaking] = useState(false);
   const [lobbyStatus, setLobbyStatus] = useState('');
-  const [joinRoomId, setJoinRoomId] = useState('');
-  const [onlineRoom, setOnlineRoom] = useState<string | null>(null);
-  const [onlinePlayers, setOnlinePlayers] = useState<any[]>([]);
-  
-  // AI Difficulty
-  const [botDifficulty, setBotDifficulty] = useState<BotDifficulty>('Medium');
 
   // Multi-theme support
   const [theme, setTheme] = useState<'classic' | 'marble' | 'neon'>('classic');
 
   const rollDice = useCallback(() => {
-    if (rolling || phase !== 'playing' || movable.length > 0 || isReplaying) return;
-    
-    // In online mode, we only allow rolling if it's our turn
-    if (onlineRoom) {
-      const myPlayer = onlinePlayers.find(p => p.id === socket?.id);
-      if (myPlayer && myPlayer.color !== currentColor) return; // Not our turn
-    }
-    
+    if (rolling || movable.length > 0) return;
     setRolling(true);
     setCameraState('roll');
-    
-    if (onlineRoom && socket) {
-      socket.emit('roll_dice');
-    }
-  }, [rolling, movable, onlineRoom, onlinePlayers, currentColor, phase, isReplaying]);
+  }, [rolling, movable]);
 
-  const finalizeRoll = useCallback((rolledVal: number) => {
+  const handleRollComplete = useCallback((rolledVal: number) => {
     setRolling(false);
     setDice(rolledVal);
-    
-    if (!isReplaying) {
-      setReplayLog(prev => [...prev, `ROLL:${currentColor}:${rolledVal}`]);
-    }
-
     playTone(400 + rolledVal * 40, 0.05, 'sine', 0.1);
     vibrate(20);
 
@@ -287,38 +216,7 @@ export function LudoGame({ onClose }: Props) {
       }
       return tks;
     });
-  }, [currentColor, isReplaying]);
-
-  useEffect(() => {
-    if (photoMode) {
-      gsap.globalTimeline.pause();
-    } else {
-      gsap.globalTimeline.play();
-    }
-  }, [photoMode]);
-
-  // Turn Timer Logic
-  useEffect(() => {
-    if (phase !== 'playing' || rolling || movable.length > 0 || isReplaying || photoMode) return;
-    
-    // Reset timer when it's our turn to roll
-    setTimeLeft(15);
-    
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          // Auto-pass/roll logic
-          if (playerConfig[currentColor] === 'human') {
-             rollDice();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [currentColor, phase, rolling, movable.length, isReplaying, photoMode]);
+  }, [currentColor]);
 
   const nextTurn = useCallback((advance: boolean) => {
     if (advance) {
@@ -342,12 +240,7 @@ export function LudoGame({ onClose }: Props) {
   }, [playerConfig]);
 
   const handleTokenClick = useCallback((tokenId: string) => {
-    if (!movable.includes(tokenId) || isReplaying) return;
-
-    // Log for replay
-    if (!isReplaying) {
-      setReplayLog(prev => [...prev, `MOVE:${tokenId}:${dice}`]);
-    }
+    if (!movable.includes(tokenId)) return;
 
     setTokens(prev => {
       let isCapture = false;
@@ -358,16 +251,12 @@ export function LudoGame({ onClose }: Props) {
         if (t.id !== tokenId) return t;
         if (moved.finished) {
           const finishedCount = prev.filter(tk => tk.color === t.color && tk.finished).length + 1;
-          
-          if (finishedCount === 3) {
-            setCameraState('home-push');
-            setTimeout(() => setCameraState('idle'), 2500);
-          } else if (finishedCount >= 4) {
+          if (finishedCount >= 4) {
             setWinner(t.color);
-            setStats((s: any) => ({ ...s, played: s.played + 1, won: s.won + 1 }));
-            setCameraState('victory-impact');
-            setTimeout(() => setCameraState('victory-orbit'), 500);
-            setTimeout(() => setPhase('victory-cinematic'), 3500);
+            setPhase('done');
+            setCameraState('win');
+            toast.success(`🏆 ${t.color.toUpperCase()} wins!`);
+            particleMgr.spawn(0, 0.5, 0, '#ffe066', 100);
           }
         }
         return moved;
@@ -392,7 +281,6 @@ export function LudoGame({ onClose }: Props) {
               isCapture = true;
               opp.pos = -1;
               opp.home = true;
-              setStats((s: any) => ({ ...s, captures: s.captures + 1 }));
               toast.success(`💥 ${moved.color.toUpperCase()} captured ${opp.color.toUpperCase()}!`);
             }
           });
@@ -415,65 +303,17 @@ export function LudoGame({ onClose }: Props) {
     vibrate(15);
     setMovable([]);
     nextTurn(dice !== 6);
+  }, [movable, dice, nextTurn]);
 
-    // If online, broadcast the move to other players
-    if (onlineRoom && socket) {
-      const myPlayer = onlinePlayers.find(p => p.id === socket?.id);
-      // Ensure we only emit if WE were the ones making the move locally for our color
-      if (myPlayer && myPlayer.color === moved.color) {
-        socket.emit('move_token', { tokenId });
-      }
-    }
-  }, [movable, dice, nextTurn, onlineRoom, onlinePlayers, isReplaying]);
-
-  // Socket event listeners
+  // Turn Autoplay Engine (AI / Online / Simulated)
   useEffect(() => {
-    if (!socket) {
-      socket = io('http://localhost:3001');
-    }
-
-    socket.on('player_joined', (players) => {
-      setOnlinePlayers(players);
-      setLobbyStatus(`Players: ${players.length}/4`);
-      if (players.length >= 2) {
-        // Auto-start for now when 2 people join
-        toast.success('Ready to start!');
-      }
-    });
-
-    socket.on('dice_rolled', (data) => {
-      if (data.playerId !== socket?.id) {
-        // Opponent rolled!
-        setRolling(true);
-        setCameraState('roll');
-        setTimeout(() => finalizeRoll(data.rolledVal), 1000); // simulate the tray roll delay
-      }
-    });
-
-    socket.on('token_moved', (data) => {
-      if (data.playerId !== socket?.id) {
-        // Opponent moved
-        handleTokenClick(data.tokenId);
-      }
-    });
-
-    return () => {
-      socket?.off('player_joined');
-      socket?.off('dice_rolled');
-      socket?.off('token_moved');
-    };
-  }, [finalizeRoll, handleTokenClick]);
-
-  // Turn Autoplay Engine (AI / Simulated)
-  useEffect(() => {
-    if (phase !== 'playing' || rolling || movable.length > 0 || isReplaying) return;
+    if (phase !== 'playing' || rolling || movable.length > 0) return;
     
     const currentPlayerType = playerConfig[currentColor];
-    // Do not auto-roll for humans or online players (since online players will broadcast their roll)
-    if (currentPlayerType === 'human' || currentPlayerType === 'disabled' || currentPlayerType === 'online') return;
+    if (currentPlayerType === 'human' || currentPlayerType === 'disabled') return;
 
-    // AI player rolls
-    const rollDelay = 1000;
+    // AI or Online player rolls
+    const rollDelay = currentPlayerType === 'online' ? 1200 + Math.random() * 800 : 1000;
     const timer = setTimeout(() => {
       rollDice();
       
@@ -485,28 +325,66 @@ export function LudoGame({ onClose }: Props) {
     }, rollDelay);
 
     return () => clearTimeout(timer);
-  }, [currentColor, rolling, movable, phase, rollDice, playerConfig, isReplaying]);
+  }, [currentColor, rolling, movable, phase, rollDice, playerConfig]);
 
   useEffect(() => {
-    if (phase !== 'playing' || movable.length === 0 || isReplaying) return;
+    if (phase !== 'playing' || movable.length === 0) return;
     
     const currentPlayerType = playerConfig[currentColor];
-    // Do not auto-move for humans or online players (they will broadcast their move)
-    if (currentPlayerType === 'human' || currentPlayerType === 'disabled' || currentPlayerType === 'online') return;
+    if (currentPlayerType === 'human' || currentPlayerType === 'disabled') return;
 
-    // AI player moves token
-    const moveDelay = 800;
+    // AI or Online player moves token
+    const moveDelay = currentPlayerType === 'online' ? 900 + Math.random() * 600 : 800;
     const timer = setTimeout(() => {
-      const selectedTokenId = LudoBot.evaluateBestMove(movable, dice, tokens, botDifficulty);
+      // Smart AI selection algorithm:
+      // Priority: 1. enter home base, 2. capture opponent, 3. get out of yard, 4. advance closest to home
+      let selectedTokenId = movable[0];
+      let bestWeight = -1;
+
+      movable.forEach(tid => {
+        const token = tokens.find(t => t.id === tid);
+        if (!token) return;
+        let weight = 0;
+        
+        // 1. Entering home
+        const newPos = token.pos + dice;
+        if (newPos === 56) weight = 100;
+        
+        // 2. Capturing opponent
+        const path = getPathForColor(token.color);
+        const targetCell = path[newPos];
+        if (targetCell && !SAFE_SQUARES.has(TRACK_COORDS.findIndex(c => c[0] === targetCell[0] && c[1] === targetCell[1]))) {
+          const opponents = tokens.filter(other => other.color !== token.color && !other.home && !other.finished);
+          const hasOpponent = opponents.some(opp => {
+            const oppPath = getPathForColor(opp.color);
+            const oppCell = oppPath[opp.pos];
+            return oppCell && oppCell[0] === targetCell[0] && oppCell[1] === targetCell[1];
+          });
+          if (hasOpponent) weight = 90;
+        }
+
+        // 3. Getting out of yard
+        if (token.home && dice === 6) weight = 80;
+        
+        // 4. Default advancement priority (closest to home gets slightly higher preference)
+        if (weight === 0) {
+          weight = 10 + token.pos;
+        }
+        
+        if (weight > bestWeight) {
+          bestWeight = weight;
+          selectedTokenId = tid;
+        }
+      });
+
       handleTokenClick(selectedTokenId);
     }, moveDelay);
 
     return () => clearTimeout(timer);
-  }, [movable, currentColor, phase, handleTokenClick, playerConfig, tokens, dice, botDifficulty, isReplaying]);
+  }, [movable, currentColor, phase, handleTokenClick, playerConfig, tokens, dice]);
 
   // Mode Selection Triggers
-  const startVS_AI = (diff: BotDifficulty) => {
-    setBotDifficulty(diff);
+  const startVS_AI = () => {
     setPlayerConfig({
       red: 'human',
       blue: 'ai',
@@ -526,48 +404,27 @@ export function LudoGame({ onClose }: Props) {
     startGame();
   };
 
-  const createRoom = () => {
-    if (socket) {
-      setMatchmaking(true);
-      setLobbyStatus('Creating room...');
-      socket.emit('create_room', { name: 'Player 1' }, (response: any) => {
-        setOnlineRoom(response.roomId);
-        setLobbyStatus(`Room Created! ID: ${response.roomId}`);
-      });
-    }
-  };
-
-  const joinRoom = () => {
-    if (socket && joinRoomId) {
-      setMatchmaking(true);
-      setLobbyStatus('Joining room...');
-      socket.emit('join_room', { roomId: joinRoomId, name: 'Player' }, (response: any) => {
-        if (response.error) {
-          toast.error(response.error);
-          setMatchmaking(false);
-          setLobbyStatus('');
-        } else {
-          setOnlineRoom(response.roomId);
-          setLobbyStatus('Joined room! Waiting for host...');
-        }
-      });
-    }
-  };
-
-  const startOnlineGame = () => {
-    if (!onlineRoom) return;
+  const startOnlineMultiplayer = () => {
+    setMatchmaking(true);
+    setLobbyStatus('Searching for live opponents...');
+    setMatchmaking(true);
+    setLobbyStatus('Searching active players pool...');
     
-    // We map the active online players to 'human' for our local color, 'online' for others, and 'disabled' for empty
-    const newConfig: Record<Color, PlayerType> = { red: 'disabled', blue: 'disabled', green: 'disabled', yellow: 'disabled' };
-    
-    onlinePlayers.forEach(p => {
-      newConfig[p.color as Color] = p.id === socket?.id ? 'human' : 'online';
-    });
-
-    setPlayerConfig(newConfig);
-    setMatchmaking(false);
-    startGame();
-    toast.success('Online match started!');
+    // Simulate matchmaking lobby pairings randomly
+    setTimeout(() => setLobbyStatus(`Matching: ${['Anya', 'Raj', 'Priya'][Math.floor(Math.random()*3)]} joined...`), 800);
+    setTimeout(() => setLobbyStatus(`Matching: ${['Lucas', 'Max', 'Zoe'][Math.floor(Math.random()*3)]} joined...`), 1600);
+    setTimeout(() => setLobbyStatus(`Matching: ${['Dheeraj', 'Mia', 'Kai'][Math.floor(Math.random()*3)]} joined...`), 2400);
+    setTimeout(() => {
+      setPlayerConfig({
+        red: 'human',
+        blue: 'online',
+        green: 'online',
+        yellow: 'online'
+      });
+      setMatchmaking(false);
+      startGame();
+      toast.success('Room connected! Game starting...');
+    }, 3200);
   };
 
   const startGame = () => {
@@ -579,19 +436,10 @@ export function LudoGame({ onClose }: Props) {
     setWinner(null);
     setPhase('playing');
     setCameraState('idle');
-    setReplayLog([]);
-    setIsReplaying(false);
-  };
-
-  const resetGame = () => {
-    setPhase('idle');
-    setReplayLog([]);
-    setIsReplaying(false);
   };
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 min-h-screen relative select-none" style={{ background: 'linear-gradient(135deg,#0a1224 0%,#20325d 100%)' }}>
-      <StabilityDebugHUD />
       {/* Top HUD */}
       <div className="flex justify-between items-center w-full max-w-4xl px-4 mt-2">
         <span className="text-white text-xl font-bold tracking-wider">🎲 LUDO KING 3D</span>
@@ -636,56 +484,19 @@ export function LudoGame({ onClose }: Props) {
       {/* 3D Scene viewport */}
       <div className="relative w-full max-w-2xl aspect-square bg-slate-950/80 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
         {phase !== 'idle' ? (
-          <StabilityProvider>
-            <RenderErrorBoundary onRecover={() => setPhase('idle')}>
-              <CanvasWrapper 
-                tokens={tokens}
-                movable={movable}
-                rolling={rolling}
-                theme={theme}
-                cameraState={cameraState}
-                activeColor={currentColor}
-                playerConfig={playerConfig}
-                postProcess={debugStats.currentQuality === 'Ultra' || debugStats.currentQuality === 'High'}
-                onRollComplete={finalizeRoll}
-                onTokenClick={handleTokenClick}
-              />
-            </Canvas>
-          </LayerA_ErrorBoundary>
-
-        {/* Debug HUD Overlay */}
-        <div className="absolute top-4 right-4 z-40 bg-black/80 p-3 rounded-lg border border-red-500/30 text-xs text-white max-w-xs font-mono">
-          <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-1">
-            <span className="text-red-400 font-bold">Stability Engine v2</span>
-            <span className="bg-white/10 px-1 rounded text-white/50">{debugStats.currentQuality} Tier</span>
-          </div>
-          <div className="flex gap-4 mb-2 opacity-70">
-            <div>
-              <div className="text-white/40">Total</div>
-              <div>{debugStats.total}</div>
-            </div>
-            <div>
-              <div className="text-white/40">Layer A</div>
-              <div>{debugStats.breakdown['Layer A']}</div>
-            </div>
-          </div>
-          {debugStats.recent.length > 0 && (
-            <div className="border-t border-white/10 pt-1 mt-1 opacity-50">
-              <div className="text-[10px] text-white/40">Recent Log:</div>
-              {debugStats.recent.map((r: any, i: number) => (
-                <div key={i} className="truncate">T{r.severity} - {r.failureMode}</div>
-              ))}
-            </div>
-          )}
-          <button 
-            onClick={() => {
-              ChaosTestRunner.runLayerATest(() => setChaosCrash(true));
-            }}
-            className="w-full mt-2 py-1 bg-red-900/50 hover:bg-red-800 text-red-200 rounded border border-red-500/30 transition-colors"
-          >
-            🧪 Inject Layer A Fault
-          </button>
-        </div>
+          <Canvas shadows>
+            <SceneContent
+              tokens={tokens}
+              movable={movable}
+              rolling={rolling}
+              theme={theme}
+              cameraState={cameraState}
+              activeColor={currentColor}
+              playerConfig={playerConfig}
+              onRollComplete={handleRollComplete}
+              onTokenClick={handleTokenClick}
+            />
+          </Canvas>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-sm px-6">
             {!matchmaking ? (
@@ -694,64 +505,18 @@ export function LudoGame({ onClose }: Props) {
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 0.7 }} className="text-white/70 text-sm mb-6 text-center max-w-md">Experience classic Ludo board game in hyper-realistic 3D space with rigid body dice rolling and jewel-like game tokens.</motion.p>
                 
                 <div className="flex flex-col gap-3 w-full max-w-xs">
-                  {!isReplaying && (
-                    <button
-                      onClick={() => {
-                         setIsReplaying(true);
-                         setPhase('playing');
-                         toast.info("Replay started!");
-                      }}
-                      className="w-full py-4 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-500 transition-all shadow-lg active:scale-95 text-lg"
-                    >
-                      Watch Replay
-                    </button>
-                  )}
-                  <button
-                    onClick={resetGame}
-                    className="w-full py-4 bg-gradient-to-r from-[#ffe066] to-[#f5b041] text-[#1a1f2e] font-bold rounded-xl hover:from-white hover:to-[#ffe066] transition-all shadow-lg active:scale-95 text-lg"
-                  >
-                    Play Again
-                  </button>
-
-                  <div className="flex flex-col gap-1 bg-white/5 p-2 rounded-xl border border-white/10">
-                    <span className="text-white/50 text-xs text-center mb-1 font-bold tracking-wider">SINGLE PLAYER</span>
-                    <Button variant="neon" size="sm" onClick={() => startVS_AI('Easy')} className="w-full">🤖 vs AI (Easy)</Button>
-                    <Button variant="neon" size="sm" onClick={() => startVS_AI('Medium')} className="w-full">🤖 vs AI (Medium)</Button>
-                    <Button variant="neon" size="sm" onClick={() => startVS_AI('Hard')} className="w-full border-red-500/50 text-red-100">🤖 vs AI (Hard)</Button>
+                  <Button variant="neon" size="lg" onClick={startVS_AI} className="w-full">
+                    🤖 vs AI Mode (Single Player)
+                  </Button>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(2)}>👥 Pass & Play (2P)</Button>
+                    <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(4)}>👥 Pass & Play (4P)</Button>
                   </div>
 
-                  <div className="absolute top-4 left-4 z-40 bg-black/60 p-4 rounded-xl backdrop-blur-md border border-white/10 shadow-2xl">
-                    <span className="text-white/50 text-xs text-center mb-1 font-bold tracking-wider">LOCAL MULTIPLAYER</span>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(2)}>2P</Button>
-                      <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(4)}>4P</Button>
-                    </div>
-                  </div>
-
-                  {!onlineRoom ? (
-                    <>
-                      <Button variant="neon" size="lg" className="w-full border-cyan-400/40 mt-2" onClick={createRoom}>
-                        ➕ Create Online Room
-                      </Button>
-                      <div className="flex gap-2 mt-2">
-                        <input
-                          type="text"
-                          placeholder="Room ID"
-                          value={joinRoomId}
-                          onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
-                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-white uppercase text-center"
-                          maxLength={6}
-                        />
-                        <Button variant="ghost" onClick={joinRoom} className="bg-white/10 text-white border border-white/20">Join</Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col gap-2 mt-4 bg-cyan-900/30 p-4 rounded-xl border border-cyan-500/30">
-                      <span className="text-cyan-400 font-bold text-center">Room: {onlineRoom}</span>
-                      <span className="text-white/70 text-sm text-center mb-2">{onlinePlayers.length}/4 Players Joined</span>
-                      <Button variant="neon" size="lg" onClick={startOnlineGame}>Start Match</Button>
-                    </div>
-                  )}
+                  <Button variant="neon" size="lg" className="w-full border-cyan-400/40" onClick={startOnlineMultiplayer}>
+                    🌐 Online Multiplayer Mode
+                  </Button>
                 </div>
               </>
             ) : (
@@ -821,38 +586,15 @@ export function LudoGame({ onClose }: Props) {
   );
 }
 
-// Wrapper component to consume Stability context
-function CanvasWrapper(props: any) {
-  const { dpr, shadows, postProcess } = useStability();
-  
-  return (
-    <Canvas shadows={shadows} dpr={dpr} gl={{ antialias: false, toneMappingExposure: 1.2 }}>
-      <StabilityMonitorR3F />
-      <WatchdogWrapper />
-      <SceneContent {...props} postProcess={postProcess} />
-    </Canvas>
-  );
-}
-
-function WatchdogWrapper() {
-  const stalled = useWatchdog(2000);
-  if (stalled) {
-    // If the watchdog triggered, we force a hard crash to be caught by RenderErrorBoundary.
-    throw new Error('Stability Engine Watchdog triggered due to stalled render loop.');
-  }
-  return null;
-}
-
 // Scene Content with R3F hooks
 interface SceneProps {
   tokens: Token[];
   movable: string[];
   rolling: boolean;
   theme: 'classic' | 'marble' | 'neon';
-  cameraState: 'idle' | 'roll' | 'capture' | 'home-push' | 'victory-impact' | 'victory-orbit';
+  cameraState: 'idle' | 'roll' | 'capture' | 'win';
   activeColor: Color;
   playerConfig: Record<Color, PlayerType>;
-  postProcess: boolean;
   onRollComplete: (val: number) => void;
   onTokenClick: (id: string) => void;
 }
@@ -865,7 +607,6 @@ function SceneContent({
   cameraState,
   activeColor,
   playerConfig,
-  postProcess,
   onRollComplete,
   onTokenClick
 }: SceneProps) {
@@ -948,34 +689,24 @@ function SceneContent({
       <color attach="background" args={theme === 'neon' ? ['#050812'] : ['#0a0f1d']} />
       
       {/* Lighting setup */}
-      <Environment preset="studio" blur={0.5} />
-      <ambientLight intensity={theme === 'neon' ? 0.2 : 0.4} />
+      <ambientLight intensity={theme === 'neon' ? 0.3 : 0.6} />
       <directionalLight
         position={[4, 10, 3]}
-        intensity={2.0}
-        color="#fffae6"
+        intensity={1.2}
         castShadow
-        shadow-bias={-0.0005}
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
       />
-      {/* Fill Light */}
-      <directionalLight position={[-4, 5, -4]} intensity={0.5} color="#e6f2ff" />
-      {/* Rim Light */}
-      <spotLight position={[0, 5, -8]} intensity={4.0} angle={Math.PI / 3} penumbra={1} color="#ffffff" castShadow={false} />
+      <pointLight position={[-4, 5, -4]} intensity={0.5} />
       
       {/* OrbitControls - Enabled only in idle */}
       <OrbitControls
-        makeDefault
-        enabled={cameraState === 'idle' || photoMode}
-        enablePan={photoMode}
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 2.2}
-        minDistance={photoMode ? 2 : 6}
-        maxDistance={photoMode ? 20 : 12}
+        enableDamping
+        maxPolarAngle={Math.PI / 2.1}
+        minDistance={3.5}
+        maxDistance={12}
       />
-      
-      <CameraRig state={cameraState} photoMode={photoMode} />
+
       <PhysicsDiceTray rolling={rolling} onRollComplete={onRollComplete} theme={theme} />
 
       <Board3D theme={theme} />
@@ -1013,17 +744,6 @@ function SceneContent({
           depthWrite={false}
         />
       </points>
-
-      {/* Post Processing Pipeline */}
-      {postProcess && (
-        <EffectComposer disableNormalPass>
-          <SMAA />
-          <SSAO samples={11} radius={0.1} intensity={20} luminanceInfluence={0.6} color="black" />
-          <Bloom luminanceThreshold={1.2} mipmapBlur intensity={1.5} />
-          <ToneMapping />
-          {theme !== 'neon' && <Vignette eskil={false} offset={0.1} darkness={0.8} />}
-        </EffectComposer>
-      )}
     </>
   );
 }
@@ -1033,35 +753,6 @@ interface PhysicsDiceTrayProps {
   rolling: boolean;
   onRollComplete: (val: number) => void;
   theme: 'classic' | 'marble' | 'neon';
-}
-
-// Camera Rig for cinematic transitions
-function CameraRig({ state, photoMode }: { state: SceneProps['cameraState'], photoMode?: boolean }) {
-  useFrame((ctx) => {
-    if (photoMode) return; // Yield completely to orbit controls
-    let targetPos = new THREE.Vector3(0, 8, 4);
-    let targetLook = new THREE.Vector3(0, 0, 0);
-
-    if (state === 'roll') {
-      targetPos.set(0, 6, -3);
-      targetLook.set(0, 0, -5);
-    } else if (state === 'capture') {
-      targetPos.set(0, 6, 2);
-    } else if (state === 'home-push') {
-      targetPos.set(0, 6.8, 3.4); // 15% push in
-    } else if (state === 'victory-impact') {
-      targetPos.set(0, 5, 2); // get close for impact
-    } else if (state === 'victory-orbit') {
-      const t = ctx.clock.getElapsedTime();
-      targetPos.set(Math.sin(t * 0.5) * 8, 5, Math.cos(t * 0.5) * 8);
-    }
-
-    if (state !== 'idle') {
-      ctx.camera.position.lerp(targetPos, 0.05);
-      ctx.camera.lookAt(targetLook);
-    }
-  });
-  return null;
 }
 
 function PhysicsDiceTray({ rolling, onRollComplete, theme }: PhysicsDiceTrayProps) {
@@ -1091,8 +782,7 @@ function PhysicsDiceTray({ rolling, onRollComplete, theme }: PhysicsDiceTrayProp
     const diceBody = new CANNON.Body({
       mass: 1.5,
       shape: new CANNON.Box(new CANNON.Vec3(0.12, 0.12, 0.12)),
-      position: new CANNON.Vec3(0, 1.2, -4.8),
-      material: new CANNON.Material({ friction: 0.3, restitution: 0.6 })
+      position: new CANNON.Vec3(0, 1.2, -4.8)
     });
     pWorld.addBody(diceBody);
 
@@ -1106,18 +796,14 @@ function PhysicsDiceTray({ rolling, onRollComplete, theme }: PhysicsDiceTrayProp
       rollInProgress.current = true;
       settleFrames.current = 0;
       
-      // Reset position to drop
-      body.position.set(0, 2.5, -4.8);
-      
-      // Randomize initial angular velocity, but bias it based on the outcome we want
-      // For now, we will do a highly chaotic throw and rely on the physical engine
-      body.velocity.set((Math.random() - 0.5) * 5, 2, (Math.random() - 0.5) * 5);
-      body.angularVelocity.set(Math.random() * 20, Math.random() * 20, Math.random() * 20);
-      
-      // Clear visual rotation
-      if (meshRef.current) {
-        meshRef.current.rotation.set(0,0,0);
-      }
+      // Initial spin impulses
+      body.position.set(0, 1.6, -4.8);
+      body.velocity.set((Math.random() - 0.5) * 2, -4.0, (Math.random() - 0.5) * 2);
+      body.angularVelocity.set(
+        10 + Math.random() * 20,
+        10 + Math.random() * 20,
+        10 + Math.random() * 20
+      );
     }
   }, [rolling, body]);
 
@@ -1129,6 +815,17 @@ function PhysicsDiceTray({ rolling, onRollComplete, theme }: PhysicsDiceTrayProp
       meshRef.current.quaternion.copy(body.quaternion as any);
 
       // Check velocity thresholds for settle detection
+      const vel = body.velocity;
+      const ang = body.angularVelocity;
+      if (vel.length() < 0.01 && ang.length() < 0.01) {
+        settleFrames.current++;
+        if (settleFrames.current > 30) {
+          rollInProgress.current = false;
+          
+          // Determine resulting face orientation
+          const localFaces = [
+            { value: 1, vec: new THREE.Vector3(0, 1, 0) },
+            { value: 6, vec: new THREE.Vector3(0, -1, 0) },
             { value: 3, vec: new THREE.Vector3(1, 0, 0) },
             { value: 4, vec: new THREE.Vector3(-1, 0, 0) },
             { value: 2, vec: new THREE.Vector3(0, 0, 1) },
@@ -1268,25 +965,22 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
   return (
     <group>
       {/* Outer Wooden/Lacquer Rim */}
-      <mesh receiveShadow castShadow position={[0, -0.04, 0]}>
+      <mesh receiveShadow position={[0, -0.04, 0]}>
         <boxGeometry args={[7.7, 0.1, 7.7]} />
-        <meshPhysicalMaterial
+        <meshStandardMaterial
           color={isNeon ? '#060914' : isMarble ? '#3e2723' : '#4e2f1d'}
           roughness={isMarble ? 0.05 : 0.4}
           metalness={isNeon ? 0.4 : 0.0}
-          clearcoat={isNeon ? 0.0 : 1.0}
-          clearcoatRoughness={0.2}
         />
       </mesh>
 
       {/* Main Board Base Plate */}
       <mesh receiveShadow position={[0, 0.01, 0]}>
         <boxGeometry args={[7.5, 0.01, 7.5]} />
-        <meshPhysicalMaterial
+        <meshStandardMaterial
           color={isNeon ? '#0f172a' : isMarble ? '#f5f5f5' : '#ffffff'}
           roughness={isMarble ? 0.02 : 0.25}
           metalness={isNeon ? 0.15 : 0.0}
-          clearcoat={0.5}
         />
       </mesh>
 
@@ -1469,120 +1163,53 @@ function Token3D({ token, tokens, movable, onClick }: Token3DProps) {
         ease: 'power1.inOut'
       }, 0);
     } else if (pos > prevPosRef.current) {
-      if (pos === 56) {
-        // V2 Phase 1: Home Entry Sequence
-        const finishedCount = tokens.filter(t => t.color === color && t.finished).length;
-        const targetCell = path[56];
-        const targetX = (targetCell[1] - 7) * 0.5;
-        const targetZ = (targetCell[0] - 7) * 0.5;
+      // Sequential hopping timelines
+      const start = prevPosRef.current === -1 ? 0 : prevPosRef.current;
+      for (let i = start + 1; i <= pos; i++) {
+        const cell = path[i];
+        if (!cell) continue;
+        const targetX = (cell[1] - 7) * 0.5;
+        const targetZ = (cell[0] - 7) * 0.5;
 
-        if (finishedCount === 4) {
-          // Tier 3: Grand Victory
-          // Beat 1: Impact Freeze
-          timeline.to(groupRef.current.position, {
-            x: targetX,
-            z: targetZ,
-            duration: 0.8,
-            ease: 'power3.out'
-          });
-          timeline.to(groupRef.current.position, {
-            y: 0.8,
-            duration: 0.4,
-            yoyo: true,
-            repeat: 1,
-            ease: 'power1.inOut'
-          }, 0);
-          
-          // Time Dilation effect using GSAP timescale
-          timeline.to(timeline, { timeScale: 0.1, duration: 0.1 }, 0.7);
-          timeline.to(timeline, { timeScale: 1.0, duration: 0.1 }, 1.2); // Restore speed
-          
-          timeline.call(() => {
-             // Beat 3: Celebration Confetti (simulated via particleMgr)
-             particleMgr.spawn(targetX, 1, targetZ, COLOR_HEX[color], 200);
-             particleMgr.spawn(0, 4, 0, '#ffffff', 300);
-          }, undefined, 1.2);
-          
-        } else {
-          // Tier 1 & 2
-          const duration = finishedCount === 3 ? 1.5 : 1.2;
-          
-          timeline.to(groupRef.current.position, {
-            x: targetX,
-            z: targetZ,
-            duration: duration * 0.6,
-            ease: 'power2.out'
-          });
-          // Arc
-          timeline.to(groupRef.current.position, {
-            y: 0.7,
-            duration: duration * 0.3,
-            yoyo: true,
-            repeat: 1,
-            ease: 'power1.inOut'
-          }, 0);
-          
-          // Landing Flare & Settle Bounce
-          timeline.call(() => {
-             particleMgr.spawn(targetX, 0.1, targetZ, COLOR_HEX[color], finishedCount === 3 ? 80 : 40);
-             // Simulated audio chime could be called here
-          }, undefined, duration * 0.6);
-          
-          // Squash and stretch (3 oscillations)
-          timeline.to(groupRef.current.scale, { y: 0.6, x: 1.3, z: 1.3, duration: 0.1, ease: 'power1.out' });
-          timeline.to(groupRef.current.scale, { y: 1.2, x: 0.8, z: 0.8, duration: 0.15, ease: 'power1.inOut' });
-          timeline.to(groupRef.current.scale, { y: 0.8, x: 1.1, z: 1.1, duration: 0.1, ease: 'power1.inOut' });
-          timeline.to(groupRef.current.scale, { y: 1.0, x: 1.0, z: 1.0, duration: 0.1, ease: 'power2.out' });
-        }
-      } else {
-        // Sequential hopping timelines
-        const start = prevPosRef.current === -1 ? 0 : prevPosRef.current;
-        for (let i = start + 1; i <= pos; i++) {
-          const cell = path[i];
-          if (!cell) continue;
-          const targetX = (cell[1] - 7) * 0.5;
-          const targetZ = (cell[0] - 7) * 0.5;
+        // Linear interpolation to next cell
+        timeline.to(groupRef.current.position, {
+          x: targetX,
+          z: targetZ,
+          duration: 0.26,
+          ease: 'power1.out'
+        });
 
-          // Linear interpolation to next cell
-          timeline.to(groupRef.current.position, {
-            x: targetX,
-            z: targetZ,
-            duration: 0.26,
-            ease: 'power1.out'
-          });
+        // Vertical hopping curve
+        timeline.to(groupRef.current.position, {
+          y: 0.5,
+          duration: 0.13,
+          yoyo: true,
+          repeat: 1,
+          ease: 'power1.inOut'
+        }, '-=0.26');
 
-          // Vertical hopping curve
-          timeline.to(groupRef.current.position, {
-            y: 0.5,
-            duration: 0.13,
-            yoyo: true,
-            repeat: 1,
-            ease: 'power1.inOut'
-          }, '-=0.26');
-
-          // Dynamic Squash & Stretch
-          timeline.to(groupRef.current.scale, {
-            y: 1.3,
-            x: 0.85,
-            z: 0.85,
-            duration: 0.08,
-            ease: 'power1.out'
-          }, '-=0.26');
-          timeline.to(groupRef.current.scale, {
-            y: 0.7,
-            x: 1.15,
-            z: 1.15,
-            duration: 0.08,
-            ease: 'power1.in'
-          }, '-=0.18');
-          timeline.to(groupRef.current.scale, {
-            y: 1.0,
-            x: 1.0,
-            z: 1.0,
-            duration: 0.1,
-            ease: 'power2.out'
-          }, '-=0.1');
-        }
+        // Dynamic Squash & Stretch
+        timeline.to(groupRef.current.scale, {
+          y: 1.3,
+          x: 0.85,
+          z: 0.85,
+          duration: 0.08,
+          ease: 'power1.out'
+        }, '-=0.26');
+        timeline.to(groupRef.current.scale, {
+          y: 0.7,
+          x: 1.15,
+          z: 1.15,
+          duration: 0.08,
+          ease: 'power1.in'
+        }, '-=0.18');
+        timeline.to(groupRef.current.scale, {
+          y: 1.0,
+          x: 1.0,
+          z: 1.0,
+          duration: 0.1,
+          ease: 'power2.out'
+        }, '-=0.1');
       }
     } else {
       // Captured: high trajectory back to yard
@@ -1635,42 +1262,42 @@ function Token3D({ token, tokens, movable, onClick }: Token3DProps) {
       )}
 
       {/* Pawn Geometry base structure */}
-      <mesh castShadow receiveShadow position={[0, 0.05, 0]}>
-        <cylinderGeometry args={[0.11, 0.16, 0.08, 32]} />
+      <mesh castShadow position={[0, 0.05, 0]}>
+        <cylinderGeometry args={[0.11, 0.16, 0.08, 16]} />
         <meshPhysicalMaterial
           color={COLOR_HEX[color]}
-          roughness={0.12}
-          metalness={0.0}
+          roughness={0.15}
+          metalness={0.1}
           clearcoat={1.0}
           clearcoatRoughness={0.1}
         />
       </mesh>
       {/* Pawn skirt */}
-      <mesh castShadow receiveShadow position={[0, 0.15, 0]}>
-        <cylinderGeometry args={[0.07, 0.11, 0.16, 32]} />
+      <mesh castShadow position={[0, 0.15, 0]}>
+        <cylinderGeometry args={[0.07, 0.11, 0.16, 16]} />
         <meshPhysicalMaterial
           color={COLOR_HEX[color]}
-          roughness={0.12}
-          metalness={0.0}
+          roughness={0.15}
+          metalness={0.1}
           clearcoat={1.0}
         />
       </mesh>
       {/* Pawn collar */}
-      <mesh castShadow receiveShadow position={[0, 0.23, 0]}>
-        <torusGeometry args={[0.065, 0.02, 16, 32]} />
+      <mesh castShadow position={[0, 0.23, 0]}>
+        <torusGeometry args={[0.065, 0.02, 8, 16]} />
         <meshPhysicalMaterial
           color={COLOR_HEX[color]}
-          roughness={0.12}
-          metalness={0.0}
+          roughness={0.15}
+          metalness={0.1}
         />
       </mesh>
       {/* Pawn Head Sphere */}
-      <mesh castShadow receiveShadow position={[0, 0.3, 0]}>
-        <sphereGeometry args={[0.09, 32, 32]} />
+      <mesh castShadow position={[0, 0.3, 0]}>
+        <sphereGeometry args={[0.09, 16, 16]} />
         <meshPhysicalMaterial
           color={COLOR_HEX[color]}
-          roughness={0.12}
-          metalness={0.0}
+          roughness={0.1}
+          metalness={0.15}
           clearcoat={1.0}
         />
       </mesh>

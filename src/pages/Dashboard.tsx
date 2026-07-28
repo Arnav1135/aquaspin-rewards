@@ -47,14 +47,14 @@ export function Dashboard() {
         
         {/* ── Top Glass Header ── */}
         <div className="px-6 py-6 flex justify-between items-center z-10 sticky top-0 backdrop-blur-md">
-          <button className="p-2 -ml-2 rounded-full text-[var(--c-navy-dark)]">
+          <button className="p-2 -ml-2 text-[var(--text-main)] transition-colors">
             <Menu size={24} />
           </button>
           <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white shadow-md overflow-hidden border-2 border-white">
              {profile?.avatar_url ? (
                <img src={profile.avatar_url} alt="User" className="w-full h-full object-cover" />
              ) : (
-               <User size={20} className="text-[var(--c-navy-dark)]" />
+               <User size={20} className="text-slate-800" />
              )}
           </div>
         </div>
@@ -138,8 +138,8 @@ export function Dashboard() {
 
           {/* ── Activities / Quick Actions ── */}
           <div className="mt-8 mb-6 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-[var(--c-navy-dark)]">Activities</h2>
-            <MoreHorizontal size={20} className="text-[var(--c-navy-dark)] opacity-40" />
+            <h2 className="text-lg font-bold text-[var(--text-heading)]">Activities</h2>
+            <MoreHorizontal size={20} className="text-[var(--text-main)] opacity-60" />
           </div>
 
           <div className="flex justify-between items-start px-2">
@@ -166,7 +166,7 @@ export function Dashboard() {
                       <Icon size={20} strokeWidth={2} style={{ color: '#FFFFFF' }} />
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-[var(--c-navy-dark)] opacity-80">{label}</span>
+                  <span className="text-xs font-semibold text-[var(--text-main)] opacity-90">{label}</span>
                 </Link>
               </motion.div>
             ))}

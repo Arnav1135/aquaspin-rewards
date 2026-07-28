@@ -189,7 +189,7 @@ export function Header() {
                           className="px-3 py-2 mb-1 border-b"
                           style={{ borderColor: 'rgba(247,108,108,0.20)', background: 'rgba(247,108,108,0.08)' }}
                         >
-                          <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                          <p className="text-xs font-medium text-white/90">
                             Guest Mode — Limited features
                           </p>
                         </div>
@@ -201,16 +201,7 @@ export function Header() {
                         <Link
                           key={to}
                           to={to}
-                          className="flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors duration-150"
-                          style={{ color: 'rgba(245,248,252,0.70)' }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.background = 'rgba(74,144,217,0.12)';
-                            (e.currentTarget as HTMLElement).style.color = '#FFFFFF';
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.background = 'transparent';
-                            (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.70)';
-                          }}
+                          className="flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors duration-150 text-white/80 hover:bg-white/10 hover:text-white"
                           onClick={() => setDropdownOpen(false)}
                         >
                           <Icon size={14} strokeWidth={2} />
@@ -219,16 +210,7 @@ export function Header() {
                       ))}
 
                       <button
-                        className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors duration-150"
-                        style={{ color: 'rgba(245,248,252,0.70)' }}
-                        onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(74,144,217,0.12)';
-                          (e.currentTarget as HTMLElement).style.color = '#FFFFFF';
-                        }}
-                        onMouseLeave={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.70)';
-                        }}
+                        className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors duration-150 text-white/80 hover:bg-white/10 hover:text-white"
                         onClick={() => { toggleSettings(); setDropdownOpen(false); }}
                       >
                         <Settings size={14} strokeWidth={2} />
@@ -238,16 +220,7 @@ export function Header() {
                       <hr style={{ borderColor: 'rgba(74,144,217,0.15)', margin: '4px 0' }} />
 
                       <button
-                        className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors duration-150"
-                        style={{ color: 'rgba(245,248,252,0.80)' }}
-                        onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(247,108,108,0.20)';
-                          (e.currentTarget as HTMLElement).style.color = '#FFFFFF';
-                        }}
-                        onMouseLeave={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.80)';
-                        }}
+                        className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors duration-150 text-white/80 hover:bg-red-500/20 hover:text-white"
                         onClick={() => { logout(); setDropdownOpen(false); }}
                       >
                         <LogOut size={14} strokeWidth={2} />

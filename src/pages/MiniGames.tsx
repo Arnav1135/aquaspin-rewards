@@ -64,12 +64,14 @@ const GAMES = [
     reward: 'Up to 10,000x+',difficulty: 'Hard',   color: '#66bdf2',
     desc: 'Cash out before the rocket crashes to secure your multiplier!',
     thumbnail: '/thumbnails/crash_premium.jpg',
+    thumbnailFit: 'contain',
   },
   {
     key: 'limbo',       title: 'Limbo',       emoji: '🚀',  category: 'Casino',
     reward: 'Up to 100,000x', difficulty: 'Medium', color: '#F97316',
     desc: 'Set your target multiplier and roll. High multiplier wins!',
     thumbnail: '/thumbnails/limbo_premium.jpg',
+    thumbnailFit: 'contain',
   },
   {
     key: 'roulette',    title: 'Roulette',    emoji: '🎡',  category: 'Casino',
@@ -138,12 +140,14 @@ const GAMES = [
     reward: '10–50 tokens',  difficulty: 'Easy',   color: '#66bdf2',
     desc: 'Click as fast as possible in 10 seconds! Earn tokens per click.',
     thumbnail: '/thumbnails/clicker_premium.jpg',
+    thumbnailFit: 'contain',
   },
   {
     key: 'tap',         title: 'Tap Challenge',emoji: '✨', category: 'Arcade',
     reward: '15–80 tokens',  difficulty: 'Hard',   color: '#c2e7fa',
     desc: 'Tap glowing targets before they vanish. Speed test!',
     thumbnail: '/thumbnails/tap_premium.jpg',
+    thumbnailFit: 'contain',
   },
   // === BOARD / PUZZLE ===
   {
@@ -188,6 +192,7 @@ const GAMES = [
     reward: 'High Score',    difficulty: 'Medium', color: '#66bdf2',
     desc: 'Rapid-fire maths challenges: Arithmetic, Algebra, Geometry!',
     thumbnail: '/thumbnails/mathsquiz.jpg',
+    thumbnailFit: 'contain',
   },
   {
     key: 'sudoku',      title: 'Sudoku',      emoji: '🔢',  category: 'Quiz',

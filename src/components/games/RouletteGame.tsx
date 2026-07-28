@@ -261,7 +261,8 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
       const targetX = -Math.sin(absoluteAngle) * targetRadius;
       const targetZ = -Math.cos(absoluteAngle) * targetRadius;
       
-      ballRef.current.position.lerp(new THREE.Vector3(targetX, 0.15, targetZ), 0.05);
+      // Increase lerp factor heavily so it tracks the pocket tightly, preventing snap on PAYOUT
+      ballRef.current.position.lerp(new THREE.Vector3(targetX, 0.15, targetZ), 0.25);
     } else if (gameState === 'PAYOUT') {
       // Stick to pocket
       const wheelRot = wheelRotRef?.current?.rotation.y || 0;

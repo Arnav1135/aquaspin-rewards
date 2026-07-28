@@ -102,15 +102,18 @@ function PlinkoBoard({ rows, multipliers, onBallLanded, blinkingIdx }: { rows: n
               </div>
             </Html>
             {/* Divider lines with steep physics cap to prevent stuck balls */}
-            <RigidBody type="fixed" position={[PEG_SPACING_X/2, 0, 0]} colliders="hull">
+            <RigidBody type="fixed" position={[PEG_SPACING_X/2, 0, 0]} colliders={false}>
+               <CuboidCollider args={[0.05, 0.75, 0.25]} />
+               <BallCollider args={[0.08]} position={[0, 0.75, 0]} />
+               
                {/* Main vertical divider */}
                <mesh>
                  <boxGeometry args={[0.1, 1.5, 0.5]} />
                  <meshStandardMaterial color="#1E293B" />
                </mesh>
-               {/* Steep slanted cap so balls roll off */}
-               <mesh position={[0, 0.75, 0]} rotation={[0, 0, Math.PI / 4]}>
-                 <boxGeometry args={[0.15, 0.15, 0.5]} />
+               {/* Round cap so balls roll off */}
+               <mesh position={[0, 0.75, 0]}>
+                 <sphereGeometry args={[0.08, 16, 16]} />
                  <meshStandardMaterial color="#1E293B" />
                </mesh>
             </RigidBody>
@@ -157,7 +160,7 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
   const [betAmount, setBetAmount] = useState(50);
   const [risk, setRisk] = useState<RiskLevel>('medium');
   const [rows, setRows] = useState(8);
-  const [balls, setBalls] = useState<{ id: string, bet: number }[]>([]);
+  const [balls, setBalls] = useState<{ id: string, bet: number, startX: number }[]>([]);
   const [blinkingIdx, setBlinkingIdx] = useState<number | null>(null);
   
   const multipliers = MULTS[risk][rows];
@@ -182,7 +185,8 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
       (playTone as any)(440, 'sine', 0.1);
       
       const id = Math.random().toString(36).substr(2, 9);
-      setBalls(prev => [...prev, { id, bet: betAmount }]);
+      const startX = (Math.random() - 0.5) * 0.5;
+      setBalls(prev => [...prev, { id, bet: betAmount, startX }]);
     } catch (e) {
       console.error(e);
       toast.error('Transaction failed');
@@ -241,7 +245,7 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
               <PlinkoBall 
                 key={ball.id} 
                 id={ball.id} 
-                position={[(Math.random() - 0.5) * 0.5, 7, 0]} 
+                position={[ball.startX, 7, 0]} 
                 onDespawn={removeBall} 
               />
             ))}

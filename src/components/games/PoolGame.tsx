@@ -1,133 +1,108 @@
+import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Physics } from '@react-three/cannon';
-import { Environment, ContactShadows } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { PoolTable3D } from './pool/PoolTable3D';
-import { PoolBall3D } from './pool/PoolBall3D';
-import { PoolControls } from './pool/PoolControls';
-import { PoolAIEngine } from './pool/PoolAIEngine';
-import { usePoolStore } from './pool/store';
-import { useMemo } from 'react';
-
-const BALL_COLORS = [
-  '#ffffff', // Cue
-  '#FFD700', '#2196F3', '#F44336', '#9C27B0', '#FF5722', '#4CAF50', '#795548', '#111111',
-  '#FFD700', '#2196F3', '#F44336', '#9C27B0', '#FF5722', '#4CAF50', '#795548'
-];
+import { Scene3D } from './pool/Scene3D';
+import { TouchControls } from './pool/TouchControls';
+import { HUD } from './pool/HUD';
+import { usePoolEconomy, TABLE_TIERS } from './pool/PoolEconomy';
+import { usePoolRules } from './pool/RulesEngine';
 
 interface Props { onClose: () => void; }
 
 export function PoolGame({ onClose }: Props) {
-  const phase = usePoolStore((state) => state.phase);
-  const score = usePoolStore((state) => state.score);
-  const shots = usePoolStore((state) => state.shots);
-  const power = usePoolStore((state) => state.power);
-  const resetGame = usePoolStore((state) => state.resetGame);
-  const setPhase = usePoolStore((state) => state.setPhase);
+  const mode = usePoolEconomy(s => s.mode);
+  const setMode = usePoolEconomy(s => s.setMode);
+  const selectedTier = usePoolEconomy(s => s.selectedTier);
+  const selectTier = usePoolEconomy(s => s.selectTier);
 
-  // Generate initial rack positions
-  const rackPositions = useMemo(() => {
-    const pos: [number, number, number][] = [];
-    let id = 1;
-    const startZ = -4; // Apex of triangle
-    const r = 0.36; // Ball radius + slight gap
-    const sqrt3 = Math.sqrt(3);
+  const startMatch = usePoolRules(s => s.startMatch);
+  
+  const [cueAngle, setCueAngle] = useState(0);
+  const [power, setPower] = useState(0);
 
-    for (let row = 0; row < 5; row++) {
-      for (let col = 0; col <= row; col++) {
-        const x = (col - row / 2) * (r * 2);
-        const z = startZ - row * (r * sqrt3);
-        pos.push([x, BALL_RADIUS, z]);
-        id++;
-      }
-    }
-    return pos;
-  }, []);
+  const handleStrike = (p: number) => {
+    // Notify rules engine that balls are rolling
+    usePoolRules.getState().ballsRolling();
+    
+    // In a real integration, we'd apply the physics impulse here or pass a trigger down to Scene3D.
+    // For now, Scene3D will monitor state changes or we pass a ref.
+    // To keep it simple, we can dispatch an event that the Scene3D listens to.
+    window.dispatchEvent(new CustomEvent('pool-strike', { detail: { power: p, angle: cueAngle } }));
+  };
 
-  const BALL_RADIUS = 0.35;
+  const handleStart = () => {
+    setMode('PLAYING');
+    startMatch();
+    setCueAngle(0);
+    setPower(0);
+  };
 
   return (
-    <div className="flex flex-col items-center gap-4 relative">
-      <div className="w-[360px] h-[660px] rounded-2xl overflow-hidden relative shadow-[0_8px_32px_rgba(0,0,0,0.5)] bg-[#0a0a0a]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/90 backdrop-blur-md">
+      <Card className="relative w-full max-w-6xl h-[90vh] flex flex-col gap-0 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-navy-700 bg-navy-900 rounded-3xl">
         
-        {/* HUD Overlay */}
-        <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur-md px-4 py-2 rounded-xl text-white font-bold text-sm border border-white/10 pointer-events-none">
-          🎱 {score}pts | Shot {shots}
-        </div>
+        {/* Menu Shell */}
+        {mode === 'MENU' && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/60 backdrop-blur-lg">
+            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-blue-600 mb-2 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
+              PRO 8-BALL
+            </h1>
+            <p className="text-slate-400 mb-12 tracking-widest uppercase font-bold text-sm">Hyper-Realistic 3D Simulation</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full px-8">
+              {TABLE_TIERS.slice(0,3).map(tier => (
+                <div 
+                  key={tier.id}
+                  onClick={() => selectTier(tier.id)}
+                  className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 ${selectedTier === tier.id ? 'bg-cyan-900/40 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)] transform scale-105' : 'bg-slate-900/60 border-slate-700 hover:border-slate-500'}`}
+                >
+                  <h3 className="text-xl font-bold text-white mb-4">{tier.name}</h3>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-slate-400">Entry</span>
+                    <span className="text-cyan-400 font-bold">{tier.entryFee}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Prize</span>
+                    <span className="text-yellow-400 font-bold">{tier.prize}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-        {/* Phase Overlays */}
-        {phase === 'idle' && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
-            <h2 className="text-3xl font-bold text-white mb-2 tracking-wider">3D POOL</h2>
-            <p className="text-gray-300 mb-6 text-sm">Hyper-realistic AI Engine</p>
-            <Button onClick={() => setPhase('aiming')} variant="neon" size="lg" className="px-8">
-              Play Now
+            <Button variant="neon" size="lg" className="mt-12 px-16 py-6 text-xl" onClick={handleStart}>
+              PLAY MATCH
             </Button>
           </div>
         )}
 
-        {phase === 'win' && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
-            <h2 className="text-3xl font-bold text-green-400 mb-2">TABLE CLEARED!</h2>
-            <p className="text-white mb-6">Score: {score}</p>
-            <Button onClick={resetGame} variant="neon" size="lg">Play Again</Button>
-          </div>
-        )}
-
-        {/* Power Bar */}
-        {phase === 'aiming' && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 h-3 bg-black/60 rounded-full overflow-hidden border border-white/20 z-10">
-            <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-red-500 transition-all duration-75"
-              style={{ width: `${power * 100}%` }}
-            />
-          </div>
-        )}
-
-        {/* AI Rendering Engine */}
-          <Canvas shadows camera={{ position: [0, 10, 15], fov: 45 }}>
-            {/* Environment & Lighting */}
-            <color attach="background" args={['#050505']} />
-            <ambientLight intensity={0.4} />
-            <directionalLight 
-              castShadow 
-              position={[5, 10, 5]} 
-              intensity={1.5} 
-              shadow-mapSize={[1024, 1024]} 
-            />
-            <Environment preset="studio" />
-
-            {/* Physics World */}
-            <Physics gravity={[0, -9.81, 0]}>
-              <PoolAIEngine />
-              <PoolTable3D />
+        {/* 3D Viewport */}
+        <div className="relative flex-1 bg-[#050505] overflow-hidden select-none">
+          {mode === 'PLAYING' && (
+            <>
+              <Canvas shadows camera={{ position: [0, 8, 8], fov: 45 }}>
+                <Scene3D 
+                  cueAngle={cueAngle} 
+                  power={power} 
+                />
+              </Canvas>
               
-              {/* Cue Ball */}
-              {phase !== 'idle' && (
-                <PoolBall3D id={0} position={[0, BALL_RADIUS, 5]} color={BALL_COLORS[0]} isCue={true} />
-              )}
+              <HUD />
               
-              {/* Rack Balls */}
-              {phase !== 'idle' && rackPositions.map((pos, idx) => (
-                <PoolBall3D key={idx + 1} id={idx + 1} position={pos} color={BALL_COLORS[idx + 1]} />
-              ))}
-            </Physics>
+              <TouchControls 
+                onAimChange={(d) => setCueAngle(prev => prev + d)}
+                power={power}
+                setPower={setPower}
+                onStrike={handleStrike}
+              />
+            </>
+          )}
 
-            {/* Post Processing & Effects */}
-            <ContactShadows resolution={512} scale={20} blur={2} opacity={0.5} far={10} color="#000000" />
-            <EffectComposer>
-              <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.9} height={300} intensity={0.5} />
-            </EffectComposer>
-
-            <PoolControls />
-          </Canvas>
-
-      </div>
-
-      <div className="flex gap-3">
-        <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
-      </div>
+          <Button variant="ghost" className="absolute top-4 right-4 z-50 text-slate-400 bg-black/40 backdrop-blur-md border border-white/10 hover:text-white" onClick={onClose}>
+            Leave Table
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

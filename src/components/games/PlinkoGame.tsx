@@ -18,9 +18,9 @@ import { getBiasImpulse, PathSteeringState } from './plinko/pathSteering';
 
 const PEG_RADIUS = 0.15;
 const PEG_SPACING_X = 1.2;
-const PEG_SPACING_Y = 1.0;
+const PEG_SPACING_Y = 0.8;
 
-function PlinkoBoard({ rows, difficulty, onBallLanded, blinkingIdx }: { rows: Rows, difficulty: Difficulty, onBallLanded: (idx: number, id: string) => void, blinkingIdx: number | null }) {
+function PlinkoBoard({ rows, difficulty, onBallLanded, blinkingIdx, bigWinIdx }: { rows: Rows, difficulty: Difficulty, onBallLanded: (idx: number, ballId: string) => void, blinkingIdx: number | null, bigWinIdx?: number | null }) {
   const multipliers = useMemo(() => getMultiplierTable(difficulty, rows), [difficulty, rows]);
   const colors = useMemo(() => generateColors(difficulty, multipliers), [difficulty, multipliers]);
 
@@ -85,11 +85,16 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, blinkingIdx }: { rows: Ro
               <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.5, 0.5]} />
             </RigidBody>
             <Html center position={[0, -0.8, 0]} className="pointer-events-none">
-              <div 
-                className={`px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg transition-all duration-300 ${blinkingIdx === i ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'}`}
-                style={{ backgroundColor: style.backgroundColor, color: style.color, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}
-              >
-                {style.multiplier}x
+              <div className="relative">
+                {bigWinIdx === i && (
+                  <div className="absolute inset-0 z-0 animate-ping rounded-full bg-yellow-400 opacity-75 blur-md" style={{ transform: 'scale(3)' }}></div>
+                )}
+                <div 
+                  className={`relative px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg transition-all duration-300 ${blinkingIdx === i ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'} ${bigWinIdx === i ? 'animate-bounce shadow-[0_0_30px_rgba(250,204,21,0.8)]' : ''}`}
+                  style={{ backgroundColor: style.backgroundColor, color: style.color, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}
+                >
+                  {style.multiplier}x
+                </div>
               </div>
             </Html>
             
@@ -174,6 +179,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   // Active State
   const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number }[]>([]);
   const [blinkingIdx, setBlinkingIdx] = useState<number | null>(null);
+  const [bigWinIdx, setBigWinIdx] = useState<number | null>(null);
   
   // Autobet State
   const [autobetMode, setAutobetMode] = useState(false);
@@ -375,7 +381,21 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
     }
     
     if (winAmount > 0) {
-      (playTone as any)(mult >= 2 ? 600 : 300, 'sine', 0.2);
+      if (mult >= 10) {
+        setBigWinIdx(bucketIdx);
+        setTimeout(() => setBigWinIdx(null), 1500);
+        // Dynamic sound scaling for huge wins
+        (playTone as any)(800, 'square', 0.1);
+        setTimeout(() => (playTone as any)(1000, 'square', 0.15), 100);
+        setTimeout(() => (playTone as any)(1200, 'sine', 0.3), 200);
+        if (typeof window !== 'undefined' && (window as any).confetti) {
+          // If a global confetti library was present, we could call it here. 
+          // We'll rely on the CSS explosion for now.
+        }
+      } else {
+        (playTone as any)(mult >= 2 ? 600 : 300, 'sine', 0.2);
+      }
+      
       if (mult >= 5) vibrate(100);
       
       try {
@@ -404,7 +424,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
           >
             <ambientLight intensity={1.2} />
             <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
-            <PlinkoBoard rows={rows} difficulty={risk} onBallLanded={handleBallLanded} blinkingIdx={blinkingIdx} />
+            <PlinkoBoard rows={rows} difficulty={risk} onBallLanded={handleBallLanded} blinkingIdx={blinkingIdx} bigWinIdx={bigWinIdx} />
             
             {balls.map(ball => (
               <PlinkoBall 

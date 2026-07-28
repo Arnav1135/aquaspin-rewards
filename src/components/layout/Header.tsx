@@ -32,7 +32,7 @@ export function Header() {
   return (
     <header
       className="fixed top-0 left-0 right-0 z-40 h-16"
-      style={{ background: '#7b8bc1' }}
+      style={{ background: 'var(--card-navy-bg)' }}
     >
       {/* Subtle bottom border */}
       <div
@@ -58,7 +58,7 @@ export function Header() {
               className="w-8 h-8 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #66bdf2 0%, #66bdf2 100%)' }}
             >
-              <Gamepad2 size={16} strokeWidth={2} style={{ color: '#7b8bc1' }} />
+              <Gamepad2 size={16} strokeWidth={2} style={{ color: 'var(--text-main)' }} />
             </div>
             <span
               className="font-bold text-sm tracking-tight hidden sm:block"
@@ -149,7 +149,7 @@ export function Header() {
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
                   style={{
                     backgroundColor: getAvatarColor(profile.id),
-                    color: '#7b8bc1',
+                    color: 'var(--c-navy-deeper)',
                   }}
                 >
                   {getInitials(profile.username)}
@@ -174,10 +174,10 @@ export function Header() {
                     <motion.div
                       className="absolute right-0 top-full mt-2 w-48 z-50 py-2 overflow-hidden"
                       style={{
-                        background: '#7b8bc1',
-                        border: '1px solid rgba(74,144,217,0.20)',
+                        background: 'var(--card-navy-bg)',
+                        border: '1px solid var(--border-white)',
                         borderRadius: 16,
-                        boxShadow: '0 12px 32px rgba(22,33,62,0.40)',
+                        boxShadow: 'var(--shadow-card-lift)',
                       }}
                       initial={{ opacity: 0, y: -8, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -189,7 +189,7 @@ export function Header() {
                           className="px-3 py-2 mb-1 border-b"
                           style={{ borderColor: 'rgba(247,108,108,0.20)', background: 'rgba(247,108,108,0.08)' }}
                         >
-                          <p className="text-xs font-medium" style={{ color: '#7b8bc1' }}>
+                          <p className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>
                             Guest Mode — Limited features
                           </p>
                         </div>
@@ -239,12 +239,14 @@ export function Header() {
 
                       <button
                         className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors duration-150"
-                        style={{ color: '#7b8bc1' }}
+                        style={{ color: 'rgba(245,248,252,0.80)' }}
                         onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(247,108,108,0.10)';
+                          (e.currentTarget as HTMLElement).style.background = 'rgba(247,108,108,0.20)';
+                          (e.currentTarget as HTMLElement).style.color = '#FFFFFF';
                         }}
                         onMouseLeave={e => {
                           (e.currentTarget as HTMLElement).style.background = 'transparent';
+                          (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.80)';
                         }}
                         onClick={() => { logout(); setDropdownOpen(false); }}
                       >

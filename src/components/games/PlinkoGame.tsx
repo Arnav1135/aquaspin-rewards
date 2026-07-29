@@ -9,6 +9,7 @@ import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody, CuboidCollider, BallCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import { triggerWinCelebration } from '@/lib/winCelebration';
@@ -18,11 +19,76 @@ import { Difficulty, Rows, getMultiplierTable, generateColors } from './plinko/p
 import { generateOutcome } from './plinko/outcomeEngine';
 import { getBiasImpulse, PathSteeringState } from './plinko/pathSteering';
 
+function CameraAdjuster({ rows }: { rows: number }) {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    const baseZ = Math.max(15, rows * 1.5);
+    camera.position.z = aspect < 1 ? baseZ / aspect : baseZ;
+    camera.updateProjectionMatrix();
+  }, [camera, size, rows]);
+  return null;
+}
+
 const PEG_RADIUS = 0.15;
 const PEG_SPACING_X = 1.2;
 const PEG_SPACING_Y = 0.8;
 
-function PlinkoBoard({ rows, difficulty, onBallLanded, blinkingIdx, bigWinIdx }: { rows: Rows, difficulty: Difficulty, onBallLanded: (idx: number, ballId: string) => void, blinkingIdx: number | null, bigWinIdx?: number | null }) {
+function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, onBallLanded }: { style: any, x: number, bucketY: number, i: number, hitCount: number, isBigWin: boolean, onBallLanded: (idx: number, ballId: string) => void }) {
+  const [blinking, setBlinking] = useState(false);
+  
+  useEffect(() => {
+    if (hitCount > 0) {
+      setBlinking(true);
+      const timer = setTimeout(() => setBlinking(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [hitCount]);
+
+  return (
+    <group position={[x, bucketY, 0]}>
+      <RigidBody 
+        type="fixed" 
+        sensor 
+        onIntersectionEnter={(e) => {
+          if (e.other.rigidBodyObject?.userData?.isBall) {
+            onBallLanded(i, e.other.rigidBodyObject.name);
+          }
+        }}
+      >
+        <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.5, 0.5]} />
+      </RigidBody>
+      <Html center position={[0, -0.8, 0]} className="pointer-events-none">
+        <div className="relative">
+          {isBigWin && (
+            <div className="absolute inset-0 z-0 animate-ping rounded-full bg-yellow-400 opacity-75 blur-md" style={{ transform: 'scale(3)' }}></div>
+          )}
+          <div 
+            className={`relative px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg transition-all duration-300 ${blinking ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'} ${isBigWin ? 'animate-bounce shadow-[0_0_30px_rgba(250,204,21,0.8)]' : ''}`}
+            style={{ backgroundColor: style.backgroundColor, color: style.color, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}
+          >
+            {style.multiplier}x
+          </div>
+        </div>
+      </Html>
+      
+      <RigidBody type="fixed" position={[PEG_SPACING_X/2, 0, 0]} colliders={false} restitution={0.1} friction={0}>
+         <CuboidCollider args={[0.05, 0.75, 0.25]} />
+         <BallCollider args={[0.08]} position={[0, 0.75, 0]} />
+         <mesh>
+           <boxGeometry args={[0.1, 1.5, 0.5]} />
+           <meshStandardMaterial color="#E2E8F0" />
+         </mesh>
+         <mesh position={[0, 0.75, 0]}>
+           <sphereGeometry args={[0.08, 16, 16]} />
+           <meshStandardMaterial color="#E2E8F0" />
+         </mesh>
+      </RigidBody>
+    </group>
+  );
+}
+
+function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: { rows: Rows, difficulty: Difficulty, onBallLanded: (idx: number, ballId: string) => void, bucketHits: Record<number, number>, bigWinIdx?: number | null }) {
   const multipliers = useMemo(() => getMultiplierTable(difficulty, rows), [difficulty, rows]);
   const colors = useMemo(() => generateColors(difficulty, multipliers), [difficulty, multipliers]);
 
@@ -43,7 +109,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, blinkingIdx, bigWinIdx }:
   const bucketY = -(rows * PEG_SPACING_Y) - 1.5;
 
   return (
-    <group position={[0, rows > 12 ? 6 : 4, 0]} scale={rows > 12 ? 0.8 : 1}>
+    <group position={[0, rows * 0.4, 0]}>
       <RigidBody type="fixed">
         <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} receiveShadow>
           <boxGeometry args={[rows * PEG_SPACING_X + 4, rows * PEG_SPACING_Y + 4, 0.5]} />
@@ -58,61 +124,40 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, blinkingIdx, bigWinIdx }:
           key={idx} 
           type="fixed" 
           position={pos}
-          restitution={0.6}
+          restitution={0.3}
           friction={0.1}
           userData={{ isPeg: true }}
         >
           <BallCollider args={[PEG_RADIUS]} />
           <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
-             <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 32]} />
+             <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 16]} />
              <meshStandardMaterial color="#94A3B8" roughness={0.2} metalness={0.8} />
           </mesh>
         </RigidBody>
       ))}
 
+      {/* Side Walls to funnel balls inside */}
+      <RigidBody type="fixed" position={[-((numBuckets * PEG_SPACING_X) / 2 + 0.5), -rows/2 * PEG_SPACING_Y, 0]} restitution={0.2} friction={0.1}>
+        <CuboidCollider args={[0.5, rows * PEG_SPACING_Y, 1]} />
+      </RigidBody>
+      <RigidBody type="fixed" position={[((numBuckets * PEG_SPACING_X) / 2 + 0.5), -rows/2 * PEG_SPACING_Y, 0]} restitution={0.2} friction={0.1}>
+        <CuboidCollider args={[0.5, rows * PEG_SPACING_Y, 1]} />
+      </RigidBody>
+
       {/* Buckets/Sensors */}
       {colors.map((style, i) => {
         const x = startBucketX + i * PEG_SPACING_X;
         return (
-          <group key={`bucket-${i}`} position={[x, bucketY, 0]}>
-            <RigidBody 
-              type="fixed" 
-              sensor 
-              onIntersectionEnter={(e) => {
-                if (e.other.rigidBodyObject?.userData?.isBall) {
-                  onBallLanded(i, e.other.rigidBodyObject.name);
-                }
-              }}
-            >
-              <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.5, 0.5]} />
-            </RigidBody>
-            <Html center position={[0, -0.8, 0]} className="pointer-events-none">
-              <div className="relative">
-                {bigWinIdx === i && (
-                  <div className="absolute inset-0 z-0 animate-ping rounded-full bg-yellow-400 opacity-75 blur-md" style={{ transform: 'scale(3)' }}></div>
-                )}
-                <div 
-                  className={`relative px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg transition-all duration-300 ${blinkingIdx === i ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'} ${bigWinIdx === i ? 'animate-bounce shadow-[0_0_30px_rgba(250,204,21,0.8)]' : ''}`}
-                  style={{ backgroundColor: style.backgroundColor, color: style.color, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}
-                >
-                  {style.multiplier}x
-                </div>
-              </div>
-            </Html>
-            
-            <RigidBody type="fixed" position={[PEG_SPACING_X/2, 0, 0]} colliders={false}>
-               <CuboidCollider args={[0.05, 0.75, 0.25]} />
-               <BallCollider args={[0.08]} position={[0, 0.75, 0]} />
-               <mesh>
-                 <boxGeometry args={[0.1, 1.5, 0.5]} />
-                 <meshStandardMaterial color="#E2E8F0" />
-               </mesh>
-               <mesh position={[0, 0.75, 0]}>
-                 <sphereGeometry args={[0.08, 16, 16]} />
-                 <meshStandardMaterial color="#E2E8F0" />
-               </mesh>
-            </RigidBody>
-          </group>
+          <PlinkoBucket 
+            key={`bucket-${i}`} 
+            style={style} 
+            x={x} 
+            bucketY={bucketY} 
+            i={i} 
+            hitCount={bucketHits[i] || 0}
+            isBigWin={bigWinIdx === i}
+            onBallLanded={onBallLanded}
+          />
         );
       })}
     </group>
@@ -150,17 +195,16 @@ function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, po
       ref={rbRef} 
       position={position} 
       colliders="ball" 
-      restitution={0.6} 
-      friction={0.2}
+      restitution={0.3} 
+      friction={0}
       userData={{ isBall: true }}
       name={id}
       enabledTranslations={[true, true, false]}
       onCollisionEnter={handleCollision}
     >
       <mesh castShadow receiveShadow>
-        <sphereGeometry args={[0.25, 32, 32]} />
+        <sphereGeometry args={[0.25, 16, 16]} />
         <meshStandardMaterial color="#FF6B6B" emissive="#FF6B6B" emissiveIntensity={0.5} metalness={0.2} roughness={0.1} />
-        <pointLight color="#FF6B6B" intensity={1.0} distance={2} />
       </mesh>
     </RigidBody>
   );
@@ -180,7 +224,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   
   // Active State
   const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number }[]>([]);
-  const [blinkingIdx, setBlinkingIdx] = useState<number | null>(null);
+  const [bucketHits, setBucketHits] = useState<Record<number, number>>({});
   const [bigWinIdx, setBigWinIdx] = useState<number | null>(null);
   
   // Autobet State
@@ -346,18 +390,11 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
     
     removeBall(ballId);
     
-    // Validate Layer 4 landed bucket vs Layer 1 Outcome
-    if (bucketIdx !== ball.steer.targetBucket) {
-      console.error(`[Plinko Bug] Ball ${ballId} landed in ${bucketIdx} but Outcome Engine decided ${ball.steer.targetBucket}`);
-      // In production, we honor the server outcome regardless of physics anomaly, but we try to animate it close.
-      bucketIdx = ball.steer.targetBucket; 
-    }
+    // Trust physics outcome as requested
+    setBucketHits(prev => ({ ...prev, [bucketIdx]: (prev[bucketIdx] || 0) + 1 }));
     
-    setBlinkingIdx(bucketIdx);
-    setTimeout(() => setBlinkingIdx(null), 500);
-
     const mult = multipliers[bucketIdx];
-    const winAmount = ball.payout;
+    const winAmount = ball.bet * mult;
     
     if (autoSessionRef.current.running) {
       autoSessionRef.current.net += winAmount;
@@ -420,11 +457,12 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
           <GameEngine3D 
             enablePhysics={true} 
             enablePostProcessing={false} // Light mode prefers clean, crisp renders over bloom
-            cameraPosition={[0, 0, 15]}
+            cameraPosition={[0, 0, Math.max(15, rows * 1.4)]}
           >
             <ambientLight intensity={1.2} />
             <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
-            <PlinkoBoard rows={rows} difficulty={risk} onBallLanded={handleBallLanded} blinkingIdx={blinkingIdx} bigWinIdx={bigWinIdx} />
+            <CameraAdjuster rows={rows} />
+            <PlinkoBoard rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
             
             {balls.map(ball => (
               <PlinkoBall 
@@ -495,7 +533,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
               <div>
                 <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-widest">Rows</label>
                 <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner overflow-x-auto">
-                  {([8, 9, 10, 11, 12, 13, 14, 15, 16] as Rows[]).map(r => (
+                  {([8, 9, 10, 11, 12, 13, 14] as Rows[]).map(r => (
                     <button
                       key={r}
                       onClick={() => balls.length > 0 ? setQueuedRows(r) : setRows(r)}

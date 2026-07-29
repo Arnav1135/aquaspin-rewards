@@ -1,5 +1,5 @@
 export type Difficulty = 'low' | 'medium' | 'high';
-export type Rows = 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
+export type Rows = 8 | 9 | 10 | 11 | 12 | 13 | 14;
 
 export const PLINKO_TABLES: Record<Difficulty, Record<number, number[] | null>> = {
   low: {
@@ -9,9 +9,7 @@ export const PLINKO_TABLES: Record<Difficulty, Record<number, number[] | null>> 
     11: [8.4, 3.0, 1.9, 1.3, 1.0, 0.7, 0.7, 1.0, 1.3, 1.9, 3.0, 8.4],
     12: [10,  3.0, 1.6, 1.4, 1.1, 1.0, 0.5, 1.0, 1.1, 1.4, 1.6, 3.0, 10],
     13: [8.1, 4.0, 3.0, 1.9, 1.2, 0.9, 0.7, 0.7, 0.9, 1.2, 1.9, 3.0, 4.0, 8.1],
-    14: [7.1, 4.0, 1.9, 1.4, 1.3, 1.1, 1.0, 0.5, 1.0, 1.1, 1.3, 1.4, 1.9, 4.0, 7.1],
-    15: null,
-    16: null
+    14: [7.1, 4.0, 1.9, 1.4, 1.3, 1.1, 1.0, 0.5, 1.0, 1.1, 1.3, 1.4, 1.9, 4.0, 7.1]
   },
   medium: {
     8:  [13, 3.0, 1.3, 0.7, 0.4, 0.7, 1.3, 3.0, 13],
@@ -20,9 +18,7 @@ export const PLINKO_TABLES: Record<Difficulty, Record<number, number[] | null>> 
     11: [24, 6.0, 3.0, 1.8, 0.7, 0.5, 0.5, 0.7, 1.8, 3.0, 6.0, 24],
     12: [33, 11,  4.0, 2.0, 1.1, 0.6, 0.3, 0.6, 1.1, 2.0, 4.0, 11, 33],
     13: [43, 13,  6.0, 3.0, 1.3, 0.7, 0.4, 0.4, 0.7, 1.3, 3.0, 6.0, 13, 43],
-    14: [58, 15,  7.0, 4.0, 1.9, 1.0, 0.5, 0.2, 0.5, 1.0, 1.9, 4.0, 7.0, 15, 58],
-    15: null,
-    16: null
+    14: [58, 15,  7.0, 4.0, 1.9, 1.0, 0.5, 0.2, 0.5, 1.0, 1.9, 4.0, 7.0, 15, 58]
   },
   high: {
     8:  [29, 4.0, 1.5, 0.3, 0.2, 0.3, 1.5, 4.0, 29],
@@ -31,9 +27,7 @@ export const PLINKO_TABLES: Record<Difficulty, Record<number, number[] | null>> 
     11: [120,14,  5.2, 1.4, 0.4, 0.2, 0.2, 0.4, 1.4, 5.2, 14, 120],
     12: [170,24,  8.1, 2.0, 0.7, 0.2, 0.2, 0.2, 0.7, 2.0, 8.1, 24, 170],
     13: [260,37,  11,  4.0, 1.0, 0.2, 0.2, 0.2, 0.2, 1.0, 4.0, 11, 37, 260],
-    14: null,
-    15: null,
-    16: null
+    14: null
   }
 };
 
@@ -114,7 +108,7 @@ function generateRow(rows: number, difficulty: Difficulty): number[] {
 }
 
 for (const diff of Object.keys(PLINKO_TABLES) as Difficulty[]) {
-  for (let r = 8; r <= 16; r++) {
+  for (let r = 8; r <= 14; r++) {
     if (!PLINKO_TABLES[diff][r]) {
       PLINKO_TABLES[diff][r] = generateRow(r, diff);
     }

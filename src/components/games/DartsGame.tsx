@@ -1,7 +1,8 @@
 // src/components/games/DartsGame.tsx — Premium Darts Canvas Game
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 interface Props { onClose: () => void }
@@ -60,7 +61,7 @@ export function DartsGame({ onClose }: Props) {
       const a = Math.random()*Math.PI*2, sp = 2+Math.random()*5;
       gs.particles.push({ x: hitX, y: hitY, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color, r: 2+Math.random()*3 });
     }
-    playTone(pts >= 50 ? 900 : pts >= 20 ? 600 : 350, 0.07, 'sine', 0.12); vibrate(30);
+    audio.play('darts', 'hit', { bullseye: pts >= 50 }); vibrate(30);
     if (pts >= 50) toast.success(`🏆 ${label} +${pts}pts!`);
     else if (pts >= 20) toast.success(`🎯 ${label} +${pts}pts`);
     setDisp(d => ({ ...d, score: gs.totalScore, throwsLeft: gs.throwsLeft, lastScore: label }));

@@ -264,6 +264,57 @@ export class AudioEngine {
         if (eventName === 'win-result') this.playChime(1000, 0.5, 0.4);
         if (eventName === 'lose-result') this.playChime(600, 0.3, 0.2);
         break;
+        
+      case 'flappybird':
+        if (eventName === 'jump') this.playClick(600 * jitter, 0.08, 'sine');
+        if (eventName === 'score') this.playChime(900, 0.3, 0.3);
+        if (eventName === 'crash') {
+           this.playNoiseBurst(0.3, 1000);
+           this.playClick(150, 0.2, 'sawtooth');
+        }
+        break;
+        
+      case 'knifethrower':
+        if (eventName === 'throw') this.playClick(1200 * jitter, 0.03, 'triangle');
+        if (eventName === 'hit') {
+           this.playClick(400, 0.05, 'square');
+           this.playNoiseBurst(0.1, 2000);
+        }
+        if (eventName === 'clash') {
+           this.playClick(1800, 0.05, 'triangle');
+           this.playNoiseBurst(0.2, 4000);
+        }
+        if (eventName === 'break') {
+           this.playNoiseBurst(0.5, 1000);
+           this.playChime(300, 0.4, 0.5);
+        }
+        break;
+        
+      case 'archery':
+      case 'darts':
+        if (eventName === 'shoot') this.playClick(800 * jitter, 0.1, 'triangle');
+        if (eventName === 'hit') {
+           this.playClick(300, 0.1, 'square');
+           if (params.bullseye) this.playChime(1000, 0.6, 0.5);
+        }
+        break;
+        
+      case 'pool':
+        if (eventName === 'hit') this.playClick(600 * jitter, 0.05, 'triangle');
+        if (eventName === 'pocket') this.playChime(800, 0.4, 0.3);
+        if (eventName === 'wall') this.playClick(400 * jitter, 0.08, 'sine');
+        break;
+        
+      case 'clicker':
+      case 'tapchallenge':
+        if (eventName === 'click') this.playClick(600 * jitter, 0.03, 'sine');
+        if (eventName === 'upgrade') this.playChime(1000, 0.5, 0.4);
+        if (eventName === 'milestone') {
+           setTimeout(() => this.playChime(600, 0.3), 0);
+           setTimeout(() => this.playChime(800, 0.3), 100);
+           setTimeout(() => this.playChime(1200, 0.6), 200);
+        }
+        break;
 
       default:
         // Generic fallback

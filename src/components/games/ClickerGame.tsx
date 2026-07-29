@@ -8,7 +8,8 @@ import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 const GAME_DURATION = 10; // seconds
@@ -97,7 +98,7 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
     }
 
     setClicks(c => c + 1);
-    playTone(800 + Math.random() * 400, 0.05, 'square', 0.1);
+    audio.play('clicker', 'click');
     vibrate(10);
   };
 

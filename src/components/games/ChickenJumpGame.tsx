@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
@@ -148,11 +149,11 @@ export function ChickenJumpGame({ onClose }: Props) {
     if (gs.phase !== 'playing') return;
     if (gs.onGround) { 
       gs.chickenVY = 12; gs.onGround = false; gs.doubleJump = true; 
-      playTone(580, 0.04, 'sine', 0.08); vibrate(12); 
+      audio.play('chickenjump', 'jump'); vibrate(12); 
     }
     else if (gs.doubleJump) { 
       gs.chickenVY = 10; gs.doubleJump = false; 
-      playTone(680, 0.04, 'sine', 0.08); vibrate(12); 
+      audio.play('chickenjump', 'jump'); vibrate(12); 
     }
   }, []);
 
@@ -234,7 +235,7 @@ export function ChickenJumpGame({ onClose }: Props) {
             gs.phase = 'dead';
             const newBest = Math.max(gs.score, gs.best);
             gs.best = newBest; localStorage.setItem('cj-best', String(newBest));
-            playTone(150, 0.2, 'sawtooth', 0.3); vibrate(150);
+            audio.play('chickenjump', 'obstacle-hit'); vibrate(150);
             toast.error(`Score: ${gs.score} | Best: ${newBest}`);
           }
         }
@@ -251,7 +252,7 @@ export function ChickenJumpGame({ onClose }: Props) {
           if (!c.collected && Math.hypot(chickenX - c.x, gs.chickenY - c.y) < 1.5) {
             c.collected = true;
             gs.score += 10;
-            playTone(900, 0.05, 'sine', 0.05);
+            audio.play('chickenjump', 'score-pickup');
           }
         }
 

@@ -8,7 +8,8 @@ import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 const GAME_DURATION = 15;
@@ -119,7 +120,7 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
     setTargets(t => t.filter(tt => tt.id !== id));
     setScore(s => s + 1);
     setCombo(c => c + 1);
-    playTone(700 + combo * 50, 0.08, 'sine', 0.2);
+    audio.play('tapchallenge', 'click');
     vibrate(20);
   };
 

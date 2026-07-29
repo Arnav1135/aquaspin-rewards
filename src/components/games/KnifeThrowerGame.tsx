@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import { X } from 'lucide-react';
 
 interface Props { onClose: () => void }
@@ -97,7 +98,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
     s.knives = [];
     s.apples = [];
     s.traps = [];
-    playTone(150, 0.3, 'square', 0.2); // Shatter sound
+    audio.play('knifethrower', 'break');
     vibrate([30, 30, 50]);
   };
 
@@ -203,7 +204,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
     s.flyingKnife = { angle: 0, embedded: false, flying: true, y: H - 40 };
     s.knivesLeft--;
     setDisp(d => ({ ...d, knives: s.knivesLeft }));
-    playTone(600, 0.05, 'triangle', 0.1); // throw sound
+    audio.play('knifethrower', 'throw');
     vibrate(10);
   }, []);
 
@@ -420,7 +421,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
               s.phase = 'dead';
               s.flyingKnife.flying = false;
               s.screenShake = 15;
-              playTone(100, 0.3, 'sawtooth', 0.5); // Hit metal
+              audio.play('knifethrower', 'clash');
               vibrate([50, 100, 50]);
               
               // Bounce particle
@@ -442,7 +443,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
               s.flyingKnife = null;
               s.score += 10;
               s.screenShake = 5;
-              playTone(300 + Math.random()*100, 0.1, 'sine', 0.2); // Chunk sound
+              audio.play('knifethrower', 'hit');
               spawnParticles(W/2, logY + LOG_R, '#d38b55', 'splinter', 8);
 
               // Check hit against apples
@@ -453,7 +454,7 @@ export function KnifeThrowerGame({ onClose }: Props) {
                     a.collected = true;
                     s.applesCollected++;
                     s.score += 25;
-                    playTone(800, 0.2, 'square', 0.1); // Apple slice
+                    audio.play('knifethrower', 'hit');
                     spawnParticles(W/2, logY + LOG_R, '#e74c3c', 'apple', 15);
                   }
                 }

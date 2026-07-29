@@ -1,7 +1,8 @@
 // src/components/games/FlappyBirdGame.tsx — Procedural 4D Flappy Bird
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import { GameFrame } from './GameFrame';
 
 interface Props { onClose: () => void }
@@ -81,7 +82,7 @@ export function FlappyBirdGame({ onClose }: Props) {
     }
     if (s.phase !== 'playing') return;
     s.bird.vy = s.jump;
-    playTone(520, 0.04, 'sine', 0.08);
+    audio.play('flappybird', 'jump');
     vibrate(15);
   }, []);
 
@@ -116,9 +117,7 @@ export function FlappyBirdGame({ onClose }: Props) {
     const s = stateRef.current;
     s.phase = 'warp';
     s.isWarping = true;
-    playTone(400, 0.1, 'sine', 0.2);
-    setTimeout(() => playTone(600, 0.1, 'sine', 0.2), 100);
-    setTimeout(() => playTone(800, 0.4, 'sine', 0.2), 200);
+    audio.play('flappybird', 'score');
     syncDisp();
     
     setTimeout(() => {
@@ -152,8 +151,7 @@ export function FlappyBirdGame({ onClose }: Props) {
       localStorage.setItem('fb-best', String(s.best));
     }
     spawnParticles(s.bird.x, s.bird.y, 40, true); // Blood splatter
-    playTone(300, 0.1, 'sawtooth', 0.2);
-    setTimeout(() => playTone(200, 0.2, 'sawtooth', 0.3), 100);
+    audio.play('flappybird', 'crash');
     vibrate(60);
     syncDisp();
   };
@@ -283,7 +281,7 @@ export function FlappyBirdGame({ onClose }: Props) {
             s.score++;
             s.pipesPassed++;
             syncDisp();
-            playTone(700 + s.score * 5, 0.06, 'sine', 0.12);
+            audio.play('flappybird', 'score');
             spawnParticles(s.bird.x, s.bird.y, 6);
             
             if (s.pipesPassed >= s.targetPipes) {

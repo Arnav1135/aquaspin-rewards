@@ -8,6 +8,7 @@ import {
 } from '@babylonjs/core';
 import { GameFrame } from './GameFrame';
 import { StabilityManager } from '../../games/archery/StabilityManager';
+import { audio } from '@/lib/audioEngine';
 
 interface Props {
   onClose: () => void;
@@ -318,6 +319,7 @@ export function ArcheryGame({ onClose }: Props) {
   
   const finishShot = (points: number, message: string) => {
       setGameState('result');
+      if (points > 0) audio.play('archery', 'hit', { bullseye: points === 10 });
       setResultMessage(message);
       
       if (matchState.current.currentPlayer === 1) {
@@ -353,6 +355,7 @@ export function ArcheryGame({ onClose }: Props) {
       if (gameState !== 'drawing') return;
       setGameState('flying');
       isDrawingRef.current = false;
+      audio.play('archery', 'shoot');
       
       // Spawn and shoot arrow
       if (sceneRef.current && cameraRef.current) {

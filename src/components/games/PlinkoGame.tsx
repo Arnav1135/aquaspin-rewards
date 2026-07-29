@@ -34,7 +34,7 @@ const PEG_RADIUS = 0.15;
 const PEG_SPACING_X = 1.2;
 const PEG_SPACING_Y = 0.8;
 
-function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, onBallLanded }: { style: any, x: number, bucketY: number, i: number, hitCount: number, isBigWin: boolean, onBallLanded: (idx: number, ballId: string) => void }) {
+function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, onBallLanded }: { style: any, x: number, bucketY: number, i: number, hitCount: number, isBigWin: boolean, numBuckets: number, onBallLanded: (idx: number, ballId: string) => void }) {
   const [blinking, setBlinking] = useState(false);
   
   useEffect(() => {
@@ -56,33 +56,32 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, onBallLanded }
           }
         }}
       >
-        <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.5, 0.5]} />
+        <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.4, 0.5]} position={[0, -0.2, 0]} />
       </RigidBody>
-      <Html center position={[0, -0.8, 0]} className="pointer-events-none">
+      <Html center position={[0, -0.3, 0]} className="pointer-events-none">
         <div className="relative">
           {isBigWin && (
             <div className="absolute inset-0 z-0 animate-ping rounded-full bg-yellow-400 opacity-75 blur-md" style={{ transform: 'scale(3)' }}></div>
           )}
           <div 
-            className={`relative px-1 py-0.5 md:px-1.5 md:py-1 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap shadow-lg transition-all duration-300 ${blinking ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'} ${isBigWin ? 'animate-bounce shadow-[0_0_30px_rgba(250,204,21,0.8)]' : ''}`}
-            style={{ backgroundColor: style.backgroundColor, color: style.color, boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)' }}
+            className={`relative rounded font-bold whitespace-nowrap shadow-lg transition-all duration-300 ${blinking ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'} ${isBigWin ? 'animate-bounce shadow-[0_0_30px_rgba(250,204,21,0.8)]' : ''}`}
+            style={{ 
+              backgroundColor: style.backgroundColor, 
+              color: style.color, 
+              boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)',
+              fontSize: numBuckets > 13 ? '8px' : numBuckets > 10 ? '10px' : '12px',
+              padding: numBuckets > 13 ? '3px 4px' : '5px 8px',
+            }}
           >
             {style.multiplier}x
           </div>
         </div>
       </Html>
       
-      <RigidBody type="fixed" position={[PEG_SPACING_X/2, 0, 0]} colliders={false} restitution={0.1} friction={0}>
-         <CuboidCollider args={[0.05, 0.75, 0.25]} />
-         <BallCollider args={[0.08]} position={[0, 0.75, 0]} />
-         <mesh>
-           <boxGeometry args={[0.1, 1.5, 0.5]} />
-           <meshStandardMaterial color="#E2E8F0" />
-         </mesh>
-         <mesh position={[0, 0.75, 0]}>
-           <sphereGeometry args={[0.08, 16, 16]} />
-           <meshStandardMaterial color="#E2E8F0" />
-         </mesh>
+      {/* Invisible divider wall perfectly aligned under the peg above it to prevent horizontal skipping */}
+      <RigidBody type="fixed" position={[PEG_SPACING_X/2, -0.2, 0]} restitution={0.4} friction={0}>
+         <CuboidCollider args={[0.02, 0.5, 0.25]} />
+         <BallCollider args={[0.04]} position={[0, 0.5, 0]} />
       </RigidBody>
     </group>
   );
@@ -94,7 +93,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
 
   const pegPositions = useMemo(() => {
     const positions: THREE.Vector3[] = [];
-    for (let r = 0; r <= rows; r++) {
+    for (let r = 0; r < rows; r++) {
       const cols = r + 3;
       const startX = -((cols - 1) * PEG_SPACING_X) / 2;
       for (let c = 0; c < cols; c++) {
@@ -106,7 +105,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
 
   const numBuckets = multipliers.length;
   const startBucketX = -((numBuckets - 1) * PEG_SPACING_X) / 2;
-  const bucketY = -(rows * PEG_SPACING_Y) - 1.5;
+  const bucketY = -rows * PEG_SPACING_Y;
 
   return (
     <group position={[0, rows * 0.4, 0]}>
@@ -156,6 +155,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
             i={i} 
             hitCount={bucketHits[i] || 0}
             isBigWin={bigWinIdx === i}
+            numBuckets={numBuckets}
             onBallLanded={onBallLanded}
           />
         );

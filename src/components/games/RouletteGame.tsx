@@ -264,7 +264,7 @@ function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameStat
       time.current += delta;
       
       // Calculate a decaying spiral
-      const spiralProgress = Math.min(1.0, time.current / 2.0); // 2 seconds to spiral in
+      const spiralProgress = Math.min(1.0, time.current / 4.0); // 4 seconds to spiral in (matches the setTimeout)
       const currentRadius = THREE.MathUtils.lerp(3.8, targetRadius, spiralProgress);
       
       // Add bouncing
@@ -347,15 +347,29 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
     setGameState('SPINNING');
     audio.play('roulette', 'wheel-spin-up');
     
+    // Add random spin time between 15 to 25 seconds
+    const spinTime = 15000 + Math.random() * 10000; 
+    
+    // Play looping spin sound
+    const spinInterval = setInterval(() => {
+      audio.play('roulette', 'wheel-spin-up');
+    }, 600);
+    
     setTimeout(() => {
+      clearInterval(spinInterval);
       setGameState('SETTLING');
       audio.play('roulette', 'ball-settling-clicks');
       
+      const settleInterval = setInterval(() => {
+        audio.play('roulette', 'ball-settling-clicks');
+      }, 150);
+      
       setTimeout(() => {
+        clearInterval(settleInterval);
         setGameState('PAYOUT');
         calculatePayouts(resultIdx);
-      }, 3000);
-    }, 4000);
+      }, 4000); // 4 seconds settle time to match the spiralProgress
+    }, spinTime);
   };
 
   const calculatePayouts = async (resultIdx: number) => {

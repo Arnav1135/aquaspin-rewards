@@ -204,7 +204,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
       // Card draw sequence (Heavy drops)
       setTimeout(() => {
         setDragonCard(dCard);
-        audio.play('dragontiger', 'card-flip-reveal', { win: dVal > tVal });
+        audio.play('dragontiger', 'card-flip-reveal', { win: dCard.value > tCard.value });
         vibrate(30);
       }, 600);
 
@@ -216,7 +216,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
       setTimeout(() => {
         setTigerCard(tCard);
-        audio.play('dragontiger', 'card-flip-reveal', { win: tVal > dVal });
+        audio.play('dragontiger', 'card-flip-reveal', { win: tCard.value > dCard.value });
         vibrate(30);
       }, 1800);
 
@@ -256,8 +256,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
             toast.success(`🎉 ${winner.toUpperCase()} wins! +${earned - betAmount} tokens!`);
             
             // Dragon flame roaring vs Tiger gale wind sounds
-            const winTone = winner === 'dragon' ? 523.25 : 659.25;
-            playTone(winTone, 0.2, 'sine', 0.35);
+            audio.play('dragontiger', 'win-fanfare');
             vibrate([60, 40, 120]);
           } else if (winner === 'tie') {
             toast.custom(() => (

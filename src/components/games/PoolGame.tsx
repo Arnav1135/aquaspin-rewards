@@ -7,6 +7,7 @@ import { TouchControls } from './pool/TouchControls';
 import { HUD } from './pool/HUD';
 import { usePoolEconomy, TABLE_TIERS } from './pool/PoolEconomy';
 import { usePoolRules } from './pool/RulesEngine';
+import { audio } from '@/lib/audioEngine';
 
 interface Props { onClose: () => void; }
 
@@ -29,6 +30,7 @@ export function PoolGame({ onClose }: Props) {
     // For now, Scene3D will monitor state changes or we pass a ref.
     // To keep it simple, we can dispatch an event that the Scene3D listens to.
     window.dispatchEvent(new CustomEvent('pool-strike', { detail: { power: p, angle: cueAngle } }));
+    audio.play('pool', 'hit');
   };
 
   const handleStart = () => {
@@ -36,6 +38,7 @@ export function PoolGame({ onClose }: Props) {
     startMatch();
     setCueAngle(0);
     setPower(0);
+    audio.play('pool', 'click');
   };
 
   return (
@@ -54,7 +57,7 @@ export function PoolGame({ onClose }: Props) {
               {TABLE_TIERS.slice(0,3).map(tier => (
                 <div 
                   key={tier.id}
-                  onClick={() => selectTier(tier.id)}
+                  onClick={() => { selectTier(tier.id); audio.play('pool', 'click'); }}
                   className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 ${selectedTier === tier.id ? 'bg-cyan-900/40 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.3)] transform scale-105' : 'bg-slate-900/60 border-slate-700 hover:border-slate-500'}`}
                 >
                   <h3 className="text-xl font-bold text-white mb-4">{tier.name}</h3>

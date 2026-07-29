@@ -2,7 +2,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import { LayerA_ErrorBoundary } from '../../engine/stability/LayerA_ErrorBoundary';
 import { RecoveryCoordinator } from '../../engine/stability/RecoveryCoordinator';
 import { ChaosTestRunner } from '../../engine/stability/ChaosTestRunner';
@@ -216,7 +217,7 @@ export function LudoGame({ onClose }: Props) {
   const handleRollComplete = useCallback((rolledVal: number) => {
     setRolling(false);
     setDice(rolledVal);
-    playTone(400 + rolledVal * 40, 0.05, 'sine', 0.1);
+    audio.play('ludo', 'dice-roll');
     vibrate(20);
 
     setTokens(tks => {
@@ -301,7 +302,7 @@ export function LudoGame({ onClose }: Props) {
 
       if (isCapture) {
         setCameraState('capture');
-        playTone(600, 0.08, 'sine', 0.15);
+        audio.play('ludo', 'capture');
         vibrate(40);
         const cellX = (targetCell[1] - 7) * 0.5;
         const cellZ = (targetCell[0] - 7) * 0.5;
@@ -311,7 +312,7 @@ export function LudoGame({ onClose }: Props) {
       return newTokens;
     });
 
-    playTone(600, 0.06, 'sine', 0.1);
+    audio.play('ludo', 'move');
     vibrate(15);
     setMovable([]);
     nextTurn(dice !== 6);

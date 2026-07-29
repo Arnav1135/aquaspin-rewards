@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, RefreshCw, Trophy, Undo, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card as UICard } from '@/components/ui/Card';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 interface SolitaireGameProps {
@@ -102,7 +103,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
     setIsPlaying(true);
     setWon(false);
     setSelection(null);
-    playTone(400, 0.1, 'sine', 0.2);
+    audio.play('solitaire', 'card-deal');
   };
 
   // Check Win Condition
@@ -113,7 +114,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       setWon(true);
       setIsPlaying(false);
       setSelection(null);
-      playTone(600, 0.3, 'sine', 0.3);
+      audio.play('solitaire', 'win');
       toast.success('Congratulations! You won the game!');
     }
   }, [board, won]);
@@ -130,12 +131,12 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       if (newBoard.waste.length === 0) return;
       newBoard.deck = [...newBoard.waste].reverse().map(c => ({ ...c, isFaceUp: false }));
       newBoard.waste = [];
-      playTone(300, 0.05, 'triangle', 0.1);
+      audio.play('solitaire', 'card-deal');
     } else {
       const card = newBoard.deck.pop()!;
       card.isFaceUp = true;
       newBoard.waste.push(card);
-      playTone(400, 0.05, 'sine', 0.1);
+      audio.play('solitaire', 'card-deal');
     }
 
     setBoard(newBoard);
@@ -159,7 +160,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       if (pileType === 'waste' && cardIdx !== pile.length - 1) return;
 
       setSelection({ pileType, pileIdx, cardIdx });
-      playTone(500, 0.02, 'sine', 0.05);
+      audio.play('solitaire', 'card-move');
     } else {
       if (pileType === 'tableau') {
         attemptMoveToTableau(pileIdx);
@@ -214,10 +215,10 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       
       setBoard(newBoard);
       incrementMoves();
-      playTone(600, 0.05, 'sine', 0.1);
-      vibrate(20);
+      audio.play('solitaire', 'card-move');
+      vibrate(10);
     } else {
-      playTone(200, 0.1, 'sawtooth', 0.1);
+      audio.play('solitaire', 'invalid');
       vibrate(40);
     }
     setSelection(null);
@@ -263,10 +264,10 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       addScore(10);
       setBoard(newBoard);
       incrementMoves();
-      playTone(700, 0.08, 'sine', 0.1);
-      vibrate(20);
+      audio.play('solitaire', 'card-move');
+      vibrate(15);
     } else {
-      playTone(200, 0.1, 'sawtooth', 0.1);
+      audio.play('solitaire', 'invalid');
       vibrate(40);
     }
     setSelection(null);

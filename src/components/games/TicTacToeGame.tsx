@@ -2,7 +2,8 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 interface Props { onClose: () => void }
@@ -89,14 +90,14 @@ export function TicTacToeGame({ onClose }: Props) {
     if (win) {
       setResult(win);
       setScores(s => ({ ...s, [placer]: s[placer] + 1 }));
-      playTone(placer === 'X' ? 700 : 400, 0.1, 'sine', 0.3); vibrate(80);
+      audio.play('tictactoe', 'win'); vibrate(80);
       toast.success(placer === 'X' ? '🎉 You win!' : mode === 'ai' ? '🤖 AI wins!' : '⭕ O wins!');
       return true;
     }
     if (nb.every(c => c !== null)) {
       setResult('draw');
       setScores(s => ({ ...s, D: s.D + 1 }));
-      playTone(300, 0.08, 'sine', 0.2);
+      audio.play('tictactoe', 'draw');
       toast('🤝 Draw!');
       return true;
     }
@@ -107,7 +108,7 @@ export function TicTacToeGame({ onClose }: Props) {
     if (board[idx] || result || aiThinking || (!xTurn && mode === 'ai')) return;
     const nb = place(idx, board, xTurn);
     setBoard(nb); setAnimCell(idx);
-    playTone(xTurn ? 600 : 400, 0.04, 'sine', 0.08); vibrate(20);
+    audio.play('tictactoe', 'place'); vibrate(20);
     const done = handleResult(nb, xTurn ? 'X' : 'O');
     if (!done) {
       setXTurn(!xTurn);
@@ -118,7 +119,7 @@ export function TicTacToeGame({ onClose }: Props) {
           if (aiIdx >= 0) {
             const nb2 = place(aiIdx, nb, false);
             setBoard(nb2); setAnimCell(aiIdx);
-            playTone(400, 0.04, 'sine', 0.08); vibrate(15);
+            audio.play('tictactoe', 'place'); vibrate(15);
             handleResult(nb2, 'O');
             setXTurn(true);
           }

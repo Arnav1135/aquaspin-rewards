@@ -316,6 +316,44 @@ export class AudioEngine {
         }
         break;
 
+      case 'chess':
+        if (eventName === 'move') this.playClick(200 * jitter, 0.1, 'triangle');
+        if (eventName === 'capture') this.playClick(100, 0.15, 'sawtooth');
+        if (eventName === 'check') this.playChime(600, 0.5, 0.4);
+        if (eventName === 'checkmate') {
+           setTimeout(() => this.playChime(400, 0.4), 0);
+           setTimeout(() => this.playChime(300, 0.8), 200);
+        }
+        break;
+        
+      case 'ludo':
+        if (eventName === 'dice-roll') {
+           this.playClick(800, 0.05, 'square');
+           setTimeout(() => this.playClick(1000, 0.05, 'square'), 50);
+        }
+        if (eventName === 'move') this.playClick(500 * jitter, 0.05, 'triangle');
+        if (eventName === 'capture') this.playClick(200, 0.1, 'sawtooth');
+        if (eventName === 'home') this.playChime(1200, 0.4, 0.3);
+        break;
+        
+      case 'solitaire':
+        if (eventName === 'card-deal' || eventName === 'card-move') this.playClick(1500 * jitter, 0.03, 'triangle');
+        if (eventName === 'card-flip') this.playClick(1200 * jitter, 0.05, 'triangle');
+        if (eventName === 'invalid') this.playClick(300, 0.1, 'sawtooth');
+        if (eventName === 'win') {
+           this.playChime(800, 0.4, 0.4);
+           setTimeout(() => this.playChime(1000, 0.8, 0.4), 200);
+        }
+        break;
+        
+      case 'tictactoe':
+      case 'dotsandboxes':
+        if (eventName === 'place') this.playClick(600 * jitter, 0.05, 'sine');
+        if (eventName === 'score-box') this.playChime(1000, 0.3, 0.3);
+        if (eventName === 'win') this.playChime(1200, 0.6, 0.4);
+        if (eventName === 'draw') this.playChime(400, 0.4, 0.2);
+        break;
+
       default:
         // Generic fallback
         if (eventName.includes('win')) this.playChime();

@@ -2,7 +2,8 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 interface Props { onClose: () => void }
@@ -86,7 +87,8 @@ export function DotsAndBoxesGame({ onClose }: Props) {
     const pScore = newBoxes.flat().filter(b=>b==='player').length;
     const aScore = newBoxes.flat().filter(b=>b==='ai').length;
     setLines(newLines); setBoxes(newBoxes); setScores({ player:pScore, ai:aScore });
-    playTone(gained>0?750:500, 0.05, 'sine', 0.08);
+    if (gained > 0) audio.play('dotsandboxes', 'score-box');
+    else audio.play('dotsandboxes', 'place');
     if (gained>0) { vibrate(20); toast.success(`+${gained} box${gained>1?'es':''}!`); }
     const total = (GRID-1)*(GRID-1);
     if(pScore+aScore>=total) { setPhase('done'); return; }
@@ -99,7 +101,8 @@ export function DotsAndBoxesGame({ onClose }: Props) {
         const pS2 = nb2.flat().filter(b=>b==='player').length;
         const aS2 = nb2.flat().filter(b=>b==='ai').length;
         setLines(nl2); setBoxes(nb2); setScores({ player:pS2, ai:aS2 });
-        playTone(g2>0?450:350, 0.04, 'sine', 0.07);
+        if (g2 > 0) audio.play('dotsandboxes', 'score-box');
+        else audio.play('dotsandboxes', 'place');
         if(pS2+aS2>=total) { setPhase('done'); return; }
         setIsPlayer(g2===0);
         setAiThinking(false);

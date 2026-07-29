@@ -1,5 +1,5 @@
 // src/components/games/CoinFlipGame.tsx
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
@@ -10,6 +10,10 @@ import { BetControl } from '@/components/ui/BetControl';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
+import { GameEngine3D } from '@/engine/GameEngine3D';
+import { RigidBody, RapierRigidBody } from '@react-three/rapier';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import {
   createAppError,
   handleError,
@@ -35,31 +39,72 @@ type CoinSide = 'heads' | 'tails' | null;
  * - Fair payout multiplier: (1 - houseEdge) / 0.5 ≈ 1.98x at 1% edge
  * - House edge: 1%
  */
-function CoinFlip({ side, flipping }: { side: CoinSide; flipping: boolean }) {
-  const isHeads = side === 'heads';
+function Coin3D({ flipping, result, selectedSide }: { flipping: boolean; result: CoinSide; selectedSide: CoinSide }) {
+  const coinRef = useRef<RapierRigidBody>(null);
+  const meshRef = useRef<THREE.Group>(null);
+  
+  // When flipping starts, apply upward impulse and torque
+  useEffect(() => {
+    if (flipping && coinRef.current) {
+      coinRef.current.setTranslation({ x: 0, y: 1, z: 0 }, true);
+      coinRef.current.setLinvel({ x: 0, y: 8, z: 0 }, true); // Shoot up
+      
+      // Calculate target rotation to land on result
+      // Heads = 0, Tails = PI rotation
+      // Since it spins fast, we just apply a huge torque and then dampen it later,
+      // But Rapier is nondeterministic for exact faces. We'll use a cinematic approach:
+      // We spin the visual mesh and then lock it when flipping ends!
+    }
+  }, [flipping]);
+
+  useFrame((_state) => {
+    if (flipping && meshRef.current) {
+      // Cinematic spin overriding physics rotation for the mesh
+      meshRef.current.rotation.x += 0.3;
+      meshRef.current.rotation.y += 0.1;
+    } else if (!flipping && meshRef.current) {
+      // Snap to result
+      meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, result === 'tails' ? Math.PI : 0, 0.1);
+      meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, 0, 0.1);
+    }
+  });
 
   return (
-    <motion.div
-      className="w-24 h-24 rounded-full flex items-center justify-center text-5xl font-bold cursor-default select-none"
-      style={{
-        transformStyle: 'preserve-3d',
-        perspective: '1000px',
-        background: isHeads
-          ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
-          : 'linear-gradient(135deg, #c084fc 0%, #a855f7 100%)',
-        boxShadow: isHeads
-          ? '0 0 40px rgba(251, 191, 36, 0.6), inset 0 0 10px rgba(255,255,255,0.5)'
-          : '0 0 40px rgba(168, 85, 247, 0.6), inset 0 0 10px rgba(255,255,255,0.5)',
-      }}
-      animate={
-        flipping
-          ? { rotateX: [0, 1080], rotateZ: [0, 360], scale: [1, 1.2, 1] }
-          : { rotateX: 0, rotateZ: 0, scale: 1 }
-      }
-      transition={flipping ? { duration: 1.5, type: 'spring', stiffness: 50, damping: 10 } : { type: 'spring', stiffness: 300, damping: 20 }}
-    >
-      <div style={{ transform: 'translateZ(10px)' }}>{isHeads ? '👑' : '🪙'}</div>
-    </motion.div>
+    <group>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
+      <pointLight position={[0, 2, 0]} intensity={2} color={selectedSide === 'heads' ? '#fbbf24' : '#a855f7'} />
+
+      <RigidBody ref={coinRef} colliders="hull" restitution={0.4} friction={0.5}>
+        <group ref={meshRef}>
+          {/* Coin Body */}
+          <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[1.5, 1.5, 0.2, 32]} />
+            <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} />
+          </mesh>
+          
+          {/* Heads Face */}
+          <mesh position={[0, 0.11, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[1.4, 32]} />
+            <meshStandardMaterial color="#f59e0b" metalness={0.5} roughness={0.5} />
+          </mesh>
+
+          {/* Tails Face */}
+          <mesh position={[0, -0.11, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[1.4, 32]} />
+            <meshStandardMaterial color="#a855f7" metalness={0.5} roughness={0.5} />
+          </mesh>
+        </group>
+      </RigidBody>
+
+      {/* Floor to catch the coin */}
+      <RigidBody type="fixed" position={[0, -2, 0]}>
+        <mesh receiveShadow>
+          <boxGeometry args={[10, 0.5, 10]} />
+          <meshStandardMaterial color="#0f1729" />
+        </mesh>
+      </RigidBody>
+    </group>
   );
 }
 
@@ -406,10 +451,14 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
               backgroundImage: 'radial-gradient(ellipse at center, #1a2847 0%, #0f1729 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 0, transparent 50%)',
             }}
           >
-            <CoinFlip side={result || selectedSide} flipping={flipping} />
+            <div className="absolute inset-0 z-0">
+              <GameEngine3D cameraPosition={[0, 3, 6]} enablePhysics={true} enablePostProcessing={true}>
+                <Coin3D flipping={flipping} result={result || selectedSide || 'heads'} selectedSide={selectedSide} />
+              </GameEngine3D>
+            </div>
 
-            {/* Result display */}
-            <div className="min-h-[48px] text-center">
+            {/* Result display overlay */}
+            <div className="absolute bottom-10 inset-x-0 min-h-[48px] text-center z-10 pointer-events-none">
               <AnimatePresence>
                 {result && (
                   <motion.div

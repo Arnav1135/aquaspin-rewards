@@ -9,6 +9,8 @@ import { BetControl } from '@/components/ui/BetControl';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
+import { MockBackend } from '@/lib/api';
+import { OpportunityEngine } from '@/lib/opportunityEngine';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody } from '@react-three/rapier';
@@ -485,6 +487,11 @@ export function CrashGame({ onClose }: CrashGameProps) {
   const [socialFeed, setSocialFeed] = useState<SocialEntry[]>([]);
   const [safetyCoverOpen, setSafetyCoverOpen] = useState(false);
   
+  // Provably Fair State
+  const [clientSeed, setClientSeed] = useState(() => Math.random().toString(36).substring(2));
+  const [serverSeedHash, setServerSeedHash] = useState('');
+  const [serverSeed, setServerSeed] = useState<string | null>(null);
+
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [flightPath, setFlightPath] = useState<THREE.Vector3[]>([]);
   const [flashOpacity, setFlashOpacity] = useState(0);
@@ -505,6 +512,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
   const [pastCrashes, setPastCrashes] = useState<number[]>([1.5, 2.4, 4.0, 8.2]);
   
   const crashTimeRef = useRef(0);
+  const serverSeedRef = useRef<string | null>(null);
 
   useEffect(() => { autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
   useEffect(() => { cashedOutRef.current = cashedOut; }, [cashedOut]);
@@ -538,6 +546,11 @@ export function CrashGame({ onClose }: CrashGameProps) {
       setGameState('crashed');
       setPastCrashes(prev => [crashPointRef.current, ...prev.slice(0, 3)]);
       
+      OpportunityEngine.registerGameOutcome(profile?.id || 'guest', 'Crash', betAmount, false, 0);
+
+      // Reveal server seed
+      if (serverSeedRef.current) setServerSeed(serverSeedRef.current);
+
       // Trigger screen shake and flash
       setShakeActive(true);
       crashTimeRef.current = Date.now();
@@ -641,7 +654,23 @@ export function CrashGame({ onClose }: CrashGameProps) {
           }
         }
         updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
-        crashPointRef.current = Math.random() < 0.03 ? 1.0 : Math.max(1.01, Math.round((0.96 / Math.random()) * 100) / 100);
+        
+        // Provably Fair Mechanics
+        const hash = MockBackend.getCommitment(clientSeed);
+        setServerSeedHash(hash);
+        setServerSeed(null);
+
+        const result = MockBackend.placeBet(clientSeed, 1, actualBetAmount);
+        const randomFloat = result.outcome;
+        
+        // Crash Point Formula (e.g. 1% house edge)
+        const point = Math.floor(100 * (0.99 / (1 - randomFloat))) / 100;
+        crashPointRef.current = Math.max(1.00, point);
+        crashTimeRef.current = Date.now(); // prepare for crash
+        
+        // Save the secret seed to reveal later
+        serverSeedRef.current = result.serverSeed;
+
         startTimeRef.current = Date.now();
         rAFRef.current = requestAnimationFrame(tick);
 
@@ -675,6 +704,9 @@ export function CrashGame({ onClose }: CrashGameProps) {
     setTimeout(() => setIsAborting(false), 800);
 
     const fb = balance + earned;
+    
+    OpportunityEngine.registerGameOutcome(profile?.id || 'guest', 'Crash', betAmount, true, earned);
+
     if (profile && !profile.id.startsWith('guest')) {
       try {
         await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (earned - betAmount), xp: profile.xp + Math.floor(betAmount * 0.15) }).eq('id', profile.id);
@@ -848,6 +880,29 @@ export function CrashGame({ onClose }: CrashGameProps) {
           <Button variant="ghost" className="w-full text-[10px] text-slate-400 hover:text-slate-400 py-1.5" onClick={onClose}>
             Disconnect Console
           </Button>
+
+          {/* Provably Fair HUD */}
+          <div className="pt-2 border-t border-slate-800 text-[9px] text-slate-500 font-mono space-y-1">
+            <div className="flex justify-between">
+              <span>Client Seed:</span>
+              <span className="text-slate-400 truncate w-32 text-right">{clientSeed}</span>
+            </div>
+            {serverSeedHash && (
+              <div className="flex justify-between">
+                <span>Server Hash:</span>
+                <span className="text-slate-400 truncate w-32 text-right">{serverSeedHash.substring(0, 16)}...</span>
+              </div>
+            )}
+            {serverSeed && (
+              <div className="flex justify-between text-cyan-500">
+                <span>Revealed Seed:</span>
+                <span className="truncate w-32 text-right cursor-help" title={serverSeed}>{serverSeed.substring(0, 16)}...</span>
+              </div>
+            )}
+            <button className="w-full text-center text-cyan-400/50 hover:text-cyan-400 mt-2" onClick={() => setClientSeed(Math.random().toString(36).substring(2))}>
+              Change Client Seed
+            </button>
+          </div>
         </div>
       </Card>
 

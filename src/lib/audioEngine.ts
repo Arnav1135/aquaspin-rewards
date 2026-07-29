@@ -59,6 +59,15 @@ export class AudioEngine {
       this.buses.master.connect(compressor);
       compressor.connect(this.context.destination);
       
+      // Pre-warm: Unlock the AudioContext early
+      const warmOsc = this.context.createOscillator();
+      const warmGain = this.context.createGain();
+      warmGain.gain.value = 0;
+      warmOsc.connect(warmGain);
+      warmGain.connect(this.context.destination);
+      warmOsc.start(0);
+      warmOsc.stop(0.01);
+      
     } catch (e) {
       console.error("Web Audio API not supported", e);
     }
@@ -90,9 +99,18 @@ export class AudioEngine {
   // --- Synthesis Engine ---
   
   // Creates a quick transient percussive click (UI, short impacts)
-  public playClick(freq = 800, decay = 0.05, type: OscillatorType = 'sine') {
+  public playClick(freq = 800, decay = 0.05, type: OscillatorType = 'sine', time?: number) {
     if (!this.context || !this.buses.sfx) return;
-    const t = this.context.currentTime;
+    const t = time ?? (this.context.currentTime + 0.030); // 30ms lookahead
+    
+    // Latency monitor hook
+    if (!time) {
+      // We assume this is triggered interactively
+      setTimeout(() => {
+        // Calculate diff between request time and actual scheduled execution
+        // We'll rely on the audioLatencyMonitor for this in a more robust way
+      }, 0);
+    }
     
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
@@ -112,9 +130,9 @@ export class AudioEngine {
   }
   
   // Creates a tonal chime/bell (Wins, notifications)
-  public playChime(freq = 1200, decay = 0.5, volume = 0.3) {
+  public playChime(freq = 1200, decay = 0.5, volume = 0.3, time?: number) {
     if (!this.context || !this.buses.sfx) return;
-    const t = this.context.currentTime;
+    const t = time ?? (this.context.currentTime + 0.030);
     
     const osc = this.context.createOscillator();
     const gain = this.context.createGain();
@@ -133,9 +151,9 @@ export class AudioEngine {
   }
   
   // Generic Noise burst for impacts (Crash, drops)
-  public playNoiseBurst(duration = 0.2, filterFreq = 1000) {
+  public playNoiseBurst(duration = 0.2, filterFreq = 1000, time?: number) {
     if (!this.context || !this.buses.sfx) return;
-    const t = this.context.currentTime;
+    const t = time ?? (this.context.currentTime + 0.030);
     
     const bufferSize = this.context.sampleRate * duration;
     const buffer = this.context.createBuffer(1, bufferSize, this.context.sampleRate);

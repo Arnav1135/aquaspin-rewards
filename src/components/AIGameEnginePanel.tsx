@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { AGEA } from '@/engine/AIGameEngineArchitect';
 import { motion } from 'framer-motion';
-import { Terminal, Cpu, ShieldAlert, Zap, Layers, X } from 'lucide-react';
+import { Terminal, Cpu, ShieldAlert, Zap, Layers, X, Activity } from 'lucide-react';
+import { reliabilityCore } from '@/lib/reliability/reliabilityCore';
 
 interface Props {
   onClose: () => void;
@@ -10,7 +11,7 @@ interface Props {
 }
 
 export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
-  const [activeTab, setActiveTab] = useState<'status' | 'logs'>('status');
+  const [activeTab, setActiveTab] = useState<'status' | 'logs' | 'reliability'>('status');
   const [selectedGameId, setSelectedGameId] = useState<string>(activeGameId || 'match3');
   const [, setTick] = useState(0);
 
@@ -101,6 +102,15 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
         >
           <Terminal size={14} />
           System Logs
+        </button>
+        <button
+          onClick={() => setActiveTab('reliability')}
+          className={`flex-1 py-3 text-center border-b-2 font-semibold flex items-center justify-center gap-1.5 ${
+            activeTab === 'reliability' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400'
+          }`}
+        >
+          <Activity size={14} />
+          Reliability
         </button>
       </div>
 
@@ -246,7 +256,7 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
               </div>
             ) : null}
           </>
-        ) : (
+        ) : activeTab === 'logs' ? (
           /* Logs Panel */
           <div className="bg-[#111422] border border-slate-800 rounded-2xl p-3 flex-1 flex flex-col h-[calc(100vh-160px)]">
             <div className="flex items-center gap-2 border-b border-slate-800 pb-2 mb-2">
@@ -263,6 +273,32 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
                   <p className="text-slate-300 leading-normal">{log.details}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        ) : (
+          /* Reliability Panel */
+          <div className="bg-[#111422] border border-slate-800 rounded-2xl p-3 flex-1 flex flex-col h-[calc(100vh-160px)]">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2 mb-2">
+              <Activity size={14} className="text-emerald-400" />
+              <span className="text-3xs font-bold text-slate-400 uppercase">Reliability & Diagnostics</span>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2.5 font-mono text-3xs pr-1">
+              {reliabilityCore.getHistory().length === 0 ? (
+                <p className="text-slate-500 text-center mt-4">No diagnostic events logged yet.</p>
+              ) : (
+                reliabilityCore.getHistory().map((evt, i) => (
+                  <div key={i} className="space-y-1 border border-slate-800/40 bg-slate-900/40 p-2 rounded-lg">
+                    <div className="flex justify-between items-center text-slate-500">
+                      <span className={`font-bold ${evt.severity === 'high' ? 'text-rose-400' : evt.severity === 'medium' ? 'text-amber-400' : 'text-emerald-400'}`}>[{evt.category.toUpperCase()}]</span>
+                      <span>{new Date(evt.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-slate-300 leading-normal">{evt.details}</p>
+                    {evt.autoCorrected && (
+                      <p className="text-emerald-400 mt-1 flex items-center gap-1"><Zap size={10} /> Auto-corrected: {evt.correctionApplied}</p>
+                    )}
+                  </div>
+                )).reverse()
+              )}
             </div>
           </div>
         )}

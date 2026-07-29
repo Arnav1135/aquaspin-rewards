@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
+import { triggerWinCelebration } from '@/lib/winCelebration';
 import toast from 'react-hot-toast';
 
 import { Difficulty, Rows, getMultiplierTable, generateColors } from './plinko/plinkoConfig';
@@ -389,10 +390,8 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
         audio.play('plinko', 'big-win-low');
         setTimeout(() => audio.play('plinko', 'big-win-mid'), 100);
         setTimeout(() => audio.play('plinko', 'big-win-high'), 200);
-        if (typeof window !== 'undefined' && (window as any).confetti) {
-          // If a global confetti library was present, we could call it here. 
-          // We'll rely on the CSS explosion for now.
-        }
+        
+        triggerWinCelebration(mult >= 100 ? 'mega' : mult >= 25 ? 'large' : 'medium');
       } else {
         audio.play('plinko', 'bucket-landing', { multiplier: mult });
       }

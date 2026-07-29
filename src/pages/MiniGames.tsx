@@ -1,46 +1,46 @@
 // src/pages/MiniGames.tsx
 // Complete gaming hub — 16 games, fintech UI, GameFrame visibility protection
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gamepad2, X, Search, Maximize2, Minimize2, Cpu, Sparkles, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Free-play & classic games
-import { ClickerGame } from '@/components/games/ClickerGame';
-import { MemoryGame } from '@/components/games/MemoryGame';
-import { QuizGame } from '@/components/games/QuizGame';
-import { TapChallenge } from '@/components/games/TapChallenge';
-import { TicTacToeGame } from '@/components/games/TicTacToeGame';
-import { MathsQuizGame } from '@/components/games/MathsQuizGame';
-import { SudokuGame } from '@/components/games/SudokuGame';
-import { FlappyBirdGame } from '@/components/games/FlappyBirdGame';
-import { PoolGame } from '@/components/games/PoolGame';
-import { KnifeThrowerGame } from '@/components/games/KnifeThrowerGame';
-import { ChickenJumpGame } from '@/components/games/ChickenJumpGame';
-import { DotsAndBoxesGame } from '@/components/games/DotsAndBoxesGame';
-import { DartsGame } from '@/components/games/DartsGame';
-import { ArcheryGame } from '@/components/games/ArcheryGame';
-import { ChessGame } from '@/components/games/ChessGame';
-import { SolitaireGame } from '@/components/games/SolitaireGame';
-import { LudoGame } from '@/components/games/LudoGame';
-
-
+const ClickerGame = lazy(() => import('@/components/games/ClickerGame').then(m => ({ default: m.ClickerGame })));
+const MemoryGame = lazy(() => import('@/components/games/MemoryGame').then(m => ({ default: m.MemoryGame })));
+const QuizGame = lazy(() => import('@/components/games/QuizGame').then(m => ({ default: m.QuizGame })));
+const TapChallenge = lazy(() => import('@/components/games/TapChallenge').then(m => ({ default: m.TapChallenge })));
+const TicTacToeGame = lazy(() => import('@/components/games/TicTacToeGame').then(m => ({ default: m.TicTacToeGame })));
+const MathsQuizGame = lazy(() => import('@/components/games/MathsQuizGame').then(m => ({ default: m.MathsQuizGame })));
+const SudokuGame = lazy(() => import('@/components/games/SudokuGame').then(m => ({ default: m.SudokuGame })));
+const FlappyBirdGame = lazy(() => import('@/components/games/FlappyBirdGame').then(m => ({ default: m.FlappyBirdGame })));
+const PoolGame = lazy(() => import('@/components/games/PoolGame').then(m => ({ default: m.PoolGame })));
+const KnifeThrowerGame = lazy(() => import('@/components/games/KnifeThrowerGame').then(m => ({ default: m.KnifeThrowerGame })));
+const ChickenJumpGame = lazy(() => import('@/components/games/ChickenJumpGame').then(m => ({ default: m.ChickenJumpGame })));
+const DotsAndBoxesGame = lazy(() => import('@/components/games/DotsAndBoxesGame').then(m => ({ default: m.DotsAndBoxesGame })));
+const DartsGame = lazy(() => import('@/components/games/DartsGame').then(m => ({ default: m.DartsGame })));
+const ArcheryGame = lazy(() => import('@/components/games/ArcheryGame').then(m => ({ default: m.ArcheryGame })));
+const ChessGame = lazy(() => import('@/components/games/ChessGame').then(m => ({ default: m.ChessGame })));
+const SolitaireGame = lazy(() => import('@/components/games/SolitaireGame').then(m => ({ default: m.SolitaireGame })));
+const LudoGame = lazy(() => import('@/components/games/LudoGame').then(m => ({ default: m.LudoGame })));
 
 // Betting / Casino games
-import { CoinFlipScene } from '@/features/coinflip/CoinFlipScene';
-import { LimboGame } from '@/components/games/LimboGame';
-import { MinesGame } from '@/components/games/MinesGame';
-import { ChickenGame } from '@/components/games/ChickenGame';
-import { DragonTigerGame } from '@/components/games/DragonTigerGame';
-import { RouletteGame } from '@/components/games/RouletteGame';
-import { CrashGame } from '@/components/games/CrashGame';
-import { PlinkoGame } from '@/components/games/PlinkoGame';
-import CandyCrushGame from '@/components/games/CandyCrushGame';
+const CoinFlipScene = lazy(() => import('@/features/coinflip/CoinFlipScene').then(m => ({ default: m.CoinFlipScene })));
+const LimboGame = lazy(() => import('@/components/games/LimboGame').then(m => ({ default: m.LimboGame })));
+const MinesGame = lazy(() => import('@/components/games/MinesGame').then(m => ({ default: m.MinesGame })));
+const ChickenGame = lazy(() => import('@/components/games/ChickenGame').then(m => ({ default: m.ChickenGame })));
+const DragonTigerGame = lazy(() => import('@/components/games/DragonTigerGame').then(m => ({ default: m.DragonTigerGame })));
+const RouletteGame = lazy(() => import('@/components/games/RouletteGame').then(m => ({ default: m.RouletteGame })));
+const CrashGame = lazy(() => import('@/components/games/CrashGame').then(m => ({ default: m.CrashGame })));
+const PlinkoGame = lazy(() => import('@/components/games/PlinkoGame').then(m => ({ default: m.PlinkoGame })));
+const CandyCrushGame = lazy(() => import('@/components/games/CandyCrushGame')); // Assumed default export
 import { AGEA, GameGenre, VisualStyle } from '@/engine/AIGameEngineArchitect';
 import { AIGameEnginePanel } from '@/components/AIGameEnginePanel';
 import { useAuthStore } from '@/features/authStore';
+import { GameErrorBoundary } from '@/lib/reliability/autoRecovery';
+import { GameSkeleton } from '@/components/ui/GameSkeleton';
 
 // ─────────────────────────────────────────────────────────────
 // Game catalogue
@@ -561,7 +561,11 @@ export function MiniGames() {
                 - Visual isolation (overflow:hidden + isolation:isolate)
                 The game's own onClose passes through to parent's close()
               */}
-              {renderGame(activeGame, close)}
+              <GameErrorBoundary gameId={activeGame}>
+                <Suspense fallback={<GameSkeleton />}>
+                  {renderGame(activeGame, close)}
+                </Suspense>
+              </GameErrorBoundary>
             </div>
           </motion.div>
         )}

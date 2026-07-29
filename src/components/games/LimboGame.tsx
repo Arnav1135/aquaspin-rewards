@@ -7,7 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 interface LimboGameProps { onClose: () => void; }
@@ -165,8 +166,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
     setGlitchActive(false);
 
     // Gravity slingshot launch pulse tone
-    playTone(150, 0.15, 'sawtooth', 0.25);
-    playTone(70, 0.35, 'sine', 0.3); // deep slingshot sub-bass
+    audio.play('limbo', 'crash'); // Slingshot sub-bass
     vibrate(60);
 
     const nb = balance - actualBetAmount;
@@ -198,7 +198,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
       setDepthIntensity(tmp);
 
       // Sonic layer penetrations click melody
-      playTone(280 + tmp * 4, 0.03, 'sine', 0.08);
+      audio.play('limbo', 'tick');
       
       // Proximity tremoring screen shakes
       if (tmp >= targetMultiplier * 0.8) {
@@ -231,8 +231,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
       toast.success(`Target Penetrated! +${winAmt - betAmount} tokens!`, { icon: '🌠' });
       
       // Target hit exact frame freeze / white flash sound
-      playTone(520, 0.15, 'sine', 0.35);
-      setTimeout(() => playTone(1040, 0.3, 'sine', 0.4), 80);
+      audio.play('limbo', 'cash-out');
       vibrate([80, 40, 160]);
     } else {
       if (isNearMiss) {
@@ -246,11 +245,11 @@ export function LimboGame({ onClose }: LimboGameProps) {
             Reality glitched! Stopped at {roll}x (Target: {targetMultiplier}x)
           </div>
         ), { duration: 3000 });
-        playTone(190, 0.3, 'sawtooth', 0.25);
+        audio.play('limbo', 'crash');
         vibrate([100, 50, 100]);
       } else {
         toast.error(`Atmospheric burn at ${roll}x.`);
-        playTone(150, 0.28, 'sawtooth', 0.2);
+        audio.play('limbo', 'crash');
         vibrate(80);
       }
     }
@@ -314,7 +313,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
                   key={p} 
                   onClick={() => {
                     setTargetMultiplier(p);
-                    playTone(320, 0.05, 'sine', 0.1);
+                    audio.play('limbo', 'click');
                   }} 
                   disabled={rolling}
                   className={`py-1.5 rounded-lg text-2xs font-mono font-bold border transition-all ${

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 interface DragonTigerGameProps { onClose: () => void; }
@@ -193,9 +194,8 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
       setOutcome(null);
       setPayoutResult(null);
 
-      // Pedestal activation growl
-      const baseTone = betSelection === 'dragon' ? 180 : betSelection === 'tiger' ? 240 : 200;
-      playTone(baseTone, 0.25, 'triangle', 0.3);
+      // Pedestal activation
+      audio.play('dragontiger', 'card-deal');
       vibrate(50);
 
       const dCard = getRandomCard();
@@ -204,26 +204,26 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
       // Card draw sequence (Heavy drops)
       setTimeout(() => {
         setDragonCard(dCard);
-        playTone(350, 0.1, 'sawtooth', 0.15); // heavy impact
+        audio.play('dragontiger', 'card-flip-reveal', { win: dVal > tVal });
         vibrate(30);
       }, 600);
 
       setTimeout(() => {
         setDragonRevealed(true);
         // Crack flame casing sound
-        playTone(450, 0.08, 'sine', 0.12);
+        audio.play('dragontiger', 'card-deal');
       }, 1200);
 
       setTimeout(() => {
         setTigerCard(tCard);
-        playTone(350, 0.1, 'sawtooth', 0.15);
+        audio.play('dragontiger', 'card-flip-reveal', { win: tVal > dVal });
         vibrate(30);
       }, 1800);
 
       setTimeout(() => {
         setTigerRevealed(true);
         // Wind swirl dissolve sound
-        playTone(450, 0.08, 'sine', 0.12);
+        audio.play('dragontiger', 'card-deal');
       }, 2400);
 
       // Resolve Outcome
@@ -265,11 +265,11 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
                 🤝 Yin-Yang Tie balanced! 50% returned ({earned} tokens)
               </div>
             ));
-            playTone(440, 0.3, 'sine', 0.3);
+            audio.play('dragontiger', 'win-fanfare');
             vibrate(100);
           } else {
             toast.error(`Lost ${betAmount} tokens.`);
-            playTone(160, 0.28, 'sawtooth', 0.2);
+            audio.play('dragontiger', 'lose');
             vibrate(120);
           }
 
@@ -332,7 +332,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
                   <Button 
                     variant={betSelection === 'dragon' ? 'primary' : 'ghost'}
                     disabled={dealing}
-                    onClick={() => { setBetSelection('dragon'); playTone(400, 0.05, 'sine', 0.1); }}
+                    onClick={() => { setBetSelection('dragon'); audio.play('dragontiger', 'click'); }}
                     className={`py-3 rounded-lg text-xs font-bold transition-all ${
                       betSelection === 'dragon' 
                         ? 'border-orange-500 bg-orange-500/10 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.35)]' 
@@ -344,7 +344,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
                   <Button 
                     variant={betSelection === 'tiger' ? 'primary' : 'ghost'}
                     disabled={dealing}
-                    onClick={() => { setBetSelection('tiger'); playTone(400, 0.05, 'sine', 0.1); }}
+                    onClick={() => { setBetSelection('tiger'); audio.play('dragontiger', 'click'); }}
                     className={`py-3 rounded-lg text-xs font-bold transition-all ${
                       betSelection === 'tiger' 
                         ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]' 
@@ -357,7 +357,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
                 <Button 
                   variant={betSelection === 'tie' ? 'primary' : 'ghost'}
                   disabled={dealing}
-                  onClick={() => { setBetSelection('tie'); playTone(400, 0.05, 'sine', 0.1); }}
+                  onClick={() => { setBetSelection('tie'); audio.play('dragontiger', 'click'); }}
                   className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all ${
                     betSelection === 'tie' 
                       ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)]' 

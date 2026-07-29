@@ -9,7 +9,8 @@ import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody, CuboidCollider, BallCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 import { Difficulty, Rows, getMultiplierTable, generateColors } from './plinko/plinkoConfig';
@@ -257,7 +258,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
       (updateProfile as any)({ tokens: newBalance });
       await (supabase.from('users') as any).update({ tokens: newBalance }).eq('id', profile.id);
       
-      (playTone as any)(440, 'sine', 0.1);
+      audio.play('plinko', 'ball-drop-launch');
       await spawnBall(betAmount);
     } catch (e) {
       console.error(e);
@@ -385,15 +386,15 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
         setBigWinIdx(bucketIdx);
         setTimeout(() => setBigWinIdx(null), 1500);
         // Dynamic sound scaling for huge wins
-        (playTone as any)(800, 'square', 0.1);
-        setTimeout(() => (playTone as any)(1000, 'square', 0.15), 100);
-        setTimeout(() => (playTone as any)(1200, 'sine', 0.3), 200);
+        audio.play('plinko', 'big-win-low');
+        setTimeout(() => audio.play('plinko', 'big-win-mid'), 100);
+        setTimeout(() => audio.play('plinko', 'big-win-high'), 200);
         if (typeof window !== 'undefined' && (window as any).confetti) {
           // If a global confetti library was present, we could call it here. 
           // We'll rely on the CSS explosion for now.
         }
       } else {
-        (playTone as any)(mult >= 2 ? 600 : 300, 'sine', 0.2);
+        audio.play('plinko', 'bucket-landing', { multiplier: mult });
       }
       
       if (mult >= 5) vibrate(100);

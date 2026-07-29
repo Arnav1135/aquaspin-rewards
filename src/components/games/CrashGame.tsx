@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
@@ -542,8 +543,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
       crashTimeRef.current = Date.now();
       setFlashOpacity(1);
       
-      playTone(85, 0.5, 'sawtooth', 0.4);
-      playTone(45, 0.8, 'sine', 0.5); 
+      audio.play('crash', 'crash');
       vibrate([150, 50, 250, 50, 300]);
       
       setTinnitusActive(true);
@@ -623,15 +623,14 @@ export function CrashGame({ onClose }: CrashGameProps) {
       ticks--;
       setCountdownTicks(ticks);
       
-      playTone(320, 0.1, 'sine', 0.2);
+      audio.play('crash', 'tick');
       vibrate(12);
 
       if (ticks <= 0) {
         clearInterval(countTimer);
         
         setGameState('climbing');
-        playTone(392.00, 0.12, 'sine', 0.25);
-        setTimeout(() => playTone(523.25, 0.2, 'sine', 0.3), 100);
+        audio.play('crash', 'tick');
 
         const nb = balance - actualBetAmount;
         if (profile && !profile.id.startsWith('guest')) {
@@ -664,14 +663,13 @@ export function CrashGame({ onClose }: CrashGameProps) {
     cashedOutRef.current = true;
     setIsAborting(true);
     
-    playTone(180, 0.15, 'sawtooth', 0.3);
+    audio.play('crash', 'tick');
 
     const earned = Math.floor(betAmount * m);
     setEarnedTokens(earned);
 
     toast.success(`🚀 Sound barrier broken at ${m.toFixed(2)}x! +${earned - betAmount} tokens!`);
-    playTone(523.25, 0.1, 'sine', 0.3);
-    setTimeout(() => playTone(1046.50, 0.2, 'sine', 0.4), 80);
+    audio.play('crash', 'cash-out');
     vibrate([60, 30, 100]);
 
     setTimeout(() => setIsAborting(false), 800);

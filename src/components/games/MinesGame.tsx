@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
@@ -172,7 +173,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
       const intervalMs = (60 / bpm) * 1000;
       
       heartRateInterval.current = setInterval(() => {
-        playTone(90, 0.08, 'sine', 0.15);
+        audio.play('mines', 'tile-flip');
       }, intervalMs);
     } else {
       if (heartRateInterval.current) clearInterval(heartRateInterval.current);
@@ -236,8 +237,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
     setVinnitusActive(false);
     setScreenJolt(null);
     
-    playTone(180, 0.1, 'sawtooth', 0.25);
-    setTimeout(() => playTone(360, 0.15, 'sine', 0.2), 100);
+    audio.play('mines', 'start-game');
   };
 
   const handleTileClick = useCallback(async (id: number) => {
@@ -263,8 +263,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
       setVinnitusActive(true);
       setTimeout(() => setVinnitusActive(false), 2000);
 
-      playTone(100, 0.8, 'sawtooth', 0.4);
-      playTone(50, 1.2, 'sine', 0.5); 
+      audio.play('mines', 'mine-hit');
       vibrate([150, 75, 200, 75, 300]);
       
       toast.error('💥 DETONATED! Hit a live mine!', { duration: 3000 });
@@ -278,7 +277,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
             copy[mid] = { ...copy[mid], clicked: true };
             return copy;
           });
-          playTone(90 + i * 20, 0.05, 'sawtooth', 0.1);
+          audio.play('mines', 'tile-flip');
         }, (i + 1) * 80);
       });
 
@@ -294,7 +293,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
       const nc = clicks + 1;
       setClicks(nc);
 
-      playTone(400 + nc * 50, 0.15, 'sine', 0.2);
+      audio.play('mines', 'safe-reveal', { combo: nc });
       vibrate([40, 20, 50]);
 
       if (nc === 25 - mineCount) {
@@ -319,10 +318,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
     const profit = won - betAmount;
     toast.success(`🎉 Secure Abort! +${profit} tokens`, { duration: 3000, icon: '💰' });
 
-    playTone(523.25, 0.12, 'sine', 0.25);
-    setTimeout(() => playTone(659.25, 0.12, 'sine', 0.25), 80);
-    setTimeout(() => playTone(783.99, 0.15, 'sine', 0.25), 160);
-    setTimeout(() => playTone(1046.50, 0.25, 'sine', 0.3), 240);
+    audio.play('mines', 'cash-out');
     vibrate([60, 40, 100, 40, 150]);
 
     const fb = balance + won;
@@ -383,7 +379,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
                   key={n}
                   variant={mineCount === n ? 'primary' : 'ghost'}
                   disabled={isPlaying}
-                  onClick={() => { setMineCount(n); playTone(400, 0.05, 'sine', 0.1); }}
+                  onClick={() => { setMineCount(n); audio.play('mines', 'click'); }}
                   className={`py-2 rounded-xl text-xs font-bold font-mono transition-all ${
                     mineCount === n
                       ? 'border-cyan-400/80 bg-cyan-500/10 text-cyan-300'

@@ -7,7 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 interface ChickenGameProps { onClose: () => void; }
@@ -104,8 +105,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     setChickenPosition(null);
 
     // Startup bawk tone
-    playTone(392, 0.12, 'sine', 0.25);
-    setTimeout(() => playTone(587.33, 0.15, 'sine', 0.2), 80);
+    audio.play('chicken', 'start-game');
   };
 
   const handleTileClick = useCallback(async (id: number) => {
@@ -124,8 +124,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
       setIsPlaying(false);
       setHasWon(false);
 
-      playTone(180, 0.4, 'sawtooth', 0.3); // crack wood
-      playTone(95, 0.6, 'sine', 0.4); // plummet crash
+      audio.play('chicken', 'lose');
       vibrate([100, 50, 200]);
       
       toast.error('💀 Splinter! Plank collapsed!');
@@ -154,7 +153,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
       setClicks(nc);
 
       // Triumphant chirp scale
-      playTone(440 + nc * 45, 0.12, 'sine', 0.25);
+      audio.play('chicken', 'step-forward');
       vibrate([35, 15, 30]);
 
       if (nc === 25 - boneCount) await handleCashOut(nc);
@@ -172,9 +171,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     setTiles(prev => prev.map(t => ({ ...t, clicked: true })));
 
     toast.success(`🐔 Triumphant bawk! +${won - betAmount} tokens!`);
-    playTone(523.25, 0.15, 'sine', 0.3);
-    setTimeout(() => playTone(659.25, 0.15, 'sine', 0.3), 80);
-    setTimeout(() => playTone(783.99, 0.25, 'sine', 0.3), 160);
+    audio.play('chicken', 'cash-out-safe');
     vibrate([60, 40, 120]);
 
     const fb = balance + won;
@@ -267,7 +264,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
                   key={t}
                   onClick={() => {
                     setActiveTheme(t);
-                    playTone(350, 0.05, 'sine', 0.1);
+                    audio.play('chicken', 'click');
                   }}
                   className={`py-1.5 rounded-lg text-3xs font-bold capitalize transition-all ${
                     activeTheme === t
@@ -287,7 +284,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
             <div className="grid grid-cols-5 gap-1.5">
               {[1, 3, 5, 10, 15].map(n => (
                 <Button key={n} variant={boneCount === n ? 'primary' : 'ghost'} disabled={isPlaying}
-                  onClick={() => { setBoneCount(n); playTone(400, 0.05, 'sine', 0.1); }}
+                  onClick={() => { setBoneCount(n); audio.play('chicken', 'click'); }}
                   className={`py-1.5 text-xs rounded-xl font-bold font-mono ${boneCount === n ? 'border-orange-500/80 bg-orange-500/10 text-orange-300' : 'border-slate-850 text-slate-400'}`}>
                   {n}
                 </Button>

@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
 import { GameEngine3D } from '@/engine/GameEngine3D';
@@ -324,7 +325,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
     setPlacedBets(prev => [...prev, bet]);
     
     (updateProfile as any)({ tokens: profile.tokens - betAmount });
-    (playTone as any)(400, 'sine', 0.1);
+    audio.play('roulette', 'click');
   };
 
   const clearBets = () => {
@@ -344,11 +345,11 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
     const resultIdx = Math.floor(Math.random() * 37);
     setWinIdx(resultIdx);
     setGameState('SPINNING');
-    (playTone as any)(280, 'sine', 0.2);
+    audio.play('roulette', 'wheel-spin-up');
     
     setTimeout(() => {
       setGameState('SETTLING');
-      (playTone as any)(600, 'sine', 0.1);
+      audio.play('roulette', 'ball-settling-clicks');
       
       setTimeout(() => {
         setGameState('PAYOUT');
@@ -381,7 +382,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
     if (totalWin > 0 || halfRefund > 0) {
       const earned = totalWin + halfRefund;
       toast.success(`Payout: ${earned} tokens! ${halfRefund > 0 ? '(La Partage Applied)' : ''}`);
-      (playTone as any)(523.25, 'sine', 0.3);
+      audio.play('roulette', 'result-chime', { win: true });
       vibrate([50, 50, 100]);
       
       if (profile) {
@@ -390,7 +391,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       }
     } else {
       toast.error(`Number ${winningNum}. House wins.`);
-      (playTone as any)(160, 'sawtooth', 0.2);
+      audio.play('roulette', 'result-chime', { win: false });
     }
 
     setTimeout(() => {

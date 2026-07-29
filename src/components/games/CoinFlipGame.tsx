@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { playTone, vibrate } from '@/lib/utils';
+import { vibrate } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import {
   createAppError,
   handleError,
@@ -258,7 +259,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
       setFlipping(true);
       setResult(null);
       setPayoutResult(null);
-      playTone(400, 0.1, 'sine', 0.1);
+      audio.play('coinflip', 'coin-toss-spin');
       vibrate([30, 30, 30]);
 
       // Determine result (50/50)
@@ -282,11 +283,11 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
           // User feedback
           if (won) {
             toast.success(`🎉 ${coinResult.toUpperCase()}! +${earned - betAmount} tokens!`);
-            playTone(523, 0.15, 'sine', 0.3);
+            audio.play('coinflip', 'win-result');
             vibrate([50, 50, 100]);
           } else {
             toast.error(`Lost ${betAmount} tokens.`);
-            playTone(180, 0.3, 'sawtooth', 0.2);
+            audio.play('coinflip', 'lose-result');
             vibrate(120);
           }
 
@@ -329,7 +330,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
                   disabled={flipping}
                   onClick={() => {
                     setSelectedSide('heads');
-                    playTone(400, 0.05, 'sine', 0.1);
+                    audio.play('coinflip', 'click');
                   }}
                   className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${
                     selectedSide === 'heads'
@@ -345,7 +346,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
                   disabled={flipping}
                   onClick={() => {
                     setSelectedSide('tails');
-                    playTone(400, 0.05, 'sine', 0.1);
+                    audio.play('coinflip', 'click');
                   }}
                   className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm transition-all ${
                     selectedSide === 'tails'

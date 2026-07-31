@@ -35,7 +35,7 @@ const DragonTigerGame = lazy(() => import('@/components/games/DragonTigerGame').
 const RouletteGame = lazy(() => import('@/components/games/RouletteGame').then(m => ({ default: m.RouletteGame })));
 const CrashGame = lazy(() => import('@/components/games/CrashGame').then(m => ({ default: m.CrashGame })));
 const PlinkoGame = lazy(() => import('@/components/games/PlinkoGame').then(m => ({ default: m.PlinkoGame })));
-const CandyCrushGame = lazy(() => import('@/components/games/CandyCrushGame')); // Assumed default export
+const CandyCrushGame = lazy(() => import('@/components/games/CandyCrushSagaMap')); // Using Saga Map as entry point
 import { AGEA, GameGenre, VisualStyle } from '@/engine/AIGameEngineArchitect';
 import { AIGameEnginePanel } from '@/components/AIGameEnginePanel';
 import { useAuthStore } from '@/features/authStore';

@@ -138,16 +138,51 @@ function CandyMesh({ candy, position, onClick }: { candy: Candy, position: [numb
   );
 }
 
-export default function CandyCrushGame({ onBack, ...props }: { onBack: () => void, balance?: number }) {
+export interface LevelConfig {
+  level: number;
+  targetScore: number;
+  maxMoves: number;
+}
+
+export default function CandyCrushGame({ 
+  onBack, 
+  levelConfig = { level: 1, targetScore: 1000, maxMoves: 30 },
+  onWin,
+  onLose
+}: { 
+  onBack: () => void, 
+  balance?: number,
+  levelConfig?: LevelConfig,
+  onWin?: () => void,
+  onLose?: () => void
+}) {
   const [engine] = useState(() => new CandyEngine(8, 8));
   const [board, setBoard] = useState<(Candy | null)[][]>([]);
   const [selected, setSelected] = useState<{r: number, c: number} | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
   
   const score = useGameStore(s => s.score);
   const moves = useGameStore(s => s.moves);
+  const resetGameStats = useGameStore(s => s.resetGameStats);
 
-  void props.balance;
+  // Initialize stats on mount
+  useEffect(() => {
+    resetGameStats(levelConfig.maxMoves);
+  }, [levelConfig.maxMoves, resetGameStats]);
+
+  // Win/Loss Detection
+  useEffect(() => {
+    if (!isProcessing && !gameOver) {
+      if (score >= levelConfig.targetScore) {
+        setGameOver(true);
+        setTimeout(() => onWin?.(), 1500);
+      } else if (moves <= 0) {
+        setGameOver(true);
+        setTimeout(() => onLose?.(), 1500);
+      }
+    }
+  }, [score, moves, isProcessing, gameOver, levelConfig.targetScore, onWin, onLose]);
 
   useEffect(() => {
     const unsub = Orchestrator.subscribe("game_event", (e: GameEvent) => {

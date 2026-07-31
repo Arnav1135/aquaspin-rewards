@@ -27,6 +27,21 @@
     />
     
     <title>AquaSpin Rewards — Spin & Win Real Cash</title>
+    <!-- RESCUE SCRIPT: Force unregister broken service workers to bypass PWA cache trap -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          let hasUnregistered = false;
+          for(let registration of registrations) {
+            registration.unregister();
+            hasUnregistered = true;
+          }
+          if(hasUnregistered && !window.location.search.includes('cleared=1')) {
+            window.location.href = window.location.pathname + '?cleared=1';
+          }
+        });
+      }
+    </script>
   </head>
   <body class="bg-navy-900 text-text-primary antialiased">
     <div id="root"></div>

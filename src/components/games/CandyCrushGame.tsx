@@ -30,7 +30,7 @@ const colorMap: Record<CandyColor, string> = {
 };
 
 function CandyMesh({ candy, position, onClick }: { candy: Candy, position: [number, number, number], onClick: () => void }) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
   const targetPos = new THREE.Vector3(...position);
   const velocity = useRef(new THREE.Vector3(0, 0, 0));
   

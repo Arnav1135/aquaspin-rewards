@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { GameFrame } from './GameFrame';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
+import { motion } from 'framer-motion';
 import * as THREE from 'three';
 import { CandyEngine, Candy } from './candycrush/CandyEngine';
 import { Orchestrator, GameEvent, CandyColor } from './candycrush/Orchestrator';
@@ -161,6 +163,7 @@ export default function CandyCrushGame({
   const [selected, setSelected] = useState<{r: number, c: number} | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [activeEffects, setActiveEffects] = useState<{id: string, r: number, c: number, type: 'pop' | 'score', text?: string}[]>([]);
   
   const score = useGameStore(s => s.score);
   const moves = useGameStore(s => s.moves);
@@ -191,6 +194,27 @@ export default function CandyCrushGame({
       }
       if (e.type === "board_settled") {
         setIsProcessing(false);
+      }
+      if (e.type === "match_found" && e.payload.matches && e.payload.matches.length > 0) {
+        const center = e.payload.matches[Math.floor(e.payload.matches.length / 2)];
+        const newFx: {id: string, r: number, c: number, type: 'pop' | 'score', text?: string}[] = [];
+        
+        // Add pop effects for each candy
+        e.payload.matches.forEach((m: any) => {
+          newFx.push({ id: Math.random().toString(), r: m.r, c: m.c, type: 'pop' });
+        });
+        
+        // Add score floater at the center of the match
+        if (e.payload.score > 0) {
+          newFx.push({ id: Math.random().toString(), r: center.r, c: center.c, type: 'score', text: `+${e.payload.score}` });
+        }
+        
+        setActiveEffects(prev => [...prev, ...newFx]);
+        
+        // Cleanup effects after animation completes
+        setTimeout(() => {
+          setActiveEffects(prev => prev.filter(fx => !newFx.find(nf => nf.id === fx.id)));
+        }, 1000);
       }
     });
 
@@ -254,6 +278,30 @@ export default function CandyCrushGame({
                   );
                 })
               )}
+              
+              {/* Transient Visual Effects */}
+              {activeEffects.map(fx => (
+                <Html key={fx.id} position={[fx.c, -fx.r, 0]} center className="pointer-events-none">
+                  {fx.type === 'pop' ? (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 1 }}
+                      animate={{ scale: 2.5, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className="w-16 h-16 rounded-full border-4 border-white shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+                    />
+                  ) : (
+                    <motion.div
+                      initial={{ y: 0, opacity: 1, scale: 0.5 }}
+                      animate={{ y: -40, opacity: 0, scale: 1.2 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="text-2xl font-black text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                      style={{ WebkitTextStroke: '1px #b45309' }}
+                    >
+                      {fx.text}
+                    </motion.div>
+                  )}
+                </Html>
+              ))}
             </group>
           </Canvas>
         </div>

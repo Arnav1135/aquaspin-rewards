@@ -58,7 +58,7 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, on
       >
         <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.4, 0.5]} position={[0, -0.2, 0]} />
       </RigidBody>
-      <Html center position={[0, -0.3, 0]} className="pointer-events-none">
+      <Html center position={[0, -0.3, 0]} className="pointer-events-none" style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>
         <div className="relative">
           {isBigWin && (
             <div className="absolute inset-0 z-0 animate-ping rounded-full bg-yellow-400 opacity-75 blur-md" style={{ transform: 'scale(3)' }}></div>
@@ -69,8 +69,9 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, on
               backgroundColor: style.backgroundColor, 
               color: style.color, 
               boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)',
-              fontSize: numBuckets > 13 ? '8px' : numBuckets > 10 ? '10px' : '12px',
-              padding: numBuckets > 13 ? '3px 4px' : '5px 8px',
+              fontSize: numBuckets >= 15 ? '7px' : numBuckets > 12 ? '9px' : '12px',
+              padding: numBuckets >= 15 ? '2px 2px' : numBuckets > 12 ? '4px 4px' : '5px 8px',
+              transform: numBuckets >= 15 ? 'scale(0.85)' : 'none'
             }}
           >
             {style.multiplier}x
@@ -171,6 +172,13 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
   );
 }
 
+// Ensure importing interactionGroups from rapier if we use it, otherwise use bitmasks directly.
+// In Rapier, collisionGroups is a 32-bit integer: (memberships << 16) | filters
+// If all balls are in group 1, and pegs/buckets are in group 0 (default, meaning all bits 1).
+// To make balls ignore other balls: membership=1, filter=~1 (meaning everything except 1)
+// memberships = 0x0002, filter = 0xFFFD -> (0x0002 << 16) | 0xFFFD = 0x0002FFFD
+const BALL_COLLISION_GROUP = 0x0002FFFD;
+
 function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, position: [number, number, number], steeringState: PathSteeringState, onDespawn: (id: string) => void }) {
   const rbRef = useRef<any>(null);
   const steerRef = useRef<PathSteeringState>({ ...steeringState });
@@ -183,6 +191,13 @@ function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, po
     return () => clearTimeout(timer);
   }, [id, onDespawn]);
 
+  // Give it an initial spin to prevent sticking
+  useEffect(() => {
+    if (rbRef.current) {
+      rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: (Math.random() - 0.5) * 0.1 }, true);
+    }
+  }, []);
+
   const handleCollision = (e: any) => {
     if (e.other.rigidBodyObject?.userData?.isPeg) {
       const now = Date.now();
@@ -193,6 +208,7 @@ function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, po
       if (rbRef.current) {
         const impulse = getBiasImpulse(steerRef.current);
         rbRef.current.applyImpulse(impulse, true);
+        rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: (Math.random() - 0.5) * 0.05 }, true);
       }
     }
   };
@@ -208,6 +224,7 @@ function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, po
       name={id}
       enabledTranslations={[true, true, false]}
       onCollisionEnter={handleCollision}
+      collisionGroups={BALL_COLLISION_GROUP}
     >
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[0.25, 16, 16]} />

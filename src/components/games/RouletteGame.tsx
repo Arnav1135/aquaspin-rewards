@@ -243,9 +243,15 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
 function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameState, winIdx: number | null, wheelRotRef: any }) {
   const ballRef = useRef<any>(null);
   const time = useRef(0);
+  const lastState = useRef<GameState>('BETTING');
   
   useFrame((_, delta) => {
     if (!ballRef.current || winIdx === null) return;
+    
+    if (lastState.current !== gameState) {
+      time.current = 0;
+      lastState.current = gameState;
+    }
     
     if (gameState === 'SPINNING') {
       time.current += delta;

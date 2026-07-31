@@ -78,10 +78,18 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, on
         </div>
       </Html>
       
-      {/* Invisible divider wall perfectly aligned under the peg above it to prevent horizontal skipping */}
+      {/* Visible divider wall perfectly aligned under the peg above it to cleanly separate buckets */}
       <RigidBody type="fixed" position={[PEG_SPACING_X/2, -0.2, 0]} restitution={0.4} friction={0}>
          <CuboidCollider args={[0.02, 0.5, 0.25]} />
          <BallCollider args={[0.04]} position={[0, 0.5, 0]} />
+         <mesh position={[0, 0, 0]}>
+           <boxGeometry args={[0.04, 1.0, 0.4]} />
+           <meshStandardMaterial color="#CBD5E1" roughness={0.5} />
+         </mesh>
+         <mesh position={[0, 0.5, 0]}>
+           <sphereGeometry args={[0.04, 16, 16]} />
+           <meshStandardMaterial color="#CBD5E1" roughness={0.5} />
+         </mesh>
       </RigidBody>
     </group>
   );
@@ -92,12 +100,12 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
   const colors = useMemo(() => generateColors(difficulty, multipliers), [difficulty, multipliers]);
 
   const pegPositions = useMemo(() => {
-    const positions: THREE.Vector3[] = [];
+    const positions: { id: string, pos: THREE.Vector3 }[] = [];
     for (let r = 0; r < rows; r++) {
       const cols = r + 3;
       const startX = -((cols - 1) * PEG_SPACING_X) / 2;
       for (let c = 0; c < cols; c++) {
-        positions.push(new THREE.Vector3(startX + c * PEG_SPACING_X, -r * PEG_SPACING_Y, 0));
+        positions.push({ id: `peg-${r}-${c}`, pos: new THREE.Vector3(startX + c * PEG_SPACING_X, -r * PEG_SPACING_Y, 0) });
       }
     }
     return positions;
@@ -109,20 +117,19 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
 
   return (
     <group position={[0, rows * 0.4, 0]}>
-      <RigidBody type="fixed">
-        <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} receiveShadow>
-          <boxGeometry args={[rows * PEG_SPACING_X + 4, rows * PEG_SPACING_Y + 4, 0.5]} />
-          {/* Light Mode Board Background */}
-          <meshStandardMaterial color="#F0F4F8" roughness={0.7} metalness={0.1} />
-        </mesh>
-      </RigidBody>
+      {/* Background board (No RigidBody to prevent ball scraping against it) */}
+      <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} receiveShadow>
+        <boxGeometry args={[rows * PEG_SPACING_X + 4, rows * PEG_SPACING_Y + 4, 0.5]} />
+        {/* Light Mode Board Background */}
+        <meshStandardMaterial color="#F0F4F8" roughness={0.7} metalness={0.1} />
+      </mesh>
 
       {/* Individual Pegs */}
-      {pegPositions.map((pos, idx) => (
+      {pegPositions.map((peg) => (
         <RigidBody 
-          key={idx} 
+          key={peg.id} 
           type="fixed" 
-          position={pos}
+          position={peg.pos}
           restitution={0.3}
           friction={0.1}
           userData={{ isPeg: true }}
@@ -278,7 +285,8 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
     const payout = bet * multipliers[outcome.targetBucket];
     
     const id = Math.random().toString(36).substr(2, 9);
-    const startX = (Math.random() - 0.5) * 0.5;
+    // Drop strictly from center (with a microscopic jitter to avoid perfect infinite balancing on the first peg)
+    const startX = (Math.random() - 0.5) * 0.02;
     
     const steer: PathSteeringState = {
       path: outcome.path,

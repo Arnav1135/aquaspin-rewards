@@ -1,4 +1,4 @@
-import { Orchestrator, CandyColor, SpecialType, GridPosition, GameEvent } from './Orchestrator';
+import { Orchestrator, CandyColor, SpecialType, GameEvent } from './Orchestrator';
 
 export interface Candy {
   id: string;

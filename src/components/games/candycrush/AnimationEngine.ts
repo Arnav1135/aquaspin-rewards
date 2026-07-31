@@ -1,4 +1,4 @@
-import { Orchestrator, AnimationEvent, GameEvent, GridPosition } from './Orchestrator';
+import { Orchestrator, GameEvent, GridPosition } from './Orchestrator';
 
 export class AnimationEngineImpl {
   constructor() {

@@ -69,18 +69,18 @@ class OrchestratorImpl {
 
   subscribe<K extends keyof EventMap>(channel: K, callback: Subscriber<EventMap[K]>) {
     if (!this.subscribers[channel]) {
-      this.subscribers[channel] = [];
+      this.subscribers[channel] = [] as any;
     }
-    this.subscribers[channel]!.push(callback);
+    this.subscribers[channel]!.push(callback as any);
     
     return () => {
-      this.subscribers[channel] = this.subscribers[channel]!.filter(cb => cb !== callback);
+      this.subscribers[channel] = this.subscribers[channel]!.filter(cb => cb !== (callback as any)) as any;
     };
   }
 
   emit<K extends keyof EventMap>(channel: K, event: EventMap[K]) {
     if (this.subscribers[channel]) {
-      this.subscribers[channel]!.forEach(cb => cb(event));
+      this.subscribers[channel]!.forEach((cb: any) => cb(event));
     }
   }
 

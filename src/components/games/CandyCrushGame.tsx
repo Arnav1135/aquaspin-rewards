@@ -74,8 +74,10 @@ function CandyMesh({ candy, position, onClick }: { candy: Candy, position: [numb
   );
 }
 
-export default function CandyCrushGame({ onBack, balance }: { onBack: () => void, balance?: number }) {
+export default function CandyCrushGame({ onBack, ...props }: { onBack: () => void, balance?: number }) {
   const [engine] = useState(() => new CandyEngine(8, 8));
+  // Keep balance in props to satisfy caller without TS complaining it is unused
+  void props.balance;
   const [board, setBoard] = useState<(Candy | null)[][]>([]);
   const [selected, setSelected] = useState<{r: number, c: number} | null>(null);
   const [score, setScore] = useState(0);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { GameFrame } from './GameFrame';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -164,37 +164,39 @@ export default function CandyCrushGame({ onBack, ...props }: { onBack: () => voi
         
         <div className="flex-1 w-full max-w-md relative">
           <Canvas orthographic camera={{ position: [0, 0, 10], zoom: 45 }}>
-            <Environment preset="studio" />
-            <ambientLight intensity={0.4} />
-            <directionalLight position={[5, 10, 5]} intensity={1.2} />
-            <pointLight position={[-5, -5, 5]} intensity={0.8} />
-            
-            <EffectComposer>
-              <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.1} intensity={0.5} />
-              <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} />
-            </EffectComposer>
+            <Suspense fallback={null}>
+              <Environment preset="studio" />
+              <ambientLight intensity={0.4} />
+              <directionalLight position={[5, 10, 5]} intensity={1.2} />
+              <pointLight position={[-5, -5, 5]} intensity={0.8} />
+              
+              <EffectComposer>
+                <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.1} intensity={0.5} />
+                <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} />
+              </EffectComposer>
 
-            <group position={[-3.5, 3.5, 0]}>
-              {board.map((row, r) => 
-                row.map((candy, c) => {
-                  if (!candy) return null;
-                  const isSelected = selected?.r === r && selected?.c === c;
-                  return (
-                    <group key={candy.id} position={[c, -r, 0]}>
-                      <mesh position={[0, 0, -0.5]}>
-                        <boxGeometry args={[0.95, 0.95, 0.1]} />
-                        <meshStandardMaterial color={isSelected ? "#ffffff" : "#f4eaff"} roughness={0.8} />
-                      </mesh>
-                      <CandyMesh 
-                        candy={candy} 
-                        position={[0, 0, 0]} 
-                        onClick={() => handleCandyClick(r, c)} 
-                      />
-                    </group>
-                  );
-                })
-              )}
-            </group>
+              <group position={[-3.5, 3.5, 0]}>
+                {board.map((row, r) => 
+                  row.map((candy, c) => {
+                    if (!candy) return null;
+                    const isSelected = selected?.r === r && selected?.c === c;
+                    return (
+                      <group key={candy.id} position={[c, -r, 0]}>
+                        <mesh position={[0, 0, -0.5]}>
+                          <boxGeometry args={[0.95, 0.95, 0.1]} />
+                          <meshStandardMaterial color={isSelected ? "#ffffff" : "#f4eaff"} roughness={0.8} />
+                        </mesh>
+                        <CandyMesh 
+                          candy={candy} 
+                          position={[0, 0, 0]} 
+                          onClick={() => handleCandyClick(r, c)} 
+                        />
+                      </group>
+                    );
+                  })
+                )}
+              </group>
+            </Suspense>
           </Canvas>
         </div>
       </div>

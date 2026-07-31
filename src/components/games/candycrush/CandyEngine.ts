@@ -10,6 +10,13 @@ export interface Candy {
 
 const COLORS: CandyColor[] = ["red", "orange", "yellow", "green", "blue", "purple"];
 
+export interface MatchGroup {
+  cells: {r: number, c: number}[];
+  color: CandyColor;
+  specialGenerated?: SpecialType;
+  spawnPoint?: {r: number, c: number};
+}
+
 export class CandyEngine {
   width: number;
   height: number;
@@ -38,8 +45,8 @@ export class CandyEngine {
         }
       }
     }
-    // Remove initial matches silently
-    while (this.findMatches().length > 0) {
+    // Remove initial matches silently without generating specials
+    while (this.findMatchGroups().length > 0) {
       this.board = Array(this.height).fill(null).map(() => Array(this.width).fill(null));
       for (let r = 0; r < this.height; r++) {
         for (let c = 0; c < this.width; c++) {
@@ -50,11 +57,11 @@ export class CandyEngine {
     this.emit("board_settled", { board: this.board });
   }
 
-  createRandomCandy(row: number, col: number): Candy {
+  createRandomCandy(row: number, col: number, special: SpecialType = 'none'): Candy {
     return {
       id: Math.random().toString(36).substring(2, 9),
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      special: 'none',
+      special,
       row,
       col
     };
@@ -73,8 +80,27 @@ export class CandyEngine {
     cnd1.row = r2; cnd1.col = c2;
     cnd2.row = r1; cnd2.col = c1;
 
-    const matches = this.findMatches();
-    if (matches.length === 0 && cnd1.special !== 'color_bomb' && cnd2.special !== 'color_bomb') {
+    // Special: Color Bomb swap
+    let specialTriggered = false;
+    let detonateQueue: {r: number, c: number}[] = [];
+
+    if (cnd1.special === 'color_bomb' && cnd2.special === 'color_bomb') {
+      // Clear entire board
+      for(let r=0; r<this.height; r++) for(let c=0; c<this.width; c++) detonateQueue.push({r, c});
+      specialTriggered = true;
+    } else if (cnd1.special === 'color_bomb') {
+      detonateQueue = this.findColorLocations(cnd2.color);
+      detonateQueue.push({r: r2, c: c2}); // Detonate the bomb itself
+      specialTriggered = true;
+    } else if (cnd2.special === 'color_bomb') {
+      detonateQueue = this.findColorLocations(cnd1.color);
+      detonateQueue.push({r: r1, c: c1});
+      specialTriggered = true;
+    }
+
+    const matchGroups = this.findMatchGroups([{r: r1, c: c1}, {r: r2, c: c2}]);
+
+    if (!specialTriggered && matchGroups.length === 0) {
       this.emit("swap_invalid", { from: { row: r1, col: c1 }, to: { row: r2, col: c2 }, board: this.board });
       await new Promise(r => setTimeout(r, 300));
       // Revert swap
@@ -92,61 +118,212 @@ export class CandyEngine {
     await new Promise(r => setTimeout(r, 300));
     
     // Process matches
-    await this.processCascades();
+    await this.processCascades(matchGroups, detonateQueue);
   }
 
-  findMatches(): { r: number, c: number }[] {
-    const matched = new Set<string>();
-    
-    // Horizontal
+  findColorLocations(color: CandyColor): {r: number, c: number}[] {
+    const locs: {r: number, c: number}[] = [];
     for (let r = 0; r < this.height; r++) {
-      for (let c = 0; c < this.width - 2; c++) {
-        const c1 = this.board[r][c];
-        const c2 = this.board[r][c+1];
-        const c3 = this.board[r][c+2];
-        if (c1 && c2 && c3 && c1.color === c2.color && c2.color === c3.color) {
-          matched.add(`${r},${c}`);
-          matched.add(`${r},${c+1}`);
-          matched.add(`${r},${c+2}`);
-        }
+      for (let c = 0; c < this.width; c++) {
+        if (this.board[r][c]?.color === color) locs.push({r, c});
       }
     }
-
-    // Vertical
-    for (let c = 0; c < this.width; c++) {
-      for (let r = 0; r < this.height - 2; r++) {
-        const c1 = this.board[r][c];
-        const c2 = this.board[r+1][c];
-        const c3 = this.board[r+2][c];
-        if (c1 && c2 && c3 && c1.color === c2.color && c2.color === c3.color) {
-          matched.add(`${r},${c}`);
-          matched.add(`${r+1},${c}`);
-          matched.add(`${r+2},${c}`);
-        }
-      }
-    }
-
-    return Array.from(matched).map(s => {
-      const [r, c] = s.split(',').map(Number);
-      return { r, c };
-    });
+    return locs;
   }
 
-  async processCascades() {
-    let matches = this.findMatches();
+  findMatchGroups(swapOrigins: {r: number, c: number}[] = []): MatchGroup[] {
+    const hLines: {r: number, c: number}[][] = [];
+    const vLines: {r: number, c: number}[][] = [];
     
-    while (matches.length > 0) {
-      this.emit("match_found", { cells: matches });
-      
-      const scoreGain = matches.length * 10;
-      this.emit("score_changed", { change: scoreGain });
+    // Horizontal lines
+    for (let r = 0; r < this.height; r++) {
+      let matchLen = 1;
+      for (let c = 0; c < this.width; c++) {
+        let isMatch = false;
+        if (c < this.width - 1) {
+          const c1 = this.board[r][c];
+          const c2 = this.board[r][c+1];
+          if (c1 && c2 && c1.color === c2.color) {
+            isMatch = true;
+            matchLen++;
+          }
+        }
+        if (!isMatch || c === this.width - 1) {
+          if (matchLen >= 3) {
+            const line = [];
+            for (let i = 0; i < matchLen; i++) line.push({r, c: c - i - (isMatch ? 0 : 1)});
+            hLines.push(line);
+          }
+          matchLen = 1;
+        }
+      }
+    }
 
-      matches.forEach(({r, c}) => {
-        this.board[r][c] = null;
-      });
+    // Vertical lines
+    for (let c = 0; c < this.width; c++) {
+      let matchLen = 1;
+      for (let r = 0; r < this.height; r++) {
+        let isMatch = false;
+        if (r < this.height - 1) {
+          const c1 = this.board[r][c];
+          const c2 = this.board[r+1][c];
+          if (c1 && c2 && c1.color === c2.color) {
+            isMatch = true;
+            matchLen++;
+          }
+        }
+        if (!isMatch || r === this.height - 1) {
+          if (matchLen >= 3) {
+            const line = [];
+            for (let i = 0; i < matchLen; i++) line.push({r: r - i - (isMatch ? 0 : 1), c});
+            vLines.push(line);
+          }
+          matchLen = 1;
+        }
+      }
+    }
+
+    const groups: MatchGroup[] = [];
+    const processedH = new Set<number>();
+    const processedV = new Set<number>();
+
+    // Check for intersections (Wrapped candies)
+    for (let i = 0; i < hLines.length; i++) {
+      for (let j = 0; j < vLines.length; j++) {
+        const hLine = hLines[i];
+        const vLine = vLines[j];
+        const hColor = this.board[hLine[0].r][hLine[0].c]?.color;
+        const vColor = this.board[vLine[0].r][vLine[0].c]?.color;
+        
+        if (hColor === vColor) {
+          // Check intersection
+          const intersection = hLine.find(hc => vLine.some(vc => vc.r === hc.r && vc.c === hc.c));
+          if (intersection) {
+            processedH.add(i);
+            processedV.add(j);
+            const cells = [...hLine, ...vLine.filter(vc => vc.r !== intersection.r || vc.c !== intersection.c)];
+            groups.push({
+              cells,
+              color: hColor!,
+              specialGenerated: 'wrapped',
+              spawnPoint: intersection
+            });
+          }
+        }
+      }
+    }
+
+    // Process remaining isolated lines
+    const processLine = (line: {r: number, c: number}[], isHorizontal: boolean) => {
+      const color = this.board[line[0].r][line[0].c]?.color!;
+      let special: SpecialType | undefined;
+      let spawnPoint = line[1]; // default center-ish
+
+      // Try to align spawn point with a swap origin if available
+      for (const origin of swapOrigins) {
+        if (line.some(c => c.r === origin.r && c.c === origin.c)) {
+          spawnPoint = origin;
+          break;
+        }
+      }
+
+      if (line.length >= 5) {
+        special = 'color_bomb';
+      } else if (line.length === 4) {
+        special = isHorizontal ? 'striped_v' : 'striped_h'; // swipe H creates V stripe
+      }
+
+      groups.push({ cells: line, color, specialGenerated: special, spawnPoint });
+    };
+
+    hLines.forEach((line, i) => !processedH.has(i) && processLine(line, true));
+    vLines.forEach((line, i) => !processedV.has(i) && processLine(line, false));
+
+    return groups;
+  }
+
+  async detonate(queue: {r: number, c: number}[]) {
+    const destroyed = new Set<string>();
+    let scoreGain = 0;
+
+    const processCell = (r: number, c: number) => {
+      if (r < 0 || r >= this.height || c < 0 || c >= this.width) return;
+      const key = `${r},${c}`;
+      if (destroyed.has(key)) return;
       
+      const candy = this.board[r][c];
+      if (!candy) return;
+      
+      destroyed.add(key);
+      scoreGain += 10;
+      this.board[r][c] = null; // Mark dead
+
+      // Trigger Specials!
+      if (candy.special === 'striped_h') {
+        for (let i = 0; i < this.width; i++) queue.push({r, c: i});
+      } else if (candy.special === 'striped_v') {
+        for (let i = 0; i < this.height; i++) queue.push({r: i, c});
+      } else if (candy.special === 'wrapped') {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            queue.push({r: r + dr, c: c + dc});
+          }
+        }
+      } else if (candy.special === 'color_bomb') {
+        // Find a random color to destroy if randomly hit by a stripe
+        const targetColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+        const locs = this.findColorLocations(targetColor);
+        locs.forEach(loc => queue.push(loc));
+      }
+    };
+
+    while (queue.length > 0) {
+      // Snapshot queue level for staggered animations
+      const levelQueue = [...queue];
+      queue.length = 0;
+      
+      levelQueue.forEach(({r, c}) => processCell(r, c));
+      
+      if (levelQueue.length > 0) {
+        this.emit("cascade_step", { board: this.board });
+        await new Promise(r => setTimeout(r, 150)); // Tiny pause for chain reaction visuals
+      }
+    }
+
+    if (scoreGain > 0) {
+      this.emit("score_changed", { change: scoreGain });
+    }
+  }
+
+  async processCascades(initialGroups: MatchGroup[] = [], initialDetonateQueue: {r: number, c: number}[] = []) {
+    let matchGroups = initialGroups;
+    let detonateQueue = initialDetonateQueue;
+    
+    while (matchGroups.length > 0 || detonateQueue.length > 0) {
+      const specialsToSpawn: {candy: Candy, r: number, c: number}[] = [];
+
+      if (matchGroups.length > 0) {
+        this.emit("match_found", { groups: matchGroups }); // payload format changed!
+        
+        matchGroups.forEach(group => {
+          group.cells.forEach(cell => detonateQueue.push(cell));
+          if (group.specialGenerated && group.spawnPoint) {
+            const sc = this.createRandomCandy(group.spawnPoint.r, group.spawnPoint.c, group.specialGenerated);
+            if (group.specialGenerated !== 'color_bomb') sc.color = group.color;
+            specialsToSpawn.push({candy: sc, r: group.spawnPoint.r, c: group.spawnPoint.c});
+          }
+        });
+      }
+
+      await this.detonate(detonateQueue);
+
+      // Spawn specials after detonation clears the spot
+      specialsToSpawn.forEach(s => {
+        this.board[s.r][s.c] = s.candy;
+      });
+
       this.emit("cascade_step", { board: this.board });
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 250));
 
       // Apply gravity
       for (let c = 0; c < this.width; c++) {
@@ -169,7 +346,8 @@ export class CandyEngine {
 
       this.emit("cascade_step", { board: this.board });
       await new Promise(r => setTimeout(r, 400));
-      matches = this.findMatches();
+      
+      matchGroups = this.findMatchGroups();
     }
     
     this.emit("board_settled", { board: this.board });

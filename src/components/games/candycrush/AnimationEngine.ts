@@ -11,7 +11,8 @@ export class AnimationEngineImpl {
     } else if (event.type === "swap_invalid") {
       this.emitAnimation(event.eventId, "swap_revert", [event.payload.from, event.payload.to], 2);
     } else if (event.type === "match_found") {
-      this.emitAnimation(event.eventId, "match_pop", event.payload.cells, 3);
+      const cells = event.payload.groups ? event.payload.groups.flatMap((g: any) => g.cells) : event.payload.cells;
+      this.emitAnimation(event.eventId, "match_pop", cells, 3);
     } else if (event.type === "cascade_step") {
       // Just notify that board changed for simple cascades
       this.emitAnimation(event.eventId, "cascade_fall", [], 0);

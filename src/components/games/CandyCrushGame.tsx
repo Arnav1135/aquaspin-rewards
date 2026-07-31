@@ -73,35 +73,68 @@ function CandyMesh({ candy, position, onClick }: { candy: Candy, position: [numb
     }
   };
 
-  const isSoft = candy.color === 'purple';
-  const roughness = isSoft ? 0.4 : 0.05;
-  const transmission = isSoft ? 0 : 0.3;
-  const thickness = isSoft ? 0 : 0.5;
+  const isColorBomb = candy.special === 'color_bomb';
+  const isSoft = !isColorBomb && candy.color === 'purple';
+  const roughness = isSoft ? 0.4 : (isColorBomb ? 0.7 : 0.05);
+  const transmission = isSoft || isColorBomb ? 0 : 0.3;
+  const thickness = isSoft || isColorBomb ? 0 : 0.5;
   const clearcoat = isSoft ? 0 : 1;
   const clearcoatRoughness = isSoft ? 0 : 0.1;
+  
+  const actualColor = isColorBomb ? '#3d1c02' : colorMap[candy.color]; // Dark chocolate for color bomb
+  const actualGeometry = isColorBomb ? SphereGeo : getGeometry(candy.color);
 
   return (
-    <mesh 
-      ref={meshRef} 
+    <group 
+      ref={meshRef}
       position={[position[0], position[1] + 10, position[2]]}
-      geometry={getGeometry(candy.color)}
-      rotation={getRotation(candy.color)}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
     >
-      <meshPhysicalMaterial 
-        color={colorMap[candy.color]} 
-        roughness={roughness} 
-        metalness={0.1}
-        clearcoat={clearcoat}
-        clearcoatRoughness={clearcoatRoughness}
-        transmission={transmission}
-        thickness={thickness}
-        ior={1.5}
-      />
-    </mesh>
+      <mesh 
+        geometry={actualGeometry}
+        rotation={getRotation(candy.color)}
+      >
+        <meshPhysicalMaterial 
+          color={actualColor} 
+          roughness={roughness} 
+          metalness={0.1}
+          clearcoat={clearcoat}
+          clearcoatRoughness={clearcoatRoughness}
+          transmission={transmission}
+          thickness={thickness}
+          ior={1.5}
+        />
+      </mesh>
+
+      {/* Special Candy Indicators */}
+      {candy.special === 'striped_h' && (
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.42, 0.05, 16, 32]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
+        </mesh>
+      )}
+      {candy.special === 'striped_v' && (
+        <mesh rotation={[0, Math.PI / 2, 0]}>
+          <torusGeometry args={[0.42, 0.05, 16, 32]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
+        </mesh>
+      )}
+      {candy.special === 'wrapped' && (
+        <mesh>
+          <boxGeometry args={[0.9, 0.9, 0.9]} />
+          <meshPhysicalMaterial color="#ffffff" transmission={0.9} opacity={0.5} transparent roughness={0.1} />
+        </mesh>
+      )}
+      {isColorBomb && (
+        <mesh>
+          <icosahedronGeometry args={[0.45, 0]} />
+          <meshStandardMaterial color="#ff00ff" wireframe opacity={0.3} transparent />
+        </mesh>
+      )}
+    </group>
   );
 }
 

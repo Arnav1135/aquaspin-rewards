@@ -10,6 +10,9 @@ import { DeviceCapabilityDetector } from './core/DeviceCapabilityDetector';
 import { EnvironmentAtmosphere } from './core/EnvironmentAtmosphere';
 import { DebugCanvasOverlay, DebugOverlay } from './debug/DebugOverlay';
 import { TouchControls } from './input/TouchControls';
+import { createXRStore, XR } from '@react-three/xr';
+
+const store = createXRStore();
 
 export interface GameEngine3DProps {
   children: ReactNode;
@@ -84,17 +87,19 @@ export function GameEngine3D({
 
         {/* Game Content wrapped in AssetManager (Suspense) and optional Physics */}
         <AssetManager>
-          {enablePhysics ? (
-            <Physics>
+          <XR store={store}>
+            {enablePhysics ? (
+              <Physics>
+                <Bvh firstHitOnly>
+                  {children}
+                </Bvh>
+              </Physics>
+            ) : (
               <Bvh firstHitOnly>
                 {children}
               </Bvh>
-            </Physics>
-          ) : (
-            <Bvh firstHitOnly>
-              {children}
-            </Bvh>
-          )}
+            )}
+          </XR>
         </AssetManager>
 
         {/* Optional Post-Processing */}
@@ -112,6 +117,15 @@ export function GameEngine3D({
       {/* Layered UI / Touch Controls */}
       {enableTouchControls && profile.isTouch && <TouchControls />}
       {enableDebugOverlay && <DebugOverlay />}
+      
+      {/* WebXR Enter VR Button */}
+      <button 
+        onClick={() => store.enterVR()}
+        className="absolute bottom-4 right-4 z-50 bg-blue-600/80 hover:bg-blue-500 text-white backdrop-blur-md px-4 py-2 rounded-xl font-bold shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-blue-400/50 transition-all flex items-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 21c.8-1.5 1.5-2.9 3.5-3.8 2-1 3-2 3.5-3.2.5-1.2.5-2.5-.5-3.5a4 4 0 0 0-5.5-.5l-2.5 2.5a3 3 0 0 1-4-4l2.5-2.5a4 4 0 0 0-.5-5.5C8 1 6 1 4.5 2.5 3 4 3 6 4 8c1.5 2.5 3.5 3 4.5 5 1 2 1.5 3.5 1 4.5-.5 1-1.5 2-2.5 3.5z"/><path d="M4 10v6a4 4 0 0 0 4 4h8a4 4 0 0 0 4-4V10"/><path d="M4 14h16"/></svg>
+        Enter VR
+      </button>
     </div>
   );
 }

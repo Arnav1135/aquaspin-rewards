@@ -38,20 +38,23 @@ function CandyMesh({ candy, position, onClick }: { candy: Candy, position: [numb
   
   useFrame((_, delta) => {
     if (meshRef.current) {
+      // Clamp delta to prevent physics explosion on tab switch/lag
+      const dt = Math.min(delta, 0.05);
+      
       // Spring physics simulation
       const diff = targetPos.clone().sub(meshRef.current.position);
       const springForce = diff.multiplyScalar(400); // Spring stiffness
       const dampingForce = velocity.current.clone().multiplyScalar(20); // Damping
       
       const acceleration = springForce.sub(dampingForce);
-      velocity.current.add(acceleration.multiplyScalar(delta));
-      meshRef.current.position.add(velocity.current.clone().multiplyScalar(delta));
+      velocity.current.add(acceleration.multiplyScalar(dt));
+      meshRef.current.position.add(velocity.current.clone().multiplyScalar(dt));
       
       // Squash and stretch based on velocity
       const speed = velocity.current.length();
       const squashY = Math.max(0.6, 1 - speed * 0.05);
       const stretchXZ = Math.min(1.2, 1 + speed * 0.025);
-      meshRef.current.scale.lerp(new THREE.Vector3(stretchXZ, squashY, stretchXZ), delta * 15);
+      meshRef.current.scale.lerp(new THREE.Vector3(stretchXZ, squashY, stretchXZ), dt * 15);
     }
   });
 

@@ -92,7 +92,7 @@ function Coin3D({ flipping, result, selectedSide }: { flipping: boolean; result:
       <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
       <pointLight position={[0, 2, 0]} intensity={2} color={selectedSide === 'heads' ? '#fbbf24' : '#a855f7'} />
 
-      <RigidBody ref={coinRef} colliders="cylinder" restitution={0.7} friction={0.4}>
+      <RigidBody ref={coinRef} colliders="hull" restitution={0.7} friction={0.4}>
         <group ref={meshRef}>
           {/* Coin Body (True PBR) */}
           <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>

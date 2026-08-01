@@ -46,26 +46,43 @@ function Coin3D({ flipping, result, selectedSide }: { flipping: boolean; result:
   // When flipping starts, apply upward impulse and torque
   useEffect(() => {
     if (flipping && coinRef.current) {
+      // Reset position
       coinRef.current.setTranslation({ x: 0, y: 1, z: 0 }, true);
-      coinRef.current.setLinvel({ x: 0, y: 8, z: 0 }, true); // Shoot up
+      coinRef.current.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
       
-      // Calculate target rotation to land on result
-      // Heads = 0, Tails = PI rotation
-      // Since it spins fast, we just apply a huge torque and then dampen it later,
-      // But Rapier is nondeterministic for exact faces. We'll use a cinematic approach:
-      // We spin the visual mesh and then lock it when flipping ends!
+      // Physical launch!
+      coinRef.current.applyImpulse({ x: (Math.random() - 0.5) * 2, y: 35, z: (Math.random() - 0.5) * 2 }, true);
+      
+      // Massive chaotic physical spin
+      coinRef.current.applyTorqueImpulse({ 
+        x: 15 + Math.random() * 10, 
+        y: Math.random() * 2, 
+        z: Math.random() * 2 
+      }, true);
     }
   }, [flipping]);
 
   useFrame((_state) => {
-    if (flipping && meshRef.current) {
-      // Cinematic spin overriding physics rotation for the mesh
-      meshRef.current.rotation.x += 0.3;
-      meshRef.current.rotation.y += 0.1;
-    } else if (!flipping && meshRef.current) {
-      // Snap to result
-      meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, result === 'tails' ? Math.PI : 0, 0.1);
-      meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, 0, 0.1);
+    if (flipping && coinRef.current) {
+      const linvel = coinRef.current.linvel();
+      const pos = coinRef.current.translation();
+      const rot = coinRef.current.rotation();
+      
+      const euler = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(rot.x, rot.y, rot.z, rot.w));
+      
+      // Aerodynamic "cheater" torque: When falling, gently coax the physical body to land on the correct face
+      if (linvel.y < -1 && pos.y < 3) {
+        const currentRotX = euler.x % (Math.PI * 2);
+        const targetRotX = result === 'tails' ? Math.PI : (result === 'heads' ? 0 : currentRotX);
+        
+        let diff = targetRotX - currentRotX;
+        // Normalize difference to -PI to PI
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        
+        // Apply corrective physical torque
+        coinRef.current.applyTorqueImpulse({ x: diff * 0.1, y: 0, z: 0 }, true);
+      }
     }
   });
 
@@ -75,24 +92,24 @@ function Coin3D({ flipping, result, selectedSide }: { flipping: boolean; result:
       <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
       <pointLight position={[0, 2, 0]} intensity={2} color={selectedSide === 'heads' ? '#fbbf24' : '#a855f7'} />
 
-      <RigidBody ref={coinRef} colliders="hull" restitution={0.4} friction={0.5}>
+      <RigidBody ref={coinRef} colliders="cylinder" restitution={0.7} friction={0.4}>
         <group ref={meshRef}>
-          {/* Coin Body */}
+          {/* Coin Body (True PBR) */}
           <mesh castShadow receiveShadow rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[1.5, 1.5, 0.2, 32]} />
-            <meshStandardMaterial color="#fbbf24" metalness={0.8} roughness={0.2} />
+            <meshPhysicalMaterial color="#fbbf24" metalness={1.0} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={2.0} />
           </mesh>
           
           {/* Heads Face */}
           <mesh position={[0, 0.11, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <circleGeometry args={[1.4, 32]} />
-            <meshStandardMaterial color="#f59e0b" metalness={0.5} roughness={0.5} />
+            <meshPhysicalMaterial color="#f59e0b" metalness={0.8} roughness={0.3} clearcoat={0.5} envMapIntensity={1.5} />
           </mesh>
 
           {/* Tails Face */}
           <mesh position={[0, -0.11, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <circleGeometry args={[1.4, 32]} />
-            <meshStandardMaterial color="#a855f7" metalness={0.5} roughness={0.5} />
+            <meshPhysicalMaterial color="#a855f7" metalness={0.8} roughness={0.3} clearcoat={0.5} envMapIntensity={1.5} />
           </mesh>
         </group>
       </RigidBody>

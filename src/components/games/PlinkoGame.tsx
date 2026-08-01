@@ -8,7 +8,7 @@ import { BetControl } from '@/components/ui/BetControl';
 import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody, CuboidCollider, BallCollider } from '@react-three/rapier';
 import * as THREE from 'three';
-import { Html } from '@react-three/drei';
+import { Html, Detailed } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
@@ -136,10 +136,25 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
           userData={{ isPeg: true }}
         >
           <BallCollider args={[PEG_RADIUS]} />
-          <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
-             <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 16]} />
-             <meshStandardMaterial color="#94A3B8" roughness={0.2} metalness={0.8} />
-          </mesh>
+          <Detailed distances={[0, 15, 30]}>
+            {/* High Poly (LOD 0) - Zoomed In */}
+            <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
+               <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 32]} />
+               <meshPhysicalMaterial color="#94A3B8" roughness={0.1} metalness={0.9} clearcoat={1.0} />
+            </mesh>
+            
+            {/* Medium Poly (LOD 1) - Mid Distance */}
+            <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
+               <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 16]} />
+               <meshStandardMaterial color="#94A3B8" roughness={0.2} metalness={0.8} />
+            </mesh>
+            
+            {/* Low Poly (LOD 2) - Zoomed Out */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+               <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 6]} />
+               <meshStandardMaterial color="#94A3B8" roughness={0.5} metalness={0.5} />
+            </mesh>
+          </Detailed>
         </RigidBody>
       ))}
 

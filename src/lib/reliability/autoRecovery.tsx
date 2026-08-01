@@ -25,6 +25,30 @@ export class GameErrorBoundary extends Component<Props, State> {
     return { hasError: true, retryCount: 0 };
   }
 
+  public componentDidMount() {
+    window.addEventListener('webglcontextlost', this.handleContextLost as EventListener, true);
+  }
+
+  public componentWillUnmount() {
+    window.removeEventListener('webglcontextlost', this.handleContextLost as EventListener, true);
+  }
+
+  private handleContextLost = (e: Event) => {
+    e.preventDefault(); // Prevent default browser behavior
+    
+    reliabilityCore.logEvent({
+      gameId: this.props.gameId,
+      category: 'error',
+      severity: 'high',
+      details: 'WebGL Context Lost detected (GPU crashed or out of memory).',
+      autoCorrected: false
+    });
+
+    this.setState({ hasError: true }, () => {
+      this.attemptRecovery();
+    });
+  };
+
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     reliabilityCore.logEvent({
       gameId: this.props.gameId,

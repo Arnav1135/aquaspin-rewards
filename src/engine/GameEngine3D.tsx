@@ -1,7 +1,8 @@
 import { ReactNode, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, ChromaticAberration, Vignette } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import { PerformanceMonitor } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { AssetManager } from './core/AssetLoader';
@@ -92,8 +93,10 @@ export function GameEngine3D({
 
         {/* Optional Post-Processing */}
         {(enablePostProcessing && profile.enablePostProcessing) ? (
-          <EffectComposer>
-            <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} intensity={1.2} />
+          <EffectComposer multisampling={8}>
+            <Bloom luminanceThreshold={0.6} luminanceSmoothing={0.9} intensity={1.5} mipmapBlur />
+            <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new THREE.Vector2(0.002, 0.002)} radialModulation={false} modulationOffset={0} />
+            <Vignette eskil={false} offset={0.1} darkness={1.1} />
           </EffectComposer>
         ) : null}
 

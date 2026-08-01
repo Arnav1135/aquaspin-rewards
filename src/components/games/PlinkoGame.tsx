@@ -228,7 +228,7 @@ function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, po
     >
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[0.25, 16, 16]} />
-        <meshStandardMaterial color="#FF6B6B" emissive="#FF6B6B" emissiveIntensity={0.5} metalness={0.2} roughness={0.1} />
+        <meshStandardMaterial color="#FF6B6B" emissive="#FF6B6B" emissiveIntensity={3.5} metalness={0.2} roughness={0.1} />
       </mesh>
     </RigidBody>
   );
@@ -481,7 +481,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
         <div className="relative flex-1 h-[50vh] md:h-full bg-slate-100/50 overflow-hidden shadow-inner">
           <GameEngine3D 
             enablePhysics={true} 
-            enablePostProcessing={false} // Light mode prefers clean, crisp renders over bloom
+            enablePostProcessing={true} // Enabled for premium Bloom/Vignette upgrades
             cameraPosition={[0, 0, Math.max(15, rows * 1.4)]}
           >
             <ambientLight intensity={1.2} />

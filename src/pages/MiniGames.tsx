@@ -451,18 +451,28 @@ export function MiniGames() {
         <h2 className="text-lg font-bold text-[#7682B9]/80 mb-4">
           {category === 'All' && search === '' ? 'All Games' : 'Search Results'}
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((game, i) => (
-            <motion.button
-              key={game.key}
-              onClick={() => setActiveGame(game.key)}
-              className="text-left group relative bg-white rounded-2xl p-2 border border-[#C7E9F7]/50 shadow-md shadow-[#7682B9]/5 flex flex-col h-full"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, type: "spring", stiffness: 300, damping: 25 }}
-              whileHover={{ y: -4, boxShadow: '0 12px 24px -10px rgba(118,130,185,0.3)' }}
-              whileTap={{ scale: 0.97 }}
-            >
+        
+        <AnimatePresence mode="popLayout">
+          <motion.div 
+            key={category + search}
+            initial={{ opacity: 0, filter: 'blur(10px)', y: 20 }}
+            animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+            exit={{ opacity: 0, filter: 'blur(10px)', y: -20 }}
+            transition={{ duration: 0.3, type: 'spring', bounce: 0 }}
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+          >
+            {filtered.map((game, i) => (
+              <motion.button
+                layout
+                key={game.key}
+                onClick={() => setActiveGame(game.key)}
+                className="text-left group relative bg-white/70 backdrop-blur-xl rounded-2xl p-2 border border-[#C7E9F7]/50 shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex flex-col h-full"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.03, type: "spring", stiffness: 350, damping: 25 }}
+                whileHover={{ y: -4, scale: 1.02, boxShadow: '0 20px 40px -10px rgba(90,184,234,0.3)' }}
+                whileTap={{ scale: 0.95 }}
+              >
               {/* Art area */}
               <div className="rounded-xl h-28 sm:h-32 flex items-center justify-center relative overflow-hidden mb-3 bg-[#E5F2F9]">
                 <img
@@ -496,9 +506,10 @@ export function MiniGames() {
                   <span className="text-[10px] font-bold text-[#5AB8EA]">{game.reward}</span>
                 </div>
               </div>
-            </motion.button>
-          ))}
-        </div>
+              </motion.button>
+            ))}
+          </motion.div>
+        </AnimatePresence>
 
         {filtered.length === 0 && (
           <div className="text-center py-16">
@@ -521,7 +532,7 @@ export function MiniGames() {
           >
             {/* ── Overlay Header bar ── */}
             <div
-              className="flex items-center justify-between px-6 py-4 flex-shrink-0 bg-white/80 backdrop-blur-xl border-b border-[#C7E9F7] shadow-sm z-10"
+              className="flex items-center justify-between px-6 py-4 flex-shrink-0 bg-white/40 backdrop-blur-3xl border-b border-white/40 shadow-[0_4px_30px_rgba(0,0,0,0.1)] z-10"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl drop-shadow-md">{activeGameMeta?.emoji}</span>

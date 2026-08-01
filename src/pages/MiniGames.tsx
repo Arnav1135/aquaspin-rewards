@@ -22,7 +22,7 @@ const ChickenJumpGame = lazy(() => import('@/components/games/ChickenJumpGame').
 const DotsAndBoxesGame = lazy(() => import('@/components/games/DotsAndBoxesGame').then(m => ({ default: m.DotsAndBoxesGame })));
 const DartsGame = lazy(() => import('@/components/games/DartsGame').then(m => ({ default: m.DartsGame })));
 const ArcheryGame = lazy(() => import('@/components/games/ArcheryGame').then(m => ({ default: m.ArcheryGame })));
-const ChessGame = lazy(() => import('@/components/games/ChessGame').then(m => ({ default: m.ChessGame })));
+const ChessGame = lazy(() => import('@/components/games/Chess3D/App'));
 const SolitaireGame = lazy(() => import('@/components/games/SolitaireGame').then(m => ({ default: m.SolitaireGame })));
 const LudoGame = lazy(() => import('@/components/games/LudoGame').then(m => ({ default: m.LudoGame })));
 

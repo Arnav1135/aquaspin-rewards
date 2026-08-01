@@ -115,76 +115,101 @@ function RocketExhaust({ rocketGroupRef, isActive }: { rocketGroupRef: React.Ref
   );
 }
 
-// --- Particle System Class (React Component) ---
-// Renders an explosive particle system using THREE.Points
-function ParticleExplosion({ position, isActive }: { position: THREE.Vector3, isActive: boolean }) {
-  const pointsRef = useRef<THREE.Points>(null);
-  
-  const { positions, velocities, colors } = useMemo(() => {
-    const count = 120; // 80-120 particles
+// --- GPU-Accelerated Particle System (Custom GLSL Shaders) ---
+function GPUParticleExplosion({ position, isActive }: { position: THREE.Vector3, isActive: boolean }) {
+  const shaderMaterialRef = useRef<any>(null);
+  const count = 5000; // Massively increased count thanks to GPU rendering
+
+  const { positions, directions, randoms } = useMemo(() => {
     const pos = new Float32Array(count * 3);
-    const vel = new Float32Array(count * 3);
-    const col = new Float32Array(count * 3);
+    const dirs = new Float32Array(count * 3);
+    const rnds = new Float32Array(count);
     
     for (let i = 0; i < count; i++) {
       pos[i * 3] = position.x;
       pos[i * 3 + 1] = position.y;
       pos[i * 3 + 2] = position.z;
       
-      // Randomized explosive outward velocity
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(Math.random() * 2 - 1);
-      const speed = 2 + Math.random() * 8;
       
-      vel[i * 3] = speed * Math.sin(phi) * Math.cos(theta);
-      vel[i * 3 + 1] = speed * Math.sin(phi) * Math.sin(theta);
-      vel[i * 3 + 2] = speed * Math.cos(phi);
+      dirs[i * 3] = Math.sin(phi) * Math.cos(theta);
+      dirs[i * 3 + 1] = Math.sin(phi) * Math.sin(theta);
+      dirs[i * 3 + 2] = Math.cos(phi);
       
-      // Orange / red fire colors (HDR boosted for bloom)
-      const r = 4.0;
-      const g = 1.0 + Math.random() * 0.5;
-      const b = 0.0;
-      col[i * 3] = r; col[i * 3 + 1] = g; col[i * 3 + 2] = b;
+      rnds[i] = Math.random();
     }
-    return { positions: pos, velocities: vel, colors: col };
+    return { positions: pos, directions: dirs, randoms: rnds };
   }, [position]);
 
-  const [opacity, setOpacity] = useState(1);
-  const timeAlive = useRef(0);
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uDuration: { value: 1.5 }
+  }), []);
 
-  useFrame((_state, delta) => {
-    if (!isActive || !pointsRef.current) return;
-    
-    timeAlive.current += delta;
-    if (timeAlive.current > 1.2) {
-      setOpacity(0);
-      return;
-    }
-    
-    setOpacity(Math.max(0, 1.0 - (timeAlive.current / 1.2)));
-
-    const posAttr = pointsRef.current.geometry.attributes.position;
-    for (let i = 0; i < 120; i++) {
-      // Apply velocity
-      posAttr.array[i * 3] += velocities[i * 3] * delta;
-      posAttr.array[i * 3 + 1] += velocities[i * 3 + 1] * delta;
-      posAttr.array[i * 3 + 2] += velocities[i * 3 + 2] * delta;
-      
-      // Gravity drag
-      velocities[i * 3 + 1] -= 9.8 * delta; // standard gravity
-    }
-    posAttr.needsUpdate = true;
+  useFrame((_, delta) => {
+    if (!isActive || !shaderMaterialRef.current) return;
+    shaderMaterialRef.current.uniforms.uTime.value += delta;
   });
 
-  if (!isActive || opacity <= 0) return null;
+  if (!isActive) return null;
 
   return (
-    <points ref={pointsRef}>
+    <points>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={120} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-color" count={120} array={colors} itemSize={3} />
+        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
+        <bufferAttribute attach="attributes-direction" count={count} array={directions} itemSize={3} />
+        <bufferAttribute attach="attributes-random" count={count} array={randoms} itemSize={1} />
       </bufferGeometry>
-      <pointsMaterial size={0.3} vertexColors transparent opacity={opacity} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      <shaderMaterial
+        ref={shaderMaterialRef}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        uniforms={uniforms}
+        vertexShader={`
+          uniform float uTime;
+          uniform float uDuration;
+          attribute vec3 direction;
+          attribute float random;
+          varying float vLife;
+          varying float vRandom;
+          void main() {
+            vRandom = random;
+            float life = max(0.0, 1.0 - (uTime / uDuration));
+            vLife = life;
+            
+            // Physics calculated entirely on GPU
+            float speed = (4.0 + random * 10.0) * uTime;
+            vec3 pos = position + (direction * speed);
+            // Gravity
+            pos.y -= 9.8 * uTime * uTime * 0.5;
+            
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_PointSize = (40.0 * life) * (1.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `}
+        fragmentShader={`
+          varying float vLife;
+          varying float vRandom;
+          void main() {
+            if (vLife <= 0.0) discard;
+            
+            // Circular particle
+            float dist = distance(gl_PointCoord, vec2(0.5));
+            if (dist > 0.5) discard;
+            
+            // HDR Fire Colors for Bloom
+            vec3 fireColor = mix(vec3(2.0, 0.2, 0.0), vec3(5.0, 3.0, 0.5), vLife * vRandom);
+            
+            // Soft edge
+            float alpha = (1.0 - (dist * 2.0)) * vLife;
+            
+            gl_FragColor = vec4(fireColor, alpha);
+          }
+        `}
+      />
     </points>
   );
 }
@@ -332,7 +357,7 @@ function Rocket3D({
     <>
       {explosionTriggered && (
         <>
-          <ParticleExplosion position={crashPosition.current} isActive={true} />
+          <GPUParticleExplosion position={crashPosition.current} isActive={true} />
           <Shockwave position={crashPosition.current} isActive={true} />
         </>
       )}

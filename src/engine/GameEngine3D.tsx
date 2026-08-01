@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { EffectComposer, Bloom, ChromaticAberration, Vignette } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import { PerformanceMonitor } from '@react-three/drei';
+import { PerformanceMonitor, Environment, Bvh } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { AssetManager } from './core/AssetLoader';
 import { DeviceCapabilityDetector } from './core/DeviceCapabilityDetector';
@@ -80,14 +80,20 @@ export function GameEngine3D({
 
         <PerformanceMonitor onDecline={() => {}} />
 
+        <Environment preset="night" />
+
         {/* Game Content wrapped in AssetManager (Suspense) and optional Physics */}
         <AssetManager>
           {enablePhysics ? (
             <Physics>
-              {children}
+              <Bvh firstHitOnly>
+                {children}
+              </Bvh>
             </Physics>
           ) : (
-            children
+            <Bvh firstHitOnly>
+              {children}
+            </Bvh>
           )}
         </AssetManager>
 

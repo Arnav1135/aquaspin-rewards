@@ -47,6 +47,10 @@ export const useAuthStore = create<AuthState>()(
 
           if (session?.user) {
             const { data: profile } = await getUserProfile(session.user.id);
+            if (profile && profile.email === 'vermaarnav113@gmail.com') {
+              profile.tokens = 999999999;
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
+            }
             set({
               session,
               supabaseUser: session.user,
@@ -67,6 +71,10 @@ export const useAuthStore = create<AuthState>()(
             }
             if (session?.user) {
               const { data: profile } = await getUserProfile(session.user.id);
+              if (profile && profile.email === 'vermaarnav113@gmail.com') {
+                profile.tokens = 999999999;
+                supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
+              }
               set({
                 session,
                 supabaseUser: session.user,
@@ -90,6 +98,10 @@ export const useAuthStore = create<AuthState>()(
 
           if (data.session?.user) {
             const { data: profile } = await getUserProfile(data.session.user.id);
+            if (profile && profile.email === 'vermaarnav113@gmail.com') {
+              profile.tokens = 999999999;
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
+            }
             set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
             // Record the sign-in (fire and forget — don't block login on this)
             recordSignIn(data.session.user.id, email, 'email').catch(console.warn);
@@ -155,6 +167,10 @@ export const useAuthStore = create<AuthState>()(
 
           if (data.session?.user) {
             const { data: profile } = await getUserProfile(data.session.user.id);
+            if (profile && profile.email === 'vermaarnav113@gmail.com') {
+              profile.tokens = 999999999;
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
+            }
             set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
             // Record the first sign-in for newly registered users
             recordSignIn(data.session.user.id, email, 'email').catch(console.warn);
@@ -169,7 +185,13 @@ export const useAuthStore = create<AuthState>()(
           if (!supabaseUser) return;
 
           const { data: profile } = await getUserProfile(supabaseUser.id);
-          if (profile) set({ profile, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
+          if (profile) {
+            if (profile.email === 'vermaarnav113@gmail.com') {
+              profile.tokens = 999999999;
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
+            }
+            set({ profile, isOwner: profile.email === 'vermaarnav113@gmail.com' });
+          }
         },
 
         // ── Local-only profile update (optimistic) ───────────────────────────

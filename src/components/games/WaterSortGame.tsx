@@ -9,9 +9,8 @@ export function WaterSortGame({ onClose }: Props) {
       onClose={onClose}
     >
       <div className="flex-1 w-full h-full bg-[#1a1a2e] rounded-xl overflow-hidden relative flex items-center justify-center">
-        {/* We use the github pages URL as a fallback since the cocos project isn't built locally */}
         <iframe 
-          src="https://oanhere33-maker.github.io/water-sort-game-editor/" 
+          src="/mini%20games/water-sort-game-editor/index.html" 
           className="w-full h-full border-none"
           title="Water Sort"
         />

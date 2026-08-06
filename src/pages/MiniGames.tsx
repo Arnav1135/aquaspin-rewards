@@ -588,14 +588,7 @@ export function MiniGames() {
             </div>
 
             {/* ── Game Content inside protection frame ── */}
-            <div className="flex-1 overflow-auto p-4">
-              {/*
-                Each game renders inside a GameFrame which provides:
-                - 16px navy letterbox buffer
-                - Scrim bar with standardized controls
-                - Visual isolation (overflow:hidden + isolation:isolate)
-                The game's own onClose passes through to parent's close()
-              */}
+            <div className="flex-1 overflow-hidden p-0 sm:p-4 flex items-center justify-center">
               <GameErrorBoundary gameId={activeGame}>
                 <Suspense fallback={<GameSkeleton />}>
                   {renderGame(activeGame, close)}

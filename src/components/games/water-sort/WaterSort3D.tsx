@@ -114,7 +114,7 @@ function Tube({
   });
 
   return (
-    <a.group position={pos} rotation={rot} onClick={(e) => { e.stopPropagation(); onClick(); }}>
+    <a.group position={pos as any} rotation={rot as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
       {/* Glass Tube */}
       <mesh position={[0, TUBE_HEIGHT / 2 - 0.2, 0]}>
         <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, TUBE_HEIGHT, 32, 1, true]} />

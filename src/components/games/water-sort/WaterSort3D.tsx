@@ -130,7 +130,7 @@ function Tube({
   useFrame(({ clock }) => {
     if (groupRef.current && !isPouring && !isSelected) {
       // Subtle sine wave breathing based on tube index so they breathe out of phase
-      groupRef.current.position.y = pos.get()[1] + Math.sin(clock.elapsedTime * 2 + index) * 0.05;
+      groupRef.current.position.y = (isSelected ? 1.5 : 0) + Math.sin(clock.elapsedTime * 2 + index) * 0.05;
     }
   });
 

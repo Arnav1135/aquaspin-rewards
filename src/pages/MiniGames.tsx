@@ -361,11 +361,13 @@ export function MiniGames() {
   };
 
   return (
-    <div
-      className="min-h-screen pt-20 pb-28 px-4"
-      style={{ background: 'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)' }}
-    >
-      <div className="max-w-5xl mx-auto">
+    <>
+      {!activeGame && (
+        <div
+          className="min-h-screen pt-20 pb-28 px-4"
+          style={{ background: 'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)' }}
+        >
+          <div className="max-w-5xl mx-auto">
 
         {/* ── Page Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -551,16 +553,19 @@ export function MiniGames() {
           </div>
         )}
       </div>
+        </div>
+      )}
 
-      {/* ── Active Game Overlay ── */}
-      <AnimatePresence>
+      {/* ── Active Game Interface ── */}
+      <AnimatePresence mode="wait">
         {activeGame && (
           <motion.div
+            key="active-game"
             ref={overlayRef}
-            className="fixed top-0 left-0 w-full h-[100dvh] z-[100] flex flex-col bg-[#E5F2F9]"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="w-full h-[100dvh] flex flex-col bg-[#E5F2F9]"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
             {/* ── Overlay Header bar ── */}
@@ -617,6 +622,6 @@ export function MiniGames() {
           />
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

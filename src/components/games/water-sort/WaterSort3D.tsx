@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, ContactShadows, OrbitControls, MeshTransmissionMaterial, Sparkles, Html } from '@react-three/drei';
+import { Environment, ContactShadows, OrbitControls, Sparkles, Html } from '@react-three/drei';
 import { useSpring, a } from '@react-spring/three';
-import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { audio } from './audioManager';
 
@@ -88,7 +87,7 @@ function LiquidSegment({ color, position, height }: { color: string, position: [
   return (
     <a.group position-y={posY}>
       <a.mesh scale-y={scaleY}>
-        <cylinderGeometry args={[TUBE_RADIUS - 0.05, TUBE_RADIUS - 0.05, 1, 32]} />
+        <cylinderGeometry args={[TUBE_RADIUS - 0.05, TUBE_RADIUS - 0.05, 1, 16]} />
         <meshPhysicalMaterial 
           color={color} 
           transmission={0.8}
@@ -145,26 +144,25 @@ function Tube({
     <a.group ref={groupRef} position={pos as any} rotation={rot as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
       {/* Glass Tube */}
       <mesh position={[0, TUBE_HEIGHT / 2 - 0.2, 0]}>
-        <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, TUBE_HEIGHT, 32, 1, true]} />
-        <MeshTransmissionMaterial 
-          transmission={1} 
+        <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, TUBE_HEIGHT, 16, 1, true]} />
+        <meshPhysicalMaterial 
+          transmission={0.9} 
           thickness={1.5} 
-          roughness={0.05} 
+          roughness={0.1} 
           ior={1.5} 
-          clearcoat={1} 
-          chromaticAberration={0.05}
-          anisotropicBlur={0.1}
+          clearcoat={0.5} 
+          transparent
           side={THREE.DoubleSide}
         />
       </mesh>
       
       {/* Base of Tube */}
       <mesh position={[0, -0.2, 0]}>
-        <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, 0.1, 32]} />
+        <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, 0.1, 16]} />
         <meshPhysicalMaterial 
-          transmission={1} 
+          transmission={0.9} 
           thickness={0.5} 
-          roughness={0.05} 
+          roughness={0.1} 
           ior={1.5}
         />
       </mesh>
@@ -328,7 +326,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   });
 
   return (
-    <Canvas shadows camera={{ position: [0, 8, 12], fov: 45 }} onPointerDown={() => audio.init()}>
+    <Canvas shadows camera={{ position: [0, 8, 12], fov: 45 }} dpr={[1, 1.5]} onPointerDown={() => audio.init()}>
       <color attach="background" args={['#050510']} />
       
       <ambientLight intensity={0.5} />
@@ -404,12 +402,6 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         autoRotate
         autoRotateSpeed={0.5}
       />
-
-      <EffectComposer>
-        <DepthOfField focusDistance={0.01} focalLength={0.05} bokehScale={2} />
-        <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} intensity={1.5} mipmapBlur />
-        <Vignette eskil={false} offset={0.1} darkness={1.1} />
-      </EffectComposer>
     </Canvas>
   );
 }

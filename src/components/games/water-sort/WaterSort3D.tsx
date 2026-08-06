@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, ContactShadows, OrbitControls, RoundedBox, Cylinder } from '@react-three/drei';
 import { useSpring, a } from '@react-spring/three';
+import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
+import { audio } from './audioManager';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 type ColorId = number;
@@ -26,6 +28,10 @@ const COLORS = [
   '#00ffff', // Cyan
   '#66ff99', // Mint
   '#ffffff', // Pearl
+  '#8B4513', // Bronze
+  '#00fa9a', // Spring Green
+  '#dc143c', // Crimson
+  '#4169e1', // Royal Blue
 ];
 
 // ─── PROCEDURAL GENERATOR (GUARANTEED SOLVABLE) ──────────────────────────────
@@ -161,9 +167,9 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
 
   // Initialize Level
   useEffect(() => {
-    const colorCount = Math.min(3 + Math.floor(level / 2), 8);
+    const colorCount = Math.min(3 + Math.floor(level / 1.5), 14);
     const emptyCount = 2;
-    const shuffleMoves = 20 + level * 5;
+    const shuffleMoves = 30 + level * 10;
     setTubes(generateLevel(colorCount, emptyCount, shuffleMoves));
     setSelected(null);
   }, [level]);
@@ -175,6 +181,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
       tube.length === 0 || (tube.length === TUBE_CAPACITY && tube.every(c => c === tube[0]))
     );
     if (isWon) {
+      audio.playWin();
       setTimeout(() => onWin(), 1000);
     }
   }, [tubes, onWin]);
@@ -197,6 +204,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
       if (target.length < TUBE_CAPACITY && (target.length === 0 || targetTop === sourceTop)) {
         // Valid pour
         setPouringInto(index);
+        audio.playPour(target.length / TUBE_CAPACITY);
         
         // Execute pour logic after short delay for animation
         setTimeout(() => {
@@ -237,7 +245,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   const startZ = -((rows - 1) * TUBE_SPACING) / 2;
 
   return (
-    <Canvas shadows camera={{ position: [0, 8, 12], fov: 45 }}>
+    <Canvas shadows camera={{ position: [0, 8, 12], fov: 45 }} onPointerDown={() => audio.init()}>
       <color attach="background" args={['#050510']} />
       
       <ambientLight intensity={0.5} />
@@ -286,6 +294,12 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         minDistance={5}
         maxDistance={25}
       />
+
+      <EffectComposer>
+        <DepthOfField focusDistance={0.01} focalLength={0.05} bokehScale={2} />
+        <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} intensity={1.5} mipmapBlur />
+        <Vignette eskil={false} offset={0.1} darkness={1.1} />
+      </EffectComposer>
     </Canvas>
   );
 }

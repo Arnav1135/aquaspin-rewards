@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, ContactShadows, OrbitControls, MeshTransmissionMaterial, Sparkles } from '@react-three/drei';
+import { Environment, ContactShadows, OrbitControls, MeshTransmissionMaterial, Sparkles, Html } from '@react-three/drei';
 import { useSpring, a } from '@react-spring/three';
 import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -104,7 +104,8 @@ function Tube({
   isPouring,
   onClick,
   positionX,
-  positionZ
+  positionZ,
+  isHinted
 }: {
   index: number;
   data: TubeData;
@@ -113,6 +114,7 @@ function Tube({
   onClick: () => void;
   positionX: number;
   positionZ: number;
+  isHinted?: boolean;
 }) {
   // Idle breathing animation
   const groupRef = useRef<THREE.Group>(null);
@@ -173,6 +175,11 @@ function Tube({
           height={LIQUID_HEIGHT} 
         />
       ))}
+      
+      {/* Hint Highlight */}
+      {isHinted && (
+        <Sparkles count={30} scale={2} size={3} speed={2} color="#ffffff" opacity={1} position-y={TUBE_HEIGHT/2} />
+      )}
     </a.group>
   );
 }
@@ -180,8 +187,10 @@ function Tube({
 // ─── MAIN GAME COMPONENT ─────────────────────────────────────────────────────
 export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin: () => void }) {
   const [tubes, setTubes] = useState<TubeData[]>([]);
+  const [history, setHistory] = useState<TubeData[][]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [pouringInto, setPouringInto] = useState<number | null>(null);
+  const [hint, setHint] = useState<{from: number, to: number} | null>(null);
 
   // Initialize Level
   useEffect(() => {
@@ -189,7 +198,9 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
     const emptyCount = 2;
     const shuffleMoves = 30 + level * 10;
     setTubes(generateLevel(colorCount, emptyCount, shuffleMoves));
+    setHistory([]);
     setSelected(null);
+    setHint(null);
   }, [level]);
 
   // Check Win Condition
@@ -220,6 +231,9 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
       const targetTop = target[target.length - 1];
 
       if (target.length < TUBE_CAPACITY && (target.length === 0 || targetTop === sourceTop)) {
+        // Capture state before modifying for undo history
+        setHistory(h => [...h, tubes.map(t => [...t])]);
+        
         // Valid pour
         setPouringInto(index);
         audio.playPour(target.length / TUBE_CAPACITY);
@@ -251,6 +265,38 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         // Invalid pour, just switch selection
         if (tubes[index].length > 0) setSelected(index);
         else setSelected(null);
+      }
+    }
+  };
+
+  const handleUndo = () => {
+    if (history.length > 0) {
+      const prevTubes = history[history.length - 1];
+      setTubes(prevTubes);
+      setHistory(h => h.slice(0, -1));
+      setSelected(null);
+      setPouringInto(null);
+      setHint(null);
+    }
+  };
+
+  const handleHint = () => {
+    for (let i = 0; i < tubes.length; i++) {
+      for (let j = 0; j < tubes.length; j++) {
+        if (i === j) continue;
+        const source = tubes[i];
+        const target = tubes[j];
+        if (source.length === 0 || target.length === TUBE_CAPACITY) continue;
+
+        const sourceTop = source[source.length - 1];
+        if (target.length === 0 || target[target.length - 1] === sourceTop) {
+          const isSolid = source.every(c => c === sourceTop);
+          if (isSolid && target.length === 0) continue; 
+          
+          setHint({ from: i, to: j });
+          setTimeout(() => setHint(null), 3000);
+          return;
+        }
       }
     }
   };
@@ -299,12 +345,32 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
               data={tube}
               isSelected={selected === i}
               isPouring={selected === i && pouringInto !== null}
+              isHinted={hint?.from === i || hint?.to === i}
               onClick={() => handleTubeClick(i)}
               positionX={startX + col * TUBE_SPACING}
               positionZ={startZ + row * TUBE_SPACING * 1.5}
             />
           );
         })}
+
+        {/* UI Overlay via Html */}
+        <Html position={[0, -2.5, startZ + rows * TUBE_SPACING * 1.5]} center zIndexRange={[100, 0]}>
+          <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            <button 
+              onClick={handleUndo} 
+              disabled={history.length === 0}
+              className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-white/20 disabled:opacity-50 transition-all"
+            >
+              Undo
+            </button>
+            <button 
+              onClick={handleHint}
+              className="bg-white/10 backdrop-blur-md border border-white/20 text-[#5ab8ea] px-8 py-3 rounded-full font-bold shadow-lg hover:bg-white/20 transition-all"
+            >
+              Hint
+            </button>
+          </div>
+        </Html>
 
         {/* Premium Mahogany Wood Table */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>

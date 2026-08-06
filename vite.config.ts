@@ -41,6 +41,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024, // 30MB
         // Cache all app assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Do not fallback to SPA root for iframe games
+        navigateFallbackDenylist: [/^\/mini-games/],
         // Runtime caching strategy
         runtimeCaching: [
           {

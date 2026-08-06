@@ -548,13 +548,44 @@ export function MiniGames() {
         {activeGame && (
           <motion.div
             ref={overlayRef}
-            className="fixed inset-0 h-[100dvh] z-[100] flex flex-col bg-[#E5F2F9]"
+            className="fixed inset-0 z-[100] flex flex-col bg-[#E5F2F9]"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
-            {/* ── Overlay Header removed - GameFrame handles its own header ── */}
+            {/* ── Overlay Header bar ── */}
+            <div
+              className="flex items-center justify-between px-6 py-4 flex-shrink-0 bg-white/40 backdrop-blur-3xl border-b border-white/40 shadow-[0_4px_30px_rgba(0,0,0,0.1)] z-10"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl drop-shadow-md">{activeGameMeta?.emoji}</span>
+                <div>
+                  <p className="font-extrabold text-base leading-none text-[#7682B9]">
+                    {activeGameMeta?.title}
+                  </p>
+                  <p className="text-xs font-semibold mt-1 text-[#5AB8EA]">
+                    {activeGameMeta?.category} · {activeGameMeta?.difficulty}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  className="w-10 h-10 rounded-full bg-[#E5F2F9] text-[#5AB8EA] hover:bg-[#5AB8EA] hover:text-white flex items-center justify-center transition-colors shadow-sm"
+                  onClick={toggleFullscreen}
+                  aria-label="Toggle fullscreen"
+                >
+                  {isFullscreen ? <Minimize2 size={18} strokeWidth={2.5} /> : <Maximize2 size={18} strokeWidth={2.5} />}
+                </button>
+                <button
+                  className="w-10 h-10 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors shadow-sm"
+                  onClick={close}
+                  aria-label="Close game"
+                >
+                  <X size={18} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
 
             {/* ── Game Content inside protection frame ── */}
             <div className="flex-1 overflow-hidden p-0 sm:p-4 flex items-center justify-center">

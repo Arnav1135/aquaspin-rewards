@@ -59,6 +59,11 @@ export class GameErrorBoundary extends Component<Props, State> {
       autoCorrected: false
     });
 
+    if (error.name === 'ChunkLoadError' || error.message.includes('dynamically imported module') || error.message.includes('Failed to fetch')) {
+      window.location.reload();
+      return;
+    }
+
     this.attemptRecovery();
   }
 

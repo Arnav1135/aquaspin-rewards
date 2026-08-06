@@ -27,6 +27,7 @@ const SolitaireGame = lazy(() => import('@/components/games/SolitaireGame').then
 const LudoGame = lazy(() => import('@/components/games/LudoGame').then(m => ({ default: m.LudoGame })));
 const HextrisGame = lazy(() => import('@/components/games/HextrisGame').then(m => ({ default: m.HextrisGame })));
 const WaterSortGame = lazy(() => import('@/components/games/WaterSortGame').then(m => ({ default: m.WaterSortGame })));
+const Game2048 = lazy(() => import('@/components/games/Game2048').then(m => ({ default: m.Game2048 })));
 
 // Betting / Casino games
 const CoinFlipScene = lazy(() => import('@/features/coinflip/CoinFlipScene').then(m => ({ default: m.CoinFlipScene })));
@@ -228,6 +229,12 @@ const GAMES = [
     desc: 'Sort colored water into glasses until each glass holds one color!',
     thumbnail: '/thumbnails/watersort.jpg', // Ensure this exists or fallback
   },
+  {
+    key: '2048',        title: '2048',        emoji: '🔢',  category: 'Puzzle',
+    reward: 'High Score',    difficulty: 'Hard',   color: '#edc22e',
+    desc: 'Slide tiles to combine matching numbers and reach the 2048 tile!',
+    thumbnail: '/thumbnails/2048.jpg', // Ensure this exists or fallback
+  },
 ] as const;
 
 type GameKey = typeof GAMES[number]['key'] | null;
@@ -331,6 +338,7 @@ export function MiniGames() {
       // Puzzle
       case 'hextris':     return <HextrisGame onClose={close} />;
       case 'watersort':   return <WaterSortGame onClose={close} />;
+      case '2048':        return <Game2048 onClose={close} />;
 
       default:            return null;
     }

@@ -88,6 +88,8 @@ function LiquidSegment({ color, position, height }: { color: string, position: [
           roughness={0.1}
           ior={1.33}
           thickness={1}
+          emissive={color}
+          emissiveIntensity={0.5}
         />
       </a.mesh>
     </a.group>
@@ -145,6 +147,12 @@ function Tube({
           roughness={0.05} 
           ior={1.5}
         />
+      </mesh>
+      
+      {/* Gold Trim at Top of Tube */}
+      <mesh position={[0, TUBE_HEIGHT - 0.25, 0]}>
+        <torusGeometry args={[TUBE_RADIUS + 0.05, 0.05, 16, 100]} />
+        <meshStandardMaterial color="#ffd700" metalness={1} roughness={0.1} />
       </mesh>
 
       {/* Liquids */}
@@ -279,10 +287,10 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
           );
         })}
 
-        {/* Studio Floor */}
+        {/* Premium Mahogany Wood Table */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
           <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#0a0a1a" roughness={0.1} metalness={0.8} />
+          <meshStandardMaterial color="#3e1d04" roughness={0.7} metalness={0.1} />
         </mesh>
         
         <ContactShadows position={[0, -0.49, 0]} opacity={0.5} scale={20} blur={2} far={10} />

@@ -3,9 +3,9 @@ function scaleCanvas() {
 	canvas.height = $(window).height();
 
 	if (canvas.height > canvas.width) {
-		settings.scale = (canvas.width / 800) * settings.baseScale;
+		settings.scale = (canvas.width / 500) * settings.baseScale;
 	} else {
-		settings.scale = (canvas.height / 800) * settings.baseScale;
+		settings.scale = (canvas.height / 500) * settings.baseScale;
 	}
 
 	trueCanvas = {

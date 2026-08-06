@@ -42,7 +42,7 @@ const CandyCrushGame = lazy(() => import('@/components/games/CandyCrushSagaMap')
 import { AGEA, GameGenre, VisualStyle } from '@/engine/AIGameEngineArchitect';
 import { AIGameEnginePanel } from '@/components/AIGameEnginePanel';
 import { useAuthStore } from '@/features/authStore';
-import { GameErrorBoundary } from '@/lib/reliability/autoRecovery';
+
 import { GameSkeleton } from '@/components/ui/GameSkeleton';
 
 // ─────────────────────────────────────────────────────────────
@@ -603,11 +603,9 @@ export function MiniGames() {
 
             {/* ── Game Content inside protection frame ── */}
             <div className="flex-1 overflow-hidden p-0 sm:p-4 flex items-center justify-center">
-              <GameErrorBoundary gameId={activeGame}>
                 <Suspense fallback={<GameSkeleton />}>
                   {renderGame(activeGame, close)}
                 </Suspense>
-              </GameErrorBoundary>
             </div>
           </motion.div>
         )}

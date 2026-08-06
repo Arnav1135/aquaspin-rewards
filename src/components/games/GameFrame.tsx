@@ -57,7 +57,7 @@ export function GameFrame({
       transition={{ type: "spring", damping: 25, stiffness: 300 }}
       className={cn(
         'w-full h-full flex flex-col relative overflow-hidden bg-[#0D1B36] sm:rounded-3xl shadow-2xl shadow-[#7682B9]/20 sm:border border-[#C7E9F7] max-w-[1400px] mx-auto',
-        fullscreen ? 'fixed inset-0 z-[9999] rounded-none border-none max-w-none' : '',
+        fullscreen ? 'fixed inset-0 h-[100dvh] z-[9999] rounded-none border-none max-w-none' : '',
         isWarping && 'level-warp-active warp-lines',
         className
       )}

@@ -2,11 +2,11 @@ function scaleCanvas() {
 	canvas.width = $(window).width();
 	canvas.height = $(window).height();
 
-	if (canvas.height > canvas.width) {
-		settings.scale = (canvas.width / 500) * settings.baseScale;
-	} else {
-		settings.scale = (canvas.height / 500) * settings.baseScale;
-	}
+	var minDim = Math.min(canvas.width, canvas.height);
+	var isLandscape = canvas.width > canvas.height;
+	// Use a larger denominator on landscape (PC) to zoom out, smaller on portrait (mobile)
+	var denominator = isLandscape ? 950 : 800;
+	settings.scale = (minDim / denominator) * settings.baseScale;
 
 	trueCanvas = {
 		width: canvas.width,

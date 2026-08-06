@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, ContactShadows, OrbitControls, RoundedBox, Cylinder } from '@react-three/drei';
+import { Environment, ContactShadows, OrbitControls, MeshTransmissionMaterial, Sparkles } from '@react-three/drei';
 import { useSpring, a } from '@react-spring/three';
 import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -124,13 +124,14 @@ function Tube({
       {/* Glass Tube */}
       <mesh position={[0, TUBE_HEIGHT / 2 - 0.2, 0]}>
         <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, TUBE_HEIGHT, 32, 1, true]} />
-        <meshPhysicalMaterial 
+        <MeshTransmissionMaterial 
           transmission={1} 
-          thickness={0.5} 
+          thickness={1.5} 
           roughness={0.05} 
           ior={1.5} 
           clearcoat={1} 
-          transparent
+          chromaticAberration={0.05}
+          anisotropicBlur={0.1}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -285,6 +286,10 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         </mesh>
         
         <ContactShadows position={[0, -0.49, 0]} opacity={0.5} scale={20} blur={2} far={10} />
+        
+        {/* Floating atmospheric dust & bubbles */}
+        <Sparkles count={100} scale={15} size={2} speed={0.4} opacity={0.2} color="#ffffff" />
+        <Sparkles count={50} scale={10} size={1} speed={0.8} opacity={0.5} color="#5ab8ea" position-y={2} />
       </group>
 
       <OrbitControls 
@@ -293,6 +298,8 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         maxPolarAngle={Math.PI / 2 - 0.1}
         minDistance={5}
         maxDistance={25}
+        autoRotate
+        autoRotateSpeed={0.5}
       />
 
       <EffectComposer>

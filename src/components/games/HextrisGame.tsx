@@ -10,7 +10,7 @@ export function HextrisGame({ onClose }: Props) {
     >
       <div className="flex-1 w-full h-full bg-black rounded-xl overflow-hidden relative">
         <iframe 
-          src="/mini%20games/hextris/index.html" 
+          src="/mini-games/hextris/index.html" 
           className="w-full h-full border-none"
           title="Hextris"
         />

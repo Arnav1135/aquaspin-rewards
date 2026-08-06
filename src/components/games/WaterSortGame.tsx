@@ -10,7 +10,7 @@ export function WaterSortGame({ onClose }: Props) {
     >
       <div className="flex-1 w-full h-full bg-[#1a1a2e] rounded-xl overflow-hidden relative flex items-center justify-center">
         <iframe 
-          src="/mini%20games/water-sort-game-editor/index.html" 
+          src="/mini-games/water-sort-game-editor/index.html" 
           className="w-full h-full border-none"
           title="Water Sort"
         />

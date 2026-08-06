@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { X, Coins, Play, Square } from 'lucide-react';
-import gsap from 'gsap';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -20,45 +19,14 @@ import { Difficulty, Rows, getMultiplierTable, generateColors } from './plinko/p
 import { generateOutcome } from './plinko/outcomeEngine';
 import { getBiasImpulse, PathSteeringState } from './plinko/pathSteering';
 
-function CameraAdjuster({ rows, isBigWin }: { rows: number; isBigWin: boolean }) {
+function CameraAdjuster({ rows }: { rows: number }) {
   const { camera, size } = useThree();
-  
   useEffect(() => {
     const aspect = size.width / size.height;
     const baseZ = Math.max(15, rows * 1.5);
-    const targetZ = aspect < 1 ? baseZ / aspect : baseZ;
-    
-    if (isBigWin) {
-       // Cinematic Keyframed sweep - Zoom in and shake!
-       gsap.killTweensOf(camera.position);
-       gsap.killTweensOf(camera.rotation);
-       
-       gsap.to(camera.position, {
-         z: targetZ - 8,
-         y: -rows * 0.4,
-         duration: 0.4,
-         ease: "power2.out",
-         onUpdate: () => camera.updateProjectionMatrix()
-       });
-       
-       // Screen shake keyframes
-       gsap.to(camera.rotation, {
-         z: (Math.random() - 0.5) * 0.1,
-         duration: 0.05,
-         yoyo: true,
-         repeat: 20,
-         onComplete: () => {
-            gsap.to(camera.rotation, { z: 0, duration: 0.2 });
-            gsap.to(camera.position, { z: targetZ, y: 0, duration: 0.8, ease: "power2.inOut", onUpdate: () => camera.updateProjectionMatrix() });
-         }
-       });
-    } else {
-       // Normal smooth positioning
-       gsap.to(camera.position, { z: targetZ, y: 0, duration: 0.5, onUpdate: () => camera.updateProjectionMatrix() });
-       gsap.to(camera.rotation, { z: 0, duration: 0.5 });
-    }
-  }, [camera, size, rows, isBigWin]);
-  
+    camera.position.z = aspect < 1 ? baseZ / aspect : baseZ;
+    camera.updateProjectionMatrix();
+  }, [camera, size, rows]);
   return null;
 }
 
@@ -533,7 +501,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
           >
             <ambientLight intensity={1.2} />
             <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
-            <CameraAdjuster rows={rows} isBigWin={bigWinIdx !== null} />
+            <CameraAdjuster rows={rows} />
             <PlinkoBoard rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
             
             {balls.map(ball => (

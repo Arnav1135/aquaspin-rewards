@@ -32,10 +32,10 @@ export function WaterSortGame({ onClose }: Props) {
         
         {/* Premium Glass UI Overlay */}
         <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-6 py-2 rounded-full font-bold shadow-lg">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-6 py-2 rounded-full font-bold shadow-lg animate-[pulse_3s_ease-in-out_infinite]">
             Level {level}
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-[#5ab8ea] px-6 py-2 rounded-full font-bold shadow-lg">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-[#5ab8ea] px-6 py-2 rounded-full font-bold shadow-lg animate-[pulse_3s_ease-in-out_infinite] shadow-[#5ab8ea]/20">
             Score: {score}
           </div>
         </div>

@@ -114,6 +114,15 @@ function Tube({
   positionX: number;
   positionZ: number;
 }) {
+  // Idle breathing animation
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (groupRef.current && !isPouring && !isSelected) {
+      // Subtle sine wave breathing based on tube index so they breathe out of phase
+      groupRef.current.position.y = pos.y.get() + Math.sin(clock.elapsedTime * 2 + index) * 0.05;
+    }
+  });
+
   // Animation springs
   const { pos, rot } = useSpring({
     pos: [positionX, isSelected ? 1.5 : 0, positionZ] as [number, number, number],
@@ -122,7 +131,7 @@ function Tube({
   });
 
   return (
-    <a.group position={pos as any} rotation={rot as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
+    <a.group ref={groupRef} position={pos as any} rotation={rot as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
       {/* Glass Tube */}
       <mesh position={[0, TUBE_HEIGHT / 2 - 0.2, 0]}>
         <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, TUBE_HEIGHT, 32, 1, true]} />
@@ -253,12 +262,22 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   const startX = -((cols - 1) * TUBE_SPACING) / 2;
   const startZ = -((rows - 1) * TUBE_SPACING) / 2;
 
+  // Dynamic lighting animation
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+  useFrame(({ clock }) => {
+    if (lightRef.current) {
+      const t = clock.elapsedTime * 0.2;
+      lightRef.current.position.set(Math.cos(t) * 10, 10, Math.sin(t) * 10);
+    }
+  });
+
   return (
     <Canvas shadows camera={{ position: [0, 8, 12], fov: 45 }} onPointerDown={() => audio.init()}>
       <color attach="background" args={['#050510']} />
       
       <ambientLight intensity={0.5} />
       <directionalLight 
+        ref={lightRef}
         position={[10, 10, 5]} 
         intensity={2} 
         castShadow 

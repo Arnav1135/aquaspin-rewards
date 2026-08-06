@@ -259,6 +259,15 @@ export function MiniGames() {
   const isOwner = useAuthStore(state => state.isOwner);
 
   useEffect(() => {
+    if (activeGame) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [activeGame]);
+
+  useEffect(() => {
     const handleFsChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -548,7 +557,7 @@ export function MiniGames() {
         {activeGame && (
           <motion.div
             ref={overlayRef}
-            className="fixed inset-0 z-[100] flex flex-col bg-[#E5F2F9]"
+            className="fixed top-0 left-0 w-full h-[100dvh] z-[100] flex flex-col bg-[#E5F2F9]"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}

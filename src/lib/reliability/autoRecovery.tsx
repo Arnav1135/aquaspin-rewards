@@ -62,7 +62,12 @@ export class GameErrorBoundary extends Component<Props, State> {
     const msg = error && typeof error.message === 'string' ? error.message : '';
     const name = error && typeof error.name === 'string' ? error.name : '';
 
-    if (name === 'ChunkLoadError' || msg.includes('dynamically imported module') || msg.includes('Failed to fetch')) {
+    if (
+      name === 'ChunkLoadError' || 
+      name === 'SyntaxError' || 
+      msg.includes('dynamically imported module') || 
+      msg.includes('Failed to fetch')
+    ) {
       window.location.reload();
       return;
     }

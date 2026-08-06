@@ -47,18 +47,27 @@ function generateLevel(colorCount: number, emptyCount: number, shuffleMoves: num
 
   // Shuffle by doing reverse legal moves
   let moves = 0;
-  while (moves < shuffleMoves) {
-    // Pick a random non-empty tube to pull color FROM
-    const nonEmptyTubes = tubes.map((t, idx) => ({ t, idx })).filter(x => x.t.length > 0);
-    if (nonEmptyTubes.length === 0) break;
-    const fromSource = nonEmptyTubes[Math.floor(Math.random() * nonEmptyTubes.length)];
+  let attempts = 0;
+  while (moves < shuffleMoves && attempts < 1000) {
+    attempts++;
     
-    // Pick a random tube to push color TO (must not be full, must be different tube)
-    const notFullTubes = tubes.map((t, idx) => ({ t, idx })).filter(x => x.t.length < TUBE_CAPACITY && x.idx !== fromSource.idx);
+    // A reverse move is pulling from `src` and pushing to `tgt`.
+    // To ensure the exact opposite forward move is legal, the `src` tube after pulling MUST:
+    // 1. Be empty (src.length === 1)
+    // 2. Or have the same color on top (src[src.length - 2] === src[src.length - 1])
+    const validSources = tubes.map((t, idx) => ({ t, idx })).filter(x => {
+      if (x.t.length === 0) return false;
+      if (x.t.length === 1) return true;
+      return x.t[x.t.length - 2] === x.t[x.t.length - 1];
+    });
     
-    if (notFullTubes.length > 0) {
-      const toTarget = notFullTubes[Math.floor(Math.random() * notFullTubes.length)];
-      // Pop from source, push to target
+    if (validSources.length === 0) break;
+    const fromSource = validSources[Math.floor(Math.random() * validSources.length)];
+    
+    const validTargets = tubes.map((t, idx) => ({ t, idx })).filter(x => x.t.length < TUBE_CAPACITY && x.idx !== fromSource.idx);
+    
+    if (validTargets.length > 0) {
+      const toTarget = validTargets[Math.floor(Math.random() * validTargets.length)];
       const color = fromSource.t.pop()!;
       toTarget.t.push(color);
       moves++;
@@ -216,6 +225,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   }, [tubes, onWin]);
 
   const handleTubeClick = (index: number) => {
+    if (pouringInto !== null) return;
     if (selected === null) {
       // Select if not empty
       if (tubes[index].length > 0) setSelected(index);

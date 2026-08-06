@@ -49,3 +49,13 @@ UnityChess/Temp/
 UnityChess/Logs/
 UnityChess/UserSettings/
 TempModels/
+
+# Added by agent for cleanup
+scratch/
+UnityChess/
+odysseus/
+ludo-royale/
+.agents/
+old_main.js
+scaffold-candy.cjs
+.tracked_files.txt

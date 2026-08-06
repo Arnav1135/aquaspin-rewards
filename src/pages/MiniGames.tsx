@@ -25,6 +25,8 @@ const ArcheryGame = lazy(() => import('@/components/games/ArcheryGame').then(m =
 const ChessGame = lazy(() => import('@/components/games/Chess3D/App'));
 const SolitaireGame = lazy(() => import('@/components/games/SolitaireGame').then(m => ({ default: m.SolitaireGame })));
 const LudoGame = lazy(() => import('@/components/games/LudoGame').then(m => ({ default: m.LudoGame })));
+const HextrisGame = lazy(() => import('@/components/games/HextrisGame').then(m => ({ default: m.HextrisGame })));
+const WaterSortGame = lazy(() => import('@/components/games/WaterSortGame').then(m => ({ default: m.WaterSortGame })));
 
 // Betting / Casino games
 const CoinFlipScene = lazy(() => import('@/features/coinflip/CoinFlipScene').then(m => ({ default: m.CoinFlipScene })));
@@ -214,6 +216,18 @@ const GAMES = [
     desc: 'Match 3+ candies in this massive 150-level puzzle adventure!',
     thumbnail: '/thumbnails/candy.jpg',
   },
+  {
+    key: 'hextris',     title: 'Hextris',     emoji: '🛑',  category: 'Puzzle',
+    reward: 'High Score',    difficulty: 'Medium', color: '#ff4081',
+    desc: 'Rotate the hexagon to prevent blocks from stacking outside!',
+    thumbnail: '/thumbnails/hextris.jpg', // Ensure this exists or fallback
+  },
+  {
+    key: 'watersort',   title: 'Water Sort',  emoji: '🧪',  category: 'Puzzle',
+    reward: 'Level Clear',   difficulty: 'Medium', color: '#4d96ff',
+    desc: 'Sort colored water into glasses until each glass holds one color!',
+    thumbnail: '/thumbnails/watersort.jpg', // Ensure this exists or fallback
+  },
 ] as const;
 
 type GameKey = typeof GAMES[number]['key'] | null;
@@ -315,6 +329,8 @@ export function MiniGames() {
       case 'sudoku':      return <SudokuGame onClose={close} />;
       case 'quiz':        return <QuizGame onClose={close} />;
       // Puzzle
+      case 'hextris':     return <HextrisGame onClose={close} />;
+      case 'watersort':   return <WaterSortGame onClose={close} />;
 
       default:            return null;
     }

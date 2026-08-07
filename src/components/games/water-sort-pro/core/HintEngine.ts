@@ -143,8 +143,13 @@ export class HintEngine {
     
     if (hintLevel >= 4) {
       const solverResult = Solver.solve(state);
-      if (solverResult.isSolvable) {
-        fullSolution = solverResult.moves;
+      if (solverResult.isSolvable && solverResult.shortestPath) {
+        // Map shortestPath to the Move interface expected by HintEngine
+        fullSolution = solverResult.shortestPath.map(p => ({
+           source: p.source,
+           destination: p.destination,
+           amount: PuzzleEngine.getPourAmount(state, p.source, p.destination)
+        }));
         sequence = fullSolution.slice(0, 3);
         // Override bestMove to be exactly what solver wants, in case heuristics failed
         if (fullSolution.length > 0) {

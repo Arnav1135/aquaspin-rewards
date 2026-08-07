@@ -103,6 +103,8 @@ export function WaterSortPro({ onClose }: Props) {
       case 'Candy': return 'radial-gradient(circle at 50% 120%, #ff85a2 0%, #ffc8dd 60%)';
       case 'Spring': return 'radial-gradient(circle at 50% 120%, #234f1e 0%, #0a1f0d 60%)';
       case 'Summer': return 'radial-gradient(circle at 50% 120%, #b58900 0%, #362900 60%)';
+      case 'Holiday': return 'radial-gradient(circle at 50% 120%, #173b22 0%, #0d120e 60%)';
+      case 'Festival': return 'radial-gradient(circle at 50% 120%, #470e0a 0%, #1a0503 60%)';
       case 'Crystal':
       default: return 'radial-gradient(circle at 50% 120%, #1a1b4b 0%, #050510 60%)';
     }

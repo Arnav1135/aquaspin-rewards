@@ -110,6 +110,29 @@ export class GameApp {
       this.tubes.push(tubeContainer);
       this.liquids.push(liquidGraphic);
     });
+
+    // Add Ambient Vignette on top of game elements if High/Ultra
+    const quality = useGameState.getState().quality;
+    if (quality === 'Ultra' || quality === 'High') {
+      const vignette = new PIXI.Graphics();
+      
+      // Draw a large rect over everything, but cut out the center using radial gradient logic
+      // PIXI JS Graphics doesn't do radial gradients easily, so we use a huge donut/circle with a blur, or simple alpha edge rects.
+      // Easiest is to draw 4 black borders with alpha gradients, or just use a full screen black rect with 0 alpha in center
+      // Since PIXI doesn't have native radial gradient fill for Graphics in v8 without a texture, we'll draw 4 edge rects
+      const vSize = 100;
+      vignette.rect(0, 0, width, vSize).fill({ color: 0x000000, alpha: 0.3 }); // Top
+      vignette.rect(0, height - vSize, width, vSize).fill({ color: 0x000000, alpha: 0.3 }); // Bottom
+      vignette.rect(0, 0, vSize, height).fill({ color: 0x000000, alpha: 0.3 }); // Left
+      vignette.rect(width - vSize, 0, vSize, height).fill({ color: 0x000000, alpha: 0.3 }); // Right
+      
+      // Apply blur to it so it looks like a vignette
+      const blur = new PIXI.BlurFilter();
+      blur.blur = 50;
+      vignette.filters = [blur];
+      
+      this.app.stage.addChild(vignette);
+    }
   }
 
   public forceRedraw() {

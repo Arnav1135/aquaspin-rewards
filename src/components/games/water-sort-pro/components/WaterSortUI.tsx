@@ -27,7 +27,7 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: 
   const themes = [
     'Ocean', 'Neon', 'Crystal', 'Sunset', 'Minimal Dark', 'Minimal Light', 
     'Snow', 'Winter', 'Autumn', 'Forest', 'Aurora', 'Galaxy', 'Candy', 
-    'Spring', 'Summer'
+    'Spring', 'Summer', 'Holiday', 'Festival'
   ];
   const qualities = ['Low', 'Medium', 'High', 'Ultra'];
   const modes = ['classic', 'zen', 'challenge', 'hardcore'];

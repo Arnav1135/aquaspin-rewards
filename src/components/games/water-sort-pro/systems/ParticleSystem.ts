@@ -28,6 +28,8 @@ export class ParticleSystem {
       app.ticker.add(() => {
         noise.seed = Math.random();
       });
+
+      // Ambient Vignette using a screen-space overlay graphics instead of filter to save performance, or we can just draw it
     }
 
     if (quality === 'Ultra') {
@@ -38,6 +40,9 @@ export class ParticleSystem {
     }
     
     app.stage.filters = filters;
+
+    // Draw Ambient Vignette manually as a top-level overlay on stage (behind UI but above game)
+    // We handle it inside GameApp for z-ordering, so we'll skip it here or just add it to stage
   }
 
   static createSeasonalParticles(app: Application, theme: string) {
@@ -159,19 +164,23 @@ export class ParticleSystem {
         });
       };
       app.ticker.add(this.seasonalAnimate);
-    } else if (theme === 'Summer' || theme === 'Aurora' || theme === 'Galaxy') {
+    } else if (theme === 'Summer' || theme === 'Aurora' || theme === 'Galaxy' || theme === 'Holiday' || theme === 'Festival') {
       this.seasonalContainer = new Container();
       app.stage.addChildAt(this.seasonalContainer, 0);
 
       const count = quality === 'Ultra' ? 40 : (quality === 'High' ? 20 : 10);
       const particles: { p: Graphics, vx: number, vy: number, s: number, t: number }[] = [];
       
-      const c = theme === 'Aurora' ? 0x00FF99 : (theme === 'Galaxy' ? 0xAA00FF : 0xFFDD00);
+      let colors = [0xFFDD00];
+      if (theme === 'Aurora') colors = [0x00FF99, 0x00FFFF];
+      if (theme === 'Galaxy') colors = [0xAA00FF, 0xFF00AA, 0x00AAFF];
+      if (theme === 'Holiday') colors = [0xFF0000, 0x00FF00, 0xFFFF00];
+      if (theme === 'Festival') colors = [0xFF5500, 0xFF0055, 0xFFFF00, 0x00FFFF];
 
       for (let i = 0; i < count; i++) {
         const p = new Graphics();
         p.circle(0, 0, Math.random() * 6 + 2);
-        p.fill({ color: c, alpha: 0.3 });
+        p.fill({ color: colors[Math.floor(Math.random() * colors.length)], alpha: 0.4 });
         p.x = Math.random() * app.screen.width;
         p.y = Math.random() * app.screen.height;
         this.seasonalContainer.addChild(p);
@@ -190,7 +199,13 @@ export class ParticleSystem {
           pt.t += ticker.deltaTime * 0.05;
           pt.p.x += pt.vx;
           pt.p.y += pt.vy;
-          pt.p.alpha = Math.abs(Math.sin(pt.t)) * 0.5 + 0.1;
+          
+          if (theme === 'Holiday' || theme === 'Festival') {
+            pt.p.alpha = Math.abs(Math.sin(pt.t * 2)) * 0.8 + 0.2; // Blink fast
+          } else {
+            pt.p.alpha = Math.abs(Math.sin(pt.t)) * 0.5 + 0.1; // Pulse slowly
+          }
+          
           if (pt.p.y > app.screen.height) pt.p.y = 0;
           if (pt.p.y < 0) pt.p.y = app.screen.height;
           if (pt.p.x > app.screen.width) pt.p.x = 0;

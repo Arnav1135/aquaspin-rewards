@@ -58,6 +58,30 @@ export class LiquidGraphics extends Container {
       meniscus.ellipse(w / 2, yOffset, (w - 4) / 2, 4);
       meniscus.fill({ color: 0xFFFFFF, alpha: 0.3 });
       
+      // Animate the meniscus to simulate subtle liquid ripples
+      const timeOffset = Math.random() * 100;
+      let tick = 0;
+      const animateRipple = () => {
+        tick += 0.05;
+        if (meniscus && !meniscus.destroyed) {
+          meniscus.clear();
+          meniscus.ellipse(
+            w / 2, 
+            yOffset + Math.sin(tick + timeOffset) * 1.5, // vertical wobble
+            (w - 4) / 2 + Math.cos(tick + timeOffset) * 1, // horizontal squeeze
+            4 + Math.sin(tick * 2 + timeOffset) * 1 // thickness pulse
+          );
+          meniscus.fill({ color: 0xFFFFFF, alpha: 0.3 });
+        }
+      };
+      
+      // We need to hook this up to the PIXI ticker. The easiest way is to add an event listener or handle it centrally.
+      // But PIXI v8 doesn't have an easy global ticker access inside a Container without app reference, unless we import Ticker.shared
+      import('pixi.js').then(({ Ticker }) => {
+        Ticker.shared.add(animateRipple);
+        meniscus.on('destroyed', () => Ticker.shared.remove(animateRipple));
+      });
+      
       // Add subtle dark gradient/shadow at the bottom of the segment for depth
       const depth = new Graphics();
       depth.rect(2, yOffset + segmentHeight - 4, w - 4, 6);

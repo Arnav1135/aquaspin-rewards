@@ -9,6 +9,7 @@ import { ParticleSystem } from '../systems/ParticleSystem';
 import { saveManager } from '../services/SaveManager';
 import { LiquidFilter } from '../shaders/LiquidFilter';
 import { Solver } from '../levels/Solver';
+import { PerformanceManager } from '../systems/PerformanceManager';
 
 export class GameApp {
   public app: PIXI.Application;
@@ -19,6 +20,7 @@ export class GameApp {
   private stateData: number[][] = [];
   private moveHistory: { src: number, dest: number, amount: number, color: number }[] = [];
   private redoHistory: { src: number, dest: number, amount: number, color: number }[] = [];
+  private performanceManager!: PerformanceManager;
   
   // Layout metrics
   private tubeWidth = 60;
@@ -40,6 +42,9 @@ export class GameApp {
     });
     this.container.appendChild(this.app.canvas);
     this.isInitialized = true;
+    
+    // Start Performance Manager
+    this.performanceManager = new PerformanceManager(this.app);
     
     // Background interaction to deselect
     this.app.stage.eventMode = 'static';
@@ -175,20 +180,27 @@ export class GameApp {
     if (s.isAnimating || s.isWon) return;
 
     audioMixer.init();
+    
+    // Calculate simple stereo pan (-1 to 1) based on tube X position relative to screen center
+    const width = this.app.screen.width;
+    const getPan = (i: number) => {
+      if (!this.tubes[i]) return 0;
+      return ((this.tubes[i].x + this.tubeWidth/2) / width) * 2 - 1;
+    };
 
     if (s.selectedTube === -1) {
       if (this.stateData[index].length > 0) {
         s.setSelectedTube(index);
-        audioMixer.playSelect();
+        audioMixer.playSelect(getPan(index));
         AnimationSystem.bounceSelection(this.tubes[index], this.tubes[index].y);
       }
     } else {
       if (s.selectedTube === index) {
         s.setSelectedTube(-1);
-        audioMixer.playSelect();
+        audioMixer.playSelect(getPan(index));
         AnimationSystem.resetSelection(this.tubes[index], this.tubes[index].y);
       } else {
-        this.attemptPour(s.selectedTube, index);
+        this.attemptPour(s.selectedTube, index, getPan(s.selectedTube), getPan(index));
       }
     }
   }
@@ -201,7 +213,7 @@ export class GameApp {
     }
   }
 
-  private attemptPour(srcIdx: number, destIdx: number) {
+  private attemptPour(srcIdx: number, destIdx: number, sourcePan: number, destPan: number) {
     const s = useGameState.getState();
     const src = this.stateData[srcIdx];
     const dest = this.stateData[destIdx];
@@ -218,7 +230,7 @@ export class GameApp {
       amount = Math.min(amount, 4 - dest.length);
       
       s.setAnimating(true);
-      audioMixer.playPour();
+      audioMixer.playPour(sourcePan, destPan);
       
       const sourceContainer = this.tubes[srcIdx];
       const destContainer = this.tubes[destIdx];

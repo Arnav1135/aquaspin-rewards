@@ -3,6 +3,7 @@ import { GameApp } from '../app/GameApp';
 import { useGameState } from '../state/useGameState';
 import { LevelGenerator } from '../levels/LevelGenerator';
 import { saveManager } from '../services/SaveManager';
+import { GameModeManager, GameMode } from '../core/GameModeManager';
 
 import { WaterSortUI } from './WaterSortUI';
 
@@ -34,8 +35,12 @@ export function WaterSortPro({ onClose }: Props) {
       setLevel(saved.level);
       setScore(saved.score);
 
-      // Start Level
-      const levelData = LevelGenerator.generate(saved.level);
+      // Start Level using GameMode logic
+      const mode = GameModeManager.getCurrentMode();
+      const diff = GameModeManager.calculateDifficulty();
+      const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
+      
+      const levelData = LevelGenerator.generate(saved.level, diff, seed);
       app.loadLevel(levelData);
     });
 
@@ -47,7 +52,12 @@ export function WaterSortPro({ onClose }: Props) {
   // Listen for level changes
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
-      const levelData = LevelGenerator.generate(level);
+      const mode = GameModeManager.getCurrentMode();
+      const diff = GameModeManager.calculateDifficulty();
+      // If Daily, passing seed means the level remains the same for the day even if level number increments (though daily mode usually locks at level 1)
+      const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
+      
+      const levelData = LevelGenerator.generate(level, diff, seed);
       appRef.current.loadLevel(levelData);
       setWon(false);
     }
@@ -87,7 +97,12 @@ export function WaterSortPro({ onClose }: Props) {
   const handleRestart = () => {
     if (appRef.current && appRef.current.isInitialized) {
       useGameState.getState().handleRestart(); // Penalize ELO and reset streak
-      const levelData = LevelGenerator.generate(level);
+      
+      const mode = GameModeManager.getCurrentMode();
+      const diff = GameModeManager.calculateDifficulty();
+      const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
+      
+      const levelData = LevelGenerator.generate(level, diff, seed);
       appRef.current.loadLevel(levelData);
       setWon(false);
     }

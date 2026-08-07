@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, ColorMatrixFilter, BlurFilter } from 'pixi.js';
+import { Application, Container, Graphics, ColorMatrixFilter, BlurFilter, NoiseFilter, Text, TextStyle } from 'pixi.js';
 import { useGameState } from '../state/useGameState';
 
 export class ParticleSystem {
@@ -18,6 +18,17 @@ export class ParticleSystem {
     const colorMatrix = new ColorMatrixFilter();
     colorMatrix.contrast(0.1, false);
     filters.push(colorMatrix);
+
+    if (quality === 'Ultra' || quality === 'High') {
+      // Film grain effect
+      const noise = new NoiseFilter();
+      noise.noise = quality === 'Ultra' ? 0.08 : 0.04;
+      filters.push(noise);
+      
+      app.ticker.add(() => {
+        noise.seed = Math.random();
+      });
+    }
 
     if (quality === 'Ultra') {
       // Add a subtle bloom/blur effect for ultra quality
@@ -179,5 +190,39 @@ export class ParticleSystem {
     };
     
     app.ticker.add(animate);
+
+    // XP Counter floating text
+    const textStyle = new TextStyle({
+      fontFamily: 'Impact, Arial Black, sans-serif',
+      fontSize: 64,
+      fill: ['#ffffff', '#00ff99'],
+      dropShadow: {
+        alpha: 0.8,
+        angle: Math.PI / 6,
+        blur: 10,
+        color: '#000000',
+        distance: 6,
+      },
+    });
+    
+    const xpText = new Text({ text: '+100 XP', style: textStyle });
+    xpText.anchor.set(0.5);
+    xpText.x = app.screen.width / 2;
+    xpText.y = app.screen.height / 2 + 50;
+    app.stage.addChild(xpText);
+    
+    let time = 0;
+    const textAnimate = (ticker: any) => {
+      time += ticker.deltaTime * 0.05;
+      xpText.y -= 1;
+      xpText.alpha = 1 - time / 3;
+      xpText.scale.set(1 + Math.sin(time * 10) * 0.1);
+      
+      if (xpText.alpha <= 0) {
+        app.ticker.remove(textAnimate);
+        xpText.destroy();
+      }
+    };
+    app.ticker.add(textAnimate);
   }
 }

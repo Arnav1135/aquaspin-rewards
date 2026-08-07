@@ -182,6 +182,13 @@ export class GameApp {
         
         this.liquids[srcIdx].updateLiquids(src);
         this.liquids[destIdx].updateLiquids(dest);
+
+        // Check if destination tube was just completed
+        if (dest.length === 4 && dest.every(c => c === dest[0])) {
+          // Glow Pulse on completion
+          AnimationSystem.bounceSelection(destContainer, destContainer.y);
+          audioMixer.playWin(); // Play a nice sound for single tube
+        }
         
         s.setSelectedTube(-1);
         s.setAnimating(false);

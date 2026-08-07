@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from '../state/useGameState';
-import { Settings, Undo2, Redo2, Lightbulb, RotateCcw, X, Palette, Monitor, Eye, Volume2, Gamepad2, BarChart2 } from 'lucide-react';
+import { Settings, Undo2, Redo2, Lightbulb, RotateCcw, X, Palette, Monitor, Eye, Volume2, Gamepad2, BarChart2, Trophy, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface WaterSortUIProps {
@@ -17,10 +17,12 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: 
     theme, quality, colorBlindMode, showSettings, gameMode,
     volumeMaster, volumeMusic, volumeEffects,
     setTheme, setQuality, setColorBlindMode, setShowSettings, setGameMode,
-    setVolumeMaster, setVolumeMusic, setVolumeEffects
+    setVolumeMaster, setVolumeMusic, setVolumeEffects,
+    isWon
   } = useGameState();
 
   const [showStats, setShowStats] = useState(false);
+  const [showAchievement, setShowAchievement] = useState(false);
 
   const themes = [
     'Ocean', 'Neon', 'Crystal', 'Sunset', 'Minimal Dark', 'Minimal Light', 
@@ -30,13 +32,56 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: 
   const qualities = ['Low', 'Medium', 'High', 'Ultra'];
   const modes = ['classic', 'zen', 'challenge', 'hardcore'];
 
+  // Trigger achievement banner on win
+  useEffect(() => {
+    if (isWon) {
+      setTimeout(() => setShowAchievement(true), 500);
+      setTimeout(() => setShowAchievement(false), 4500);
+    }
+  }, [isWon]);
+
   return (
     <>
+      {/* Achievement Banner */}
+      <AnimatePresence>
+        {showAchievement && (
+          <motion.div 
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 20, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.5 }}
+            className="absolute top-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          >
+            <div className="bg-gradient-to-r from-yellow-500/80 via-amber-400/90 to-yellow-500/80 backdrop-blur-md border border-yellow-200/50 shadow-[0_0_30px_rgba(250,204,21,0.5)] rounded-2xl p-1 flex items-center overflow-hidden">
+              <div className="bg-black/20 rounded-xl p-3 px-6 flex items-center gap-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                <div className="bg-yellow-100/20 p-2 rounded-full shadow-inner">
+                  <Trophy className="text-yellow-100" size={32} />
+                </div>
+                <div>
+                  <h3 className="text-yellow-50 font-bold text-sm tracking-widest uppercase opacity-80">Achievement Unlocked</h3>
+                  <p className="text-white font-black text-xl drop-shadow-md">Level {level} Master!</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top HUD */}
       <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-10 pointer-events-none">
         <div className="pointer-events-auto flex flex-col gap-1">
-          <div className="text-white font-extrabold text-3xl tracking-widest uppercase drop-shadow-md">
+          <div className="text-white font-extrabold text-3xl tracking-widest uppercase drop-shadow-md flex items-center gap-2">
             Level {level}
+            {isWon && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", delay: 1 }}
+              >
+                <Award className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" size={28} />
+              </motion.div>
+            )}
           </div>
           <div className="text-white/80 font-semibold text-sm uppercase tracking-wider">
             Moves: {moves} | Score: {score} | Mode: {gameMode}

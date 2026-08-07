@@ -266,6 +266,39 @@ export class ParticleSystem {
     
     app.ticker.add(animate);
 
+    // Fireworks effect (Burst of glowing particles)
+    const fireworkColors = [0xff0044, 0x00ff99, 0x00ccff, 0xffcc00, 0xcc00ff];
+    for (let f = 0; f < 3; f++) {
+      const fx = (Math.random() * 0.6 + 0.2) * app.screen.width;
+      const fy = (Math.random() * 0.4 + 0.1) * app.screen.height;
+      const fColor = fireworkColors[Math.floor(Math.random() * fireworkColors.length)];
+      
+      for (let i = 0; i < 40; i++) {
+        const p = new Graphics();
+        p.circle(0, 0, Math.random() * 4 + 2);
+        p.fill({ color: fColor, alpha: 1 });
+        p.x = fx;
+        p.y = fy;
+        container.addChild(p);
+        
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 2;
+        
+        particles.push({
+          p,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          s: 0
+        });
+      }
+    }
+
+    // Screen Glow effect (Flash white then fade out)
+    const glow = new Graphics();
+    glow.rect(0, 0, app.screen.width, app.screen.height);
+    glow.fill({ color: 0xffffff, alpha: 0.3 });
+    app.stage.addChild(glow);
+    
     // XP Counter floating text
     const textStyle = new TextStyle({
       fontFamily: 'Impact, Arial Black, sans-serif',
@@ -289,6 +322,14 @@ export class ParticleSystem {
     let time = 0;
     const textAnimate = (ticker: any) => {
       time += ticker.deltaTime * 0.05;
+      
+      // Animate Screen Glow
+      if (glow.alpha > 0) {
+        glow.alpha -= ticker.deltaTime * 0.02;
+      } else if (glow.parent) {
+        glow.destroy();
+      }
+
       xpText.y -= 1;
       xpText.alpha = 1 - time / 3;
       xpText.scale.set(1 + Math.sin(time * 10) * 0.1);

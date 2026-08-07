@@ -88,7 +88,7 @@ export class AnimationSystem {
 
     // AAA Cinematic Camera: Micro-zoom and pan board towards destination tube
     if (source.parent) {
-      const board = source.parent as PIXI.Container;
+      const board = source.parent as Container;
       // Calculate target pan. If tube is on the right, pan board left.
       const originalScale = board.scale.x;
       const zoomScale = originalScale * 1.05;

@@ -29,6 +29,42 @@ export class TubeGraphics extends Container {
     
     // Order matters for blending and depth perception
     this.addChild(this.ambientOcclusion, this.backgroundGlass, this.highlight, this.reflection, this.glassRim);
+
+    // AAA Gyroscope Lighting
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', this.handleGyroscope);
+    }
+  }
+
+  private handleGyroscope = (e: DeviceOrientationEvent) => {
+    // gamma is the left-to-right tilt in degrees, where right is positive
+    const gamma = e.gamma || 0; 
+    
+    // clamp between -45 and 45 degrees
+    const tilt = Math.max(-45, Math.min(45, gamma));
+    
+    // Normalize to -1 to 1
+    const normalizedTilt = tilt / 45;
+
+    // Shift reflection left/right based on tilt
+    const w = this.tubeWidth;
+    const centerOffset = w * 0.15;
+    const maxShift = w * 0.15;
+    
+    import('gsap').then(gsap => {
+      gsap.default.to(this.reflection, {
+        x: normalizedTilt * maxShift,
+        duration: 0.1,
+        ease: 'power1.out'
+      });
+    });
+  };
+
+  public destroy(options?: any) {
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      window.removeEventListener('deviceorientation', this.handleGyroscope);
+    }
+    super.destroy(options);
   }
 
   private drawShadow() {

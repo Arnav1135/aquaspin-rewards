@@ -56,11 +56,11 @@ export class AnimationSystem {
     const pourX = target.x - (dir * 30);
     const pourY = target.y - 80;
 
-    const tl = gsap.timeline({ onComplete: () => {
-      if (stream.parent) stream.parent.removeChild(stream);
-      stream.destroy();
-      onComplete();
-    }});
+    const board = source.parent as Container;
+    const originalScale = board.scale.x;
+    const originalBoardX = board.x;
+
+    const tl = gsap.timeline();
     
     // Stream graphics
     const stream = new Graphics();
@@ -79,12 +79,29 @@ export class AnimationSystem {
       ease: 'power2.out'
     });
 
-    // 2. STEEP POUR ANGLE (Cinematic)
+    // 2. STEEP POUR ANGLE & CINEMATIC CAMERA
     tl.to(source, {
       rotation: dir * 1.8, // Steeper pour angle
       duration: 0.2,
       ease: 'power2.inOut'
-    });
+    }, "<"); // Run alongside lift
+
+    // AAA Cinematic Camera: Micro-zoom and pan board towards destination tube
+    if (source.parent) {
+      const board = source.parent as PIXI.Container;
+      // Calculate target pan. If tube is on the right, pan board left.
+      const originalScale = board.scale.x;
+      const zoomScale = originalScale * 1.05;
+      const panX = board.x - (target.x * (zoomScale - originalScale));
+
+      tl.to(board, {
+        scaleX: zoomScale,
+        scaleY: zoomScale,
+        x: panX,
+        duration: 0.4,
+        ease: 'power2.out'
+      }, "<");
+    }
 
     // 3. STREAM & IMPACT (Hold pour state while liquid transfers)
     const pourDuration = 0.15 + (amount * 0.15); // Scale pour time by amount
@@ -162,7 +179,11 @@ export class AnimationSystem {
     tl.to(source, {
       rotation: 0,
       duration: 0.2,
-      ease: 'power2.in'
+      ease: 'power2.in',
+      onComplete: () => {
+        if (stream.parent) stream.parent.removeChild(stream);
+        stream.destroy();
+      }
     });
     
     tl.to(source, {
@@ -171,8 +192,18 @@ export class AnimationSystem {
       scaleX: 1.0,
       scaleY: 1.0,
       duration: 0.35,
-      ease: 'back.out(1.5)'
+      ease: 'back.out(1.5)',
+      onComplete: onComplete
     }, "-=0.1"); // Overlap movement with un-rotation
+
+    // Reset cinematic camera
+    tl.to(board, {
+      scaleX: originalScale,
+      scaleY: originalScale,
+      x: originalBoardX,
+      duration: 0.4,
+      ease: 'power2.out'
+    }, "-=0.4");
   }
 
   // Phase ERROR: SHAKE ON INVALID MOVE

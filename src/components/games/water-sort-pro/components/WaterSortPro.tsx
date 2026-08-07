@@ -48,11 +48,17 @@ export function WaterSortPro({ onClose }: Props) {
         const diff = GameModeManager.calculateDifficulty();
         const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
         
-        const levelData = LevelGenerator.generate(saved.level, diff, seed);
-        app.loadLevel(levelData);
+        LevelGenerator.generateAsync(saved.level, diff, seed)
+          .then(levelData => {
+            if (appRef.current) appRef.current.loadLevel(levelData);
+          })
+          .catch(err => {
+            console.error("Core Engine Failure: Level Generation Error", err);
+            if (appRef.current) appRef.current.loadLevel(SAFE_FALLBACK_LEVEL); // Graceful degradation
+          });
       } catch (err) {
-        console.error("Core Engine Failure: Level Generation Error", err);
-        app.loadLevel(SAFE_FALLBACK_LEVEL); // Graceful degradation
+        console.error("Core Engine Failure: Level Generation Request Error", err);
+        app.loadLevel(SAFE_FALLBACK_LEVEL);
       }
     }).catch(err => {
       console.error("Core Engine Failure: GameApp initialization failed", err);
@@ -71,10 +77,16 @@ export function WaterSortPro({ onClose }: Props) {
         const diff = GameModeManager.calculateDifficulty();
         const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
         
-        const levelData = LevelGenerator.generate(level, diff, seed);
-        appRef.current.loadLevel(levelData);
+        LevelGenerator.generateAsync(level, diff, seed)
+          .then(levelData => {
+            if (appRef.current) appRef.current.loadLevel(levelData);
+          })
+          .catch(err => {
+            console.error("Level Generation Error during transition", err);
+            if (appRef.current) appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
+          });
       } catch (err) {
-        console.error("Level Generation Error during transition", err);
+        console.error("Level Generation Request Error during transition", err);
         appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
       }
       setWon(false);
@@ -120,8 +132,14 @@ export function WaterSortPro({ onClose }: Props) {
       const diff = GameModeManager.calculateDifficulty();
       const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
       
-      const levelData = LevelGenerator.generate(level, diff, seed);
-      appRef.current.loadLevel(levelData);
+      LevelGenerator.generateAsync(level, diff, seed)
+        .then(levelData => {
+          if (appRef.current) appRef.current.loadLevel(levelData);
+        })
+        .catch(err => {
+          console.error("Level Generation Error on restart", err);
+          if (appRef.current) appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
+        });
       setWon(false);
     }
   };

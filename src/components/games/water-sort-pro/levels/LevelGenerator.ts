@@ -23,4 +23,43 @@ export class LevelGenerator {
     
     return levelDef.initialConfiguration;
   }
+
+  static async generateAsync(level: number, overrideDiff?: number, seed?: string): Promise<number[][]> {
+    const playerElo = useGameState.getState().stats.playerSkillRating || 1000;
+    const normalizedSkill = Math.max(0.1, playerElo / 1000);
+    const targetDifficulty = overrideDiff !== undefined ? overrideDiff : DifficultyEngine.getTargetDifficulty(level, normalizedSkill);
+    
+    const numColors = Math.min(3 + Math.floor(level / 3), 10);
+    const capacity = 4;
+    const numTubes = numColors + 2;
+
+    return new Promise((resolve, reject) => {
+      // Create worker instance
+      const worker = new Worker(new URL('../workers/LevelGenerator.worker.ts', import.meta.url), { type: 'module' });
+      const id = Date.now().toString();
+
+      worker.onmessage = (e) => {
+        const { id: responseId, type, payload, error } = e.data;
+        if (responseId === id) {
+          if (type === 'GENERATE_SUCCESS') {
+            resolve(payload.initialConfiguration);
+          } else {
+            reject(new Error(error));
+          }
+          worker.terminate();
+        }
+      };
+
+      worker.onerror = (err) => {
+        reject(err);
+        worker.terminate();
+      };
+
+      worker.postMessage({
+        id,
+        type: 'GENERATE',
+        payload: { targetDifficulty, colorCount: numColors, tubeCount: numTubes, tubeCapacity: capacity }
+      });
+    });
+  }
 }

@@ -106,17 +106,54 @@ export class GameApp {
     }
   }
 
+  private boardContainer = new PIXI.Container();
+
   public loadLevel(levelData: number[][]) {
     this.stateData = levelData.map(t => [...t]); // Deep copy
     this.moveHistory = [];
     this.redoHistory = [];
-    this.drawScene();
+    
+    // Slide off existing board, then draw and slide in new board
+    // In a real seamless transition, we'd swap containers, but for now
+    // we fade the current board out and back in
+    if (this.boardContainer.children.length > 0) {
+      import('gsap').then(gsap => {
+        gsap.default.to(this.boardContainer, { x: -1000, alpha: 0, duration: 0.3, ease: 'power2.in', onComplete: () => {
+          this.drawScene();
+          this.boardContainer.x = 1000;
+          
+          const { width, height } = this.app.screen;
+          const numTubes = this.stateData.length;
+          let columns, rows;
+          if (numTubes <= 5) {
+            columns = numTubes;
+            rows = 1;
+          } else if (numTubes <= 10) {
+            columns = Math.ceil(numTubes / 2);
+            rows = 2;
+          } else {
+            columns = Math.ceil(Math.sqrt(numTubes));
+            rows = Math.ceil(numTubes / columns);
+          }
+          const gridW = columns * this.tubeWidth + (columns - 1) * this.gap;
+          const scale = this.boardContainer.scale.x;
+          
+          const targetX = (width - gridW * scale) / 2;
+          gsap.default.to(this.boardContainer, { x: targetX, alpha: 1, duration: 0.4, ease: 'power3.out' });
+        }});
+      });
+    } else {
+      this.drawScene();
+    }
   }
 
   private drawScene() {
-    this.app.stage.removeChildren();
+    // We do NOT remove children from app.stage anymore. We only update boardContainer.
+    if (!this.boardContainer.parent) {
+      this.app.stage.addChild(this.boardContainer);
+    }
     
-    // Re-apply post processing and seasonal theme
+    // Background and seasonal particles can remain active globally
     try {
       ParticleSystem.applyPostProcessing(this.app);
     } catch (err) {
@@ -128,9 +165,6 @@ export class GameApp {
     } catch (err) {
       console.warn("Particle system failed, disabling particles", err);
     }
-
-    this.tubes = [];
-    this.liquids = [];
 
     const numTubes = this.stateData.length;
     // Fallback if data is malformed
@@ -159,14 +193,17 @@ export class GameApp {
     const scaleY = Math.max(0.1, (height - marginY) / gridH);
     const scale = Math.max(0.2, Math.min(1, scaleX, scaleY)); // Ensure scale is always positive and not zero
     
-    const boardContainer = new PIXI.Container();
-    boardContainer.scale.set(scale);
+    this.boardContainer.scale.set(scale);
     
-    // Center the scaled board
-    boardContainer.x = (width - gridW * scale) / 2;
-    boardContainer.y = (height - gridH * scale) / 2 + 20;
+    // Center the scaled board (Only if not animating)
+    if (this.boardContainer.alpha === 1 || this.boardContainer.alpha === undefined) {
+       this.boardContainer.x = (width - gridW * scale) / 2;
+    }
+    this.boardContainer.y = (height - gridH * scale) / 2 + 20;
 
-    this.app.stage.addChild(boardContainer);
+    // Object Pooling
+    // Hide all tubes initially
+    this.tubes.forEach(t => t.visible = false);
 
     this.stateData.forEach((colors, i) => {
       const col = i % columns;
@@ -175,41 +212,50 @@ export class GameApp {
       const x = col * (this.tubeWidth + this.gap);
       const y = row * (this.tubeHeight + this.gap * 2);
 
-      const tubeContainer = new PIXI.Container();
+      let tubeContainer;
+      let liquidGraphic;
+      let tubeGraphic;
+
+      if (i < this.tubes.length) {
+        // Reuse existing
+        tubeContainer = this.tubes[i];
+        liquidGraphic = this.liquids[i];
+        tubeGraphic = this.tubeGraphics[i];
+        tubeContainer.visible = true;
+      } else {
+        // Create new
+        tubeContainer = new PIXI.Container();
+        tubeGraphic = new TubeGraphics(this.tubeWidth, this.tubeHeight);
+        liquidGraphic = new LiquidGraphics(this.tubeWidth, this.tubeHeight, 4);
+        
+        try {
+          LiquidPhysics.applyWaveEffect(liquidGraphic, this.app.ticker);
+        } catch (err) {
+          console.warn("Liquid physics failed", err);
+        }
+
+        tubeContainer.addChild(liquidGraphic, tubeGraphic);
+        tubeContainer.eventMode = 'static';
+        tubeContainer.cursor = 'pointer';
+        tubeContainer.on('pointerdown', (e) => {
+          e.stopPropagation();
+          this.handleTubeClick(i);
+        });
+
+        this.boardContainer.addChild(tubeContainer);
+        this.tubes.push(tubeContainer);
+        this.liquids.push(liquidGraphic);
+        this.tubeGraphics.push(tubeGraphic);
+      }
+
       tubeContainer.x = x;
       tubeContainer.y = y;
       
-      const tubeGraphic = new TubeGraphics(this.tubeWidth, this.tubeHeight);
-      const liquidGraphic = new LiquidGraphics(this.tubeWidth, this.tubeHeight, 4);
+      // Reset logic state for the tube
+      AnimationSystem.resetSelection(tubeContainer, y);
+      tubeGraphic.setHighlight(false);
       liquidGraphic.updateLiquids(colors);
-      
-      try {
-        LiquidPhysics.applyWaveEffect(liquidGraphic, this.app.ticker);
-      } catch (err) {
-        console.warn("Liquid physics failed", err);
-      }
-
-      // Removed experimental LiquidFilter that causes silent WebGL failures on some GPUs
-
-      tubeContainer.addChild(liquidGraphic, tubeGraphic);
-      tubeContainer.eventMode = 'static';
-      tubeContainer.cursor = 'pointer';
-      tubeContainer.on('pointerdown', (e) => {
-        e.stopPropagation();
-        this.handleTubeClick(i);
-      });
-
-      boardContainer.addChild(tubeContainer);
-      this.tubes.push(tubeContainer);
-      this.liquids.push(liquidGraphic);
-      this.tubeGraphics.push(tubeGraphic);
     });
-
-    // Add Ambient Vignette on top of game elements if High/Ultra
-    const quality = useGameState.getState().quality;
-    if (quality === 'Ultra' || quality === 'High') {
-      // Vignette removed per user request to keep background strictly off-white/light.
-    }
   }
 
   public forceRedraw() {
@@ -278,7 +324,9 @@ export class GameApp {
       amount = Math.min(amount, 4 - dest.length);
       
       s.setAnimating(true);
-      audioMixer.playPour(sourcePan, destPan);
+      // Calculate target fullness ratio (final fullness)
+      const targetFullnessRatio = Math.min(4, dest.length + amount) / 4;
+      audioMixer.playPour(sourcePan, destPan, targetFullnessRatio);
       
       const sourceContainer = this.tubes[srcIdx];
       const destContainer = this.tubes[destIdx];

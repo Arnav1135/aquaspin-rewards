@@ -66,7 +66,7 @@ export class AudioMixer {
     this.triggerHaptic([20, 50, 20]); // Error buzz
   }
 
-  public playPour(sourcePan: number, destPan: number) {
+  public playPour(sourcePan: number, destPan: number, fullnessRatio: number = 1.0) {
     if (!this.ctx || !this.sfxGain) return;
     
     // Hyper-realistic HD Water Pouring Synthesizer
@@ -86,9 +86,10 @@ export class AudioMixer {
     // 2. Bandpass filter to shape the noise into a "water" sound
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    // Frequency shifts up as tube fills
+    // Frequency shifts up as tube fills. Dynamic pitch based on fullnessRatio!
+    const targetFreq = 400 + (1200 * fullnessRatio);
     filter.frequency.setValueAtTime(400, this.ctx.currentTime);
-    filter.frequency.linearRampToValueAtTime(1200, this.ctx.currentTime + duration);
+    filter.frequency.linearRampToValueAtTime(targetFreq, this.ctx.currentTime + duration);
     filter.Q.value = 1.5;
 
     // 3. Bubbling LFO (Amplitude Modulation) to create the glug-glug texture

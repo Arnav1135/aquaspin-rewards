@@ -164,8 +164,8 @@ export class ThemeManager {
   public static updateTransition(app: PIXI.Application, delta: number) {
     if (this.currentBackgroundColor !== this.targetBackgroundColor) {
       // Lerp background color
-      const current = PIXI.Color.shared.setValue(this.currentBackgroundColor).toArray();
-      const target = PIXI.Color.shared.setValue(this.targetBackgroundColor).toArray();
+      const current = new PIXI.Color(this.currentBackgroundColor).toArray();
+      const target = new PIXI.Color(this.targetBackgroundColor).toArray();
       
       const speed = 0.05 * delta;
       

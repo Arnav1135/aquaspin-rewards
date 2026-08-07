@@ -22,6 +22,13 @@ export function WaterSortPro({ onClose }: Props) {
   const colorBlindMode = useGameState(state => state.colorBlindMode);
   const quality = useGameState(state => state.quality);
 
+  const SAFE_FALLBACK_LEVEL = [
+    [0, 1, 0, 1],
+    [1, 0, 1, 0],
+    [],
+    []
+  ];
+
   useEffect(() => {
     if (!containerRef.current) return;
     
@@ -35,13 +42,20 @@ export function WaterSortPro({ onClose }: Props) {
       setLevel(saved.level);
       setScore(saved.score);
 
-      // Start Level using GameMode logic
-      const mode = GameModeManager.getCurrentMode();
-      const diff = GameModeManager.calculateDifficulty();
-      const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
-      
-      const levelData = LevelGenerator.generate(saved.level, diff, seed);
-      app.loadLevel(levelData);
+      try {
+        // Start Level using GameMode logic
+        const mode = GameModeManager.getCurrentMode();
+        const diff = GameModeManager.calculateDifficulty();
+        const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
+        
+        const levelData = LevelGenerator.generate(saved.level, diff, seed);
+        app.loadLevel(levelData);
+      } catch (err) {
+        console.error("Core Engine Failure: Level Generation Error", err);
+        app.loadLevel(SAFE_FALLBACK_LEVEL); // Graceful degradation
+      }
+    }).catch(err => {
+      console.error("Core Engine Failure: GameApp initialization failed", err);
     });
 
     return () => {
@@ -52,13 +66,17 @@ export function WaterSortPro({ onClose }: Props) {
   // Listen for level changes
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
-      const mode = GameModeManager.getCurrentMode();
-      const diff = GameModeManager.calculateDifficulty();
-      // If Daily, passing seed means the level remains the same for the day even if level number increments (though daily mode usually locks at level 1)
-      const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
-      
-      const levelData = LevelGenerator.generate(level, diff, seed);
-      appRef.current.loadLevel(levelData);
+      try {
+        const mode = GameModeManager.getCurrentMode();
+        const diff = GameModeManager.calculateDifficulty();
+        const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
+        
+        const levelData = LevelGenerator.generate(level, diff, seed);
+        appRef.current.loadLevel(levelData);
+      } catch (err) {
+        console.error("Level Generation Error during transition", err);
+        appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
+      }
       setWon(false);
     }
   }, [level]);

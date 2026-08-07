@@ -33,12 +33,24 @@ export class GameApp {
     this.app = new PIXI.Application();
   }
 
+  private handleResize = () => {
+    // Debounce resize to prevent too many redraws
+    if ((this as any)._resizeTimeout) {
+      clearTimeout((this as any)._resizeTimeout);
+    }
+    (this as any)._resizeTimeout = setTimeout(() => {
+      if (this.isInitialized && this.stateData.length > 0) {
+        this.drawScene();
+      }
+    }, 100);
+  };
+
   async init() {
     await this.app.init({
       backgroundAlpha: 1, // Change to 1 for ThemeManager background rendering
       resizeTo: this.container,
       antialias: true,
-      resolution: window.devicePixelRatio || 1,
+      resolution: Math.min(window.devicePixelRatio || 1, 2), // Clamp DPR for performance
       autoDensity: true
     });
     this.container.appendChild(this.app.canvas);
@@ -53,6 +65,7 @@ export class GameApp {
     this.app.stage.on('pointerdown', () => this.handleBackgroundClick());
     
     window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('resize', this.handleResize);
     window.addEventListener('VFX_SPLASH', (e: any) => this.renderSplashVFX(e.detail.x, e.detail.y));
     
     // Initialize Theme
@@ -103,13 +116,25 @@ export class GameApp {
     this.app.stage.removeChildren();
     
     // Re-apply post processing and seasonal theme
-    ParticleSystem.applyPostProcessing(this.app);
-    ParticleSystem.createSeasonalParticles(this.app, useGameState.getState().theme);
+    try {
+      ParticleSystem.applyPostProcessing(this.app);
+    } catch (err) {
+      console.warn("Post-processing failed, falling back to basic rendering", err);
+    }
+    
+    try {
+      ParticleSystem.createSeasonalParticles(this.app, useGameState.getState().theme);
+    } catch (err) {
+      console.warn("Particle system failed, disabling particles", err);
+    }
 
     this.tubes = [];
     this.liquids = [];
 
     const numTubes = this.stateData.length;
+    // Fallback if data is malformed
+    if (numTubes === 0) return;
+
     const columns = Math.ceil(Math.sqrt(numTubes));
     const rows = Math.ceil(numTubes / columns);
     
@@ -117,15 +142,28 @@ export class GameApp {
     const gridW = columns * this.tubeWidth + (columns - 1) * this.gap;
     const gridH = rows * this.tubeHeight + (rows - 1) * this.gap * 2;
     
-    const startX = (width - gridW) / 2;
-    const startY = (height - gridH) / 2 + 30;
+    // Responsive scaling
+    const marginX = 40;
+    const marginY = 120; // Leave room for UI
+    const scaleX = (width - marginX) / gridW;
+    const scaleY = (height - marginY) / gridH;
+    const scale = Math.min(1, scaleX, scaleY); // Don't scale up past 1
+    
+    const boardContainer = new PIXI.Container();
+    boardContainer.scale.set(scale);
+    
+    // Center the scaled board
+    boardContainer.x = (width - gridW * scale) / 2;
+    boardContainer.y = (height - gridH * scale) / 2 + 20;
+
+    this.app.stage.addChild(boardContainer);
 
     this.stateData.forEach((colors, i) => {
       const col = i % columns;
       const row = Math.floor(i / columns);
       
-      const x = startX + col * (this.tubeWidth + this.gap);
-      const y = startY + row * (this.tubeHeight + this.gap * 2);
+      const x = col * (this.tubeWidth + this.gap);
+      const y = row * (this.tubeHeight + this.gap * 2);
 
       const tubeContainer = new PIXI.Container();
       tubeContainer.x = x;
@@ -135,11 +173,20 @@ export class GameApp {
       const liquidGraphic = new LiquidGraphics(this.tubeWidth, this.tubeHeight, 4);
       liquidGraphic.updateLiquids(colors);
       
-      LiquidPhysics.applyWaveEffect(liquidGraphic, this.app.ticker);
+      try {
+        LiquidPhysics.applyWaveEffect(liquidGraphic, this.app.ticker);
+      } catch (err) {
+        console.warn("Liquid physics failed", err);
+      }
 
-      const liquidFilter = new LiquidFilter();
-      tubeContainer.filters = [liquidFilter];
-      this.app.ticker.add((ticker) => liquidFilter.updateTime(ticker.deltaTime));
+      try {
+        const liquidFilter = new LiquidFilter();
+        tubeContainer.filters = [liquidFilter];
+        this.app.ticker.add((ticker) => liquidFilter.updateTime(ticker.deltaTime));
+      } catch (err) {
+        console.warn("Liquid filter failed, falling back to safe liquid material", err);
+        tubeContainer.filters = null;
+      }
 
       tubeContainer.addChild(liquidGraphic, tubeGraphic);
       tubeContainer.eventMode = 'static';
@@ -149,7 +196,7 @@ export class GameApp {
         this.handleTubeClick(i);
       });
 
-      this.app.stage.addChild(tubeContainer);
+      boardContainer.addChild(tubeContainer);
       this.tubes.push(tubeContainer);
       this.liquids.push(liquidGraphic);
     });
@@ -429,6 +476,13 @@ export class GameApp {
 
   destroy() {
     window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('VFX_SPLASH', this.renderSplashVFX as any);
+    
+    if ((this as any)._resizeTimeout) {
+      clearTimeout((this as any)._resizeTimeout);
+    }
+    
     if (this.app) {
       this.app.destroy({ removeView: true }, { children: true, texture: true });
     }

@@ -1,7 +1,7 @@
-import { ReactNode, useMemo } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom, ChromaticAberration, Vignette, SSAO, DepthOfField } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, ChromaticAberration, Vignette, SSAO, DepthOfField, SSR, GodRays } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { PerformanceMonitor, Environment, Bvh, Caustics } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
@@ -22,6 +22,8 @@ export interface GameEngine3DProps {
   enableTouchControls?: boolean;
   enableAtmosphere?: boolean;
   enableCaustics?: boolean;
+  enableSSR?: boolean;
+  enableGodRays?: boolean;
   fogColor?: string;
 }
 
@@ -42,9 +44,12 @@ export function GameEngine3D({
   enableTouchControls = false,
   enableAtmosphere = true,
   enableCaustics = false,
+  enableSSR = false,
+  enableGodRays = false,
   fogColor,
 }: GameEngine3DProps) {
   const profile = useMemo(() => DeviceCapabilityDetector.detect(), []);
+  const [sunMesh, setSunMesh] = useState<THREE.Mesh | null>(null);
 
   return (
     <div className="relative w-full h-full">
@@ -71,6 +76,13 @@ export function GameEngine3D({
           shadow-camera-top={10}
           shadow-camera-bottom={-10}
         />
+
+        {(enableGodRays && profile.enableGodRays) && (
+          <mesh ref={setSunMesh as any} position={[10, 20, 10]}>
+            <sphereGeometry args={[2, 32, 32]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        )}
         
         {enableAtmosphere && (
           <EnvironmentAtmosphere
@@ -134,7 +146,6 @@ export function GameEngine3D({
             <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new THREE.Vector2(0.002, 0.002)} radialModulation={false} modulationOffset={0} />
             <Vignette eskil={false} offset={0.1} darkness={1.1} />
             {/* Added High-End Effects */}
-            {/* Added High-End Effects */}
             <SSAO 
               samples={31} 
               radius={10} 
@@ -146,6 +157,23 @@ export function GameEngine3D({
               worldProximityFalloff={2}
             />
             <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} />
+            
+            {(enableSSR && profile.enableSSR) ? (
+              <SSR intensity={1} />
+            ) : <></>}
+            
+            {(enableGodRays && profile.enableGodRays && sunMesh) ? (
+              <GodRays 
+                sun={sunMesh}
+                blendFunction={BlendFunction.SCREEN}
+                samples={60}
+                density={0.96}
+                decay={0.9}
+                weight={0.4}
+                exposure={0.6}
+                clampMax={1}
+              />
+            ) : <></>}
           </EffectComposer>
         ) : null}
 

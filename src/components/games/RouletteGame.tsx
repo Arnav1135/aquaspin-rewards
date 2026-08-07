@@ -450,7 +450,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
         
         {/* 3D Canvas Viewport */}
         <div className="relative flex-1 bg-navy-950 overflow-hidden cursor-move">
-          <GameEngine3D enablePhysics={false} enablePostProcessing={true} cameraPosition={[0, 8, 5]}>
+          <GameEngine3D enablePhysics={false} enablePostProcessing={true} enableSSR={true} cameraPosition={[0, 8, 5]}>
             <CameraController gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
             <group>
                <RouletteBowl />

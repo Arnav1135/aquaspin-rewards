@@ -8,6 +8,8 @@ export interface DeviceProfile {
   enablePostProcessing: boolean;
   maxParticles: number;
   gpuRenderer?: string;
+  enableSSR: boolean;
+  enableGodRays: boolean;
 }
 
 export class DeviceCapabilityDetector {
@@ -50,6 +52,8 @@ export class DeviceCapabilityDetector {
     const shadowMapSize = tier === 'low' ? 512 : tier === 'medium' ? 1024 : 2048;
     const enablePostProcessing = tier !== 'low';
     const maxParticles = tier === 'low' ? 100 : tier === 'medium' ? 500 : 2000;
+    const enableSSR = tier === 'high';
+    const enableGodRays = tier === 'high';
 
     this.profile = {
       tier,
@@ -59,6 +63,8 @@ export class DeviceCapabilityDetector {
       enablePostProcessing,
       maxParticles,
       gpuRenderer,
+      enableSSR,
+      enableGodRays,
     };
 
     return this.profile;

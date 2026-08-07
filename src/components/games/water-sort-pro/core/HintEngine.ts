@@ -109,7 +109,7 @@ export class HintEngine {
     for (let i = 0; i < Math.min(3, analyzed.length); i++) {
       const simulated = PuzzleEngine.applyMove(state, analyzed[i].move.source, analyzed[i].move.destination);
       const solution = Solver.solve(simulated);
-      if (solution.moves.length === 0 && !PuzzleEngine.isSolved(simulated)) {
+      if (!solution.isSolvable && !PuzzleEngine.isSolved(simulated)) {
         analyzed[i].category = MoveCategory.DEADLOCK;
         analyzed[i].score = -1000;
         analyzed[i].explanation = "This move leads to an unsolvable deadlock.";

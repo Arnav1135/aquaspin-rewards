@@ -7,6 +7,7 @@ import { useGameState } from '../state/useGameState';
 import { LiquidPhysics } from '../physics/LiquidPhysics';
 import { ParticleSystem } from '../systems/ParticleSystem';
 import { saveManager } from '../services/SaveManager';
+import { LiquidFilter } from '../shaders/LiquidFilter';
 
 export class GameApp {
   public app: PIXI.Application;
@@ -80,6 +81,10 @@ export class GameApp {
       liquidGraphic.updateLiquids(colors);
       
       LiquidPhysics.applyWaveEffect(liquidGraphic, this.app.ticker);
+
+      const liquidFilter = new LiquidFilter();
+      tubeContainer.filters = [liquidFilter];
+      this.app.ticker.add((ticker) => liquidFilter.updateTime(ticker.deltaTime));
 
       tubeContainer.addChild(liquidGraphic, tubeGraphic);
       tubeContainer.eventMode = 'static';

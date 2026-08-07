@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { GameFrame } from './GameFrame';
-import WaterSortPixi from './water-sort-pixi/WaterSortPixi';
+import { WaterSortPro } from './water-sort-pro/components/WaterSortPro';
 
 interface Props { onClose: () => void }
 
 export function WaterSortGame({ onClose }: Props) {
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
-
-  const handleWin = () => {
-    setScore(s => s + 100);
-    setLevel(l => l + 1);
-  };
 
   const handleRestart = () => {
     setLevel(l => l);
@@ -20,15 +15,14 @@ export function WaterSortGame({ onClose }: Props) {
   return (
     <GameFrame 
       title="Water Sort" 
-
       onClose={onClose}
       level={level}
       score={score}
       onRestart={handleRestart}
       canvasClassName="bg-[#050510]"
     >
-      <div className="w-full h-full relative group">
-        <WaterSortPixi key={`level-${level}-${Date.now()}`} level={level} onWin={handleWin} />
+      <div className="w-full h-full relative group overflow-hidden">
+        <WaterSortPro key={`level-${level}-${Date.now()}`} onClose={onClose} />
       </div>
     </GameFrame>
   );

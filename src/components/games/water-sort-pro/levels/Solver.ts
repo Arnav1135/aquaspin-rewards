@@ -44,4 +44,61 @@ export class Solver {
 
     return state.map(t => [...t.colors]);
   }
+
+  /**
+   * Provides a hint by finding a logical valid move.
+   * Basic greedy approach: prioritize pouring to match colors, then pouring to empty.
+   */
+  static getHint(state: number[][]): { src: number, dest: number } | null {
+    const numTubes = state.length;
+    
+    // Find all valid moves
+    const validMoves: { src: number, dest: number, weight: number }[] = [];
+    
+    for (let i = 0; i < numTubes; i++) {
+      for (let j = 0; j < numTubes; j++) {
+        if (i === j) continue;
+        
+        const src = state[i];
+        const dest = state[j];
+        
+        if (src.length === 0) continue;
+        
+        // If src is already fully sorted, don't move from it unless necessary
+        const isSrcSorted = src.every(c => c === src[0]) && src.length === 4;
+        if (isSrcSorted) continue;
+        
+        const srcColor = src[src.length - 1];
+        
+        // Check if valid pour
+        if (dest.length < 4 && (dest.length === 0 || dest[dest.length - 1] === srcColor)) {
+          // Calculate move weight (higher is better)
+          let weight = 0;
+          
+          if (dest.length > 0) {
+            // Consolidating same colors is very good
+            weight += 10;
+          } else {
+            // Pouring into empty is okay, but only if we are freeing up a mixed tube
+            const isMixed = src.some(c => c !== src[0]);
+            if (isMixed) {
+              weight += 5;
+            } else {
+              // Don't just move a solid color to an empty tube for no reason
+              continue;
+            }
+          }
+          
+          validMoves.push({ src: i, dest: j, weight });
+        }
+      }
+    }
+    
+    if (validMoves.length === 0) return null;
+    
+    // Sort by weight descending
+    validMoves.sort((a, b) => b.weight - a.weight);
+    
+    return { src: validMoves[0].src, dest: validMoves[0].dest };
+  }
 }

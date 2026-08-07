@@ -8,6 +8,7 @@ import { LiquidPhysics } from '../physics/LiquidPhysics';
 import { ParticleSystem } from '../systems/ParticleSystem';
 import { saveManager } from '../services/SaveManager';
 import { LiquidFilter } from '../shaders/LiquidFilter';
+import { Solver } from '../levels/Solver';
 
 export class GameApp {
   public app: PIXI.Application;
@@ -17,6 +18,7 @@ export class GameApp {
   private liquids: LiquidGraphics[] = [];
   private stateData: number[][] = [];
   private moveHistory: { src: number, dest: number, amount: number, color: number }[] = [];
+  private redoHistory: { src: number, dest: number, amount: number, color: number }[] = [];
   
   // Layout metrics
   private tubeWidth = 60;
@@ -43,11 +45,14 @@ export class GameApp {
     this.app.stage.eventMode = 'static';
     this.app.stage.hitArea = new PIXI.Rectangle(0, 0, 10000, 10000);
     this.app.stage.on('pointerdown', () => this.handleBackgroundClick());
+    
+    window.addEventListener('keydown', this.handleKeyDown);
   }
 
   public loadLevel(levelData: number[][]) {
     this.stateData = levelData.map(t => [...t]); // Deep copy
     this.moveHistory = [];
+    this.redoHistory = [];
     this.drawScene();
   }
 
@@ -167,6 +172,7 @@ export class GameApp {
         }
         
         this.moveHistory.push({ src: srcIdx, dest: destIdx, amount, color: srcColor });
+        this.redoHistory = []; // Clear redo history on new move
         s.setMoves(s.moves + 1);
         
         this.liquids[srcIdx].updateLiquids(src);
@@ -211,6 +217,40 @@ export class GameApp {
       AnimationSystem.resetSelection(this.tubes[s.selectedTube], this.tubes[s.selectedTube].y);
       s.setSelectedTube(-1);
     }
+    
+    this.redoHistory.push(lastMove);
+  }
+
+  public redoLastMove() {
+    const s = useGameState.getState();
+    if (s.isAnimating || s.isWon || this.redoHistory.length === 0) return;
+    
+    const nextMove = this.redoHistory.pop()!;
+    this.attemptPour(nextMove.src, nextMove.dest);
+  }
+
+  public showHint() {
+    const s = useGameState.getState();
+    if (s.isAnimating || s.isWon) return;
+    
+    const hint = Solver.getHint(this.stateData);
+    if (hint) {
+      // Highlight the tubes momentarily
+      AnimationSystem.bounceSelection(this.tubes[hint.src], this.tubes[hint.src].y);
+      setTimeout(() => {
+        AnimationSystem.bounceSelection(this.tubes[hint.dest], this.tubes[hint.dest].y);
+      }, 300);
+      
+      // Auto-reset them if not selected by player
+      setTimeout(() => {
+        if (s.selectedTube !== hint.src) {
+           AnimationSystem.resetSelection(this.tubes[hint.src], this.tubes[hint.src].y);
+        }
+        if (s.selectedTube !== hint.dest) {
+           AnimationSystem.resetSelection(this.tubes[hint.dest], this.tubes[hint.dest].y);
+        }
+      }, 1500);
+    }
   }
 
   private checkWinCondition() {
@@ -221,11 +261,33 @@ export class GameApp {
       s.setLevel(s.level + 1);
       audioMixer.playWin();
       ParticleSystem.createVictoryConfetti(this.app);
-      saveManager.save(s.level + 1, s.score + 100);
+      saveManager.save({ level: s.level + 1, score: s.score + 100 });
     }
   }
 
+  private handleKeyDown = (e: KeyboardEvent) => {
+    // 1-9 to select tubes
+    if (e.key >= '1' && e.key <= '9') {
+      const index = parseInt(e.key) - 1;
+      if (index < this.tubes.length) {
+        this.handleTubeClick(index);
+      }
+    }
+    
+    // U for Undo, R for Redo, H for Hint
+    if (e.key.toLowerCase() === 'u' || (e.ctrlKey && e.key === 'z')) {
+      this.undoLastMove();
+    }
+    if (e.key.toLowerCase() === 'r' || (e.ctrlKey && e.key === 'y')) {
+      this.redoLastMove();
+    }
+    if (e.key.toLowerCase() === 'h') {
+      this.showHint();
+    }
+  };
+
   destroy() {
+    window.removeEventListener('keydown', this.handleKeyDown);
     if (this.app) {
       this.app.destroy({ removeView: true }, { children: true, texture: true });
     }

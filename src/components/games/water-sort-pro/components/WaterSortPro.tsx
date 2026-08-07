@@ -66,6 +66,18 @@ export function WaterSortPro({ onClose }: Props) {
     }
   };
   
+  const handleRedo = () => {
+    if (appRef.current) {
+      appRef.current.redoLastMove();
+    }
+  };
+  
+  const handleHint = () => {
+    if (appRef.current) {
+      appRef.current.showHint();
+    }
+  };
+  
   const handleRestart = () => {
     if (appRef.current && appRef.current.isInitialized) {
       const levelData = LevelGenerator.generate(level);
@@ -102,6 +114,8 @@ export function WaterSortPro({ onClose }: Props) {
       {/* High-Quality UI Overlay */}
       <WaterSortUI 
         onUndo={handleUndo}
+        onRedo={handleRedo}
+        onHint={handleHint}
         onRestart={handleRestart}
         onCloseGame={onClose}
       />

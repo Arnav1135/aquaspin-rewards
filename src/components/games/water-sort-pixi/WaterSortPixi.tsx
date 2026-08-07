@@ -104,7 +104,7 @@ export default function WaterSortPixi({ level, onWin }: Props) {
     
     const app = new PIXI.Application({
       resizeTo: containerRef.current,
-      transparent: true,
+      backgroundAlpha: 0,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
       autoDensity: true

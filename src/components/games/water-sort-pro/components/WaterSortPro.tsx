@@ -78,6 +78,12 @@ export function WaterSortPro({ onClose }: Props) {
     }
   };
   
+  const handleAddTube = () => {
+    if (appRef.current) {
+      appRef.current.addExtraTube();
+    }
+  };
+  
   const handleRestart = () => {
     if (appRef.current && appRef.current.isInitialized) {
       const levelData = LevelGenerator.generate(level);
@@ -121,13 +127,14 @@ export function WaterSortPro({ onClose }: Props) {
       <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '80px 80px', transform: 'translateY(-20px)' }} />
 
       {/* PixiJS Canvas Container */}
-      <div ref={containerRef} className="absolute inset-0 pointer-events-auto" />
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       
       {/* High-Quality UI Overlay */}
       <WaterSortUI 
         onUndo={handleUndo}
         onRedo={handleRedo}
         onHint={handleHint}
+        onAddTube={handleAddTube}
         onRestart={handleRestart}
         onCloseGame={onClose}
       />

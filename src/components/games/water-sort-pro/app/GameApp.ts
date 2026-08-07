@@ -278,14 +278,25 @@ export class GameApp {
       
       // Auto-reset them if not selected by player
       setTimeout(() => {
-        if (s.selectedTube !== hint.src) {
-           AnimationSystem.resetSelection(this.tubes[hint.src], this.tubes[hint.src].y);
-        }
-        if (s.selectedTube !== hint.dest) {
-           AnimationSystem.resetSelection(this.tubes[hint.dest], this.tubes[hint.dest].y);
-        }
-      }, 1500);
+        if (s.selectedTube !== hint.src) AnimationSystem.resetSelection(this.tubes[hint.src], this.tubes[hint.src].y);
+        if (s.selectedTube !== hint.dest) AnimationSystem.resetSelection(this.tubes[hint.dest], this.tubes[hint.dest].y);
+      }, 1000);
+    } else {
+      audioMixer.playSelect(); // Play an error/dud sound
     }
+  }
+
+  public addExtraTube() {
+    const s = useGameState.getState();
+    if (s.isAnimating || s.isWon) return;
+    
+    // Check if we already have too many empty tubes (optional limit, e.g. max 3 empty tubes)
+    const emptyTubes = this.stateData.filter(t => t.length === 0).length;
+    if (emptyTubes >= 3) return; 
+
+    // Add an empty array to stateData
+    this.stateData.push([]);
+    this.drawScene(); // Redraw the whole grid to fit the new tube
   }
 
   private checkWinCondition() {

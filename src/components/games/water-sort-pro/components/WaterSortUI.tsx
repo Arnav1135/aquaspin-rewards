@@ -7,11 +7,12 @@ interface WaterSortUIProps {
   onUndo: () => void;
   onRedo: () => void;
   onHint: () => void;
+  onAddTube?: () => void;
   onRestart: () => void;
   onCloseGame: () => void;
 }
 
-export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: WaterSortUIProps) {
+export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onCloseGame }: WaterSortUIProps) {
   const { 
     level, score, moves, stats,
     theme, quality, colorBlindMode, showSettings, gameMode,

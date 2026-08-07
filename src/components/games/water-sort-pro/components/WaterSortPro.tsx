@@ -58,7 +58,7 @@ export function WaterSortPro({ onClose }: Props) {
     if (appRef.current && appRef.current.isInitialized) {
       appRef.current.forceRedraw();
     }
-  }, [colorBlindMode, quality]);
+  }, [colorBlindMode, quality, theme]);
   
   const handleUndo = () => {
     if (appRef.current) {
@@ -93,6 +93,10 @@ export function WaterSortPro({ onClose }: Props) {
       case 'Ocean': return 'radial-gradient(circle at 50% 120%, #0c325c 0%, #020b17 60%)';
       case 'Sunset': return 'radial-gradient(circle at 50% 120%, #521815 0%, #170504 60%)';
       case 'Minimal Dark': return 'radial-gradient(circle at 50% 120%, #202020 0%, #0a0a0a 60%)';
+      case 'Snow':
+      case 'Winter': return 'radial-gradient(circle at 50% 120%, #2a3b4c 0%, #0f171e 60%)';
+      case 'Autumn':
+      case 'Forest': return 'radial-gradient(circle at 50% 120%, #2d1f11 0%, #0c0905 60%)';
       case 'Crystal':
       default: return 'radial-gradient(circle at 50% 120%, #1a1b4b 0%, #050510 60%)';
     }

@@ -58,6 +58,11 @@ export class GameApp {
 
   private drawScene() {
     this.app.stage.removeChildren();
+    
+    // Re-apply post processing and seasonal theme
+    ParticleSystem.applyPostProcessing(this.app);
+    ParticleSystem.createSeasonalParticles(this.app, useGameState.getState().theme);
+
     this.tubes = [];
     this.liquids = [];
 

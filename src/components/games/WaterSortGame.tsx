@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GameFrame } from './GameFrame';
-import WaterSort2D from './water-sort-2d/WaterSort2D';
+import WaterSortPixi from './water-sort-pixi/WaterSortPixi';
 
 interface Props { onClose: () => void }
 
@@ -14,13 +14,13 @@ export function WaterSortGame({ onClose }: Props) {
   };
 
   const handleRestart = () => {
-    // Trick to force a complete re-render/re-generation of the same level state
     setLevel(l => l);
   };
 
   return (
     <GameFrame 
       title="Water Sort" 
+
       onClose={onClose}
       level={level}
       score={score}
@@ -28,7 +28,7 @@ export function WaterSortGame({ onClose }: Props) {
       canvasClassName="bg-[#050510]"
     >
       <div className="w-full h-full relative group">
-        <WaterSort2D key={`level-${level}-${Date.now()}`} level={level} onWin={handleWin} />
+        <WaterSortPixi key={`level-${level}-${Date.now()}`} level={level} onWin={handleWin} />
       </div>
     </GameFrame>
   );

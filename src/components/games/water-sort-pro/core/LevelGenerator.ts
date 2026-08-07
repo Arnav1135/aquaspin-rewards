@@ -146,30 +146,42 @@ export class LevelGenerator {
       levelId: 'temp', generatorVersion: '2.0', seed: '', 
       tubes: currentTubes, tubeCapacity, selectedTube: null,
       moveHistory: [], undoStack: [], redoStack: [], moveCount: 0,
-      elapsedTime: 0, hintsUsed: 0, undosUsed: 0, status: 'IDLE'
+      elapsedTime: 0, hintsUsed: 0, undosUsed: 0, status: 'IDLE' as any
     };
-    
-    // Quick BFS check
-    const solverResult = Solver.solve(mockState, 10000);
-    
-    // 6. Hard level protection
-    if (!solverResult.isSolvable && !isFallback) {
-      return null; // Reject unsolvable or overly complex puzzles
+
+    const solverResult = Solver.solve(mockState, 10000); // 10k max nodes for generation phase
+
+    if (!solverResult.isSolvable) {
+      return null;
     }
 
-    // 7. Difficulty Analysis
-    const actualDifficulty = DifficultyEngine.analyzeDifficulty({
-      levelId: '', seed: '', generatorVersion: '2.0', difficultyTarget: targetDifficulty,
-      colorCount, tubeCount, tubeCapacity, emptyTubeCount, initialConfiguration: currentTubes, puzzleDNA, actualDifficulty: 0, qualityScore: 0
-    }, solverResult);
-
-    // 8. Easy level protection
-    if (!isFallback && actualDifficulty < (targetDifficulty * 0.4)) {
-      return null; // Reject trivial levels
+    // MULTIDIMENSIONAL DIFFICULTY SCORE
+    // A blend of pure math (search depth) and human-perceivable friction (dead ends, backtracking)
+    const baseDifficulty = Math.min(100, Math.floor((solverResult.searchComplexity / 2000) * 50 + (solverResult.solutionLength / 40) * 50));
+    
+    // Human Difficulty Estimator (Prompt 21)
+    let humanFriction = 0;
+    
+    // Deceptive moves (high branching factor means easy to go wrong)
+    if (solverResult.searchComplexity > solverResult.solutionLength * 10) {
+      humanFriction += 10;
+    }
+    
+    // Deeply buried dependencies (if the solution is very long but few colors, it means moving a lot of blocking pieces)
+    if (solverResult.solutionLength > colorCount * tubeCapacity) {
+       humanFriction += 15;
     }
 
-    // Calculate Quality Score
-    const qualityScore = solverResult.solutionLength + (solverResult.searchComplexity / 100);
+    // Final Human-Adjusted Difficulty
+    const actualDifficulty = Math.min(100, baseDifficulty + humanFriction);
+
+    // Calculate structural quality (Prompts 21)
+    // - penalize too easy/too short
+    // - penalize excessively long solutions (boring)
+    let qualityScore = 10;
+    if (solverResult.solutionLength < 10) qualityScore -= 5;
+    if (solverResult.solutionLength > 60) qualityScore -= 3;
+    if (humanFriction > 0) qualityScore += 2; // Deceptive/tricky puzzles are higher quality
 
     return {
       levelId: `lvl_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,

@@ -57,21 +57,24 @@ interface GameDB extends DBSchema {
 }
 
 export class SaveManager {
-  private dbPromise: Promise<IDBPDatabase<GameDB>>;
+  private dbPromise: Promise<IDBPDatabase<GameDB>> | null = null;
 
   constructor() {
-    this.dbPromise = openDB<GameDB>('WaterSortProDB', 3, {
-      upgrade(db, oldVersion) {
-        if (oldVersion < 1) {
-          db.createObjectStore('saveData');
-        }
-        // Migrations would happen here if we change schema drastically
-      },
-    });
+    if (typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined') {
+      this.dbPromise = openDB<GameDB>('WaterSortProDB', 3, {
+        upgrade(db, oldVersion) {
+          if (oldVersion < 1) {
+            db.createObjectStore('saveData');
+          }
+          // Migrations would happen here if we change schema drastically
+        },
+      });
+    }
   }
 
   async save(state: Partial<GameSaveState>) {
     try {
+      if (!this.dbPromise) return;
       const db = await this.dbPromise;
       const existing = await this.load();
       await db.put('saveData', { ...existing, ...state }, 'gameState');
@@ -85,6 +88,7 @@ export class SaveManager {
 
   async load(): Promise<GameSaveState> {
     try {
+      if (!this.dbPromise) return defaultState;
       const db = await this.dbPromise;
       const data = await db.get('saveData', 'gameState');
       if (!data) return defaultState;

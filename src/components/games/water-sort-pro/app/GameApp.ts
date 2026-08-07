@@ -4,6 +4,9 @@ import { LiquidGraphics } from '../graphics/LiquidGraphics';
 import { AnimationSystem } from '../systems/AnimationSystem';
 import { audioMixer } from '../audio/AudioMixer';
 import { useGameState } from '../state/useGameState';
+import { LiquidPhysics } from '../physics/LiquidPhysics';
+import { ParticleSystem } from '../systems/ParticleSystem';
+import { saveManager } from '../services/SaveManager';
 
 export class GameApp {
   public app: PIXI.Application;
@@ -75,6 +78,8 @@ export class GameApp {
       const tubeGraphic = new TubeGraphics(this.tubeWidth, this.tubeHeight);
       const liquidGraphic = new LiquidGraphics(this.tubeWidth, this.tubeHeight, 4);
       liquidGraphic.updateLiquids(colors);
+      
+      LiquidPhysics.applyWaveEffect(liquidGraphic, this.app.ticker);
 
       tubeContainer.addChild(liquidGraphic, tubeGraphic);
       tubeContainer.eventMode = 'static';
@@ -174,8 +179,12 @@ export class GameApp {
   private checkWinCondition() {
     const won = this.stateData.every(t => t.length === 0 || (t.length === 4 && t.every(c => c === t[0])));
     if (won) {
-      useGameState.getState().setWon(true);
+      const s = useGameState.getState();
+      s.setWon(true);
+      s.setLevel(s.level + 1);
       audioMixer.playWin();
+      ParticleSystem.createVictoryConfetti(this.app);
+      saveManager.save(s.level + 1, s.score + 100);
     }
   }
 

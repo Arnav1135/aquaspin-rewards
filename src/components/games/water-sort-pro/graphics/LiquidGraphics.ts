@@ -1,4 +1,5 @@
 import { Graphics, Container } from 'pixi.js';
+import { useGameState } from '../state/useGameState';
 
 export class LiquidGraphics extends Container {
   private colors: number[] = [];
@@ -63,6 +64,19 @@ export class LiquidGraphics extends Container {
       depth.fill({ color: 0x000000, alpha: 0.1 });
 
       g.addChild(depth, meniscus);
+      
+      const { colorBlindMode } = useGameState.getState();
+      if (colorBlindMode) {
+        // Simple hash of color to pick a pattern (1 to 5 dots)
+        const hash = color % 5 + 1;
+        const pattern = new Graphics();
+        pattern.fill({ color: 0xFFFFFF, alpha: 0.5 });
+        for(let d=0; d<hash; d++) {
+          pattern.circle(w / 2 - (hash*6)/2 + d*6 + 3, yOffset + segmentHeight / 2, 2);
+        }
+        g.addChild(pattern);
+      }
+
       this.addChild(g);
     });
   }

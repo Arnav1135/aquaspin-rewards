@@ -10,6 +10,12 @@ export interface GameState {
   isPaused: boolean;
   volume: number;
   
+  // Settings & Polish State
+  theme: string;
+  quality: string;
+  colorBlindMode: boolean;
+  showSettings: boolean;
+  
   // Actions
   setLevel: (l: number) => void;
   setScore: (s: number) => void;
@@ -19,6 +25,11 @@ export interface GameState {
   setWon: (w: boolean) => void;
   setPaused: (p: boolean) => void;
   setVolume: (v: number) => void;
+  
+  setTheme: (t: string) => void;
+  setQuality: (q: string) => void;
+  setColorBlindMode: (c: boolean) => void;
+  setShowSettings: (s: boolean) => void;
 }
 
 export const useGameState = create<GameState>((set) => ({
@@ -31,6 +42,11 @@ export const useGameState = create<GameState>((set) => ({
   isPaused: false,
   volume: 0.5,
   
+  theme: 'Ocean',
+  quality: 'High',
+  colorBlindMode: false,
+  showSettings: false,
+  
   setLevel: (level) => set({ level }),
   setScore: (score) => set({ score }),
   setMoves: (moves) => set({ moves }),
@@ -39,4 +55,9 @@ export const useGameState = create<GameState>((set) => ({
   setWon: (isWon) => set({ isWon }),
   setPaused: (isPaused) => set({ isPaused }),
   setVolume: (volume) => set({ volume }),
+  
+  setTheme: (theme) => set({ theme }),
+  setQuality: (quality) => set({ quality }),
+  setColorBlindMode: (colorBlindMode) => set({ colorBlindMode }),
+  setShowSettings: (showSettings) => set({ showSettings }),
 }));

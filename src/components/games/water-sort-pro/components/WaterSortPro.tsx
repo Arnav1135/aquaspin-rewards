@@ -4,6 +4,8 @@ import { useGameState } from '../state/useGameState';
 import { LevelGenerator } from '../levels/LevelGenerator';
 import { saveManager } from '../services/SaveManager';
 
+import { WaterSortUI } from './WaterSortUI';
+
 interface Props {
   onClose: () => void;
 }
@@ -11,11 +13,13 @@ interface Props {
 export function WaterSortPro({ onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<GameApp | null>(null);
-  
   const level = useGameState(state => state.level);
   const setLevel = useGameState(state => state.setLevel);
   const setScore = useGameState(state => state.setScore);
   const setWon = useGameState(state => state.setWon);
+  const theme = useGameState(state => state.theme);
+  const colorBlindMode = useGameState(state => state.colorBlindMode);
+  const quality = useGameState(state => state.quality);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -49,10 +53,43 @@ export function WaterSortPro({ onClose }: Props) {
     }
   }, [level]);
 
+  // Listen for visual setting changes
+  useEffect(() => {
+    if (appRef.current && appRef.current.isInitialized) {
+      appRef.current.forceRedraw();
+    }
+  }, [colorBlindMode, quality]);
+  
+  const handleUndo = () => {
+    if (appRef.current) {
+      appRef.current.undoLastMove();
+    }
+  };
+  
+  const handleRestart = () => {
+    if (appRef.current && appRef.current.isInitialized) {
+      const levelData = LevelGenerator.generate(level);
+      appRef.current.loadLevel(levelData);
+      setWon(false);
+    }
+  };
+
+  // Get background color based on theme
+  const getThemeBg = () => {
+    switch (theme) {
+      case 'Neon': return 'radial-gradient(circle at 50% 120%, #290a3a 0%, #05010a 60%)';
+      case 'Ocean': return 'radial-gradient(circle at 50% 120%, #0c325c 0%, #020b17 60%)';
+      case 'Sunset': return 'radial-gradient(circle at 50% 120%, #521815 0%, #170504 60%)';
+      case 'Minimal Dark': return 'radial-gradient(circle at 50% 120%, #202020 0%, #0a0a0a 60%)';
+      case 'Crystal':
+      default: return 'radial-gradient(circle at 50% 120%, #1a1b4b 0%, #050510 60%)';
+    }
+  };
+
   return (
-    <div className="w-full h-full relative bg-[#050510] overflow-hidden"
+    <div className="w-full h-full relative overflow-hidden transition-colors duration-1000"
       style={{
-        background: 'radial-gradient(circle at 50% 120%, #1a1b4b 0%, #050510 60%)'
+        background: getThemeBg()
       }}
     >
       {/* Background Parallax Stars/Bubbles */}
@@ -62,17 +99,12 @@ export function WaterSortPro({ onClose }: Props) {
       {/* PixiJS Canvas Container */}
       <div ref={containerRef} className="absolute inset-0 pointer-events-auto" />
       
-      {/* UI Overlay */}
-      <div className="absolute top-4 left-4 text-white z-10 font-bold text-2xl drop-shadow-lg tracking-widest uppercase">
-        Level {level}
-      </div>
-      
-      <button 
-        onClick={onClose}
-        className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 p-2 rounded-full backdrop-blur-sm z-10 text-white transition-all shadow-lg"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-      </button>
+      {/* High-Quality UI Overlay */}
+      <WaterSortUI 
+        onUndo={handleUndo}
+        onRestart={handleRestart}
+        onCloseGame={onClose}
+      />
     </div>
   );
 }

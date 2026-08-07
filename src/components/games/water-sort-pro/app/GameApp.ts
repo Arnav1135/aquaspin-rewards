@@ -16,6 +16,7 @@ export class GameApp {
   private tubes: PIXI.Container[] = [];
   private liquids: LiquidGraphics[] = [];
   private stateData: number[][] = [];
+  private moveHistory: { src: number, dest: number, amount: number, color: number }[] = [];
   
   // Layout metrics
   private tubeWidth = 60;
@@ -46,6 +47,7 @@ export class GameApp {
 
   public loadLevel(levelData: number[][]) {
     this.stateData = levelData.map(t => [...t]); // Deep copy
+    this.moveHistory = [];
     this.drawScene();
   }
 
@@ -98,6 +100,10 @@ export class GameApp {
       this.tubes.push(tubeContainer);
       this.liquids.push(liquidGraphic);
     });
+  }
+
+  public forceRedraw() {
+    this.drawScene();
   }
 
   private handleTubeClick(index: number) {
@@ -160,7 +166,9 @@ export class GameApp {
           dest.push(srcColor);
         }
         
+        this.moveHistory.push({ src: srcIdx, dest: destIdx, amount, color: srcColor });
         s.setMoves(s.moves + 1);
+        
         this.liquids[srcIdx].updateLiquids(src);
         this.liquids[destIdx].updateLiquids(dest);
         
@@ -178,6 +186,30 @@ export class GameApp {
       } else {
         s.setSelectedTube(-1);
       }
+    }
+  }
+
+  public undoLastMove() {
+    const s = useGameState.getState();
+    if (s.isAnimating || s.isWon || this.moveHistory.length === 0) return;
+    
+    const lastMove = this.moveHistory.pop()!;
+    const src = this.stateData[lastMove.src];
+    const dest = this.stateData[lastMove.dest];
+    
+    // Reverse the logic
+    for (let i = 0; i < lastMove.amount; i++) {
+      dest.pop();
+      src.push(lastMove.color);
+    }
+    
+    s.setMoves(s.moves - 1);
+    this.liquids[lastMove.src].updateLiquids(src);
+    this.liquids[lastMove.dest].updateLiquids(dest);
+    
+    if (s.selectedTube !== -1) {
+      AnimationSystem.resetSelection(this.tubes[s.selectedTube], this.tubes[s.selectedTube].y);
+      s.setSelectedTube(-1);
     }
   }
 

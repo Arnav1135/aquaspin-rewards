@@ -16,6 +16,11 @@ export interface GameSaveState {
     totalSolved: number;
     totalMoves: number;
     timePlayed: number;
+    playerSkillRating?: number;
+    winStreak?: number;
+    lossStreak?: number;
+    highestDifficultyCleared?: number;
+    dnaHistory?: string[];
   };
 }
 
@@ -33,7 +38,12 @@ const defaultState: GameSaveState = {
   stats: {
     totalSolved: 0,
     totalMoves: 0,
-    timePlayed: 0
+    timePlayed: 0,
+    playerSkillRating: 1000,
+    winStreak: 0,
+    lossStreak: 0,
+    highestDifficultyCleared: 0,
+    dnaHistory: []
   }
 };
 

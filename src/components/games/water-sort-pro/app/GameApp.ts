@@ -179,14 +179,7 @@ export class GameApp {
         console.warn("Liquid physics failed", err);
       }
 
-      try {
-        const liquidFilter = new LiquidFilter();
-        tubeContainer.filters = [liquidFilter];
-        this.app.ticker.add((ticker) => liquidFilter.updateTime(ticker.deltaTime));
-      } catch (err) {
-        console.warn("Liquid filter failed, falling back to safe liquid material", err);
-        tubeContainer.filters = null;
-      }
+      // Removed experimental LiquidFilter that causes silent WebGL failures on some GPUs
 
       tubeContainer.addChild(liquidGraphic, tubeGraphic);
       tubeContainer.eventMode = 'static';

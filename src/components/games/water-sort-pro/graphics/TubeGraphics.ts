@@ -34,14 +34,8 @@ export class TubeGraphics extends Container {
   private drawShadow() {
     this.ambientOcclusion.clear();
     const radius = this.tubeWidth / 2;
-    // Elliptical contact shadow
-    const grad = new FillGradient(0, 0, this.tubeWidth, 20);
-    grad.addColorStop(0, 0x00000000);
-    grad.addColorStop(0.5, 0x00000088);
-    grad.addColorStop(1, 0x00000000);
-
     this.ambientOcclusion.ellipse(this.tubeWidth / 2, this.tubeHeight, this.tubeWidth * 0.8, 8);
-    this.ambientOcclusion.fill(grad);
+    this.ambientOcclusion.fill({ color: 0x000000, alpha: 0.3 });
   }
 
   private draw() {
@@ -74,30 +68,16 @@ export class TubeGraphics extends Container {
     
     // 3. Fresnel / Refraction Highlights (Outer edges)
     this.highlight.clear();
-    const edgeGradLeft = new FillGradient(0, 0, 10, 0);
-    edgeGradLeft.addColorStop(0, 0xFFFFFF99);
-    edgeGradLeft.addColorStop(1, 0xFFFFFF00);
-    
     this.highlight.rect(0, 5, 6, h - radius);
-    this.highlight.fill(edgeGradLeft);
+    this.highlight.fill({ color: 0xFFFFFF, alpha: 0.4 });
 
-    const edgeGradRight = new FillGradient(w - 10, 0, w, 0);
-    edgeGradRight.addColorStop(0, 0xFFFFFF00);
-    edgeGradRight.addColorStop(1, 0xFFFFFF66);
-    
     this.highlight.rect(w - 6, 5, 6, h - radius);
-    this.highlight.fill(edgeGradRight);
+    this.highlight.fill({ color: 0xFFFFFF, alpha: 0.4 });
 
     // 4. Inner Front Specular Reflection (Curved surface illusion)
     this.reflection.clear();
-    const specGrad = new FillGradient(0, 0, 0, h);
-    specGrad.addColorStop(0, 0xFFFFFFEE);
-    specGrad.addColorStop(0.5, 0xFFFFFF22);
-    specGrad.addColorStop(1, 0xFFFFFF00);
-
-    // Pill shape specular
     this.reflection.roundRect(w * 0.15, h * 0.02, w * 0.15, h * 0.85, w * 0.1);
-    this.reflection.fill(specGrad);
+    this.reflection.fill({ color: 0xFFFFFF, alpha: 0.2 });
   }
 
   public setHighlight(active: boolean) {
@@ -110,11 +90,7 @@ export class TubeGraphics extends Container {
       this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
       this.backgroundGlass.lineTo(this.tubeWidth, 0);
       
-      const glowGrad = new FillGradient(0, 0, 0, this.tubeHeight);
-      glowGrad.addColorStop(0, 0xFFFFFF44);
-      glowGrad.addColorStop(1, 0xFFFFFF88);
-      
-      this.backgroundGlass.fill(glowGrad);
+      this.backgroundGlass.fill({ color: 0xFFFFFF, alpha: 0.3 });
       this.backgroundGlass.stroke();
       
       // Intense Rim

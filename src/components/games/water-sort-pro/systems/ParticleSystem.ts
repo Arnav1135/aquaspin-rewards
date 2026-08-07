@@ -40,7 +40,8 @@ export class ParticleSystem {
       filters.push(blur);
     }
     
-    app.stage.filters = filters;
+    // Temporarily disabled to prevent silent full-screen WebGL rendering failures on some devices
+    // app.stage.filters = filters;
 
     // Draw Ambient Vignette manually as a top-level overlay on stage (behind UI but above game)
     // We handle it inside GameApp for z-ordering, so we'll skip it here or just add it to stage

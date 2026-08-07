@@ -115,7 +115,7 @@ export class LevelQA {
     let state = { ...initialState, tubes: initialState.tubes.map(t => [...t]) };
     
     for (const move of path) {
-      if (!PuzzleEngine.isValidMove(state, move.source, move.destination)) {
+      if (!PuzzleEngine.canPour(state, move.source, move.destination)) {
         return false;
       }
       state = PuzzleEngine.applyMove(state, move.source, move.destination);

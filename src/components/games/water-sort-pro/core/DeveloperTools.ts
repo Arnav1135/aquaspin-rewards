@@ -1,4 +1,4 @@
-import { LevelGenerator } from './LevelGenerator';
+import { LevelGenerator } from '../levels/LevelGenerator';
 import { LevelQA, QAReport } from './LevelQA';
 import { Solver } from './Solver';
 import { GameState } from './PuzzleEngine';

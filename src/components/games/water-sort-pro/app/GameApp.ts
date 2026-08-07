@@ -304,7 +304,14 @@ export class GameApp {
     if (s.isAnimating || s.isWon || this.redoHistory.length === 0) return;
     
     const nextMove = this.redoHistory.pop()!;
-    this.attemptPour(nextMove.src, nextMove.dest);
+    
+    const width = this.app.screen.width;
+    const getPan = (i: number) => {
+      if (!this.tubes[i]) return 0;
+      return ((this.tubes[i].x + this.tubeWidth/2) / width) * 2 - 1;
+    };
+    
+    this.attemptPour(nextMove.src, nextMove.dest, getPan(nextMove.src), getPan(nextMove.dest));
   }
 
   public showHint() {

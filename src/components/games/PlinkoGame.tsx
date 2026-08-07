@@ -120,7 +120,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
     <group position={[0, rows * 0.4, 0]}>
       {/* Background board (No RigidBody to prevent ball scraping against it) */}
       <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} receiveShadow>
-        <boxGeometry args={[rows * PEG_SPACING_X + 4, rows * PEG_SPACING_Y + 4, 0.5]} />
+        <boxGeometry args={[(rows + 2) * PEG_SPACING_X + 4, (rows + 2) * PEG_SPACING_Y + 4, 0.5]} />
         {/* Light Mode Board Background */}
         <meshStandardMaterial color="#F0F4F8" roughness={0.7} metalness={0.1} />
       </mesh>
@@ -235,6 +235,7 @@ function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, po
       colliders="ball" 
       restitution={0.3} 
       friction={0}
+      ccd={true}
       userData={{ isBall: true }}
       name={id}
       enabledTranslations={[true, true, false]}
@@ -502,7 +503,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
             <ambientLight intensity={1.2} />
             <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
             <CameraAdjuster rows={rows} />
-            <PlinkoBoard rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
+            <PlinkoBoard key={`${rows}-${risk}`} rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
             
             {balls.map(ball => (
               <PlinkoBall 

@@ -10,6 +10,7 @@ export interface DeviceProfile {
   gpuRenderer?: string;
   enableSSR: boolean;
   enableGodRays: boolean;
+  enableMotionBlur: boolean;
 }
 
 export class DeviceCapabilityDetector {
@@ -54,6 +55,7 @@ export class DeviceCapabilityDetector {
     const maxParticles = tier === 'low' ? 100 : tier === 'medium' ? 500 : 2000;
     const enableSSR = tier === 'high';
     const enableGodRays = tier === 'high';
+    const enableMotionBlur = tier === 'high';
 
     this.profile = {
       tier,
@@ -65,6 +67,7 @@ export class DeviceCapabilityDetector {
       gpuRenderer,
       enableSSR,
       enableGodRays,
+      enableMotionBlur,
     };
 
     return this.profile;

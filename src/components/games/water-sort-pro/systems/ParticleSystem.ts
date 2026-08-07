@@ -216,6 +216,15 @@ export class ParticleSystem {
     }
   }
 
+  // Phase D: Advanced Particles & VFX
+  static emitSplash(x: number, y: number) {
+    // Only emit particles if we have a valid container setup
+    // For simplicity, we can get the active PIXI app from a global ref, 
+    // but in a production React architecture, we use a central event bus or pass it.
+    // Assuming the app is accessible or we just dispatch a CustomEvent that the GameApp listens to.
+    window.dispatchEvent(new CustomEvent('VFX_SPLASH', { detail: { x, y } }));
+  }
+
   static createVictoryConfetti(app: Application) {
     const quality = useGameState.getState().quality;
     if (quality === 'Low') return; // Disable particles for low quality

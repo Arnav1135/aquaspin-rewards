@@ -55,6 +55,9 @@ export interface GameState {
   
   updateStats: (partial: Partial<GameState['stats']>) => void;
   
+  activeHint: { message: string, source?: number, dest?: number } | null;
+  setActiveHint: (hint: { message: string, source?: number, dest?: number } | null) => void;
+  
   loadState: () => Promise<void>;
   saveCurrentState: () => void;
 }
@@ -149,6 +152,9 @@ export const useGameState = create<GameState>((set, get) => ({
     set((state) => ({ stats: { ...state.stats, ...partial } }));
     get().saveCurrentState();
   },
+  
+  activeHint: null,
+  setActiveHint: (hint) => set({ activeHint: hint }),
   
   loadState: async () => {
     const data = await saveManager.load();

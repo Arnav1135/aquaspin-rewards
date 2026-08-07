@@ -47,6 +47,37 @@ export class GameApp {
     this.app.stage.on('pointerdown', () => this.handleBackgroundClick());
     
     window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('VFX_SPLASH', (e: any) => this.renderSplashVFX(e.detail.x, e.detail.y));
+  }
+  
+  private renderSplashVFX(x: number, y: number) {
+    const splashCount = useGameState.getState().quality === 'Ultra' ? 15 : 5;
+    for (let i = 0; i < splashCount; i++) {
+      const p = new PIXI.Graphics();
+      p.circle(0, 0, Math.random() * 3 + 1);
+      p.fill({ color: 0xFFFFFF, alpha: 0.6 });
+      p.x = x + (Math.random() - 0.5) * 20;
+      p.y = y;
+      
+      this.app.stage.addChild(p);
+      
+      const vx = (Math.random() - 0.5) * 60;
+      const vy = -(Math.random() * 40 + 20);
+      
+      // We don't have GSAP imported in this file directly, so we can use a quick ticker
+      let life = 1.0;
+      const animate = () => {
+        p.x += vx * 0.016;
+        p.y += vy * 0.016 + 2; // gravity
+        p.alpha = life;
+        life -= 0.05;
+        if (life <= 0) {
+          this.app.ticker.remove(animate);
+          p.destroy();
+        }
+      };
+      this.app.ticker.add(animate);
+    }
   }
 
   public loadLevel(levelData: number[][]) {
@@ -268,22 +299,60 @@ export class GameApp {
     const s = useGameState.getState();
     if (s.isAnimating || s.isWon) return;
     
-    const hint = Solver.getHint(this.stateData);
-    if (hint) {
-      // Highlight the tubes momentarily
-      AnimationSystem.bounceSelection(this.tubes[hint.src], this.tubes[hint.src].y);
-      setTimeout(() => {
-        AnimationSystem.bounceSelection(this.tubes[hint.dest], this.tubes[hint.dest].y);
-      }, 300);
+    // Lazy-import HintEngine to avoid circular dependency issues at boot
+    import('../core/HintEngine').then(({ HintEngine }) => {
+      // Build dummy GameState for the hint engine
+      const dummyState = {
+        levelId: 'dummy',
+        generatorVersion: '1',
+        seed: '1',
+        tubes: this.stateData.map(t => [...t]),
+        tubeCapacity: 4,
+        selectedTube: null,
+        moveHistory: [],
+        undoStack: [],
+        redoStack: [],
+        moveCount: 0,
+        elapsedTime: 0,
+        hintsUsed: 0,
+        undosUsed: 0,
+        status: 'IDLE' as any
+      };
       
-      // Auto-reset them if not selected by player
-      setTimeout(() => {
-        if (s.selectedTube !== hint.src) AnimationSystem.resetSelection(this.tubes[hint.src], this.tubes[hint.src].y);
-        if (s.selectedTube !== hint.dest) AnimationSystem.resetSelection(this.tubes[hint.dest], this.tubes[hint.dest].y);
-      }, 1000);
-    } else {
-      audioMixer.playSelect(); // Play an error/dud sound
-    }
+      const hint = HintEngine.getHint(dummyState, 3); // Level 3 hint (explanation)
+      
+      if (hint.recommendedMove) {
+        // Highlight the tubes momentarily
+        AnimationSystem.bounceSelection(this.tubes[hint.recommendedMove.source], this.tubes[hint.recommendedMove.source].y);
+        setTimeout(() => {
+          AnimationSystem.bounceSelection(this.tubes[hint.recommendedMove!.destination], this.tubes[hint.recommendedMove!.destination].y);
+        }, 300);
+        
+        // Auto-reset them if not selected by player
+        setTimeout(() => {
+          if (s.selectedTube !== hint.recommendedMove!.source) AnimationSystem.resetSelection(this.tubes[hint.recommendedMove!.source], this.tubes[hint.recommendedMove!.source].y);
+          if (s.selectedTube !== hint.recommendedMove!.destination) AnimationSystem.resetSelection(this.tubes[hint.recommendedMove!.destination], this.tubes[hint.recommendedMove!.destination].y);
+        }, 1000);
+        
+        // Push explanation to UI
+        if (hint.explanation) {
+          s.setActiveHint({
+            message: hint.explanation,
+            source: hint.recommendedMove.source,
+            dest: hint.recommendedMove.destination
+          });
+          
+          // Clear hint after 5 seconds
+          setTimeout(() => {
+            if (useGameState.getState().activeHint?.message === hint.explanation) {
+              useGameState.getState().setActiveHint(null);
+            }
+          }, 5000);
+        }
+      } else {
+        audioMixer.playSelect(); // Play an error/dud sound
+      }
+    });
   }
 
   public addExtraTube() {

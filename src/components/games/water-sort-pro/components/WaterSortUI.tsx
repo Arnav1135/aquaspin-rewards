@@ -166,9 +166,25 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onCl
           <div className="text-white/80 font-semibold text-sm uppercase tracking-wider">
             Rating: {stats.playerSkillRating || 1000} | Streak: 🔥{stats.winStreak || 0}
           </div>
-          <div className="text-white/60 font-medium text-xs uppercase tracking-wider">
+          <div className="text-white/60 font-medium text-xs uppercase tracking-wider mb-2">
             Moves: {moves} | Score: {score} | Mode: {gameMode}
           </div>
+          
+          <AnimatePresence>
+            {useGameState.getState().activeHint && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                className="bg-blue-500/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-blue-300/50 shadow-lg"
+              >
+                <div className="flex items-center gap-2 text-blue-50 text-xs font-bold uppercase tracking-widest">
+                  <Lightbulb size={14} className="text-yellow-300" />
+                  {useGameState.getState().activeHint?.message}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <button 
             onClick={() => setShowStats(true)}
             className="mt-2 flex items-center gap-1 text-xs text-white/70 hover:text-white transition-colors uppercase font-bold"

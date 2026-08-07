@@ -7,7 +7,7 @@ export class DifficultyEngine {
    * Analyze the difficulty of a generated level.
    */
   public static analyzeDifficulty(level: LevelDefinition, solverResult: SolverResult): number {
-    if (!solverResult.solvable) return -1;
+    if (!solverResult.isSolvable) return -1;
 
     let score = 0;
 
@@ -16,7 +16,7 @@ export class DifficultyEngine {
 
     // Search complexity (how many nodes explored to find it)
     // Logarithmic scale for search nodes so it doesn't dominate
-    score += Math.log2(solverResult.nodesExplored) * 15;
+    score += Math.log2(solverResult.searchComplexity) * 15;
 
     // Fragmentation penalty (how broken up the colors are initially)
     let fragments = 0;

@@ -153,7 +153,7 @@ export class LevelGenerator {
     const solverResult = Solver.solve(mockState, 10000);
     
     // 6. Hard level protection
-    if (!solverResult.solvable && !isFallback) {
+    if (!solverResult.isSolvable && !isFallback) {
       return null; // Reject unsolvable or overly complex puzzles
     }
 
@@ -169,7 +169,7 @@ export class LevelGenerator {
     }
 
     // Calculate Quality Score
-    const qualityScore = solverResult.solutionLength + (solverResult.nodesExplored / 100);
+    const qualityScore = solverResult.solutionLength + (solverResult.searchComplexity / 100);
 
     return {
       levelId: `lvl_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,

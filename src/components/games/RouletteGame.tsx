@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
@@ -12,7 +12,8 @@ import toast from 'react-hot-toast';
 import { GameEngine3D } from '@/engine/GameEngine3D';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
+import gsap from 'gsap';
 
 type GameState = 'BETTING' | 'SPINNING' | 'SETTLING' | 'PAYOUT';
 
@@ -55,7 +56,14 @@ const BLACK_NUMS = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
 // --- 3D Components ---
 
 function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameState, winIdx: number | null, wheelRotRef: any }) {
-  useFrame(({ camera }) => {
+  const { camera } = useThree();
+  const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
+
+  useFrame(() => {
+    camera.lookAt(lookAtTarget.current);
+  });
+
+  useEffect(() => {
     const targetPos = new THREE.Vector3(0, 8, 5);
     const targetLook = new THREE.Vector3(0, 0, 0);
 
@@ -85,14 +93,23 @@ function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameS
       }
     }
 
-    camera.position.lerp(targetPos, 0.05);
-    
-    // Smooth lookAt
-    const cameraQuat = camera.quaternion.clone();
-    camera.lookAt(targetLook);
-    const targetQuat = camera.quaternion.clone();
-    camera.quaternion.copy(cameraQuat).slerp(targetQuat, 0.05);
-  });
+    gsap.to(camera.position, {
+      x: targetPos.x,
+      y: targetPos.y,
+      z: targetPos.z,
+      duration: 1.5,
+      ease: 'power3.inOut'
+    });
+
+    gsap.to(lookAtTarget.current, {
+      x: targetLook.x,
+      y: targetLook.y,
+      z: targetLook.z,
+      duration: 1.5,
+      ease: 'power3.inOut'
+    });
+  }, [gameState, winIdx, wheelRotRef]);
+
   return null;
 }
 

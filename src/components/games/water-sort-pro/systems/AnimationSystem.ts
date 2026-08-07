@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { Container } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { ParticleSystem } from './ParticleSystem';
 
 export class AnimationSystem {
@@ -30,7 +30,19 @@ export class AnimationSystem {
   }
 
   // Phase C: CINEMATIC POUR
-  static animatePour(source: Container, target: Container, onComplete: () => void) {
+  static animatePour(
+    source: Container, 
+    target: Container, 
+    streamColor: number,
+    srcLiquid: any, 
+    destLiquid: any, 
+    amount: number, 
+    srcLen: number, 
+    destLen: number,
+    srcColors: number[],
+    destColors: number[],
+    onComplete: () => void
+  ) {
     gsap.killTweensOf(source);
     
     const isRight = target.x > source.x;
@@ -44,7 +56,17 @@ export class AnimationSystem {
     const pourX = target.x - (dir * 30);
     const pourY = target.y - 80;
 
-    const tl = gsap.timeline({ onComplete });
+    const tl = gsap.timeline({ onComplete: () => {
+      if (stream.parent) stream.parent.removeChild(stream);
+      stream.destroy();
+      onComplete();
+    }});
+    
+    // Stream graphics
+    const stream = new Graphics();
+    if (source.parent) {
+      source.parent.addChild(stream);
+    }
     
     // 1. FAST LIFT & AIM (Anticipation)
     tl.to(source, {
@@ -65,16 +87,79 @@ export class AnimationSystem {
     });
 
     // 3. STREAM & IMPACT (Hold pour state while liquid transfers)
-    tl.add(() => {
-      // Simulate splash at target
-      ParticleSystem.emitSplash(target.x, target.y - 50);
+    const pourDuration = 0.15 + (amount * 0.15); // Scale pour time by amount
+    const transferState = { progress: 0 };
+    
+    tl.to(transferState, {
+      progress: 1,
+      duration: pourDuration,
+      ease: 'none',
+      onStart: () => {
+        // Subtle splash start
+        ParticleSystem.emitSplash(target.x, target.y - 50);
+      },
+      onUpdate: () => {
+        const p = transferState.progress;
+        
+        // A) Update Tube Liquids (drain source, fill dest)
+        srcLiquid.setAnimatedVolume(srcLen - (p * amount), srcColors);
+        
+        // Dest colors has already been updated logically in GameApp before animation started? 
+        // Wait, destColors needs to be the final state array. We pass the final states.
+        destLiquid.setAnimatedVolume(destLen - amount + (p * amount), destColors);
+        
+        // B) Draw Realistic Stream
+        stream.clear();
+        
+        // Calculate stream start and end points dynamically
+        // Source tube opening is rotated
+        const cos = Math.cos(source.rotation);
+        const sin = Math.sin(source.rotation);
+        // Tube opening offset from pivot (approx -100 in Y when upright)
+        const openX = source.x - sin * 100;
+        const openY = source.y - cos * 100 + 20; // +20 to come slightly inside tube
+        
+        const endX = target.x;
+        const endY = target.y - 90; // Top of target tube
+        
+        // Stream flows from openX,openY to endX,endY
+        // At start of pour, stream shoots out. At end, stream recedes.
+        const startP = Math.max(0, (p - 0.8) * 5); // Stream detaches from source at end
+        const endP = Math.min(1, p * 5); // Stream reaches destination quickly
+        
+        const currentStartX = openX + (endX - openX) * startP;
+        const currentStartY = openY + (endY - openY) * startP;
+        
+        const currentEndX = openX + (endX - openX) * endP;
+        const currentEndY = openY + (endY - openY) * endP;
+        
+        if (endP > startP) {
+           stream.setStrokeStyle({ width: 14, color: streamColor, alpha: 0.8, cap: 'round' });
+           stream.moveTo(currentStartX, currentStartY);
+           // Add a slight bezier curve so gravity looks real
+           stream.quadraticCurveTo(currentStartX, currentEndY, currentEndX, currentEndY);
+           stream.stroke();
+           
+           // Inner highlight for 3D liquid look
+           stream.setStrokeStyle({ width: 6, color: 0xFFFFFF, alpha: 0.4, cap: 'round' });
+           stream.moveTo(currentStartX, currentStartY);
+           stream.quadraticCurveTo(currentStartX, currentEndY, currentEndX, currentEndY);
+           stream.stroke();
+        }
+        
+        // Splash continuously while pouring
+        if (p > 0.1 && p < 0.9 && Math.random() > 0.5) {
+          ParticleSystem.emitSplash(endX, endY);
+        }
+      }
     });
     
+    // Add subtle gravity drift concurrently with the pour
     tl.to(source, {
-      rotation: dir * 1.85, // Subtle gravity drift
-      duration: 0.35,
+      rotation: dir * 1.85, 
+      duration: pourDuration,
       ease: 'sine.inOut'
-    });
+    }, "-=" + pourDuration);
 
     // 4. FAST RECOVERY & RETURN
     tl.to(source, {

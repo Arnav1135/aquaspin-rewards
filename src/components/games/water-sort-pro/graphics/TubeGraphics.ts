@@ -80,26 +80,72 @@ export class TubeGraphics extends Container {
     this.reflection.fill({ color: 0xFFFFFF, alpha: 0.2 });
   }
 
-  public setHighlight(active: boolean) {
+  private glowTween: gsap.core.Tween | null = null;
+  private glowActive: boolean = false;
+
+  public setHighlight(active: boolean, color: number = 0xFFFFFF) {
+    if (this.glowActive === active) return;
+    this.glowActive = active;
+    
     if (active) {
-      // Premium Selection Outline
+      // Premium Selection Glow Outline
       this.backgroundGlass.clear();
-      this.backgroundGlass.setStrokeStyle({ width: 8, color: 0xFFFFFF, alpha: 0.9 });
+      
+      // Draw base glass underneath
+      const activeTheme = ThemeManager.getTheme(useGameState.getState().theme);
+      const thickness = activeTheme.glassMaterial.thickness || 6;
+      const glassColor = activeTheme.glassMaterial.color;
+      const glassOpacity = activeTheme.glassMaterial.opacity;
+      
+      this.backgroundGlass.setStrokeStyle({ width: thickness, color: glassColor, alpha: glassOpacity });
       this.backgroundGlass.moveTo(0, 0);
       this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
       this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
       this.backgroundGlass.lineTo(this.tubeWidth, 0);
-      
-      this.backgroundGlass.fill({ color: 0xFFFFFF, alpha: 0.3 });
+      this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
       this.backgroundGlass.stroke();
+      
+      // Draw outer glowing halo using multiple strokes
+      const drawGlow = (w: number, a: number) => {
+        this.backgroundGlass.setStrokeStyle({ width: w, color: color, alpha: a, join: 'round' });
+        this.backgroundGlass.moveTo(0, 0);
+        this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
+        this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
+        this.backgroundGlass.lineTo(this.tubeWidth, 0);
+        this.backgroundGlass.stroke();
+      };
+      
+      // Core bright line
+      drawGlow(4, 0.9);
+      // Outer soft glow
+      drawGlow(12, 0.4);
+      // Atmospheric outer halo
+      drawGlow(24, 0.15);
       
       // Intense Rim
       this.glassRim.clear();
-      this.glassRim.setStrokeStyle({ width: 4, color: 0xFFFFFF, alpha: 1.0 });
+      this.glassRim.setStrokeStyle({ width: 4, color: color, alpha: 1.0 });
       this.glassRim.ellipse(this.tubeWidth / 2, 0, this.tubeWidth / 2 + 4, 6);
       this.glassRim.fill({ color: 0xFFFFFF, alpha: 0.4 });
       this.glassRim.stroke();
+      
+      // Subtle breathing pulse
+      if (this.glowTween) this.glowTween.kill();
+      // We animate the alpha of the whole glass container slightly
+      this.backgroundGlass.alpha = 0.7;
+      this.glowTween = gsap.to(this.backgroundGlass, {
+        alpha: 1.0,
+        duration: 1.2,
+        yoyo: true,
+        repeat: -1,
+        ease: 'sine.inOut'
+      });
     } else {
+      if (this.glowTween) {
+        this.glowTween.kill();
+        this.glowTween = null;
+      }
+      this.backgroundGlass.alpha = 1.0;
       this.draw(); // Reset to normal AAA materials
     }
   }

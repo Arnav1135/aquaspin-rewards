@@ -18,6 +18,7 @@ export class GameApp {
   private container: HTMLDivElement;
   private tubes: PIXI.Container[] = [];
   private liquids: LiquidGraphics[] = [];
+  private tubeGraphics: TubeGraphics[] = [];
   private stateData: number[][] = [];
   private moveHistory: { src: number, dest: number, amount: number, color: number }[] = [];
   private redoHistory: { src: number, dest: number, amount: number, color: number }[] = [];
@@ -192,6 +193,7 @@ export class GameApp {
       boardContainer.addChild(tubeContainer);
       this.tubes.push(tubeContainer);
       this.liquids.push(liquidGraphic);
+      this.tubeGraphics.push(tubeGraphic);
     });
 
     // Add Ambient Vignette on top of game elements if High/Ultra
@@ -240,12 +242,18 @@ export class GameApp {
         s.setSelectedTube(index);
         audioMixer.playSelect(getPan(index));
         AnimationSystem.bounceSelection(this.tubes[index], this.tubes[index].y);
+        
+        const srcColor = this.stateData[index][this.stateData[index].length - 1];
+        const activeTheme = ThemeManager.getTheme(s.theme);
+        const hexColor = activeTheme.liquidPalette[srcColor % activeTheme.liquidPalette.length];
+        this.tubeGraphics[index].setHighlight(true, hexColor);
       }
     } else {
       if (s.selectedTube === index) {
         s.setSelectedTube(-1);
         audioMixer.playSelect(getPan(index));
         AnimationSystem.resetSelection(this.tubes[index], this.tubes[index].y);
+        this.tubeGraphics[index].setHighlight(false);
       } else {
         this.attemptPour(s.selectedTube, index, getPan(s.selectedTube), getPan(index));
       }
@@ -256,6 +264,7 @@ export class GameApp {
     const s = useGameState.getState();
     if (s.selectedTube !== -1 && !s.isAnimating) {
       AnimationSystem.resetSelection(this.tubes[s.selectedTube], this.tubes[s.selectedTube].y);
+      this.tubeGraphics[s.selectedTube].setHighlight(false);
       s.setSelectedTube(-1);
     }
   }
@@ -282,13 +291,32 @@ export class GameApp {
       const sourceContainer = this.tubes[srcIdx];
       const destContainer = this.tubes[destIdx];
       
-      AnimationSystem.animatePour(sourceContainer, destContainer, () => {
-        // Logic Update
-        for (let i = 0; i < amount; i++) {
-          src.pop();
-          dest.push(srcColor);
-        }
-        
+      const activeTheme = ThemeManager.getTheme(s.theme);
+      const hexColor = activeTheme.liquidPalette[srcColor % activeTheme.liquidPalette.length];
+      
+      const srcLenBefore = src.length;
+      const destLenBefore = dest.length;
+      
+      // Pre-calculate logic update for destination array colors
+      for (let i = 0; i < amount; i++) {
+        src.pop();
+        dest.push(srcColor);
+      }
+      
+      this.tubeGraphics[srcIdx].setHighlight(false);
+      
+      AnimationSystem.animatePour(
+        sourceContainer, 
+        destContainer,
+        hexColor,
+        this.liquids[srcIdx],
+        this.liquids[destIdx],
+        amount,
+        srcLenBefore,
+        destLenBefore,
+        src,
+        dest,
+        () => {
         this.moveHistory.push({ src: srcIdx, dest: destIdx, amount, color: srcColor });
         this.redoHistory = []; // Clear redo history on new move
         s.setMoves(s.moves + 1);
@@ -310,6 +338,7 @@ export class GameApp {
       // Invalid Pour (full or color mismatch)
       audioMixer.playInvalidMove();
       AnimationSystem.animateShake(this.tubes[srcIdx], this.tubes[srcIdx].x, this.tubes[srcIdx].y);
+      this.tubeGraphics[srcIdx].setHighlight(false);
       s.setSelectedTube(-1);
     }
   }

@@ -136,8 +136,17 @@ export class GameApp {
     // Fallback if data is malformed
     if (numTubes === 0) return;
 
-    const columns = Math.ceil(Math.sqrt(numTubes));
-    const rows = Math.ceil(numTubes / columns);
+    let columns, rows;
+    if (numTubes <= 5) {
+      columns = numTubes;
+      rows = 1;
+    } else if (numTubes <= 10) {
+      columns = Math.ceil(numTubes / 2);
+      rows = 2;
+    } else {
+      columns = Math.ceil(Math.sqrt(numTubes));
+      rows = Math.ceil(numTubes / columns);
+    }
     
     const { width, height } = this.app.screen;
     const gridW = columns * this.tubeWidth + (columns - 1) * this.gap;

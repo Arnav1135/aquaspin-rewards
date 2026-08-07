@@ -35,7 +35,9 @@ export class LevelGenerator {
     const poolSize = 5;
     const candidates: LevelDefinition[] = [];
 
-    for (let i = 0; i < poolSize; i++) {
+    let attempts = 0;
+    while (candidates.length < poolSize && attempts < 100) {
+      attempts++;
       const candidate = this.generateCandidate(targetDifficulty, colorCount, tubeCount, tubeCapacity);
       if (candidate) {
         candidates.push(candidate);
@@ -44,7 +46,18 @@ export class LevelGenerator {
 
     if (candidates.length === 0) {
       // Fallback if the pool failed (should be rare)
-      return this.generateCandidate(targetDifficulty, colorCount, tubeCount, tubeCapacity, true)!;
+      let fallbackCandidate = null;
+      let fallbackAttempts = 0;
+      while (!fallbackCandidate && fallbackAttempts < 100) {
+        fallbackAttempts++;
+        fallbackCandidate = this.generateCandidate(targetDifficulty, colorCount, tubeCount, tubeCapacity, true);
+      }
+      if (fallbackCandidate) {
+        return fallbackCandidate;
+      } else {
+        // Absolute failsafe to prevent generator crash
+        return this.getFailsafeLevel();
+      }
     }
 
     // Rank candidates by how close their actual difficulty is to the target, plus quality score
@@ -162,7 +175,12 @@ export class LevelGenerator {
       return null;
     }
 
-    // 5. Solvability Validation
+    // 6. Strict Structural Validation
+    if (!this.validateLevel(currentTubes, tubeCount, tubeCapacity, colorCount)) {
+      return null;
+    }
+
+    // 7. Solvability Validation
     const mockState: GameState = {
       levelId: 'temp', generatorVersion: '2.0', seed: '', 
       tubes: currentTubes, tubeCapacity, selectedTube: null,
@@ -235,5 +253,57 @@ export class LevelGenerator {
 
     normalizedTubes.sort((a, b) => a.join(',').localeCompare(b.join(',')));
     return btoa(JSON.stringify(normalizedTubes));
+  }
+  
+  private static getFailsafeLevel(): LevelDefinition {
+    return {
+      levelId: 'failsafe_1',
+      seed: 'failsafe',
+      generatorVersion: '2.0',
+      difficultyTarget: 1,
+      actualDifficulty: 1,
+      colorCount: 2,
+      tubeCount: 3,
+      tubeCapacity: 4,
+      emptyTubeCount: 1,
+      initialConfiguration: [[0,0,1,1], [1,1,0,0], []],
+      puzzleDNA: 'failsafe',
+      qualityScore: 1
+    };
+  }
+
+  /**
+   * Structural validator ensuring liquid counts and tube bounds are perfectly logical
+   */
+  public static validateLevel(
+    tubes: number[][],
+    tubeCount: number,
+    tubeCapacity: number,
+    colorCount: number
+  ): boolean {
+    // 1. Structure
+    if (tubes.length !== tubeCount) return false;
+    
+    // 2. Tube Capacity Validation
+    for (const t of tubes) {
+      if (t.length > tubeCapacity) return false; // Overflow
+      if (t.some(c => c === null || c === undefined || isNaN(c))) return false; // Null defense
+    }
+    
+    // 3. Color count validation
+    const colorCounts = new Map<number, number>();
+    for (const t of tubes) {
+      for (const c of t) {
+        colorCounts.set(c, (colorCounts.get(c) || 0) + 1);
+      }
+    }
+    
+    // Each color must have exactly `tubeCapacity` units
+    if (colorCounts.size !== colorCount) return false;
+    for (const [color, count] of colorCounts.entries()) {
+      if (count !== tubeCapacity) return false;
+    }
+    
+    return true;
   }
 }

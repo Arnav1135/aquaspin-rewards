@@ -86,6 +86,7 @@ export function WaterSortPro({ onClose }: Props) {
   
   const handleRestart = () => {
     if (appRef.current && appRef.current.isInitialized) {
+      useGameState.getState().handleRestart(); // Penalize ELO and reset streak
       const levelData = LevelGenerator.generate(level);
       appRef.current.loadLevel(levelData);
       setWon(false);

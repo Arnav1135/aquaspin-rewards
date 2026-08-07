@@ -164,6 +164,9 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onCl
             )}
           </div>
           <div className="text-white/80 font-semibold text-sm uppercase tracking-wider">
+            Rating: {stats.playerSkillRating || 1000} | Streak: 🔥{stats.winStreak || 0}
+          </div>
+          <div className="text-white/60 font-medium text-xs uppercase tracking-wider">
             Moves: {moves} | Score: {score} | Mode: {gameMode}
           </div>
           <button 

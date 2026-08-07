@@ -1,11 +1,15 @@
 import { LevelGenerator as CoreLevelGenerator } from '../core/LevelGenerator';
 import { DifficultyEngine } from '../core/DifficultyEngine';
+import { useGameState } from '../state/useGameState';
 
 export class LevelGenerator {
   static generate(level: number): number[][] {
     // Determine dynamic difficulty parameters using new AI engine
-    // We assume a base player rating of 1.0 for now until full integration
-    const targetDifficulty = DifficultyEngine.getTargetDifficulty(level, 1.0);
+    // Read the player's live ELO from the global state
+    const playerElo = useGameState.getState().stats.playerSkillRating;
+    const normalizedSkill = Math.max(0.1, playerElo / 1000); // Normalize to 1.0 baseline
+    
+    const targetDifficulty = DifficultyEngine.getTargetDifficulty(level, normalizedSkill);
     
     // Scale parameters
     const numColors = Math.min(3 + Math.floor(level / 3), 10);

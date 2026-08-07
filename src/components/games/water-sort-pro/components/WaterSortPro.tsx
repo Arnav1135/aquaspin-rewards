@@ -128,26 +128,8 @@ export function WaterSortPro({ onClose }: Props) {
 
   // Get background color based on theme
   const getThemeBg = () => {
-    switch (theme) {
-      case 'Neon': return 'radial-gradient(circle at 50% 120%, #290a3a 0%, #05010a 60%)';
-      case 'Ocean': return 'radial-gradient(circle at 50% 120%, #0c325c 0%, #020b17 60%)';
-      case 'Sunset': return 'radial-gradient(circle at 50% 120%, #521815 0%, #170504 60%)';
-      case 'Minimal Dark': return 'radial-gradient(circle at 50% 120%, #202020 0%, #0a0a0a 60%)';
-      case 'Minimal Light': return 'radial-gradient(circle at 50% 120%, #e0e0e0 0%, #f5f5f5 60%)';
-      case 'Snow':
-      case 'Winter': return 'radial-gradient(circle at 50% 120%, #2a3b4c 0%, #0f171e 60%)';
-      case 'Autumn':
-      case 'Forest': return 'radial-gradient(circle at 50% 120%, #2d1f11 0%, #0c0905 60%)';
-      case 'Aurora': return 'radial-gradient(circle at 50% 120%, #0b3d36 0%, #020c1b 60%)';
-      case 'Galaxy': return 'radial-gradient(circle at 50% 120%, #300c42 0%, #000000 70%)';
-      case 'Candy': return 'radial-gradient(circle at 50% 120%, #ff85a2 0%, #ffc8dd 60%)';
-      case 'Spring': return 'radial-gradient(circle at 50% 120%, #234f1e 0%, #0a1f0d 60%)';
-      case 'Summer': return 'radial-gradient(circle at 50% 120%, #b58900 0%, #362900 60%)';
-      case 'Holiday': return 'radial-gradient(circle at 50% 120%, #173b22 0%, #0d120e 60%)';
-      case 'Festival': return 'radial-gradient(circle at 50% 120%, #470e0a 0%, #1a0503 60%)';
-      case 'Crystal':
-      default: return 'radial-gradient(circle at 50% 120%, #1a1b4b 0%, #050510 60%)';
-    }
+    // User requested strictly off-white, light background permanently.
+    return 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)';
   };
 
   return (
@@ -156,10 +138,6 @@ export function WaterSortPro({ onClose }: Props) {
         background: getThemeBg()
       }}
     >
-      {/* Background Parallax Stars/Bubbles */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '80px 80px', transform: 'translateY(-20px)' }} />
-
       {/* PixiJS Canvas Container */}
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       

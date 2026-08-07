@@ -104,9 +104,8 @@ export class AnimationSystem {
         // A) Update Tube Liquids (drain source, fill dest)
         srcLiquid.setAnimatedVolume(srcLen - (p * amount), srcColors);
         
-        // Dest colors has already been updated logically in GameApp before animation started? 
-        // Wait, destColors needs to be the final state array. We pass the final states.
-        destLiquid.setAnimatedVolume(destLen - amount + (p * amount), destColors);
+        // Dest volume starts at destLen and ends at destLen + amount
+        destLiquid.setAnimatedVolume(destLen + (p * amount), destColors);
         
         // B) Draw Realistic Stream
         stream.clear();
@@ -134,17 +133,15 @@ export class AnimationSystem {
         const currentEndY = openY + (endY - openY) * endP;
         
         if (endP > startP) {
-           stream.setStrokeStyle({ width: 14, color: streamColor, alpha: 0.8, cap: 'round' });
            stream.moveTo(currentStartX, currentStartY);
            // Add a slight bezier curve so gravity looks real
            stream.quadraticCurveTo(currentStartX, currentEndY, currentEndX, currentEndY);
-           stream.stroke();
+           stream.stroke({ width: 14, color: streamColor, alpha: 0.8, cap: 'round' });
            
            // Inner highlight for 3D liquid look
-           stream.setStrokeStyle({ width: 6, color: 0xFFFFFF, alpha: 0.4, cap: 'round' });
            stream.moveTo(currentStartX, currentStartY);
            stream.quadraticCurveTo(currentStartX, currentEndY, currentEndX, currentEndY);
-           stream.stroke();
+           stream.stroke({ width: 6, color: 0xFFFFFF, alpha: 0.4, cap: 'round' });
         }
         
         // Splash continuously while pouring

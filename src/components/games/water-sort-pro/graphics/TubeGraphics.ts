@@ -50,21 +50,19 @@ export class TubeGraphics extends Container {
 
     // 1. Back Wall & Base (Subtle frosted glass)
     this.backgroundGlass.clear();
-    this.backgroundGlass.setStrokeStyle({ width: thickness, color: glassColor, alpha: glassOpacity });
     // Don't draw the top border (open tube)
     this.backgroundGlass.moveTo(0, 0);
     this.backgroundGlass.lineTo(0, h - radius);
     this.backgroundGlass.arc(radius, h - radius, radius, Math.PI, 0, true);
     this.backgroundGlass.lineTo(w, 0);
     this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
-    this.backgroundGlass.stroke();
+    this.backgroundGlass.stroke({ width: thickness, color: glassColor, alpha: glassOpacity });
 
     // 2. Thick Glass Rim at the Top
     this.glassRim.clear();
-    this.glassRim.setStrokeStyle({ width: 2, color: 0xFFFFFF, alpha: 0.9 });
     this.glassRim.ellipse(w / 2, 0, w / 2 + thickness/2, 4);
     this.glassRim.fill({ color: 0xFFFFFF, alpha: 0.2 });
-    this.glassRim.stroke();
+    this.glassRim.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9 });
     
     // 3. Fresnel / Refraction Highlights (Outer edges)
     this.highlight.clear();
@@ -97,22 +95,20 @@ export class TubeGraphics extends Container {
       const glassColor = activeTheme.glassMaterial.color;
       const glassOpacity = activeTheme.glassMaterial.opacity;
       
-      this.backgroundGlass.setStrokeStyle({ width: thickness, color: glassColor, alpha: glassOpacity });
       this.backgroundGlass.moveTo(0, 0);
       this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
       this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
       this.backgroundGlass.lineTo(this.tubeWidth, 0);
       this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
-      this.backgroundGlass.stroke();
+      this.backgroundGlass.stroke({ width: thickness, color: glassColor, alpha: glassOpacity });
       
       // Draw outer glowing halo using multiple strokes
       const drawGlow = (w: number, a: number) => {
-        this.backgroundGlass.setStrokeStyle({ width: w, color: color, alpha: a, join: 'round' });
         this.backgroundGlass.moveTo(0, 0);
         this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
         this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
         this.backgroundGlass.lineTo(this.tubeWidth, 0);
-        this.backgroundGlass.stroke();
+        this.backgroundGlass.stroke({ width: w, color: color, alpha: a, join: 'round' });
       };
       
       // Core bright line
@@ -124,10 +120,9 @@ export class TubeGraphics extends Container {
       
       // Intense Rim
       this.glassRim.clear();
-      this.glassRim.setStrokeStyle({ width: 4, color: color, alpha: 1.0 });
       this.glassRim.ellipse(this.tubeWidth / 2, 0, this.tubeWidth / 2 + 4, 6);
       this.glassRim.fill({ color: 0xFFFFFF, alpha: 0.4 });
-      this.glassRim.stroke();
+      this.glassRim.stroke({ width: 4, color: color, alpha: 1.0 });
       
       // Subtle breathing pulse
       if (this.glowTween) this.glowTween.kill();

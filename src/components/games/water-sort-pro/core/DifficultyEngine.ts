@@ -42,7 +42,7 @@ export class DifficultyEngine {
   }
 
   /**
-   * Adaptive target difficulty calculation based on player skill.
+   * Adaptive target difficulty calculation based on player skill and Cognitive Pacing (Flow State).
    */
   public static getTargetDifficulty(levelNumber: number, playerSkillRating: number): number {
     // Base progression: curve starts slow, scales up
@@ -51,6 +51,14 @@ export class DifficultyEngine {
     // Player skill adjustment (e.g. if skill is high, add bonus difficulty)
     const adaptiveBonus = playerSkillRating * 10;
     
-    return baseDifficulty + adaptiveBonus;
+    // Phase 3: Flow State / Pacing AI
+    // Instead of a brutal linear climb, we introduce a sine wave pattern.
+    // Every ~5 levels, the player gets a "breather" level to rest their brain and hit a flow state.
+    const pacingWave = Math.sin(levelNumber * Math.PI / 2.5);
+    const waveAmplitude = 30 + (levelNumber * 2); // Amplitude grows over time
+    const flowStateModifier = pacingWave * waveAmplitude;
+    
+    // Ensure difficulty never drops below a minimum threshold
+    return Math.max(20, baseDifficulty + adaptiveBonus + flowStateModifier);
   }
 }

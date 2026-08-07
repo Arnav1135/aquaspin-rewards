@@ -175,6 +175,39 @@ export class LevelGenerator {
       return null;
     }
 
+    // Phase 3: Aesthetic Pattern Initialization
+    // Remap logical color IDs so that the dominant colors from left to right form a pleasing gradient
+    // instead of being completely random noise.
+    const colorCenters = new Array(colorCount).fill(0);
+    const colorCounts = new Array(colorCount).fill(0);
+    
+    currentTubes.forEach((tube, tubeIdx) => {
+      tube.forEach(color => {
+        colorCenters[color] += tubeIdx;
+        colorCounts[color]++;
+      });
+    });
+    
+    // Calculate average horizontal position for each color
+    const colorAvgPos = colorCenters.map((sum, color) => ({
+      color,
+      avgPos: colorCounts[color] > 0 ? sum / colorCounts[color] : 0
+    }));
+    
+    // Sort colors by their average horizontal position
+    colorAvgPos.sort((a, b) => a.avgPos - b.avgPos);
+    
+    // Create a mapping from old color ID to new color ID (0 to N)
+    const colorRemap = new Map<number, number>();
+    colorAvgPos.forEach((item, index) => {
+      colorRemap.set(item.color, index);
+    });
+    
+    // Apply the aesthetic mapping
+    currentTubes = currentTubes.map(tube => 
+      tube.map(color => colorRemap.get(color) ?? color)
+    );
+
     // 6. Strict Structural Validation
     if (!this.validateLevel(currentTubes, tubeCount, tubeCapacity, colorCount)) {
       return null;

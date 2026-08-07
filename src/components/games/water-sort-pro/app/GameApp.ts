@@ -298,9 +298,8 @@ export class GameApp {
 
         // Check if destination tube was just completed
         if (dest.length === 4 && dest.every(c => c === dest[0])) {
-          // Glow Pulse on completion
-          AnimationSystem.bounceSelection(destContainer, destContainer.y);
-          audioMixer.playWin(); // Play a nice sound for single tube
+          AnimationSystem.triggerLevelComplete([this.tubes[destIdx]]);
+          audioMixer.playToneWithPan(600, 'sine', 0.2, 0.1, destPan);
         }
         
         s.setSelectedTube(-1);
@@ -308,15 +307,10 @@ export class GameApp {
         this.checkWinCondition();
       });
     } else {
-      // Invalid, just swap selection
-      AnimationSystem.resetSelection(this.tubes[srcIdx], this.tubes[srcIdx].y);
-      if (dest.length > 0) {
-        s.setSelectedTube(destIdx);
-        audioMixer.playSelect();
-        AnimationSystem.bounceSelection(this.tubes[destIdx], this.tubes[destIdx].y);
-      } else {
-        s.setSelectedTube(-1);
-      }
+      // Invalid Pour (full or color mismatch)
+      audioMixer.playInvalidMove();
+      AnimationSystem.animateShake(this.tubes[srcIdx], this.tubes[srcIdx].x, this.tubes[srcIdx].y);
+      s.setSelectedTube(-1);
     }
   }
 

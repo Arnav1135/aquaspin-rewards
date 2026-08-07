@@ -27,95 +27,6 @@ export interface ThemeConfig {
 
 export class ThemeManager {
   private static themes: Record<string, ThemeConfig> = {
-    'Ocean': {
-      id: 'Ocean',
-      name: 'Deep Ocean',
-      isUnlocked: true,
-      backgroundColor: 0x0A1A2F,
-      ambientLightColor: 0x224466,
-      glassMaterial: { color: 0xE0F7FA, opacity: 0.3, thickness: 2, specular: 0.8 },
-      liquidPalette: [
-        0xFF3B30, // Red
-        0xFF9500, // Orange
-        0xFFCC00, // Yellow
-        0x4CD964, // Green
-        0x5AC8FA, // Light Blue
-        0x007AFF, // Blue
-        0x5856D6, // Purple
-        0xFF2D55, // Pink
-        0x8E8E93, // Gray
-        0x000000, // Black
-        0xFFFFFF, // White
-        0x8B4513, // Brown
-        0x00FF7F, // Spring Green
-        0x800080, // Deep Purple
-      ],
-      particleDensityMultiplier: 1.0,
-      particleColors: [0x5AC8FA, 0xFFFFFF],
-      transitionDurationMs: 1000
-    },
-    'Crystal': {
-      id: 'Crystal',
-      name: 'Crystal Cavern',
-      isUnlocked: true,
-      backgroundColor: 0x1a0f2e,
-      ambientLightColor: 0x4a235a,
-      glassMaterial: { color: 0xF3E5F5, opacity: 0.4, thickness: 3, specular: 0.9 },
-      liquidPalette: [
-        0xFF5252, // Bright Red
-        0xFFB142, // Warm Orange
-        0xFFEA00, // Bright Yellow
-        0x00E676, // Neon Green
-        0x00B0FF, // Neon Blue
-        0x2979FF, // Deep Blue
-        0x651FFF, // Deep Purple
-        0xF50057, // Neon Pink
-        0x37474F, // Dark Slate
-        0xE0E0E0, // Silver
-        0xFFA000, // Amber
-        0xC6FF00, // Lime
-        0x00BFA5, // Teal
-        0xD500F9, // Magenta
-      ],
-      particleDensityMultiplier: 1.5,
-      particleColors: [0xD500F9, 0x00B0FF],
-      transitionDurationMs: 1200
-    },
-    'Laboratory': {
-      id: 'Laboratory',
-      name: 'Sterile Lab',
-      isUnlocked: true,
-      backgroundColor: 0x2C3E50,
-      ambientLightColor: 0x34495E,
-      glassMaterial: { color: 0xFFFFFF, opacity: 0.2, thickness: 1, specular: 0.95 },
-      liquidPalette: [
-        0xE74C3C, 0xE67E22, 0xF1C40F, 0x2ECC71, 
-        0x3498DB, 0x2980B9, 0x9B59B6, 0x8E44AD,
-        0x1ABC9C, 0x16A085, 0x7F8C8D, 0xBDC3C7,
-        0xD35400, 0xC0392B
-      ],
-      particleDensityMultiplier: 0.5,
-      particleColors: [0x2ECC71, 0x3498DB],
-      transitionDurationMs: 800
-    },
-    'Sunset': {
-      id: 'Sunset',
-      name: 'Sunset Glow',
-      isUnlocked: false,
-      unlockCondition: 'Clear Difficulty 50',
-      backgroundColor: 0x4A148C, // Deep purple sunset
-      ambientLightColor: 0xE65100, // Orange glow
-      glassMaterial: { color: 0xFFE0B2, opacity: 0.35, thickness: 2, specular: 0.7 },
-      liquidPalette: [
-        0xFF1744, 0xFF9100, 0xFFEA00, 0x00E676,
-        0x00E5FF, 0x2979FF, 0x651FFF, 0xF50057,
-        0x455A64, 0xCFD8DC, 0xFF3D00, 0x76FF03,
-        0x1DE9B6, 0xD500F9
-      ],
-      particleDensityMultiplier: 1.2,
-      particleColors: [0xFF9100, 0xF50057],
-      transitionDurationMs: 1500
-    },
     'Daylight': {
       id: 'Daylight',
       name: 'Bright Daylight',
@@ -133,32 +44,62 @@ export class ThemeManager {
       particleColors: [0xFFFFFF, 0x5AC8FA],
       transitionDurationMs: 1000
     },
-    'Cyber': {
-      id: 'Cyber',
-      name: 'Cyberpunk',
-      isUnlocked: false,
-      unlockCondition: 'Complete 100 Levels',
-      backgroundColor: 0x000000,
-      ambientLightColor: 0x00FF00,
-      glassMaterial: { color: 0x00FFCC, opacity: 0.5, thickness: 1, specular: 1.0 },
+    'Sunny Beach': {
+      id: 'Sunny Beach',
+      name: 'Sunny Beach',
+      isUnlocked: true,
+      backgroundColor: 0xFFF5E1, // Warm sand/sun
+      ambientLightColor: 0xFFFFFF,
+      glassMaterial: { color: 0xFFFFFF, opacity: 0.5, thickness: 2, specular: 0.6 },
       liquidPalette: [
-        0xFF003C, 0xFF6600, 0xFAFA00, 0x00FF33,
-        0x00FFFF, 0x0033FF, 0x9900FF, 0xFF00FF,
-        0x1A1A1A, 0xCCCCCC, 0xFF9900, 0xCCFF00,
-        0x00CC99, 0xCC00FF
+        0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964,
+        0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55,
+        0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F,
+        0x800080, 0x333333
       ],
-      particleDensityMultiplier: 2.0,
-      particleColors: [0x00FF33, 0xFF00FF],
-      transitionDurationMs: 800
+      particleDensityMultiplier: 0.5,
+      particleColors: [0xFFD700, 0xFFFFFF],
+      transitionDurationMs: 1000
+    },
+    'Morning Sky': {
+      id: 'Morning Sky',
+      name: 'Morning Sky',
+      isUnlocked: true,
+      backgroundColor: 0xE0F7FA, // Very light cyan
+      ambientLightColor: 0xFFFFFF,
+      glassMaterial: { color: 0xFFFFFF, opacity: 0.6, thickness: 2, specular: 0.5 },
+      liquidPalette: [
+        0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964,
+        0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55,
+        0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F,
+        0x800080, 0x333333
+      ],
+      particleDensityMultiplier: 0.8,
+      particleColors: [0xFFFFFF, 0xB2EBF2],
+      transitionDurationMs: 1000
     }
   };
 
   private static currentThemeId: string = 'Daylight';
   private static targetBackgroundColor: number = 0xF0F4F8;
   private static currentBackgroundColor: number = 0xF0F4F8;
+  private static randomDaylightTheme: string | null = null;
 
   public static getTheme(id: string): ThemeConfig {
-    return this.themes[id] || this.themes['Ocean'];
+    // If the old dark themes are requested, hijack and return a bright daylight theme
+    if (id === 'Ocean' || id === 'Crystal' || id === 'Laboratory' || id === 'Cyber' || id === 'Sunset') {
+      id = 'Daylight';
+    }
+
+    if (id === 'Daylight') {
+      if (!this.randomDaylightTheme) {
+         const brightThemes = ['Daylight', 'Sunny Beach', 'Morning Sky'];
+         this.randomDaylightTheme = brightThemes[Math.floor(Math.random() * brightThemes.length)];
+      }
+      return this.themes[this.randomDaylightTheme] || this.themes['Daylight'];
+    }
+
+    return this.themes[id] || this.themes['Daylight'];
   }
 
   public static getAllThemes(): ThemeConfig[] {

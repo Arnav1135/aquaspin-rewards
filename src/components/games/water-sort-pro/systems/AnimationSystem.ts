@@ -35,51 +35,51 @@ export class AnimationSystem {
     
     const isRight = target.x > source.x;
     const dir = isRight ? 1 : -1;
-    const distance = Math.abs(target.x - source.x);
     
     // Calculate arc apex
     const startX = source.x;
     const startY = source.y;
     
-    const pourX = target.x - (dir * 25);
-    const pourY = target.y - 70;
+    // Move tighter towards the destination tube to simulate aiming
+    const pourX = target.x - (dir * 30);
+    const pourY = target.y - 80;
 
     const tl = gsap.timeline({ onComplete });
     
-    // 1. LIFT & MOVE TO POSITION (Anticipation)
+    // 1. FAST LIFT & AIM (Anticipation)
     tl.to(source, {
       x: pourX,
       y: pourY,
-      scaleX: 1.1,
-      scaleY: 1.1,
-      duration: 0.35,
+      scaleX: 1.15,
+      scaleY: 1.15,
+      rotation: dir * 0.5, // Start tipping early
+      duration: 0.25,
       ease: 'power2.out'
     });
 
-    // 2. ROTATE (Pour Prepare)
+    // 2. STEEP POUR ANGLE (Cinematic)
     tl.to(source, {
-      rotation: dir * 1.5,
-      duration: 0.3,
-      ease: 'power1.inOut'
+      rotation: dir * 1.8, // Steeper pour angle
+      duration: 0.2,
+      ease: 'power2.inOut'
     });
 
     // 3. STREAM & IMPACT (Hold pour state while liquid transfers)
-    // We would fire particle effects here via ParticleSystem
     tl.add(() => {
       // Simulate splash at target
       ParticleSystem.emitSplash(target.x, target.y - 50);
     });
     
     tl.to(source, {
-      rotation: dir * 1.6, // Slight drift during pour
-      duration: 0.4,
+      rotation: dir * 1.85, // Subtle gravity drift
+      duration: 0.35,
       ease: 'sine.inOut'
     });
 
-    // 4. SETTLE & RETURN
+    // 4. FAST RECOVERY & RETURN
     tl.to(source, {
       rotation: 0,
-      duration: 0.3,
+      duration: 0.2,
       ease: 'power2.in'
     });
     
@@ -88,9 +88,21 @@ export class AnimationSystem {
       y: startY,
       scaleX: 1.0,
       scaleY: 1.0,
-      duration: 0.4,
-      ease: 'bounce.out'
-    }, "-=0.1"); // Overlap the movement with the un-rotation
+      duration: 0.35,
+      ease: 'back.out(1.5)'
+    }, "-=0.1"); // Overlap movement with un-rotation
+  }
+
+  // Phase ERROR: SHAKE ON INVALID MOVE
+  static animateShake(target: Container, originalX: number, originalY: number) {
+    gsap.killTweensOf(target);
+    const tl = gsap.timeline();
+    
+    tl.to(target, { rotation: 0.1, x: originalX + 5, duration: 0.05 })
+      .to(target, { rotation: -0.1, x: originalX - 5, duration: 0.05 })
+      .to(target, { rotation: 0.1, x: originalX + 5, duration: 0.05 })
+      .to(target, { rotation: -0.1, x: originalX - 5, duration: 0.05 })
+      .to(target, { rotation: 0, x: originalX, y: originalY, scaleX: 1.0, scaleY: 1.0, duration: 0.1, ease: 'bounce.out' });
   }
 
   // Layered Completion Celebration

@@ -123,6 +123,81 @@ export class ParticleSystem {
         });
       };
       app.ticker.add(this.seasonalAnimate);
+    } else if (theme === 'Spring' || theme === 'Candy') {
+      this.seasonalContainer = new Container();
+      app.stage.addChildAt(this.seasonalContainer, 0);
+
+      const count = quality === 'Ultra' ? 80 : (quality === 'High' ? 40 : 20);
+      const particles: { p: Graphics, vx: number, vy: number, s: number }[] = [];
+      const colors = [0xFFB7C5, 0xFFC0CB, 0xFF69B4]; // Sakura pinks
+
+      for (let i = 0; i < count; i++) {
+        const p = new Graphics();
+        p.ellipse(0, 0, 4, 2);
+        p.fill({ color: colors[Math.floor(Math.random() * colors.length)], alpha: 0.7 });
+        p.x = Math.random() * app.screen.width;
+        p.y = Math.random() * app.screen.height;
+        this.seasonalContainer.addChild(p);
+
+        particles.push({
+          p,
+          vx: (Math.random() * 2) + 1, // Blow right
+          vy: Math.random() * 1 + 0.5,
+          s: (Math.random() - 0.5) * 0.1
+        });
+      }
+
+      this.seasonalAnimate = () => {
+        particles.forEach(pt => {
+          pt.p.x += pt.vx + Math.sin(Date.now() / 1500 + pt.p.y / 40) * 0.5;
+          pt.p.y += pt.vy;
+          pt.p.rotation += pt.s;
+          if (pt.p.y > app.screen.height || pt.p.x > app.screen.width) {
+            pt.p.y = -10;
+            pt.p.x = -10;
+          }
+        });
+      };
+      app.ticker.add(this.seasonalAnimate);
+    } else if (theme === 'Summer' || theme === 'Aurora' || theme === 'Galaxy') {
+      this.seasonalContainer = new Container();
+      app.stage.addChildAt(this.seasonalContainer, 0);
+
+      const count = quality === 'Ultra' ? 40 : (quality === 'High' ? 20 : 10);
+      const particles: { p: Graphics, vx: number, vy: number, s: number, t: number }[] = [];
+      
+      const c = theme === 'Aurora' ? 0x00FF99 : (theme === 'Galaxy' ? 0xAA00FF : 0xFFDD00);
+
+      for (let i = 0; i < count; i++) {
+        const p = new Graphics();
+        p.circle(0, 0, Math.random() * 6 + 2);
+        p.fill({ color: c, alpha: 0.3 });
+        p.x = Math.random() * app.screen.width;
+        p.y = Math.random() * app.screen.height;
+        this.seasonalContainer.addChild(p);
+
+        particles.push({
+          p,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          s: 0,
+          t: Math.random() * 100
+        });
+      }
+
+      this.seasonalAnimate = (ticker) => {
+        particles.forEach(pt => {
+          pt.t += ticker.deltaTime * 0.05;
+          pt.p.x += pt.vx;
+          pt.p.y += pt.vy;
+          pt.p.alpha = Math.abs(Math.sin(pt.t)) * 0.5 + 0.1;
+          if (pt.p.y > app.screen.height) pt.p.y = 0;
+          if (pt.p.y < 0) pt.p.y = app.screen.height;
+          if (pt.p.x > app.screen.width) pt.p.x = 0;
+          if (pt.p.x < 0) pt.p.x = app.screen.width;
+        });
+      };
+      app.ticker.add(this.seasonalAnimate);
     }
   }
 
@@ -195,12 +270,12 @@ export class ParticleSystem {
     const textStyle = new TextStyle({
       fontFamily: 'Impact, Arial Black, sans-serif',
       fontSize: 64,
-      fill: ['#ffffff', '#00ff99'],
+      fill: [0xffffff, 0x00ff99],
       dropShadow: {
         alpha: 0.8,
         angle: Math.PI / 6,
         blur: 10,
-        color: '#000000',
+        color: 0x000000,
         distance: 6,
       },
     });

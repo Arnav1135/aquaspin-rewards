@@ -93,10 +93,16 @@ export function WaterSortPro({ onClose }: Props) {
       case 'Ocean': return 'radial-gradient(circle at 50% 120%, #0c325c 0%, #020b17 60%)';
       case 'Sunset': return 'radial-gradient(circle at 50% 120%, #521815 0%, #170504 60%)';
       case 'Minimal Dark': return 'radial-gradient(circle at 50% 120%, #202020 0%, #0a0a0a 60%)';
+      case 'Minimal Light': return 'radial-gradient(circle at 50% 120%, #e0e0e0 0%, #f5f5f5 60%)';
       case 'Snow':
       case 'Winter': return 'radial-gradient(circle at 50% 120%, #2a3b4c 0%, #0f171e 60%)';
       case 'Autumn':
       case 'Forest': return 'radial-gradient(circle at 50% 120%, #2d1f11 0%, #0c0905 60%)';
+      case 'Aurora': return 'radial-gradient(circle at 50% 120%, #0b3d36 0%, #020c1b 60%)';
+      case 'Galaxy': return 'radial-gradient(circle at 50% 120%, #300c42 0%, #000000 70%)';
+      case 'Candy': return 'radial-gradient(circle at 50% 120%, #ff85a2 0%, #ffc8dd 60%)';
+      case 'Spring': return 'radial-gradient(circle at 50% 120%, #234f1e 0%, #0a1f0d 60%)';
+      case 'Summer': return 'radial-gradient(circle at 50% 120%, #b58900 0%, #362900 60%)';
       case 'Crystal':
       default: return 'radial-gradient(circle at 50% 120%, #1a1b4b 0%, #050510 60%)';
     }

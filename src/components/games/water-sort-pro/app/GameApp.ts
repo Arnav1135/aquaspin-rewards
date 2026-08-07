@@ -10,6 +10,7 @@ import { saveManager } from '../services/SaveManager';
 import { LiquidFilter } from '../shaders/LiquidFilter';
 import { Solver } from '../levels/Solver';
 import { PerformanceManager } from '../systems/PerformanceManager';
+import { ThemeManager } from '../systems/ThemeManager';
 
 export class GameApp {
   public app: PIXI.Application;
@@ -34,7 +35,7 @@ export class GameApp {
 
   async init() {
     await this.app.init({
-      backgroundAlpha: 0,
+      backgroundAlpha: 1, // Change to 1 for ThemeManager background rendering
       resizeTo: this.container,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
@@ -53,6 +54,12 @@ export class GameApp {
     
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('VFX_SPLASH', (e: any) => this.renderSplashVFX(e.detail.x, e.detail.y));
+    
+    // Initialize Theme
+    ThemeManager.setTheme(useGameState.getState().theme, this.app);
+    this.app.ticker.add((ticker) => {
+      ThemeManager.updateTransition(this.app, ticker.deltaTime);
+    });
   }
   
   private renderSplashVFX(x: number, y: number) {

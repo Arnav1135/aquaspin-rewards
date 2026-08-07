@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, ColorMatrixFilter, BlurFilter, NoiseFilter, Text, TextStyle } from 'pixi.js';
 import { useGameState } from '../state/useGameState';
+import { ThemeManager } from '../systems/ThemeManager';
 
 export class ParticleSystem {
   static seasonalContainer: Container | null = null;
@@ -45,7 +46,7 @@ export class ParticleSystem {
     // We handle it inside GameApp for z-ordering, so we'll skip it here or just add it to stage
   }
 
-  static createSeasonalParticles(app: Application, theme: string) {
+  static createSeasonalParticles(app: Application, themeId: string) {
     // Clear old seasonal particles
     if (this.seasonalContainer) {
       if (this.seasonalAnimate) app.ticker.remove(this.seasonalAnimate);
@@ -56,164 +57,55 @@ export class ParticleSystem {
     const quality = useGameState.getState().quality;
     if (quality === 'Low') return;
 
-    if (theme === 'Snow' || theme === 'Winter' || theme === 'Crystal') {
-      this.seasonalContainer = new Container();
-      app.stage.addChildAt(this.seasonalContainer, 0); // Put behind tubes
+    const theme = ThemeManager.getTheme(themeId);
+    if (!theme || theme.particleDensityMultiplier <= 0) return;
 
-      const count = quality === 'Ultra' ? 100 : (quality === 'High' ? 50 : 20);
-      const particles: { p: Graphics, vx: number, vy: number, s: number }[] = [];
+    this.seasonalContainer = new Container();
+    app.stage.addChildAt(this.seasonalContainer, 0); // Put behind tubes
 
-      for (let i = 0; i < count; i++) {
-        const p = new Graphics();
-        p.circle(0, 0, Math.random() * 2 + 1);
-        p.fill({ color: 0xFFFFFF, alpha: Math.random() * 0.5 + 0.2 });
-        p.x = Math.random() * app.screen.width;
-        p.y = Math.random() * app.screen.height;
-        this.seasonalContainer.addChild(p);
+    let baseCount = 0;
+    if (quality === 'Ultra') baseCount = 80;
+    else if (quality === 'High') baseCount = 40;
+    else baseCount = 15;
+    
+    const count = Math.floor(baseCount * theme.particleDensityMultiplier);
+    const particles: { p: Graphics, vx: number, vy: number, s: number, t: number }[] = [];
+    const colors = theme.particleColors;
 
-        particles.push({
-          p,
-          vx: (Math.random() - 0.5) * 1,
-          vy: Math.random() * 1 + 0.5,
-          s: Math.random() * 0.05
-        });
-      }
+    for (let i = 0; i < count; i++) {
+      const p = new Graphics();
+      p.circle(0, 0, Math.random() * 3 + 1);
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      p.fill({ color, alpha: Math.random() * 0.5 + 0.2 });
+      p.x = Math.random() * app.screen.width;
+      p.y = Math.random() * app.screen.height;
+      this.seasonalContainer.addChild(p);
 
-      this.seasonalAnimate = () => {
-        particles.forEach(pt => {
-          pt.p.x += pt.vx;
-          pt.p.y += pt.vy;
-          pt.p.rotation += pt.s;
-          if (pt.p.y > app.screen.height) {
-            pt.p.y = -10;
-            pt.p.x = Math.random() * app.screen.width;
-          }
-        });
-      };
-      app.ticker.add(this.seasonalAnimate);
-    } else if (theme === 'Autumn' || theme === 'Forest' || theme === 'Sunset') {
-      this.seasonalContainer = new Container();
-      app.stage.addChildAt(this.seasonalContainer, 0);
-
-      const count = quality === 'Ultra' ? 60 : (quality === 'High' ? 30 : 15);
-      const particles: { p: Graphics, vx: number, vy: number, s: number }[] = [];
-      const colors = [0xFF9900, 0xFF6600, 0xCC3300, 0x999900];
-
-      for (let i = 0; i < count; i++) {
-        const p = new Graphics();
-        // Leaf shape
-        p.moveTo(0, -5).lineTo(3, 0).lineTo(0, 5).lineTo(-3, 0).lineTo(0, -5);
-        p.fill({ color: colors[Math.floor(Math.random() * colors.length)], alpha: 0.8 });
-        p.x = Math.random() * app.screen.width;
-        p.y = Math.random() * app.screen.height;
-        this.seasonalContainer.addChild(p);
-
-        particles.push({
-          p,
-          vx: (Math.random() - 0.5) * 2,
-          vy: Math.random() * 1.5 + 0.5,
-          s: (Math.random() - 0.5) * 0.1
-        });
-      }
-
-      this.seasonalAnimate = () => {
-        particles.forEach(pt => {
-          pt.p.x += pt.vx + Math.sin(Date.now() / 1000 + pt.p.y / 50) * 0.5;
-          pt.p.y += pt.vy;
-          pt.p.rotation += pt.s;
-          if (pt.p.y > app.screen.height) {
-            pt.p.y = -10;
-            pt.p.x = Math.random() * app.screen.width;
-          }
-        });
-      };
-      app.ticker.add(this.seasonalAnimate);
-    } else if (theme === 'Spring' || theme === 'Candy') {
-      this.seasonalContainer = new Container();
-      app.stage.addChildAt(this.seasonalContainer, 0);
-
-      const count = quality === 'Ultra' ? 80 : (quality === 'High' ? 40 : 20);
-      const particles: { p: Graphics, vx: number, vy: number, s: number }[] = [];
-      const colors = [0xFFB7C5, 0xFFC0CB, 0xFF69B4]; // Sakura pinks
-
-      for (let i = 0; i < count; i++) {
-        const p = new Graphics();
-        p.ellipse(0, 0, 4, 2);
-        p.fill({ color: colors[Math.floor(Math.random() * colors.length)], alpha: 0.7 });
-        p.x = Math.random() * app.screen.width;
-        p.y = Math.random() * app.screen.height;
-        this.seasonalContainer.addChild(p);
-
-        particles.push({
-          p,
-          vx: (Math.random() * 2) + 1, // Blow right
-          vy: Math.random() * 1 + 0.5,
-          s: (Math.random() - 0.5) * 0.1
-        });
-      }
-
-      this.seasonalAnimate = () => {
-        particles.forEach(pt => {
-          pt.p.x += pt.vx + Math.sin(Date.now() / 1500 + pt.p.y / 40) * 0.5;
-          pt.p.y += pt.vy;
-          pt.p.rotation += pt.s;
-          if (pt.p.y > app.screen.height || pt.p.x > app.screen.width) {
-            pt.p.y = -10;
-            pt.p.x = -10;
-          }
-        });
-      };
-      app.ticker.add(this.seasonalAnimate);
-    } else if (theme === 'Summer' || theme === 'Aurora' || theme === 'Galaxy' || theme === 'Holiday' || theme === 'Festival') {
-      this.seasonalContainer = new Container();
-      app.stage.addChildAt(this.seasonalContainer, 0);
-
-      const count = quality === 'Ultra' ? 40 : (quality === 'High' ? 20 : 10);
-      const particles: { p: Graphics, vx: number, vy: number, s: number, t: number }[] = [];
-      
-      let colors = [0xFFDD00];
-      if (theme === 'Aurora') colors = [0x00FF99, 0x00FFFF];
-      if (theme === 'Galaxy') colors = [0xAA00FF, 0xFF00AA, 0x00AAFF];
-      if (theme === 'Holiday') colors = [0xFF0000, 0x00FF00, 0xFFFF00];
-      if (theme === 'Festival') colors = [0xFF5500, 0xFF0055, 0xFFFF00, 0x00FFFF];
-
-      for (let i = 0; i < count; i++) {
-        const p = new Graphics();
-        p.circle(0, 0, Math.random() * 6 + 2);
-        p.fill({ color: colors[Math.floor(Math.random() * colors.length)], alpha: 0.4 });
-        p.x = Math.random() * app.screen.width;
-        p.y = Math.random() * app.screen.height;
-        this.seasonalContainer.addChild(p);
-
-        particles.push({
-          p,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          s: 0,
-          t: Math.random() * 100
-        });
-      }
-
-      this.seasonalAnimate = (ticker) => {
-        particles.forEach(pt => {
-          pt.t += ticker.deltaTime * 0.05;
-          pt.p.x += pt.vx;
-          pt.p.y += pt.vy;
-          
-          if (theme === 'Holiday' || theme === 'Festival') {
-            pt.p.alpha = Math.abs(Math.sin(pt.t * 2)) * 0.8 + 0.2; // Blink fast
-          } else {
-            pt.p.alpha = Math.abs(Math.sin(pt.t)) * 0.5 + 0.1; // Pulse slowly
-          }
-          
-          if (pt.p.y > app.screen.height) pt.p.y = 0;
-          if (pt.p.y < 0) pt.p.y = app.screen.height;
-          if (pt.p.x > app.screen.width) pt.p.x = 0;
-          if (pt.p.x < 0) pt.p.x = app.screen.width;
-        });
-      };
-      app.ticker.add(this.seasonalAnimate);
+      particles.push({
+        p,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: (Math.random() - 0.5) * 1.5 - 0.2, // slight upward drift default
+        s: (Math.random() - 0.5) * 0.05,
+        t: Math.random() * 100
+      });
     }
+
+    this.seasonalAnimate = (ticker: any) => {
+      particles.forEach(pt => {
+        pt.t += ticker.deltaTime * 0.05;
+        pt.p.x += pt.vx;
+        pt.p.y += pt.vy;
+        pt.p.rotation += pt.s;
+        
+        pt.p.alpha = Math.abs(Math.sin(pt.t)) * 0.5 + 0.1;
+        
+        if (pt.p.y > app.screen.height + 10) pt.p.y = -10;
+        if (pt.p.y < -10) pt.p.y = app.screen.height + 10;
+        if (pt.p.x > app.screen.width + 10) pt.p.x = -10;
+        if (pt.p.x < -10) pt.p.x = app.screen.width + 10;
+      });
+    };
+    app.ticker.add(this.seasonalAnimate);
   }
 
   // Phase D: Advanced Particles & VFX

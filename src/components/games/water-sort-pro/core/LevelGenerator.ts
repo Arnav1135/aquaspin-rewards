@@ -133,10 +133,31 @@ export class LevelGenerator {
       lastDst = move.dst;
     }
 
-    // 3. DNA Fingerprint
+    // 3. Structural Consolidation (Fix for strict empty tubes)
+    // Any reverse move is valid without color constraints, so we can freely move liquid to consolidate empty space.
+    let partialTubes = currentTubes.map((t, idx) => ({ t, idx })).filter(obj => obj.t.length > 0 && obj.t.length < tubeCapacity);
+    
+    while (partialTubes.length > 0) {
+      // Sort: empty the shortest tubes into the most full tubes
+      partialTubes.sort((a, b) => a.t.length - b.t.length);
+      
+      const source = partialTubes[0];
+      const target = partialTubes[partialTubes.length - 1];
+      
+      if (source.idx === target.idx) break; // Should not happen if length > 1
+      
+      // Move 1 unit from shortest to most full
+      const color = source.t.pop()!;
+      target.t.push(color);
+      
+      // Re-evaluate partial tubes
+      partialTubes = currentTubes.map((t, idx) => ({ t, idx })).filter(obj => obj.t.length > 0 && obj.t.length < tubeCapacity);
+    }
+
+    // 4. DNA Fingerprint
     const puzzleDNA = this.generateDNA(currentTubes);
 
-    // 4. Anti-Repetition Check
+    // 5. Anti-Repetition Check
     if (!isFallback && !this.antiRepetitionEngine.isNovel(puzzleDNA)) {
       return null;
     }

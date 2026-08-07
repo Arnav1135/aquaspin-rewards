@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { saveManager } from '../services/SaveManager';
+import { ThemeManager } from '../systems/ThemeManager';
 
 export interface GameState {
   level: number;
@@ -149,7 +150,11 @@ export const useGameState = create<GameState>((set, get) => ({
   setGameMode: (gameMode) => { set({ gameMode }); get().saveCurrentState(); },
   
   updateStats: (partial) => {
-    set((state) => ({ stats: { ...state.stats, ...partial } }));
+    set((state) => {
+      const newStats = { ...state.stats, ...partial };
+      ThemeManager.checkUnlocks(newStats);
+      return { stats: newStats };
+    });
     get().saveCurrentState();
   },
   
@@ -158,6 +163,18 @@ export const useGameState = create<GameState>((set, get) => ({
   
   loadState: async () => {
     const data = await saveManager.load();
+    const loadedStats = {
+      totalSolved: data.stats?.totalSolved || 0,
+      totalMoves: data.stats?.totalMoves || 0,
+      timePlayed: data.stats?.timePlayed || 0,
+      playerSkillRating: data.stats?.playerSkillRating || 1000,
+      winStreak: data.stats?.winStreak || 0,
+      lossStreak: data.stats?.lossStreak || 0,
+      highestDifficultyCleared: data.stats?.highestDifficultyCleared || 0,
+      dnaHistory: data.stats?.dnaHistory || []
+    };
+    ThemeManager.checkUnlocks(loadedStats);
+    
     set({
       level: data.level || 1,
       score: data.score || 0,
@@ -168,16 +185,7 @@ export const useGameState = create<GameState>((set, get) => ({
       volumeMaster: data.volumeMaster ?? 0.8,
       volumeMusic: data.volumeMusic ?? 0.5,
       volumeEffects: data.volumeEffects ?? 0.7,
-      stats: {
-        totalSolved: data.stats?.totalSolved || 0,
-        totalMoves: data.stats?.totalMoves || 0,
-        timePlayed: data.stats?.timePlayed || 0,
-        playerSkillRating: data.stats?.playerSkillRating || 1000,
-        winStreak: data.stats?.winStreak || 0,
-        lossStreak: data.stats?.lossStreak || 0,
-        highestDifficultyCleared: data.stats?.highestDifficultyCleared || 0,
-        dnaHistory: data.stats?.dnaHistory || []
-      }
+      stats: loadedStats
     });
   },
   

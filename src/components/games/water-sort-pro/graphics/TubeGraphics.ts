@@ -1,4 +1,6 @@
 import { Graphics, Container, FillGradient } from 'pixi.js';
+import { ThemeManager } from '../systems/ThemeManager';
+import { useGameState } from '../state/useGameState';
 
 export class TubeGraphics extends Container {
   public tubeWidth: number;
@@ -46,17 +48,21 @@ export class TubeGraphics extends Container {
     const w = this.tubeWidth;
     const h = this.tubeHeight;
     const radius = w / 2;
-    const thickness = 6;
+    
+    const activeTheme = ThemeManager.getTheme(useGameState.getState().theme);
+    const thickness = activeTheme.glassMaterial.thickness || 6;
+    const glassColor = activeTheme.glassMaterial.color;
+    const glassOpacity = activeTheme.glassMaterial.opacity;
 
     // 1. Back Wall & Base (Subtle frosted glass)
     this.backgroundGlass.clear();
-    this.backgroundGlass.setStrokeStyle({ width: thickness, color: 0xFFFFFF, alpha: 0.25 });
+    this.backgroundGlass.setStrokeStyle({ width: thickness, color: glassColor, alpha: glassOpacity });
     // Don't draw the top border (open tube)
     this.backgroundGlass.moveTo(0, 0);
     this.backgroundGlass.lineTo(0, h - radius);
     this.backgroundGlass.arc(radius, h - radius, radius, Math.PI, 0, true);
     this.backgroundGlass.lineTo(w, 0);
-    this.backgroundGlass.fill({ color: 0xFFFFFF, alpha: 0.08 });
+    this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
     this.backgroundGlass.stroke();
 
     // 2. Thick Glass Rim at the Top

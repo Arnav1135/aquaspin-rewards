@@ -82,9 +82,17 @@ export class LevelQA {
     }
     report.solutionVerified = true;
 
-    // 4. Difficulty Analysis Check (Tolerance +/- 15)
-    // We proxy difficulty from searchComplexity and solution length
-    const estimatedDiff = Math.min(100, Math.floor((solution.searchComplexity / 5000) * 50 + (solution.solutionLength / 50) * 50));
+    // 4. Difficulty Analysis Check (Tolerance +/- 25)
+    // We proxy difficulty from searchComplexity and solution length to match the generator's baseline
+    const baseDifficulty = Math.min(100, Math.floor((solution.searchComplexity / 2000) * 50 + (solution.solutionLength / 40) * 50));
+    
+    // Deceptive moves (high branching factor)
+    let humanFriction = 0;
+    if (solution.searchComplexity > solution.solutionLength * 10) humanFriction += 10;
+    if (solution.solutionLength > tubes.length * 4) humanFriction += 15;
+    
+    const estimatedDiff = Math.min(100, baseDifficulty + humanFriction);
+    
     if (Math.abs(estimatedDiff - expectedDifficulty) > 25) {
       report.rejectReason = `Difficulty deviation too high. Expected ${expectedDifficulty}, got ~${estimatedDiff}`;
       return report;

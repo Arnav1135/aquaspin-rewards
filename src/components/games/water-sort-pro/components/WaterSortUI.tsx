@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGameState } from '../state/useGameState';
+import { ThemeManager } from '../systems/ThemeManager';
 import { Settings, Undo2, Redo2, Lightbulb, RotateCcw, X, Palette, Monitor, Eye, Volume2, Gamepad2, BarChart2, Trophy, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -27,11 +28,6 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onCl
   const [showChest, setShowChest] = useState(false);
   const [chestOpened, setChestOpened] = useState(false);
 
-  const themes = [
-    'Ocean', 'Neon', 'Crystal', 'Sunset', 'Minimal Dark', 'Minimal Light', 
-    'Snow', 'Winter', 'Autumn', 'Forest', 'Aurora', 'Galaxy', 'Candy', 
-    'Spring', 'Summer', 'Holiday', 'Festival'
-  ];
   const qualities = ['Low', 'Medium', 'High', 'Ultra'];
   const modes = ['classic', 'zen', 'challenge', 'hardcore'];
 
@@ -360,13 +356,18 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onCl
                     <Palette size={16} /> Theme
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {themes.map(t => (
+                    {ThemeManager.getAllThemes().map(t => (
                       <button 
-                        key={t}
-                        onClick={() => setTheme(t)}
-                        className={`py-2 px-3 rounded-xl border font-semibold transition-all ${theme === t ? 'bg-white/20 border-white text-white shadow-inner' : 'bg-black/20 border-transparent text-white/60 hover:bg-black/40 hover:text-white/90'}`}
+                        key={t.id}
+                        onClick={() => { if (t.isUnlocked) setTheme(t.id); }}
+                        className={`py-2 px-3 rounded-xl border font-semibold transition-all relative ${theme === t.id ? 'bg-white/20 border-white text-white shadow-inner' : (t.isUnlocked ? 'bg-black/20 border-transparent text-white/60 hover:bg-black/40 hover:text-white/90' : 'bg-black/40 border-transparent text-white/30 cursor-not-allowed')}`}
                       >
-                        {t}
+                        {t.name}
+                        {!t.isUnlocked && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">
+                            <span className="text-[10px] text-center px-1 leading-tight text-white/90 font-bold">{t.unlockCondition || 'Locked'}</span>
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>

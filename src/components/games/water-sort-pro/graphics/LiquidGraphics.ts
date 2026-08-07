@@ -1,5 +1,6 @@
 import { Graphics, Container } from 'pixi.js';
 import { useGameState } from '../state/useGameState';
+import { ThemeManager } from '../systems/ThemeManager';
 
 export class LiquidGraphics extends Container {
   private colors: number[] = [];
@@ -44,14 +45,17 @@ export class LiquidGraphics extends Container {
     const segmentHeight = (this.tubeHeight - this.tubeWidth) / this.capacity;
     const w = this.tubeWidth;
     
+    const activeTheme = ThemeManager.getTheme(useGameState.getState().theme);
+    
     // Draw each color segment
-    colors.forEach((color, i) => {
+    colors.forEach((colorId, i) => {
+      const hexColor = activeTheme.liquidPalette[colorId % activeTheme.liquidPalette.length];
       const g = new Graphics();
       const yOffset = this.tubeHeight - this.tubeWidth / 2 - (i + 1) * segmentHeight;
 
       // Base liquid block
       g.rect(2, yOffset, w - 4, segmentHeight + 2);
-      g.fill({ color });
+      g.fill({ color: hexColor });
 
       // Add meniscus/surface tension highlight at the top of the segment
       const meniscus = new Graphics();
@@ -92,7 +96,7 @@ export class LiquidGraphics extends Container {
       const { colorBlindMode } = useGameState.getState();
       if (colorBlindMode) {
         // Simple hash of color to pick a pattern (1 to 5 dots)
-        const hash = color % 5 + 1;
+        const hash = colorId % 5 + 1;
         const pattern = new Graphics();
         pattern.fill({ color: 0xFFFFFF, alpha: 0.5 });
         for(let d=0; d<hash; d++) {

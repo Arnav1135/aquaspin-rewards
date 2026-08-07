@@ -30,17 +30,17 @@ export function CueStick({ position, rotation, power, isVisible }: CueStickProps
         {/* Shaft */}
         <mesh position={[0, 0, 3]} castShadow>
           <cylinderGeometry args={[0.04, 0.08, 6]} />
-          <meshStandardMaterial color="#d2b48c" roughness={0.7} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#d2b48c" roughness={0.7} />
         </mesh>
         {/* Tip */}
         <mesh position={[0, 0, 0.05]} castShadow>
           <cylinderGeometry args={[0.038, 0.04, 0.1]} />
-          <meshStandardMaterial color="#0000ff" roughness={0.9} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#0000ff" roughness={0.9} />
         </mesh>
         {/* Base / Grip */}
         <mesh position={[0, 0, 5.5]} castShadow>
           <cylinderGeometry args={[0.08, 0.085, 2]} />
-          <meshStandardMaterial color="#111111" roughness={0.4} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#111111" roughness={0.4} />
         </mesh>
       </group>
     </group>

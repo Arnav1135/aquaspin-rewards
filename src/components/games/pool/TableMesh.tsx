@@ -13,7 +13,7 @@ export function TableMesh() {
         <CuboidCollider args={[TABLE_WIDTH / 2, 0.1, TABLE_LENGTH / 2]} position={[0, -0.1, 0]} />
         <mesh position={[0, 0, 0]} receiveShadow>
           <boxGeometry args={[TABLE_WIDTH, 0.2, TABLE_LENGTH]} />
-          <meshStandardMaterial color="#0b6623" roughness={0.8} metalness={0.1} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#0b6623" roughness={0.8} metalness={0.1} />
         </mesh>
       </RigidBody>
 
@@ -21,7 +21,7 @@ export function TableMesh() {
       <mesh position={[0, 0.1, 0]} receiveShadow castShadow>
         {/* Simplified rail visuals for now, actual bounds are the physics colliders */}
         <boxGeometry args={[TABLE_WIDTH + 0.5, 0.4, TABLE_LENGTH + 0.5]} />
-        <meshStandardMaterial color="#3b2f2f" roughness={0.6} metalness={0.3} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#3b2f2f" roughness={0.6} metalness={0.3} />
       </mesh>
 
       {/* Inner Cutout for the play surface so the rails look like borders */}
@@ -37,7 +37,7 @@ export function TableMesh() {
         <RigidBody type="fixed" restitution={0.8} friction={0.2}>
           <mesh position={[0, 0, -TABLE_LENGTH / 2 - 0.25]} receiveShadow castShadow>
              <boxGeometry args={[TABLE_WIDTH + 1.0, CUSHION_HEIGHT, 0.5]} />
-             <meshStandardMaterial color="#3b2f2f" />
+             <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#3b2f2f" />
           </mesh>
           <CuboidCollider args={[(TABLE_WIDTH + 1.0) / 2, CUSHION_HEIGHT / 2, 0.25]} position={[0, 0, -TABLE_LENGTH / 2 - 0.25]} />
         </RigidBody>
@@ -46,7 +46,7 @@ export function TableMesh() {
         <RigidBody type="fixed" restitution={0.8} friction={0.2}>
           <mesh position={[0, 0, TABLE_LENGTH / 2 + 0.25]} receiveShadow castShadow>
              <boxGeometry args={[TABLE_WIDTH + 1.0, CUSHION_HEIGHT, 0.5]} />
-             <meshStandardMaterial color="#3b2f2f" />
+             <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#3b2f2f" />
           </mesh>
           <CuboidCollider args={[(TABLE_WIDTH + 1.0) / 2, CUSHION_HEIGHT / 2, 0.25]} position={[0, 0, TABLE_LENGTH / 2 + 0.25]} />
         </RigidBody>
@@ -55,7 +55,7 @@ export function TableMesh() {
         <RigidBody type="fixed" restitution={0.8} friction={0.2}>
           <mesh position={[-TABLE_WIDTH / 2 - 0.25, 0, 0]} receiveShadow castShadow>
              <boxGeometry args={[0.5, CUSHION_HEIGHT, TABLE_LENGTH]} />
-             <meshStandardMaterial color="#3b2f2f" />
+             <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#3b2f2f" />
           </mesh>
           <CuboidCollider args={[0.25, CUSHION_HEIGHT / 2, TABLE_LENGTH / 2]} position={[-TABLE_WIDTH / 2 - 0.25, 0, 0]} />
         </RigidBody>
@@ -64,7 +64,7 @@ export function TableMesh() {
         <RigidBody type="fixed" restitution={0.8} friction={0.2}>
           <mesh position={[TABLE_WIDTH / 2 + 0.25, 0, 0]} receiveShadow castShadow>
              <boxGeometry args={[0.5, CUSHION_HEIGHT, TABLE_LENGTH]} />
-             <meshStandardMaterial color="#3b2f2f" />
+             <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#3b2f2f" />
           </mesh>
           <CuboidCollider args={[0.25, CUSHION_HEIGHT / 2, TABLE_LENGTH / 2]} position={[TABLE_WIDTH / 2 + 0.25, 0, 0]} />
         </RigidBody>

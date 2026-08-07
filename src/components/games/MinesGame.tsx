@@ -91,7 +91,7 @@ function MineTile3D({
         position={[0, 0, 0]}
       >
         <boxGeometry args={[1.3, 0.4, 1.3]} />
-        <meshStandardMaterial 
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} 
           color={
             tile.clicked 
               ? (tile.isMine ? '#1a0505' : '#051a1a') // Darken when clicked
@@ -107,7 +107,7 @@ function MineTile3D({
       {/* Tile Border/Rim */}
       <mesh position={[0, 0.05, 0]}>
         <boxGeometry args={[1.35, 0.35, 1.35]} />
-        <meshStandardMaterial color="#00f0ff" transparent opacity={0.1} wireframe={true} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#00f0ff" transparent opacity={0.1} wireframe={true} />
       </mesh>
 
       {/* Revealed Contents */}
@@ -117,7 +117,7 @@ function MineTile3D({
             // Bomb Object
             <mesh ref={bombRef} castShadow>
               <sphereGeometry args={[0.5, 32, 32]} />
-              <meshStandardMaterial color="#550000" metalness={0.5} roughness={0.7} />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#550000" metalness={0.5} roughness={0.7} />
               
               {tile.exploding && (
                 <pointLight color="#ff0000" intensity={5} distance={10} />
@@ -475,7 +475,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
               {/* Base Platform underneath the tiles */}
               <mesh position={[0, -0.4, 0]} receiveShadow>
                  <boxGeometry args={[8, 0.4, 8]} />
-                 <meshStandardMaterial color="#0a0a0a" metalness={0.9} roughness={0.1} />
+                 <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#0a0a0a" metalness={0.9} roughness={0.1} />
               </mesh>
               
               {/* Grid Tiles */}
@@ -490,11 +490,11 @@ export function MinesGame({ onClose }: MinesGameProps) {
                     <group key={i} position={[x, 0, z]}>
                       <mesh position={[0, 0, 0]} receiveShadow>
                         <boxGeometry args={[1.3, 0.4, 1.3]} />
-                        <meshStandardMaterial color="#0a1a24" metalness={0.8} roughness={0.2} />
+                        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#0a1a24" metalness={0.8} roughness={0.2} />
                       </mesh>
                       <mesh position={[0, 0.05, 0]}>
                         <boxGeometry args={[1.35, 0.35, 1.35]} />
-                        <meshStandardMaterial color="#00f0ff" transparent opacity={0.1} wireframe={true} />
+                        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#00f0ff" transparent opacity={0.1} wireframe={true} />
                       </mesh>
                     </group>
                   );

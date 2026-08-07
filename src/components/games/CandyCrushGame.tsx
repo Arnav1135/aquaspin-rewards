@@ -118,13 +118,13 @@ function CandyMesh({ candy, position, onClick }: { candy: Candy, position: [numb
       {candy.special === 'striped_h' && (
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.42, 0.05, 16, 32]} />
-          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
         </mesh>
       )}
       {candy.special === 'striped_v' && (
         <mesh rotation={[0, Math.PI / 2, 0]}>
           <torusGeometry args={[0.42, 0.05, 16, 32]} />
-          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} />
         </mesh>
       )}
       {candy.special === 'wrapped' && (
@@ -136,7 +136,7 @@ function CandyMesh({ candy, position, onClick }: { candy: Candy, position: [numb
       {isColorBomb && (
         <mesh>
           <icosahedronGeometry args={[0.45, 0]} />
-          <meshStandardMaterial color="#ff00ff" wireframe opacity={0.3} transparent />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#ff00ff" wireframe opacity={0.3} transparent />
         </mesh>
       )}
     </group>
@@ -270,7 +270,7 @@ export default function CandyCrushGame({
                     <group key={candy.id} position={[c, -r, 0]}>
                       <mesh position={[0, 0, -0.5]}>
                         <boxGeometry args={[0.95, 0.95, 0.1]} />
-                        <meshStandardMaterial color={isSelected ? "#ffffff" : "#f4eaff"} roughness={0.8} />
+                        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color={isSelected ? "#ffffff" : "#f4eaff"} roughness={0.8} />
                       </mesh>
                       <CandyMesh 
                         candy={candy} 

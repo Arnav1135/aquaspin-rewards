@@ -929,7 +929,7 @@ function PhysicsDiceTray({ rolling, onRollComplete, theme }: PhysicsDiceTrayProp
       {/* 3D Dice Tray Box */}
       <mesh position={[0, 0.02, -4.8]} receiveShadow>
         <boxGeometry args={[2.0, 0.04, 2.0]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
           color={neonStyle ? '#101a35' : marbleStyle ? '#d7e2e8' : '#2e7d32'}
           roughness={0.8}
           metalness={0.1}
@@ -938,26 +938,26 @@ function PhysicsDiceTray({ rolling, onRollComplete, theme }: PhysicsDiceTrayProp
       {/* Tray borders */}
       <mesh position={[-1.02, 0.1, -4.8]} castShadow>
         <boxGeometry args={[0.08, 0.2, 2.08]} />
-        <meshStandardMaterial color="#4e2f1d" roughness={0.3} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#4e2f1d" roughness={0.3} />
       </mesh>
       <mesh position={[1.02, 0.1, -4.8]} castShadow>
         <boxGeometry args={[0.08, 0.2, 2.08]} />
-        <meshStandardMaterial color="#4e2f1d" roughness={0.3} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#4e2f1d" roughness={0.3} />
       </mesh>
       <mesh position={[0, 0.1, -5.86]} castShadow>
         <boxGeometry args={[2.08, 0.2, 0.08]} />
-        <meshStandardMaterial color="#4e2f1d" roughness={0.3} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#4e2f1d" roughness={0.3} />
       </mesh>
       <mesh position={[0, 0.1, -3.74]} castShadow>
         <boxGeometry args={[2.08, 0.2, 0.08]} />
-        <meshStandardMaterial color="#4e2f1d" roughness={0.3} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#4e2f1d" roughness={0.3} />
       </mesh>
 
       {/* Physics Die Group */}
       <group ref={meshRef} position={[0, 0.13, -4.8]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[0.24, 0.24, 0.24]} />
-          <meshStandardMaterial
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
             color={neonStyle ? '#00e5ff' : '#fafafa'}
             roughness={0.1}
             metalness={neonStyle ? 0.8 : 0.0}
@@ -970,38 +970,38 @@ function PhysicsDiceTray({ rolling, onRollComplete, theme }: PhysicsDiceTrayProp
           {/* Face 1 (+Y) */}
           <mesh position={[0, 0.121, 0]}>
             <sphereGeometry args={[0.024, 8, 8]} />
-            <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" roughness={0.9} />
           </mesh>
 
           {/* Face 6 (-Y) */}
           {[-0.06, 0, 0.06].flatMap(z => [-0.04, 0.04].map(x => (
             <mesh key={`6-${x}-${z}`} position={[x, -0.121, z]}>
               <sphereGeometry args={[0.02, 8, 8]} />
-              <meshStandardMaterial color="#1a1a1a" roughness={0.9} />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" roughness={0.9} />
             </mesh>
           )))}
 
           {/* Face 2 (+Z) */}
-          <mesh position={[-0.04, -0.04, 0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[0.04, 0.04, 0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
+          <mesh position={[-0.04, -0.04, 0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[0.04, 0.04, 0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
 
           {/* Face 5 (-Z) */}
-          <mesh position={[-0.05, -0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[0.05, 0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[0, 0, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[-0.05, 0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[0.05, -0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
+          <mesh position={[-0.05, -0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[0.05, 0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[0, 0, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[-0.05, 0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[0.05, -0.05, -0.121]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
 
           {/* Face 3 (+X) */}
-          <mesh position={[0.121, -0.05, -0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[0.121, 0, 0]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[0.121, 0.05, 0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
+          <mesh position={[0.121, -0.05, -0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[0.121, 0, 0]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[0.121, 0.05, 0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
 
           {/* Face 4 (-X) */}
-          <mesh position={[-0.121, -0.05, -0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[-0.121, 0.05, -0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[-0.121, -0.05, 0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
-          <mesh position={[-0.121, 0.05, 0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshStandardMaterial color="#1a1a1a" /></mesh>
+          <mesh position={[-0.121, -0.05, -0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[-0.121, 0.05, -0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[-0.121, -0.05, 0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
+          <mesh position={[-0.121, 0.05, 0.05]}><sphereGeometry args={[0.02, 8, 8]} /><meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1a1a1a" /></mesh>
         </group>
       </group>
     </group>
@@ -1019,7 +1019,7 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
       {/* Outer Wooden/Lacquer Rim */}
       <mesh receiveShadow position={[0, -0.04, 0]}>
         <boxGeometry args={[7.7, 0.1, 7.7]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
           color={isNeon ? '#060914' : isMarble ? '#3e2723' : '#4e2f1d'}
           roughness={isMarble ? 0.05 : 0.4}
           metalness={isNeon ? 0.4 : 0.0}
@@ -1029,7 +1029,7 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
       {/* Main Board Base Plate */}
       <mesh receiveShadow position={[0, 0.01, 0]}>
         <boxGeometry args={[7.5, 0.01, 7.5]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
           color={isNeon ? '#0f172a' : isMarble ? '#f5f5f5' : '#ffffff'}
           roughness={isMarble ? 0.02 : 0.25}
           metalness={isNeon ? 0.15 : 0.0}
@@ -1043,7 +1043,7 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
         return (
           <mesh key={colName} position={[offset[0], 0.018, offset[1]]} receiveShadow>
             <boxGeometry args={[2.9, 0.005, 2.9]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
               color={COLOR_HEX[colName]}
               transparent
               opacity={isNeon ? 0.35 : 0.2}
@@ -1073,7 +1073,7 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
           <group key={`track-${idx}`} position={[x, 0.016, z]}>
             <mesh receiveShadow>
               <boxGeometry args={[0.46, 0.006, 0.46]} />
-              <meshStandardMaterial
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
                 color={color}
                 roughness={0.15}
                 metalness={isSafe ? 0.8 : 0.1}
@@ -1084,7 +1084,7 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
               // Add a physical metal star indicator
               <mesh position={[0, 0.005, 0]}>
                 <torusGeometry args={[0.1, 0.02, 8, 24]} />
-                <meshStandardMaterial color="#ffd700" metalness={0.9} roughness={0.1} />
+                <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#ffd700" metalness={0.9} roughness={0.1} />
               </mesh>
             )}
           </group>
@@ -1101,7 +1101,7 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
           return (
             <mesh key={`col-${col}-${idx}`} position={[x, 0.017, z]} receiveShadow>
               <boxGeometry args={[0.46, 0.006, 0.46]} />
-              <meshStandardMaterial
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
                 color={COLOR_HEX[col]}
                 roughness={0.15}
                 metalness={0.2}
@@ -1114,7 +1114,7 @@ function Board3D({ theme }: { theme: 'classic' | 'marble' | 'neon' }) {
       {/* Home Base Center Triangle division */}
       <mesh position={[0, 0.018, 0]} receiveShadow>
         <boxGeometry args={[1.4, 0.006, 1.4]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0}
           color={isNeon ? '#0f172a' : '#1e1e1e'}
           roughness={0.1}
           metalness={0.4}

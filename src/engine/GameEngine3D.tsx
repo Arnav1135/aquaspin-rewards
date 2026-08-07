@@ -1,9 +1,9 @@
 import { ReactNode, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom, ChromaticAberration, Vignette } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, ChromaticAberration, Vignette, SSAO, DepthOfField } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import { PerformanceMonitor, Environment, Bvh } from '@react-three/drei';
+import { PerformanceMonitor, Environment, Bvh, Caustics } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { AssetManager } from './core/AssetLoader';
 import { DeviceCapabilityDetector } from './core/DeviceCapabilityDetector';
@@ -21,6 +21,7 @@ export interface GameEngine3DProps {
   enableDebugOverlay?: boolean;
   enableTouchControls?: boolean;
   enableAtmosphere?: boolean;
+  enableCaustics?: boolean;
   fogColor?: string;
 }
 
@@ -40,6 +41,7 @@ export function GameEngine3D({
   enableDebugOverlay = false,
   enableTouchControls = false,
   enableAtmosphere = true,
+  enableCaustics = false,
   fogColor,
 }: GameEngine3DProps) {
   const profile = useMemo(() => DeviceCapabilityDetector.detect(), []);
@@ -87,12 +89,40 @@ export function GameEngine3D({
           {enablePhysics ? (
             <Physics>
               <Bvh firstHitOnly>
-                {children}
+                {enableCaustics ? (
+                  <Caustics
+                    color={[0.2, 0.8, 1]}
+                    lightSource={[10, 20, 10]}
+                    intensity={0.5}
+                    worldRadius={0.3}
+                    ior={1.2}
+                    backside
+                    causticsOnly={false}
+                  >
+                    {children}
+                  </Caustics>
+                ) : (
+                  children
+                )}
               </Bvh>
             </Physics>
           ) : (
             <Bvh firstHitOnly>
-              {children}
+              {enableCaustics ? (
+                  <Caustics
+                    color={[0.2, 0.8, 1]}
+                    lightSource={[10, 20, 10]}
+                    intensity={0.5}
+                    worldRadius={0.3}
+                    ior={1.2}
+                    backside
+                    causticsOnly={false}
+                  >
+                    {children}
+                  </Caustics>
+                ) : (
+                  children
+                )}
             </Bvh>
           )}
         </AssetManager>
@@ -103,6 +133,19 @@ export function GameEngine3D({
             <Bloom luminanceThreshold={0.6} luminanceSmoothing={0.9} intensity={1.5} mipmapBlur />
             <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new THREE.Vector2(0.002, 0.002)} radialModulation={false} modulationOffset={0} />
             <Vignette eskil={false} offset={0.1} darkness={1.1} />
+            {/* Added High-End Effects */}
+            {/* Added High-End Effects */}
+            <SSAO 
+              samples={31} 
+              radius={10} 
+              intensity={20} 
+              luminanceInfluence={0.5} 
+              worldDistanceThreshold={10}
+              worldDistanceFalloff={20}
+              worldProximityThreshold={1}
+              worldProximityFalloff={2}
+            />
+            <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} />
           </EffectComposer>
         ) : null}
 

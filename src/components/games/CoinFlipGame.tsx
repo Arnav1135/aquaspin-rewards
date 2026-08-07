@@ -118,7 +118,7 @@ function Coin3D({ flipping, result, selectedSide }: { flipping: boolean; result:
       <RigidBody type="fixed" position={[0, -2, 0]}>
         <mesh receiveShadow>
           <boxGeometry args={[10, 0.5, 10]} />
-          <meshStandardMaterial color="#0f1729" />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#0f1729" />
         </mesh>
       </RigidBody>
     </group>

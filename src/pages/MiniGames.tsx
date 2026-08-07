@@ -30,7 +30,7 @@ const WaterSortGame = lazy(() => import('@/components/games/WaterSortGame').then
 const Game2048 = lazy(() => import('@/components/games/Game2048').then(m => ({ default: m.Game2048 })));
 
 // Betting / Casino games
-const CoinFlipScene = lazy(() => import('@/features/coinflip/CoinFlipScene').then(m => ({ default: m.CoinFlipScene })));
+const CoinFlipGame = lazy(() => import('@/components/games/CoinFlipGame').then(m => ({ default: m.CoinFlipGame })));
 const LimboGame = lazy(() => import('@/components/games/LimboGame').then(m => ({ default: m.LimboGame })));
 const MinesGame = lazy(() => import('@/components/games/MinesGame').then(m => ({ default: m.MinesGame })));
 const ChickenGame = lazy(() => import('@/components/games/ChickenGame').then(m => ({ default: m.ChickenGame })));
@@ -315,7 +315,7 @@ export function MiniGames() {
   const renderGame = (key: GameKey, close: () => void) => {
     switch (key) {
       // Betting
-      case 'flip':        return <CoinFlipScene onClose={close} />;
+      case 'flip':        return <CoinFlipGame onClose={close} />;
       case 'limbo':       return <LimboGame onClose={close} />;
       case 'mines':       return <MinesGame onClose={close} />;
       case 'chicken':     return <ChickenGame onClose={close} />;

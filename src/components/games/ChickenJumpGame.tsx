@@ -32,12 +32,12 @@ function Chicken3D({ y, dead }: { y: number; dead: boolean }) {
             {/* Body */}
             <mesh castShadow position={[0,0,0]}>
               <sphereGeometry args={[0.8, 16, 16]} />
-              <meshStandardMaterial color="#FFE082" roughness={0.5} />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FFE082" roughness={0.5} />
             </mesh>
             {/* Beak */}
             <mesh castShadow position={[0.7, 0.2, 0]} rotation={[0, 0, -Math.PI/2]}>
               <coneGeometry args={[0.2, 0.5, 8]} />
-              <meshStandardMaterial color="#FF8F00" roughness={0.4} />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FF8F00" roughness={0.4} />
             </mesh>
           </group>
         </RigidBody>
@@ -46,35 +46,35 @@ function Chicken3D({ y, dead }: { y: number; dead: boolean }) {
             {/* Body */}
             <mesh castShadow position={[0,0,0]}>
               <sphereGeometry args={[0.8, 16, 16]} />
-              <meshStandardMaterial color="#FFE082" roughness={0.5} />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FFE082" roughness={0.5} />
             </mesh>
             {/* Beak */}
             <mesh castShadow position={[0.7, 0.2, 0]} rotation={[0, 0, -Math.PI/2]}>
               <coneGeometry args={[0.2, 0.5, 8]} />
-              <meshStandardMaterial color="#FF8F00" roughness={0.4} />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FF8F00" roughness={0.4} />
             </mesh>
             {/* Eyes */}
             <mesh position={[0.5, 0.4, 0.3]}>
               <sphereGeometry args={[0.15, 8, 8]} />
-              <meshStandardMaterial color="#333" />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#333" />
             </mesh>
             <mesh position={[0.5, 0.4, -0.3]}>
               <sphereGeometry args={[0.15, 8, 8]} />
-              <meshStandardMaterial color="#333" />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#333" />
             </mesh>
             {/* Comb */}
             <mesh position={[0.2, 0.8, 0]}>
               <boxGeometry args={[0.4, 0.5, 0.1]} />
-              <meshStandardMaterial color="#E53935" />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#E53935" />
             </mesh>
             {/* Wings */}
             <mesh position={[-0.2, 0, 0.85]} rotation={[0.2, 0, 0]}>
               <boxGeometry args={[0.6, 0.4, 0.1]} />
-              <meshStandardMaterial color="#FFC107" />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FFC107" />
             </mesh>
             <mesh position={[-0.2, 0, -0.85]} rotation={[-0.2, 0, 0]}>
               <boxGeometry args={[0.6, 0.4, 0.1]} />
-              <meshStandardMaterial color="#FFC107" />
+              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FFC107" />
             </mesh>
         </group>
       )}
@@ -88,19 +88,19 @@ function Obstacle3D({ ob }: { ob: Obstacle }) {
       {ob.type === 'cactus' && (
         <mesh castShadow>
           <boxGeometry args={[0.8, ob.h, 0.8]} />
-          <meshStandardMaterial color="#2e7d32" roughness={0.8} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#2e7d32" roughness={0.8} />
         </mesh>
       )}
       {ob.type === 'rock' && (
         <mesh castShadow>
           <sphereGeometry args={[ob.w/2, 16, 16]} />
-          <meshStandardMaterial color="#607d8b" roughness={0.9} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#607d8b" roughness={0.9} />
         </mesh>
       )}
       {ob.type === 'log' && (
         <mesh castShadow rotation={[0, 0, Math.PI/2]}>
           <cylinderGeometry args={[ob.h/2, ob.h/2, ob.w, 16]} />
-          <meshStandardMaterial color="#795548" roughness={1.0} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#795548" roughness={1.0} />
         </mesh>
       )}
     </group>
@@ -120,7 +120,7 @@ function Coin3D({ coin }: { coin: Coin }) {
     <group position={[coin.x, coin.y, 0]} ref={ref}>
       <mesh castShadow rotation={[Math.PI/2, 0, 0]}>
         <cylinderGeometry args={[0.5, 0.5, 0.1, 16]} />
-        <meshStandardMaterial color="#FFD700" metalness={0.8} roughness={0.2} emissive="#FFD700" emissiveIntensity={0.2} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FFD700" metalness={0.8} roughness={0.2} emissive="#FFD700" emissiveIntensity={0.2} />
       </mesh>
     </group>
   );
@@ -289,7 +289,7 @@ export function ChickenJumpGame({ onClose }: Props) {
           {/* Ground */}
           <mesh receiveShadow position={[0, -2.5, 0]}>
             <boxGeometry args={[40, 1, 10]} />
-            <meshStandardMaterial color="#33691e" roughness={0.9} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#33691e" roughness={0.9} />
           </mesh>
 
           {disp.phase === 'idle' && (

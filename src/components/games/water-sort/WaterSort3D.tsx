@@ -170,7 +170,7 @@ function Tube({
       {/* Gold Trim at Top of Tube */}
       <mesh position={[0, TUBE_HEIGHT - 0.25, 0]}>
         <torusGeometry args={[TUBE_RADIUS + 0.05, 0.05, 16, 100]} />
-        <meshStandardMaterial color="#ffd700" metalness={1} roughness={0.1} />
+        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#ffd700" metalness={1} roughness={0.1} />
       </mesh>
 
       {/* Liquids */}
@@ -383,7 +383,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         {/* Premium Mahogany Wood Table */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
           <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#3e1d04" roughness={0.7} metalness={0.1} />
+          <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#3e1d04" roughness={0.7} metalness={0.1} />
         </mesh>
         
         <ContactShadows position={[0, -0.49, 0]} opacity={0.5} scale={20} blur={2} far={10} />

@@ -32,7 +32,7 @@ function PathLine() {
 
   return (
     <mesh geometry={tubeGeo}>
-      <meshStandardMaterial color="#fcd34d" emissive="#f59e0b" emissiveIntensity={0.2} />
+      <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#fcd34d" emissive="#f59e0b" emissiveIntensity={0.2} />
     </mesh>
   );
 }

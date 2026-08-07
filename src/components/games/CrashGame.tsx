@@ -371,17 +371,17 @@ function Rocket3D({
           
           <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <cylinderGeometry args={[0.4, 0.4, 1.8, 16]} />
-            <meshStandardMaterial color="#cbd5e1" metalness={0.8} roughness={0.2} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#cbd5e1" metalness={0.8} roughness={0.2} />
           </mesh>
           
           <mesh castShadow position={[1.2, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <coneGeometry args={[0.4, 0.8, 16]} />
-            <meshStandardMaterial color="#ef4444" metalness={0.6} roughness={0.4} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#ef4444" metalness={0.6} roughness={0.4} />
           </mesh>
           
           <mesh castShadow position={[-1.0, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <cylinderGeometry args={[0.4, 0.5, 0.3, 16]} />
-            <meshStandardMaterial color="#1e293b" metalness={0.9} roughness={0.1} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#1e293b" metalness={0.9} roughness={0.1} />
           </mesh>
 
           {/* Rim light to highlight 3D volume */}
@@ -389,16 +389,16 @@ function Rocket3D({
 
           <mesh castShadow position={[-0.5, 0.5, 0]} rotation={[0, 0, -Math.PI / 8]}>
             <boxGeometry args={[0.8, 1.0, 0.1]} />
-            <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#cbd5e1" metalness={0.5} roughness={0.5} />
           </mesh>
           <mesh castShadow position={[-0.5, -0.5, 0]} rotation={[0, 0, Math.PI / 8]}>
             <boxGeometry args={[0.8, 1.0, 0.1]} />
-            <meshStandardMaterial color="#cbd5e1" metalness={0.5} roughness={0.5} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#cbd5e1" metalness={0.5} roughness={0.5} />
           </mesh>
           
           <mesh position={[0.5, 0.3, 0]} rotation={[Math.PI / 4, 0, 0]}>
             <sphereGeometry args={[0.25, 16, 16, 0, Math.PI]} />
-            <meshStandardMaterial color="#00f0ff" metalness={0.9} roughness={0.1} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#00f0ff" metalness={0.9} roughness={0.1} />
           </mesh>
           
           {gameState === 'climbing' && !crashed && (

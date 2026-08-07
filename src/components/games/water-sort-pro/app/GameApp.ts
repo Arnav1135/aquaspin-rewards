@@ -146,8 +146,8 @@ export class GameApp {
     const marginX = 40;
     const marginY = 120; // Leave room for UI
     const scaleX = (width - marginX) / gridW;
-    const scaleY = (height - marginY) / gridH;
-    const scale = Math.min(1, scaleX, scaleY); // Don't scale up past 1
+    const scaleY = Math.max(0.1, (height - marginY) / gridH);
+    const scale = Math.max(0.2, Math.min(1, scaleX, scaleY)); // Ensure scale is always positive and not zero
     
     const boardContainer = new PIXI.Container();
     boardContainer.scale.set(scale);

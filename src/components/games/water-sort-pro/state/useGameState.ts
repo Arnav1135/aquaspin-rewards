@@ -76,7 +76,7 @@ export const useGameState = create<GameState>((set, get) => ({
   volumeMusic: 0.5,
   volumeEffects: 0.7,
   
-  theme: 'Ocean',
+  theme: 'Daylight',
   quality: 'High',
   colorBlindMode: false,
   showSettings: false,
@@ -178,7 +178,7 @@ export const useGameState = create<GameState>((set, get) => ({
     set({
       level: data.level || 1,
       score: data.score || 0,
-      theme: data.theme || 'Ocean',
+      theme: data.theme || 'Daylight',
       quality: data.quality || 'High',
       colorBlindMode: data.colorBlindMode || false,
       gameMode: data.gameMode || 'classic',

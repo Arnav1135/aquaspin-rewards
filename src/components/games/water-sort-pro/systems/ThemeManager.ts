@@ -116,13 +116,30 @@ export class ThemeManager {
       particleColors: [0xFF9100, 0xF50057],
       transitionDurationMs: 1500
     },
+    'Daylight': {
+      id: 'Daylight',
+      name: 'Bright Daylight',
+      isUnlocked: true,
+      backgroundColor: 0xF0F4F8, // Light modern blue/grey
+      ambientLightColor: 0xFFFFFF,
+      glassMaterial: { color: 0xFFFFFF, opacity: 0.6, thickness: 2, specular: 0.5 },
+      liquidPalette: [
+        0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964,
+        0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55,
+        0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F,
+        0x800080, 0x333333
+      ],
+      particleDensityMultiplier: 1.0,
+      particleColors: [0xFFFFFF, 0x5AC8FA],
+      transitionDurationMs: 1000
+    },
     'Cyber': {
       id: 'Cyber',
       name: 'Cyberpunk',
       isUnlocked: false,
       unlockCondition: 'Complete 100 Levels',
       backgroundColor: 0x000000,
-      ambientLightColor: 0x00FF00, // Matrix green
+      ambientLightColor: 0x00FF00,
       glassMaterial: { color: 0x00FFCC, opacity: 0.5, thickness: 1, specular: 1.0 },
       liquidPalette: [
         0xFF003C, 0xFF6600, 0xFAFA00, 0x00FF33,
@@ -136,9 +153,9 @@ export class ThemeManager {
     }
   };
 
-  private static currentThemeId: string = 'Ocean';
-  private static targetBackgroundColor: number = 0x0A1A2F;
-  private static currentBackgroundColor: number = 0x0A1A2F;
+  private static currentThemeId: string = 'Daylight';
+  private static targetBackgroundColor: number = 0xF0F4F8;
+  private static currentBackgroundColor: number = 0xF0F4F8;
 
   public static getTheme(id: string): ThemeConfig {
     return this.themes[id] || this.themes['Ocean'];

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { GameFrame } from './GameFrame';
-import WaterSort3D from './water-sort/WaterSort3D';
+import WaterSort2D from './water-sort-2d/WaterSort2D';
 
 interface Props { onClose: () => void }
 
@@ -14,13 +14,13 @@ export function WaterSortGame({ onClose }: Props) {
   };
 
   const handleRestart = () => {
-    // A trick to force re-render the same level
-    setLevel(l => l); 
+    // Trick to force a complete re-render/re-generation of the same level state
+    setLevel(l => l);
   };
 
   return (
     <GameFrame 
-      title="Water Sort 3D" 
+      title="Water Sort" 
       onClose={onClose}
       level={level}
       score={score}
@@ -28,17 +28,7 @@ export function WaterSortGame({ onClose }: Props) {
       canvasClassName="bg-[#050510]"
     >
       <div className="w-full h-full relative group">
-        <WaterSort3D level={level} onWin={handleWin} />
-        
-        {/* Premium Glass UI Overlay */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-6 py-2 rounded-full font-bold shadow-lg animate-[pulse_3s_ease-in-out_infinite]">
-            Level {level}
-          </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 text-[#5ab8ea] px-6 py-2 rounded-full font-bold shadow-lg animate-[pulse_3s_ease-in-out_infinite] shadow-[#5ab8ea]/20">
-            Score: {score}
-          </div>
-        </div>
+        <WaterSort2D key={`level-${level}-${Date.now()}`} level={level} onWin={handleWin} />
       </div>
     </GameFrame>
   );

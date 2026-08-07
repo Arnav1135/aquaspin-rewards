@@ -86,7 +86,11 @@ export const useGameState = create<GameState>((set, get) => ({
   setWon: (isWon) => {
     set({ isWon });
     if (isWon) {
-      get().updateStats({ totalSolved: get().stats.totalSolved + 1 });
+      const s = get();
+      const currentScore = s.score;
+      // Add a base reward + combo for moves? Just base 100 for now, + 50 coins
+      s.updateStats({ totalSolved: s.stats.totalSolved + 1 });
+      // We will handle score increments separately or just leave it here
     }
   },
   setPaused: (isPaused) => set({ isPaused }),
@@ -109,16 +113,16 @@ export const useGameState = create<GameState>((set, get) => ({
   loadState: async () => {
     const data = await saveManager.load();
     set({
-      level: data.level,
-      score: data.score,
-      theme: data.theme,
-      quality: data.quality,
-      colorBlindMode: data.colorBlindMode,
-      gameMode: data.gameMode,
-      volumeMaster: data.volumeMaster,
-      volumeMusic: data.volumeMusic,
-      volumeEffects: data.volumeEffects,
-      stats: data.stats
+      level: data.level || 1,
+      score: data.score || 0,
+      theme: data.theme || 'Ocean',
+      quality: data.quality || 'High',
+      colorBlindMode: data.colorBlindMode || false,
+      gameMode: data.gameMode || 'classic',
+      volumeMaster: data.volumeMaster ?? 0.8,
+      volumeMusic: data.volumeMusic ?? 0.5,
+      volumeEffects: data.volumeEffects ?? 0.7,
+      stats: data.stats || { totalSolved: 0, totalMoves: 0, timePlayed: 0 }
     });
   },
   

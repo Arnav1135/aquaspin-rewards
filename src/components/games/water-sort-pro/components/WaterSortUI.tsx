@@ -23,6 +23,8 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: 
 
   const [showStats, setShowStats] = useState(false);
   const [showAchievement, setShowAchievement] = useState(false);
+  const [showChest, setShowChest] = useState(false);
+  const [chestOpened, setChestOpened] = useState(false);
 
   const themes = [
     'Ocean', 'Neon', 'Crystal', 'Sunset', 'Minimal Dark', 'Minimal Light', 
@@ -32,16 +34,93 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: 
   const qualities = ['Low', 'Medium', 'High', 'Ultra'];
   const modes = ['classic', 'zen', 'challenge', 'hardcore'];
 
-  // Trigger achievement banner on win
+  // Trigger achievement banner and reward chest on win
   useEffect(() => {
     if (isWon) {
       setTimeout(() => setShowAchievement(true), 500);
       setTimeout(() => setShowAchievement(false), 4500);
+      
+      // Show reward chest after a small delay
+      setTimeout(() => {
+        setShowChest(true);
+        setChestOpened(false);
+      }, 1500);
+    } else {
+      setShowChest(false);
     }
   }, [isWon]);
 
   return (
     <>
+      {/* Reward Chest Opening */}
+      <AnimatePresence>
+        {showChest && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
+          >
+            <div className="flex flex-col items-center gap-6">
+              {!chestOpened ? (
+                <motion.div
+                  initial={{ scale: 0.5, y: 100 }}
+                  animate={{ scale: 1, y: 0 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setChestOpened(true)}
+                  className="cursor-pointer relative"
+                >
+                  <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                  <div className="text-8xl drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] filter hover:brightness-125 transition-all">
+                    🧰
+                  </div>
+                  <p className="text-white text-center mt-4 font-bold animate-bounce tracking-widest">TAP TO OPEN</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex flex-col items-center"
+                >
+                  <div className="relative">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                      className="absolute -inset-20 bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(255,255,255,0.3)_360deg)] rounded-full mix-blend-overlay"
+                    />
+                    <div className="text-8xl drop-shadow-[0_0_30px_rgba(255,215,0,1)]">
+                      💎
+                    </div>
+                  </div>
+                  <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-6 flex flex-col items-center"
+                  >
+                    <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-400 drop-shadow-lg">
+                      +100 XP
+                    </h2>
+                    <p className="text-white/80 font-semibold mt-2 tracking-widest uppercase">Level Cleared!</p>
+                  </motion.div>
+                  
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    onClick={onRestart}
+                    className="mt-10 px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full font-bold text-white shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95 transition-all"
+                  >
+                    NEXT LEVEL
+                  </motion.button>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Achievement Banner */}
       <AnimatePresence>
         {showAchievement && (

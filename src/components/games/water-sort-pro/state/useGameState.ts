@@ -30,6 +30,7 @@ export interface GameState {
     winStreak: number;
     lossStreak: number;
     highestDifficultyCleared: number;
+    dnaHistory: string[];
   };
   
   // Actions
@@ -84,7 +85,8 @@ export const useGameState = create<GameState>((set, get) => ({
     playerSkillRating: 1000, // ELO-style baseline
     winStreak: 0,
     lossStreak: 0,
-    highestDifficultyCleared: 0
+    highestDifficultyCleared: 0,
+    dnaHistory: []
   },
   
   setLevel: (level) => { set({ level }); get().saveCurrentState(); },

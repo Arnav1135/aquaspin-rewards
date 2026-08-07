@@ -1,33 +1,34 @@
 import { LevelDefinition } from './LevelGenerator';
+import { useGameState } from '../state/useGameState';
 
 export class AntiRepetitionEngine {
-  private history: string[] = [];
   private maxHistory = 100;
 
   /**
-   * Register a played level's DNA into the history.
+   * Register a played level's DNA into the persistent history.
    */
   public recordLevel(dna: string) {
-    this.history.push(dna);
-    if (this.history.length > this.maxHistory) {
-      this.history.shift();
+    const s = useGameState.getState();
+    const history = [...s.stats.dnaHistory, dna];
+    
+    if (history.length > this.maxHistory) {
+      history.shift();
     }
+    
+    s.updateStats({ dnaHistory: history });
   }
 
   /**
-   * Check if a candidate level's DNA is too similar to recent history.
-   * Returns true if it is safe to use (not a duplicate).
+   * Check if a candidate level's DNA is too similar to recent persistent history.
    */
   public isNovel(candidateDNA: string): boolean {
+    const history = useGameState.getState().stats.dnaHistory || [];
+    
     // 1. Exact duplicate check
-    if (this.history.includes(candidateDNA)) {
+    if (history.includes(candidateDNA)) {
       return false;
     }
-
-    // 2. Structural similarity check
-    // In a full implementation, we'd compare the string distances or parsed structures.
-    // For now, we enforce exact string mismatch since canonicalization handles color re-mapping.
     
-    return true; // Passed
+    return true; 
   }
 }

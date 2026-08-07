@@ -26,7 +26,7 @@ const ChessGame = lazy(() => import('@/components/games/Chess3D/App'));
 const SolitaireGame = lazy(() => import('@/components/games/SolitaireGame').then(m => ({ default: m.SolitaireGame })));
 const LudoGame = lazy(() => import('@/components/games/LudoGame').then(m => ({ default: m.LudoGame })));
 const HextrisGame = lazy(() => import('@/components/games/HextrisGame').then(m => ({ default: m.HextrisGame })));
-const WaterSortGame = lazy(() => import('@/components/games/WaterSortGame').then(m => ({ default: m.WaterSortGame })));
+const WaterSortGame = lazy(() => import('@/components/games/water-sort-pro/components/WaterSortPro').then(m => ({ default: m.WaterSortPro })));
 const Game2048 = lazy(() => import('@/components/games/Game2048').then(m => ({ default: m.Game2048 })));
 
 // Betting / Casino games

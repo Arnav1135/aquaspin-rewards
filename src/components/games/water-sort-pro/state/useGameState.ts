@@ -162,7 +162,16 @@ export const useGameState = create<GameState>((set, get) => ({
       volumeMaster: data.volumeMaster ?? 0.8,
       volumeMusic: data.volumeMusic ?? 0.5,
       volumeEffects: data.volumeEffects ?? 0.7,
-      stats: data.stats || { totalSolved: 0, totalMoves: 0, timePlayed: 0 }
+      stats: {
+        totalSolved: data.stats?.totalSolved || 0,
+        totalMoves: data.stats?.totalMoves || 0,
+        timePlayed: data.stats?.timePlayed || 0,
+        playerSkillRating: data.stats?.playerSkillRating || 1000,
+        winStreak: data.stats?.winStreak || 0,
+        lossStreak: data.stats?.lossStreak || 0,
+        highestDifficultyCleared: data.stats?.highestDifficultyCleared || 0,
+        dnaHistory: data.stats?.dnaHistory || []
+      }
     });
   },
   

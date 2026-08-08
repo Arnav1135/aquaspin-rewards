@@ -10,12 +10,21 @@ const TABLE_H = 5.6;
 const PUCK_R = 0.34;
 const PADDLE_R = 0.58;
 
-function Arena({ puck, player, ai, score }: { puck: [number, number]; player: [number, number]; ai: [number, number]; score: [number, number] }) {
+type Score = [number, number];
+
+function Paddle({ position, color }: { position: [number, number]; color: string }) {
+  return <mesh position={[position[0], 0.34, position[1]]} castShadow>
+    <cylinderGeometry args={[PADDLE_R, PADDLE_R * 0.86, 0.48, 48]} />
+    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} metalness={0.75} roughness={0.18} />
+  </mesh>;
+}
+
+function Arena({ puck, player, ai, score, onPointerMove }: { puck: [number, number]; player: [number, number]; ai: [number, number]; score: Score; onPointerMove: (x: number, z: number) => void }) {
   return <>
     <RoundedBox args={[11, 0.35, 6.6]} radius={0.28} smoothness={5} position={[0, -0.35, 0]}>
       <meshStandardMaterial color="#071629" metalness={0.8} roughness={0.2} />
     </RoundedBox>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]} receiveShadow>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]} receiveShadow onPointerMove={(e) => onPointerMove(e.point.x, e.point.z)}>
       <planeGeometry args={[TABLE_W, TABLE_H]} />
       <meshStandardMaterial color="#0b3555" metalness={0.35} roughness={0.28} />
     </mesh>
@@ -27,11 +36,11 @@ function Arena({ puck, player, ai, score }: { puck: [number, number]; player: [n
       <planeGeometry args={[0.045, TABLE_H]} />
       <meshBasicMaterial color="#8eeaff" transparent opacity={0.55} />
     </mesh>
-    {[-1, 1].map((side) => <mesh key={side} position={[side * 5.25, 0.12, 0]} castShadow>
+    {[-1, 1].map(side => <mesh key={`v-${side}`} position={[side * 5.25, 0.12, 0]} castShadow>
       <boxGeometry args={[0.18, 0.42, 6.1]} />
       <meshStandardMaterial color="#43c7ff" emissive="#126d9b" emissiveIntensity={1.4} metalness={0.7} roughness={0.2} />
     </mesh>)}
-    {[-1, 1].map((side) => <mesh key={side} position={[0, 0.12, side * 2.85]} castShadow>
+    {[-1, 1].map(side => <mesh key={`h-${side}`} position={[0, 0.12, side * 2.85]} castShadow>
       <boxGeometry args={[10.5, 0.42, 0.18]} />
       <meshStandardMaterial color="#43c7ff" emissive="#126d9b" emissiveIntensity={1.4} metalness={0.7} roughness={0.2} />
     </mesh>)}
@@ -47,19 +56,12 @@ function Arena({ puck, player, ai, score }: { puck: [number, number]; player: [n
   </>;
 }
 
-function Paddle({ position, color }: { position: [number, number]; color: string }) {
-  return <mesh position={[position[0], 0.34, position[1]]} castShadow>
-    <cylinderGeometry args={[PADDLE_R, PADDLE_R * 0.86, 0.48, 48]} />
-    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} metalness={0.75} roughness={0.18} />
-  </mesh>;
-}
-
-function GameSimulation({ onScore }: { onScore: (player: boolean) => void }) {
+function GameSimulation({ score, onScore, onPointerMove }: { score: Score; onScore: (player: boolean) => void; onPointerMove: (x: number, z: number) => void }) {
   const [puck, setPuck] = useState<[number, number]>([0, 0]);
   const puckVelocity = useRef<[number, number]>([3.5, 1.7]);
   const [player, setPlayer] = useState<[number, number]>([0, 1.8]);
   const [ai, setAi] = useState<[number, number]>([0, -1.8]);
-  const last = useRef(0);
+  const lastGoal = useRef(0);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.032);
@@ -67,36 +69,50 @@ function GameSimulation({ onScore }: { onScore: (player: boolean) => void }) {
     const v = puckVelocity.current;
     p[0] += v[0] * dt;
     p[1] += v[1] * dt;
+
     if (Math.abs(p[0]) > TABLE_W / 2 - PUCK_R) {
-      if (Math.abs(p[1]) < 1.25) {
+      if (Math.abs(p[1]) < 1.25 && performance.now() - lastGoal.current > 700) {
+        lastGoal.current = performance.now();
         onScore(v[0] > 0);
-        p[0] = 0; p[1] = 0; v[0] = -v[0] * 0.98; v[1] = (Math.random() - 0.5) * 3;
-      } else { p[0] = Math.sign(p[0]) * (TABLE_W / 2 - PUCK_R); v[0] *= -1; }
+        p[0] = 0;
+        p[1] = 0;
+        v[0] = -v[0] * 0.98;
+        v[1] = (Math.sin(performance.now() * 0.001) * 1.5);
+      } else {
+        p[0] = Math.sign(p[0]) * (TABLE_W / 2 - PUCK_R);
+        v[0] *= -1;
+      }
     }
-    if (Math.abs(p[1]) > TABLE_H / 2 - PUCK_R) { p[1] = Math.sign(p[1]) * (TABLE_H / 2 - PUCK_R); v[1] *= -1; }
+    if (Math.abs(p[1]) > TABLE_H / 2 - PUCK_R) {
+      p[1] = Math.sign(p[1]) * (TABLE_H / 2 - PUCK_R);
+      v[1] *= -1;
+    }
+
+    // Simple paddle deflection gives the game responsive, physics-like play.
+    const hitPlayer = Math.hypot(p[0] - player[0], p[1] - player[1]) < PADDLE_R + PUCK_R;
+    const hitAi = Math.hypot(p[0] - ai[0], p[1] - ai[1]) < PADDLE_R + PUCK_R;
+    if (hitPlayer && v[1] > 0) { v[1] = -Math.abs(v[1]) - 0.25; v[0] += (p[0] - player[0]) * 1.2; }
+    if (hitAi && v[1] < 0) { v[1] = Math.abs(v[1]) + 0.25; v[0] += (p[0] - ai[0]) * 1.2; }
+
     const targetZ = p[1] > 0 ? 1.9 : -1.9;
     setAi(([x, z]) => [THREE.MathUtils.lerp(x, p[0], dt * 1.7), THREE.MathUtils.lerp(z, targetZ, dt * 2)]);
     setPuck(p);
-    last.current += dt;
   });
 
   const move = useCallback((x: number, z: number) => {
-    setPlayer([THREE.MathUtils.clamp(x, -4.5, 4.5), THREE.MathUtils.clamp(z, 0.35, 2.35)]);
-  }, []);
+    const next: [number, number] = [THREE.MathUtils.clamp(x, -4.5, 4.5), THREE.MathUtils.clamp(z, 0.35, 2.35)];
+    setPlayer(next);
+    onPointerMove(next[0], next[1]);
+  }, [onPointerMove]);
 
-  return <>
-    <Arena puck={puck} player={player} ai={ai} score={[0, 0]} />
-    <mesh position={[player[0], 0.6, player[1]]} onPointerMove={(e) => move(e.point.x, e.point.z)} visible={false}>
-      <planeGeometry args={[TABLE_W, TABLE_H / 2]} />
-      <meshBasicMaterial transparent opacity={0} />
-    </mesh>
-  </>;
+  return <Arena puck={puck} player={player} ai={ai} score={score} onPointerMove={move} />;
 }
 
 export function AirHockey3DGame({ onClose }: { onClose: () => void }) {
-  const [score, setScore] = useState<[number, number]>([0, 0]);
+  const [score, setScore] = useState<Score>([0, 0]);
   const [key, setKey] = useState(0);
   const handleScore = useCallback((player: boolean) => setScore(s => player ? [s[0] + 1, s[1]] : [s[0], s[1] + 1]), []);
+  const noop = useCallback(() => {}, []);
   return <GameFrame title="3D Neon Air Hockey" onClose={onClose} score={`${score[0]} - ${score[1]}`} onRestart={() => { setScore([0, 0]); setKey(k => k + 1); }}>
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,#174b72,#050b16_70%)]">
       <Canvas key={key} shadows camera={{ position: [0, 7.8, 7.8], fov: 48 }}>
@@ -105,7 +121,7 @@ export function AirHockey3DGame({ onClose }: { onClose: () => void }) {
         <directionalLight position={[0, 7, 3]} intensity={4} castShadow shadow-mapSize={[2048, 2048]} />
         <pointLight position={[0, 2, 0]} color="#36d8ff" intensity={18} distance={12} />
         <Float speed={1.2} rotationIntensity={0.04} floatIntensity={0.08}>
-          <GameSimulation onScore={handleScore} />
+          <GameSimulation score={score} onScore={handleScore} onPointerMove={noop} />
         </Float>
         <ContactShadows position={[0, -0.1, 0]} opacity={0.55} scale={14} blur={2.4} far={8} />
         <EffectComposer><Bloom intensity={1.2} luminanceThreshold={0.7} mipmapBlur /><Vignette darkness={0.55} /></EffectComposer>

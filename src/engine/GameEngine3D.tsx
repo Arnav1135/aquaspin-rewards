@@ -113,7 +113,7 @@ export function GameEngine3D({
                     <sphereGeometry args={[0.1, 8, 8]} />
                     <meshBasicMaterial color="#ffffff" />
                   </mesh>
-                  <GodRays sun={godRaySunRef} blendFunction={BlendFunction.SCREEN} samples={40} density={0.8} decay={0.9} weight={0.25} exposure={0.45} clampMax={1} />
+                  {godRaySunRef.current ? <GodRays sun={godRaySunRef.current} blendFunction={BlendFunction.SCREEN} samples={40} density={0.8} decay={0.9} weight={0.25} exposure={0.45} clampMax={1} /> : null}
                 </>
               ) : null}
             </>

@@ -54,12 +54,22 @@ export function GameEngine3D({
   const [runtimePixelRatio, setRuntimePixelRatio] = useState(
     Math.min(deviceProfile.recommendedDpr, renderProfile.pixelRatioCap, initialPerformance.pixelRatio),
   );
-  const [sunMesh, setSunMesh] = useState<THREE.Mesh | null>(null);
 
   const usePostProcessing = enablePostProcessing && renderProfile.enablePostProcessing && initialPerformance.postProcessing;
   const useSSR = enableSSR && renderProfile.enableSSR && initialPerformance.tier !== 'low';
   const useGodRays = enableGodRays && renderProfile.enableGodRays && initialPerformance.tier !== 'low';
   const shadowsEnabled = renderProfile.shadowType !== 'none' && initialPerformance.shadows;
+  const causticsEnabled = enableCaustics && initialPerformance.tier !== 'low';
+
+  const qualityChildren = (
+    <Bvh firstHitOnly>
+      {causticsEnabled ? (
+        <Caustics color={[0.2, 0.8, 1]} lightSource={[10, 20, 10]} intensity={0.5} worldRadius={0.3} ior={1.2} backside causticsOnly={false}>
+          {children}
+        </Caustics>
+      ) : children}
+    </Bvh>
+  );
 
   return (
     <div className="relative w-full h-full">
@@ -76,7 +86,6 @@ export function GameEngine3D({
           <directionalLight position={[10, 20, 10]} intensity={2} castShadow shadow-mapSize={[renderProfile.shadowMapSize, renderProfile.shadowMapSize]} shadow-camera-far={60} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-0.00015} shadow-normalBias={0.02} />
         )}
 
-        {useGodRays && <mesh ref={setSunMesh} position={[10, 20, 10]}><sphereGeometry args={[2, 32, 32]} /><meshBasicMaterial color="#ffffff" /></mesh>}
         {enableAtmosphere && <EnvironmentAtmosphere preset={environmentPreset} enableFog={!!fogColor} fogColor={fogColor} />}
 
         <PerformanceMonitor
@@ -86,19 +95,7 @@ export function GameEngine3D({
         <Environment preset={environmentPreset} />
 
         <AssetManager>
-          {enablePhysics ? (
-            <Physics><Bvh firstHitOnly>
-              {enableCaustics && initialPerformance.tier !== 'low' ? (
-                <Caustics color={[0.2, 0.8, 1]} lightSource={[10, 20, 10]} intensity={0.5} worldRadius={0.3} ior={1.2} backside causticsOnly={false}>{children}</Caustics>
-              ) : children}
-            </Bvh></Physics>
-          ) : (
-            <Bvh firstHitOnly>
-              {enableCaustics && initialPerformance.tier !== 'low' ? (
-                <Caustics color={[0.2, 0.8, 1]} lightSource={[10, 20, 10]} intensity={0.5} worldRadius={0.3} ior={1.2} backside causticsOnly={false}>{children}</Caustics>
-              ) : children}
-            </Bvh>
-          )}
+          {enablePhysics ? <Physics>{qualityChildren}</Physics> : qualityChildren}
         </AssetManager>
 
         {usePostProcessing && (
@@ -109,7 +106,7 @@ export function GameEngine3D({
             <SSAO samples={renderProfile.quality === 'ultra' ? 24 : 16} radius={4} intensity={1.5} luminanceInfluence={0.35} worldDistanceThreshold={8} worldDistanceFalloff={12} worldProximityThreshold={1} worldProximityFalloff={2} />
             {renderProfile.enableDepthOfField && <DepthOfField focusDistance={0.02} focalLength={0.02} bokehScale={1.5} height={480} />}
             {useSSR && <SSR intensity={0.7} />}
-            {useGodRays && sunMesh && <GodRays sun={sunMesh} blendFunction={BlendFunction.SCREEN} samples={40} density={0.8} decay={0.9} weight={0.25} exposure={0.45} clampMax={1} />}
+            {useGodRays && <GodRays blendFunction={BlendFunction.SCREEN} samples={40} density={0.8} decay={0.9} weight={0.25} exposure={0.45} clampMax={1} />}
           </EffectComposer>
         )}
         {enableDebugOverlay && <DebugCanvasOverlay />}

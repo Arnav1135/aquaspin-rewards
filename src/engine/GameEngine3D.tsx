@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { EffectComposer, Bloom, ChromaticAberration, Vignette, SSAO, DepthOfField, SSR, GodRays } from '@react-three/postprocessing';
@@ -30,7 +30,6 @@ export interface GameEngine3DProps {
   quality?: AquaSpinQuality;
 }
 
-/** Shared high-fidelity renderer with device-aware adaptive DPR. */
 export function GameEngine3D({
   children,
   enablePostProcessing = false,
@@ -54,11 +53,12 @@ export function GameEngine3D({
   const [runtimePixelRatio, setRuntimePixelRatio] = useState(
     Math.min(deviceProfile.recommendedDpr, renderProfile.pixelRatioCap, initialPerformance.pixelRatio),
   );
+  const godRaySunRef = useRef<THREE.Mesh>(null);
 
   const usePostProcessing = enablePostProcessing && renderProfile.enablePostProcessing && initialPerformance.postProcessing;
   const useSSR = enableSSR && renderProfile.enableSSR && initialPerformance.tier !== 'low';
   const useGodRays = enableGodRays && renderProfile.enableGodRays && initialPerformance.tier !== 'low';
-  const shadowsEnabled = renderProfile.shadowType !== 'none' && initialPerformance.shadows;
+  const shadowsEnabled = initialPerformance.shadows;
   const causticsEnabled = enableCaustics && initialPerformance.tier !== 'low';
 
   const qualityChildren = (
@@ -82,11 +82,11 @@ export function GameEngine3D({
         <color attach="background" args={['#08111d']} />
         <ambientLight intensity={0.35} />
         <hemisphereLight args={['#d9efff', '#08111d', 0.5]} />
-        {shadowsEnabled && (
+        {shadowsEnabled ? (
           <directionalLight position={[10, 20, 10]} intensity={2} castShadow shadow-mapSize={[renderProfile.shadowMapSize, renderProfile.shadowMapSize]} shadow-camera-far={60} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-0.00015} shadow-normalBias={0.02} />
-        )}
+        ) : null}
 
-        {enableAtmosphere && <EnvironmentAtmosphere preset={environmentPreset} enableFog={!!fogColor} fogColor={fogColor} />}
+        {enableAtmosphere ? <EnvironmentAtmosphere preset={environmentPreset} enableFog={!!fogColor} fogColor={fogColor} /> : null}
 
         <PerformanceMonitor
           onDecline={() => setRuntimePixelRatio(current => Math.max(1, Number((current - 0.15).toFixed(2))))}
@@ -98,21 +98,31 @@ export function GameEngine3D({
           {enablePhysics ? <Physics>{qualityChildren}</Physics> : qualityChildren}
         </AssetManager>
 
-        {usePostProcessing && (
+        {usePostProcessing ? (
           <EffectComposer multisampling={renderProfile.quality === 'ultra' ? 8 : 4}>
-            {renderProfile.enableBloom && <Bloom luminanceThreshold={0.85} luminanceSmoothing={0.7} intensity={0.8} mipmapBlur />}
-            {renderProfile.enableChromaticAberration && <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new THREE.Vector2(0.0005, 0.0005)} radialModulation={false} modulationOffset={0} />}
-            <Vignette eskil={false} offset={0.18} darkness={0.55} />
-            <SSAO samples={renderProfile.quality === 'ultra' ? 24 : 16} radius={4} intensity={1.5} luminanceInfluence={0.35} worldDistanceThreshold={8} worldDistanceFalloff={12} worldProximityThreshold={1} worldProximityFalloff={2} />
-            {renderProfile.enableDepthOfField && <DepthOfField focusDistance={0.02} focalLength={0.02} bokehScale={1.5} height={480} />}
-            {useSSR && <SSR intensity={0.7} />}
-            {useGodRays && <GodRays blendFunction={BlendFunction.SCREEN} samples={40} density={0.8} decay={0.9} weight={0.25} exposure={0.45} clampMax={1} />}
+            <>
+              {renderProfile.enableBloom ? <Bloom luminanceThreshold={0.85} luminanceSmoothing={0.7} intensity={0.8} mipmapBlur /> : null}
+              {renderProfile.enableChromaticAberration ? <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new THREE.Vector2(0.0005, 0.0005)} radialModulation={false} modulationOffset={0} /> : null}
+              <Vignette eskil={false} offset={0.18} darkness={0.55} />
+              <SSAO samples={renderProfile.quality === 'ultra' ? 24 : 16} radius={4} intensity={1.5} luminanceInfluence={0.35} worldDistanceThreshold={8} worldDistanceFalloff={12} worldProximityThreshold={1} worldProximityFalloff={2} />
+              {renderProfile.enableDepthOfField ? <DepthOfField focusDistance={0.02} focalLength={0.02} bokehScale={1.5} height={480} /> : null}
+              {useSSR ? <SSR intensity={0.7} /> : null}
+              {useGodRays ? (
+                <>
+                  <mesh ref={godRaySunRef} position={[10, 20, -10]} visible={false}>
+                    <sphereGeometry args={[0.1, 8, 8]} />
+                    <meshBasicMaterial color="#ffffff" />
+                  </mesh>
+                  <GodRays sun={godRaySunRef} blendFunction={BlendFunction.SCREEN} samples={40} density={0.8} decay={0.9} weight={0.25} exposure={0.45} clampMax={1} />
+                </>
+              ) : null}
+            </>
           </EffectComposer>
-        )}
-        {enableDebugOverlay && <DebugCanvasOverlay />}
+        ) : null}
+        {enableDebugOverlay ? <DebugCanvasOverlay /> : null}
       </Canvas>
-      {enableTouchControls && deviceProfile.isTouch && <TouchControls />}
-      {enableDebugOverlay && <DebugOverlay />}
+      {enableTouchControls && deviceProfile.isTouch ? <TouchControls /> : null}
+      {enableDebugOverlay ? <DebugOverlay /> : null}
     </div>
   );
 }

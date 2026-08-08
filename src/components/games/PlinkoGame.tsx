@@ -1,11 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 
+interface PlinkoGameProps {
+  onClose?: () => void;
+}
+
 /**
  * Premium Plinko presentation shell.
  * Reward authority remains server-side; this component owns presentation state only.
  */
-export function PlinkoGame() {
+export function PlinkoGame(_props: PlinkoGameProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);

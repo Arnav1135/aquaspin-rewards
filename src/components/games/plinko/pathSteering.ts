@@ -2,39 +2,38 @@
 
 export interface PathSteeringState {
   path: ('L' | 'R')[];
-  currentRow: number;
+  currentRow: number; // No longer just an index incremented on hit
+  lastSteeredRow: number;
   targetBucket: number;
   totalRows: number;
 }
 
+const PEG_SPACING_Y = 0.8;
+
 export function getBiasImpulse(
-  state: PathSteeringState
-): { x: number, y: number, z: number } {
-  // Estimate which row we are hitting based on Y position.
-  // The pegs are at Y = -r * PEG_SPACING_Y, where r is 0 to rows.
-  // Board origin is [0,4,0] but the game engine might have its own offsets.
-  // Assuming the Y positions of pegs are around 0, -1, -2, etc. relative to the board origin.
-  // It's safer to just increment currentRow when Y passes a threshold, but the physics can be jittery.
+  state: PathSteeringState,
+  ballY: number,
+  boardOriginY: number
+): { x: number, y: number, z: number } | null {
+  // Calculate logical row based on Y position.
+  // Board origin Y is where the top peg is.
+  // ballY - boardOriginY is 0 for the first row, -0.8 for the second, etc.
+  const relativeY = boardOriginY - ballY;
+  const logicalRow = Math.max(0, Math.floor((relativeY + PEG_SPACING_Y / 2) / PEG_SPACING_Y));
   
-  // Actually, we can just look at the path index.
-  const row = state.currentRow;
-  if (row >= state.path.length) return { x: 0, y: 0, z: 0 };
+  if (logicalRow >= state.totalRows) return null;
+  if (logicalRow <= state.lastSteeredRow) return null; // already steered this row
   
-  const direction = state.path[row];
-  state.currentRow++; // advance to next row for the next collision
+  state.lastSteeredRow = logicalRow;
+  state.currentRow = logicalRow + 1;
   
-  // Calculate base impulse magnitude
-  let magnitude = 0.08; 
+  const direction = state.path[logicalRow];
   
-  // Corrective settle window (last 2 rows)
-  if (row >= state.totalRows - 2) {
-    magnitude = 0.15; // Stronger bias to ensure it lands in the right bucket
-  }
+  // Smooth bounded steering. Max steering force remains within normal bounds.
+  // We use a gentle constant magnitude. No overpowering final rows.
+  const magnitude = 0.05 + (logicalRow / state.totalRows) * 0.02; // Slightly scales down but never snaps
   
   const impulseX = direction === 'R' ? magnitude : -magnitude;
-  
-  // Additionally, apply a small damping to Y velocity if it's too fast? 
-  // We'll leave Y alone for natural bouncing, just bias X.
   
   return { x: impulseX, y: 0, z: 0 };
 }

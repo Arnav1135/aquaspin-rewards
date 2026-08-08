@@ -16,7 +16,6 @@ import { triggerWinCelebration } from '@/lib/winCelebration';
 import toast from 'react-hot-toast';
 
 import { Difficulty, Rows, getMultiplierTable, generateColors } from './plinko/plinkoConfig';
-import { generateOutcome } from './plinko/outcomeEngine';
 import { getBiasImpulse, PathSteeringState } from './plinko/pathSteering';
 
 function CameraAdjuster({ rows }: { rows: number }) {
@@ -194,7 +193,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
 // memberships = 0x0002, filter = 0xFFFD -> (0x0002 << 16) | 0xFFFD = 0x0002FFFD
 const BALL_COLLISION_GROUP = 0x0002FFFD;
 
-function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, position: [number, number, number], steeringState: PathSteeringState, onDespawn: (id: string) => void }) {
+function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { id: string, position: [number, number, number], steeringState: PathSteeringState, boardOriginY: number, onDespawn: (id: string) => void }) {
   const rbRef = useRef<any>(null);
   const steerRef = useRef<PathSteeringState>({ ...steeringState });
   const lastHitTime = useRef(0);
@@ -221,9 +220,14 @@ function PlinkoBall({ id, position, steeringState, onDespawn }: { id: string, po
       lastHitTime.current = now;
 
       if (rbRef.current) {
-        const impulse = getBiasImpulse(steerRef.current);
-        rbRef.current.applyImpulse(impulse, true);
-        rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: (Math.random() - 0.5) * 0.05 }, true);
+        const pos = rbRef.current.translation();
+        const impulse = getBiasImpulse(steerRef.current, pos.y, boardOriginY);
+        if (impulse) {
+          rbRef.current.applyImpulse(impulse, true);
+        }
+        // deterministic seeded torque instead of Math.random
+        const seedVal = (steerRef.current.lastSteeredRow + 1) * 0.05;
+        rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: (seedVal % 0.1) - 0.05 }, true);
       }
     }
   };
@@ -263,9 +267,12 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   const [queuedRows, setQueuedRows] = useState<Rows | null>(null);
   
   // Active State
-  const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number }[]>([]);
+  const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number, finalBalance: number }[]>([]);
   const [bucketHits, setBucketHits] = useState<Record<number, number>>({});
   const [bigWinIdx, setBigWinIdx] = useState<number | null>(null);
+  
+  // Track settled rounds to ensure idempotency
+  const settledRoundsRef = useRef<Set<string>>(new Set());
   
   // Autobet State
   const [autobetMode, setAutobetMode] = useState(false);
@@ -309,27 +316,41 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
   const spawnBall = async (bet: number) => {
     if (!profile) return false;
     
-    // RNG Generation
-    const clientSeed = 'aqua-' + Math.random().toString(36).substring(7);
-    const serverSeed = 'server-' + Date.now(); // In real app, this is pre-committed
-    const nonce = Date.now();
+    const clientSeed = crypto.randomUUID();
     
-    const outcome = await generateOutcome(serverSeed, clientSeed, nonce, rows);
-    const payout = bet * multipliers[outcome.targetBucket];
-    
-    const id = Math.random().toString(36).substr(2, 9);
-    // Drop strictly from center (with a microscopic jitter to avoid perfect infinite balancing on the first peg)
-    const startX = (Math.random() - 0.5) * 0.02;
-    
-    const steer: PathSteeringState = {
-      path: outcome.path,
-      currentRow: 0,
-      targetBucket: outcome.targetBucket,
-      totalRows: rows
-    };
-    
-    setBalls(prev => [...prev, { id, bet, startX, steer, payout }]);
-    return true;
+    try {
+      const { data, error } = await supabase.functions.invoke('plinko-bet', {
+        body: { betAmount: bet, rows, risk, clientSeed }
+      });
+      
+      if (error || !data?.success) {
+        toast.error(error?.message || data?.error || 'Bet failed');
+        return false;
+      }
+      
+      // The server already deducted the bet and added the payout to the DB balance.
+      // We optimistically show the deducted balance now, and the payout when the ball lands.
+      const balanceBeforeWin = data.newBalance - data.payout;
+      updateProfile({ tokens: balanceBeforeWin } as any);
+      
+      const steer: PathSteeringState = {
+        path: data.path,
+        currentRow: 0,
+        lastSteeredRow: -1,
+        targetBucket: data.targetBucket,
+        totalRows: rows
+      };
+      
+      // Deterministic start X derived from round ID
+      const hash = Array.from(clientSeed).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const startX = ((hash % 100) / 100 - 0.5) * 0.02;
+      
+      setBalls(prev => [...prev, { id: data.roundId, bet, startX, steer, payout: data.payout, finalBalance: data.newBalance }]);
+      return true;
+    } catch (e: any) {
+      toast.error('Failed to place bet');
+      return false;
+    }
   };
 
   const handleDrop = async () => {
@@ -339,17 +360,8 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
       return;
     }
 
-    try {
-      const newBalance = profile.tokens - betAmount;
-      (updateProfile as any)({ tokens: newBalance });
-      await (supabase.from('users') as any).update({ tokens: newBalance }).eq('id', profile.id);
-      
-      audio.play('plinko', 'ball-drop-launch');
-      await spawnBall(betAmount);
-    } catch (e) {
-      console.error(e);
-      toast.error('Transaction failed');
-    }
+    audio.play('plinko', 'ball-drop-launch');
+    await spawnBall(betAmount);
   };
 
   const handleStartAutobet = () => {
@@ -391,19 +403,22 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
       return;
     }
     
+    // Server dictates balance
     const currentProf = profile?.tokens || 0;
     if (currentProf < s.currentBet) {
       stopAutobet("Insufficient balance");
       return;
     }
     
-    // Deduct
-    const newBal = currentProf - s.currentBet;
-    (updateProfile as any)({ tokens: newBal });
-    
-    // Spawn
+    // Spawn (deduction handled by Edge Function)
     s.activeBallsCount++;
-    await spawnBall(s.currentBet);
+    const success = await spawnBall(s.currentBet);
+    
+    if (!success) {
+      s.activeBallsCount--;
+      stopAutobet("Bet failed");
+      return;
+    }
     
     s.wagered += s.currentBet;
     s.net -= s.currentBet;
@@ -429,13 +444,22 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
     const ball = balls.find(b => b.id === ballId);
     if (!ball) return;
     
+    if (settledRoundsRef.current.has(ballId)) return;
+    settledRoundsRef.current.add(ballId);
+    
     removeBall(ballId);
     
-    // Trust physics outcome as requested
-    setBucketHits(prev => ({ ...prev, [bucketIdx]: (prev[bucketIdx] || 0) + 1 }));
+    // Use the authoritative targetBucket from the ball's steer object to prevent physics cheating
+    const authoritativeBucket = ball.steer.targetBucket;
+    if (bucketIdx !== authoritativeBucket) {
+      console.warn(`[Plinko] Physics mismatch. Visual: ${bucketIdx}, Auth: ${authoritativeBucket}`);
+    }
     
-    const mult = multipliers[bucketIdx];
-    const winAmount = ball.bet * mult;
+    setBucketHits(prev => ({ ...prev, [authoritativeBucket]: (prev[authoritativeBucket] || 0) + 1 }));
+    
+    // Use the authoritative payout from the server!
+    const winAmount = ball.payout;
+    const mult = (ball.bet > 0) ? (winAmount / ball.bet) : 0;
     
     if (autoSessionRef.current.running) {
       autoSessionRef.current.net += winAmount;
@@ -476,18 +500,13 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
       
       if (mult >= 5) vibrate(100);
       
-      try {
-        const { data: currentData } = await (supabase.from('users') as any).select('tokens').eq('id', profile!.id).single();
-        if (currentData) {
-          const newBalance = currentData.tokens + winAmount;
-          (updateProfile as any)({ tokens: newBalance });
-          await (supabase.from('users') as any).update({ tokens: newBalance }).eq('id', profile!.id);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      // Update UI balance securely to the final balance provided by the server initially
+      (updateProfile as any)({ tokens: ball.finalBalance });
+    } else {
+      // Even if 0 win, ensure UI syncs to the final server balance
+      (updateProfile as any)({ tokens: ball.finalBalance });
     }
-  }, [balls, multipliers, profile, updateProfile, removeBall, stopAutobet, stopOnProfit, stopOnLoss]);
+  }, [balls, profile, updateProfile, removeBall, stopAutobet, stopOnProfit, stopOnLoss]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/40 backdrop-blur-3xl">
@@ -511,6 +530,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
                 id={ball.id} 
                 position={[ball.startX, rows > 12 ? 9 : 7, 0]} 
                 steeringState={ball.steer}
+                boardOriginY={rows * 0.4}
                 onDespawn={removeBall} 
               />
             ))}

@@ -23,6 +23,7 @@ export class GameApp {
   private moveHistory: { src: number, dest: number, amount: number, color: number }[] = [];
   private redoHistory: { src: number, dest: number, amount: number, color: number }[] = [];
   private performanceManager!: PerformanceManager;
+  private interactionLock: boolean = false;
   
   // Layout metrics
   private tubeWidth = 60;
@@ -269,6 +270,7 @@ export class GameApp {
   }
 
   private handleTubeClick(index: number) {
+    if (this.interactionLock) return;
     const s = useGameState.getState();
     if (s.isAnimating || s.isWon) return;
 
@@ -352,8 +354,18 @@ export class GameApp {
       
       const destColorsFinal = [...dest];
       
-      this.tubeGraphics[srcIdx].setHighlight(false);
+      const numTubes = this.stateData.length;
+      let cols;
+      if (numTubes <= 5) cols = numTubes;
+      else if (numTubes <= 10) cols = Math.ceil(numTubes / 2);
+      else cols = Math.ceil(Math.sqrt(numTubes));
       
+      const srcCol = srcIdx % cols;
+      const srcRow = Math.floor(srcIdx / cols);
+      const startX = srcCol * (this.tubeWidth + this.gap);
+      const startY = srcRow * (this.tubeHeight + this.gap * 2);
+
+      this.interactionLock = true;
       AnimationSystem.animatePour(
         sourceContainer, 
         destContainer,
@@ -365,7 +377,10 @@ export class GameApp {
         destLenBefore,
         srcColorsBefore,
         destColorsFinal,
+        startX,
+        startY,
         () => {
+          this.interactionLock = false;
         this.moveHistory.push({ src: srcIdx, dest: destIdx, amount, color: srcColor });
         this.redoHistory = []; // Clear redo history on new move
         s.setMoves(s.moves + 1);
@@ -382,11 +397,17 @@ export class GameApp {
         s.setSelectedTube(-1);
         s.setAnimating(false);
         this.checkWinCondition();
+      },
+      () => {
+        audioMixer.playDrop(destPan, targetFullnessRatio);
       });
     } else {
       // Invalid Pour (full or color mismatch)
       audioMixer.playInvalidMove();
-      AnimationSystem.animateShake(this.tubes[srcIdx], this.tubes[srcIdx].x, this.tubes[srcIdx].y);
+      this.interactionLock = true;
+      AnimationSystem.animateShake(this.tubes[srcIdx], this.tubes[srcIdx].x, this.tubes[srcIdx].y, () => {
+        this.interactionLock = false;
+      });
       this.tubeGraphics[srcIdx].setHighlight(false);
       s.setSelectedTube(-1);
     }

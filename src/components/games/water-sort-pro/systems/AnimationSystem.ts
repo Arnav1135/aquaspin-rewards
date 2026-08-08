@@ -24,14 +24,15 @@ export class AnimationSystem {
     destLen: number,
     srcColors: number[],
     destColors: number[],
-    onComplete: () => void
+    startX: number,
+    startY: number,
+    onComplete: () => void,
+    onDrop?: () => void
   ) {
     gsap.killTweensOf(source);
 
-    const isRight = target.x > source.x;
+    const isRight = target.x > startX;
     const dir = isRight ? 1 : -1;
-    const startX = source.x;
-    const startY = source.y;
     const pourX = target.x - dir * 30;
     const pourY = target.y - 80;
     const board = source.parent as Container;
@@ -39,7 +40,23 @@ export class AnimationSystem {
     const originalBoardX = board?.x ?? 0;
 
     const stream = new Graphics();
-    if (source.parent) source.parent.addChild(stream);
+    let streamMask: Graphics | null = null;
+    if (source.parent) {
+      source.parent.addChild(stream);
+      
+      const tubeW = srcLiquid.tubeWidth || 60;
+      const tubeH = srcLiquid.tubeHeight || 220;
+      
+      streamMask = new Graphics();
+      // Allow the area above the target tube
+      streamMask.rect(-10000, -10000, 20000, 10000 + target.y);
+      // Allow the interior of the target tube
+      streamMask.roundRect(target.x + 2, target.y + 2, tubeW - 4, tubeH - 4, (tubeW / 2) - 2);
+      streamMask.fill({ color: 0xFFFFFF });
+      
+      source.parent.addChild(streamMask);
+      stream.mask = streamMask;
+    }
 
     const T = {
       move: 0.50,
@@ -164,6 +181,7 @@ export class AnimationSystem {
         if (!splashFired && transferP >= 0.18) {
           splashFired = true;
           ParticleSystem.emitSplash(target.x, targetSurfaceY);
+          if (onDrop) onDrop();
         }
       },
     });
@@ -175,7 +193,13 @@ export class AnimationSystem {
       duration: T.returnTilt,
       ease: 'power2.inOut',
       onComplete: () => {
-        if (stream.parent) stream.parent.removeChild(stream);
+        if (stream.parent) {
+          stream.parent.removeChild(stream);
+          if (streamMask && streamMask.parent) {
+            streamMask.parent.removeChild(streamMask);
+            streamMask.destroy({ children: true });
+          }
+        }
         stream.destroy({ children: true });
       },
     });
@@ -200,9 +224,9 @@ export class AnimationSystem {
     });
   }
 
-  static animateShake(target: Container, originalX: number, originalY: number) {
+  static animateShake(target: Container, originalX: number, originalY: number, onComplete?: () => void) {
     gsap.killTweensOf(target);
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({ onComplete });
     tl.to(target, { rotation: 0.1, x: originalX + 5, duration: 0.05 })
       .to(target, { rotation: -0.1, x: originalX - 5, duration: 0.05 })
       .to(target, { rotation: 0.1, x: originalX + 5, duration: 0.05 })

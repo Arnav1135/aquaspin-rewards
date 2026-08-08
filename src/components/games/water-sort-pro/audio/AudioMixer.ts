@@ -128,11 +128,34 @@ export class AudioMixer {
     noiseSource.stop(this.ctx.currentTime + duration);
     lfo.stop(this.ctx.currentTime + duration);
     
-    // Layer 2: Subtle impact low-frequency tone at destination
-    setTimeout(() => {
-      this.playToneWithPan(120, 'triangle', 0.4, 0.05, destPan);
-      this.triggerHaptic([15, 30, 15]);
-    }, 200);
+    // Removed the setTimeout tone here, we will trigger playDrop precisely when the liquid hits!
+  }
+
+  public playDrop(pan: number = 0, pitchModifier: number = 1.0) {
+    if (!this.ctx || !this.sfxGain) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const panner = this.ctx.createStereoPanner();
+    
+    // Drop sound: sharp attack, fast frequency sweep UP
+    const baseFreq = 400 + (300 * pitchModifier);
+    osc.type = 'sine';
+    
+    osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.8, this.ctx.currentTime + 0.08);
+    
+    gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.3, this.ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+    
+    panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), this.ctx.currentTime);
+    
+    osc.connect(gain);
+    gain.connect(panner);
+    panner.connect(this.sfxGain);
+    
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.1);
   }
 
   public playWin() {

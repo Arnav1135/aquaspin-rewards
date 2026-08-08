@@ -87,6 +87,7 @@ export default defineConfig({
           zustand: ['zustand'],
           babylon: ['@babylonjs/core'],
           rapier: ['@dimforge/rapier3d-compat'],
+          three: ['three', '@react-three/fiber', '@react-three/drei'],
         },
       },
     },

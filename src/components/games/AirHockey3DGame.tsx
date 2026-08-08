@@ -1,132 +1,225 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { ContactShadows, Float, RoundedBox, Text } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
+import { RoundedBox, Text, useCursor, PerspectiveCamera } from '@react-three/drei';
+import { RigidBody, CuboidCollider, CylinderCollider, InstancedRigidBodies, RapierRigidBody } from '@react-three/rapier';
+import { AquaSpinEngine } from '../../engine/3d';
 import { GameFrame } from './GameFrame';
+import { gsap } from 'gsap';
 
 const TABLE_W = 10;
-const TABLE_H = 5.6;
-const PUCK_R = 0.34;
-const PADDLE_R = 0.58;
+const TABLE_H = 18;
+const PUCK_R = 0.5;
+const PADDLE_R = 0.8;
+const GOAL_W = 3.5;
 
-type Score = [number, number];
+function AirHockeyTable() {
+  return (
+    <group position={[0, -0.2, 0]}>
+      {/* Base */}
+      <RoundedBox args={[TABLE_W + 1, 0.4, TABLE_H + 1]} radius={0.2} smoothness={4} position={[0, -0.2, 0]}>
+        <meshStandardMaterial color="#0a0a0f" metalness={0.9} roughness={0.1} />
+      </RoundedBox>
+      
+      {/* Surface */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <planeGeometry args={[TABLE_W, TABLE_H]} />
+        <meshStandardMaterial color="#051224" metalness={0.6} roughness={0.2} emissive="#020a14" emissiveIntensity={0.5} />
+      </mesh>
 
-function Paddle({ position, color }: { position: [number, number]; color: string }) {
-  return <mesh position={[position[0], 0.34, position[1]]} castShadow>
-    <cylinderGeometry args={[PADDLE_R, PADDLE_R * 0.86, 0.48, 48]} />
-    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} metalness={0.75} roughness={0.18} />
-  </mesh>;
+      {/* Center Line and Circle */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <planeGeometry args={[TABLE_W, 0.05]} />
+        <meshBasicMaterial color="#00ffcc" transparent opacity={0.4} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <ringGeometry args={[1.5, 1.55, 64]} />
+        <meshBasicMaterial color="#00ffcc" transparent opacity={0.4} />
+      </mesh>
+
+      {/* Physics Walls */}
+      {/* Left */}
+      <RigidBody type="fixed" restitution={0.8} friction={0}>
+        <mesh position={[-TABLE_W / 2 - 0.25, 0.3, 0]} receiveShadow castShadow>
+          <boxGeometry args={[0.5, 0.6, TABLE_H]} />
+          <meshStandardMaterial color="#00aaff" emissive="#004488" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
+        </mesh>
+      </RigidBody>
+      {/* Right */}
+      <RigidBody type="fixed" restitution={0.8} friction={0}>
+        <mesh position={[TABLE_W / 2 + 0.25, 0.3, 0]} receiveShadow castShadow>
+          <boxGeometry args={[0.5, 0.6, TABLE_H]} />
+          <meshStandardMaterial color="#00aaff" emissive="#004488" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
+        </mesh>
+      </RigidBody>
+      {/* Top Left */}
+      <RigidBody type="fixed" restitution={0.8} friction={0}>
+        <mesh position={[-(TABLE_W + GOAL_W) / 4, 0.3, -TABLE_H / 2 - 0.25]} receiveShadow castShadow>
+          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
+          <meshStandardMaterial color="#ff0055" emissive="#880022" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
+        </mesh>
+      </RigidBody>
+      {/* Top Right */}
+      <RigidBody type="fixed" restitution={0.8} friction={0}>
+        <mesh position={[(TABLE_W + GOAL_W) / 4, 0.3, -TABLE_H / 2 - 0.25]} receiveShadow castShadow>
+          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
+          <meshStandardMaterial color="#ff0055" emissive="#880022" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
+        </mesh>
+      </RigidBody>
+      {/* Bottom Left */}
+      <RigidBody type="fixed" restitution={0.8} friction={0}>
+        <mesh position={[-(TABLE_W + GOAL_W) / 4, 0.3, TABLE_H / 2 + 0.25]} receiveShadow castShadow>
+          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
+          <meshStandardMaterial color="#00ffcc" emissive="#008866" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
+        </mesh>
+      </RigidBody>
+      {/* Bottom Right */}
+      <RigidBody type="fixed" restitution={0.8} friction={0}>
+        <mesh position={[(TABLE_W + GOAL_W) / 4, 0.3, TABLE_H / 2 + 0.25]} receiveShadow castShadow>
+          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
+          <meshStandardMaterial color="#00ffcc" emissive="#008866" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
+        </mesh>
+      </RigidBody>
+    </group>
+  );
 }
 
-function Arena({ puck, player, ai, score, onPointerMove }: { puck: [number, number]; player: [number, number]; ai: [number, number]; score: Score; onPointerMove: (x: number, z: number) => void }) {
-  return <>
-    <RoundedBox args={[11, 0.35, 6.6]} radius={0.28} smoothness={5} position={[0, -0.35, 0]}>
-      <meshStandardMaterial color="#071629" metalness={0.8} roughness={0.2} />
-    </RoundedBox>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]} receiveShadow onPointerMove={(e) => onPointerMove(e.point.x, e.point.z)}>
-      <planeGeometry args={[TABLE_W, TABLE_H]} />
-      <meshStandardMaterial color="#0b3555" metalness={0.35} roughness={0.28} />
-    </mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.125, 0]}>
-      <ringGeometry args={[0.92, 0.96, 64]} />
-      <meshBasicMaterial color="#63d7ff" transparent opacity={0.7} />
-    </mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
-      <planeGeometry args={[0.045, TABLE_H]} />
-      <meshBasicMaterial color="#8eeaff" transparent opacity={0.55} />
-    </mesh>
-    {[-1, 1].map(side => <mesh key={`v-${side}`} position={[side * 5.25, 0.12, 0]} castShadow>
-      <boxGeometry args={[0.18, 0.42, 6.1]} />
-      <meshStandardMaterial color="#43c7ff" emissive="#126d9b" emissiveIntensity={1.4} metalness={0.7} roughness={0.2} />
-    </mesh>)}
-    {[-1, 1].map(side => <mesh key={`h-${side}`} position={[0, 0.12, side * 2.85]} castShadow>
-      <boxGeometry args={[10.5, 0.42, 0.18]} />
-      <meshStandardMaterial color="#43c7ff" emissive="#126d9b" emissiveIntensity={1.4} metalness={0.7} roughness={0.2} />
-    </mesh>)}
-    <Text position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.55} color="#9ceaff" anchorX="center" anchorY="middle">AQUA SPIN</Text>
-    <Text position={[-2.1, 0.45, -3.05]} fontSize={0.48} color="#ffffff" anchorX="center">{score[0]}</Text>
-    <Text position={[2.1, 0.45, -3.05]} fontSize={0.48} color="#ffffff" anchorX="center">{score[1]}</Text>
-    <Paddle position={player} color="#5ee7ff" />
-    <Paddle position={ai} color="#a78bfa" />
-    <mesh position={[puck[0], 0.22, puck[1]]} castShadow>
-      <cylinderGeometry args={[PUCK_R, PUCK_R, 0.22, 48]} />
-      <meshStandardMaterial color="#f7fbff" emissive="#b8efff" emissiveIntensity={1.2} metalness={0.65} roughness={0.15} />
-    </mesh>
-  </>;
+function Paddle({ position, color, isPlayer, rigidBodyRef }: { position: [number, number, number], color: string, isPlayer: boolean, rigidBodyRef?: React.MutableRefObject<RapierRigidBody | null> }) {
+  return (
+    <RigidBody 
+      ref={rigidBodyRef} 
+      type={isPlayer ? "kinematicPosition" : "kinematicPosition"} 
+      position={position} 
+      restitution={0.5} 
+      friction={0}
+      lockRotations
+    >
+      <group>
+        <mesh position={[0, 0.3, 0]} castShadow>
+          <cylinderGeometry args={[PADDLE_R, PADDLE_R * 1.1, 0.6, 64]} />
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.8} metalness={0.8} roughness={0.1} />
+        </mesh>
+        <mesh position={[0, 0.65, 0]} castShadow>
+          <sphereGeometry args={[PADDLE_R * 0.6, 32, 32]} />
+          <meshStandardMaterial color="#ffffff" metalness={0.9} roughness={0.1} />
+        </mesh>
+      </group>
+    </RigidBody>
+  );
 }
 
-function GameSimulation({ score, onScore, onPointerMove }: { score: Score; onScore: (player: boolean) => void; onPointerMove: (x: number, z: number) => void }) {
-  const [puck, setPuck] = useState<[number, number]>([0, 0]);
-  const puckVelocity = useRef<[number, number]>([3.5, 1.7]);
-  const [player, setPlayer] = useState<[number, number]>([0, 1.8]);
-  const [ai, setAi] = useState<[number, number]>([0, -1.8]);
-  const lastGoal = useRef(0);
+function Puck({ onGoal }: { onGoal: (isPlayer: boolean) => void }) {
+  const puckRef = useRef<RapierRigidBody>(null);
 
-  useFrame((_, delta) => {
-    const dt = Math.min(delta, 0.032);
-    const p = puck.slice() as [number, number];
-    const v = puckVelocity.current;
-    p[0] += v[0] * dt;
-    p[1] += v[1] * dt;
-
-    if (Math.abs(p[0]) > TABLE_W / 2 - PUCK_R) {
-      if (Math.abs(p[1]) < 1.25 && performance.now() - lastGoal.current > 700) {
-        lastGoal.current = performance.now();
-        onScore(v[0] > 0);
-        p[0] = 0;
-        p[1] = 0;
-        v[0] = -v[0] * 0.98;
-        v[1] = (Math.sin(performance.now() * 0.001) * 1.5);
-      } else {
-        p[0] = Math.sign(p[0]) * (TABLE_W / 2 - PUCK_R);
-        v[0] *= -1;
-      }
-    }
-    if (Math.abs(p[1]) > TABLE_H / 2 - PUCK_R) {
-      p[1] = Math.sign(p[1]) * (TABLE_H / 2 - PUCK_R);
-      v[1] *= -1;
+  useFrame(() => {
+    if (!puckRef.current) return;
+    const pos = puckRef.current.translation();
+    
+    // Check Goal
+    if (Math.abs(pos.z) > TABLE_H / 2 + 0.2 && Math.abs(pos.x) < GOAL_W / 2) {
+      onGoal(pos.z < 0); // If negative Z, player scored against AI
+      
+      // Reset puck
+      puckRef.current.setTranslation({ x: 0, y: 0.2, z: 0 }, true);
+      puckRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      puckRef.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
     }
 
-    // Simple paddle deflection gives the game responsive, physics-like play.
-    const hitPlayer = Math.hypot(p[0] - player[0], p[1] - player[1]) < PADDLE_R + PUCK_R;
-    const hitAi = Math.hypot(p[0] - ai[0], p[1] - ai[1]) < PADDLE_R + PUCK_R;
-    if (hitPlayer && v[1] > 0) { v[1] = -Math.abs(v[1]) - 0.25; v[0] += (p[0] - player[0]) * 1.2; }
-    if (hitAi && v[1] < 0) { v[1] = Math.abs(v[1]) + 0.25; v[0] += (p[0] - ai[0]) * 1.2; }
-
-    const targetZ = p[1] > 0 ? 1.9 : -1.9;
-    setAi(([x, z]) => [THREE.MathUtils.lerp(x, p[0], dt * 1.7), THREE.MathUtils.lerp(z, targetZ, dt * 2)]);
-    setPuck(p);
+    // Keep puck on table
+    if (pos.y > 0.5) {
+      puckRef.current.setTranslation({ x: pos.x, y: 0.2, z: pos.z }, true);
+      const vel = puckRef.current.linvel();
+      puckRef.current.setLinvel({ x: vel.x, y: -2, z: vel.z }, true);
+    }
   });
 
-  const move = useCallback((x: number, z: number) => {
-    const next: [number, number] = [THREE.MathUtils.clamp(x, -4.5, 4.5), THREE.MathUtils.clamp(z, 0.35, 2.35)];
-    setPlayer(next);
-    onPointerMove(next[0], next[1]);
-  }, [onPointerMove]);
-
-  return <Arena puck={puck} player={player} ai={ai} score={score} onPointerMove={move} />;
+  return (
+    <RigidBody 
+      ref={puckRef} 
+      position={[0, 0.2, 0]} 
+      restitution={0.95} 
+      friction={0.01} 
+      linearDamping={0.2}
+      mass={0.5}
+      lockRotations
+      userData={{ isPuck: true }}
+    >
+      <mesh castShadow receiveShadow position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[PUCK_R, PUCK_R, 0.2, 64]} />
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1.5} metalness={0.5} roughness={0.1} />
+        <pointLight color="#ffffff" intensity={2} distance={3} />
+      </mesh>
+    </RigidBody>
+  );
 }
 
 export function AirHockey3DGame({ onClose }: { onClose: () => void }) {
-  const [score, setScore] = useState<Score>([0, 0]);
+  const [score, setScore] = useState([0, 0]);
+  const [cameraMode, setCameraMode] = useState<'default' | 'cinematic' | 'impact'>('default');
   const [key, setKey] = useState(0);
-  const handleScore = useCallback((player: boolean) => setScore(s => player ? [s[0] + 1, s[1]] : [s[0], s[1] + 1]), []);
-  const noop = useCallback(() => {}, []);
-  return <GameFrame title="3D Neon Air Hockey" onClose={onClose} score={`${score[0]} - ${score[1]}`} onRestart={() => { setScore([0, 0]); setKey(k => k + 1); }}>
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,#174b72,#050b16_70%)]">
-      <Canvas key={key} shadows camera={{ position: [0, 7.8, 7.8], fov: 48 }}>
-        <color attach="background" args={["#050b16"]} />
-        <ambientLight intensity={1.2} />
-        <directionalLight position={[0, 7, 3]} intensity={4} castShadow shadow-mapSize={[2048, 2048]} />
-        <pointLight position={[0, 2, 0]} color="#36d8ff" intensity={18} distance={12} />
-        <Float speed={1.2} rotationIntensity={0.04} floatIntensity={0.08}>
-          <GameSimulation score={score} onScore={handleScore} onPointerMove={noop} />
-        </Float>
-        <ContactShadows position={[0, -0.1, 0]} opacity={0.55} scale={14} blur={2.4} far={8} />
-        <EffectComposer><Bloom intensity={1.2} luminanceThreshold={0.7} mipmapBlur /><Vignette darkness={0.55} /></EffectComposer>
-      </Canvas>
-      <div className="absolute left-1/2 bottom-4 -translate-x-1/2 rounded-full border border-white/15 bg-black/30 px-4 py-2 text-xs text-white/70 backdrop-blur">Move your pointer over the table to control the paddle</div>
-    </div>
-  </GameFrame>;
+
+  const playerRef = useRef<RapierRigidBody>(null);
+  const aiRef = useRef<RapierRigidBody>(null);
+  
+  const handleScore = useCallback((isPlayer: boolean) => {
+    setScore(s => isPlayer ? [s[0] + 1, s[1]] : [s[0], s[1] + 1]);
+    setCameraMode('impact');
+    setTimeout(() => setCameraMode('default'), 400);
+  }, []);
+
+  const handlePointerMove = (e: any) => {
+    if (!playerRef.current) return;
+    const x = THREE.MathUtils.clamp(e.point.x, -TABLE_W/2 + PADDLE_R, TABLE_W/2 - PADDLE_R);
+    const z = THREE.MathUtils.clamp(e.point.z, 0, TABLE_H/2 - PADDLE_R);
+    playerRef.current.setNextKinematicTranslation({ x, y: 0, z });
+  };
+
+  useFrame((state) => {
+    // Better AI that actually chases the puck
+    if (aiRef.current) {
+      // Find the puck position if it exists in the scene
+      const puckPos = state.scene.children.find(c => c.type === 'Group' && (c as any).userData?.isPuck)?.position;
+      const targetX = puckPos ? THREE.MathUtils.clamp(puckPos.x, -TABLE_W/2 + PADDLE_R, TABLE_W/2 - PADDLE_R) : Math.sin(state.clock.getElapsedTime()) * 2;
+      
+      const currentPos = aiRef.current.translation();
+      const newX = THREE.MathUtils.lerp(currentPos.x, targetX, 0.1);
+      aiRef.current.setNextKinematicTranslation({ x: newX, y: 0, z: -TABLE_H/3 });
+    }
+  });
+
+  return (
+    <GameFrame 
+      title="3D Neon Air Hockey" 
+      onClose={onClose} 
+      score={`${score[0]} - ${score[1]}`} 
+      onRestart={() => { setScore([0,0]); setKey(k => k + 1); }}
+    >
+      <AquaSpinEngine 
+        key={key} 
+        enablePhysics 
+        quality="high" 
+        cameraMode={cameraMode} 
+        bloomIntensity={1.5} 
+        environmentPreset="night"
+        physicsGravity={[0, -30, 0]}
+      >
+        
+        {/* Invisible plane to catch pointer events for player movement */}
+        <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.5, TABLE_H/4]} onPointerMove={handlePointerMove} visible={false}>
+          <planeGeometry args={[TABLE_W, TABLE_H/2]} />
+        </mesh>
+
+        <AirHockeyTable />
+        
+        <Puck onGoal={handleScore} />
+        
+        <Paddle isPlayer={true} rigidBodyRef={playerRef} position={[0, 0, TABLE_H/3]} color="#00ffcc" />
+        <Paddle isPlayer={false} rigidBodyRef={aiRef} position={[0, 0, -TABLE_H/3]} color="#ff0055" />
+        
+        {/* Cinematic overhead camera for Air Hockey */}
+        <PerspectiveCamera makeDefault position={[0, 15, 12]} fov={45} rotation={[-0.9, 0, 0]} />
+
+      </AquaSpinEngine>
+    </GameFrame>
+  );
 }

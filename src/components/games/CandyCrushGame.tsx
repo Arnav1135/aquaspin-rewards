@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { GameFrame } from './GameFrame';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { motion } from 'framer-motion';
 import * as THREE from 'three';
@@ -9,6 +9,7 @@ import { Orchestrator, GameEvent, CandyColor } from './candycrush/Orchestrator';
 import { useGameStore, UIEngine } from './candycrush/UIEngine';
 import { AnimationEngine } from './candycrush/AnimationEngine';
 import { SoundEngine } from './candycrush/SoundEngine';
+import { AquaSpinEngine } from '../../engine/3d';
 
 // Ensure engines are initialized
 void UIEngine;
@@ -256,9 +257,16 @@ export default function CandyCrushGame({
         </div>
         
         <div className="flex-1 w-full max-w-md relative">
-          <Canvas orthographic camera={{ position: [0, 0, 10], zoom: 45 }}>
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[5, 10, 5]} intensity={1.5} />
+          <AquaSpinEngine 
+            orthographic 
+            zoom={45} 
+            enablePostProcessing 
+            quality="high" 
+            bloomIntensity={1.2} 
+            environmentPreset="city"
+            cameraMode="default"
+          >
+            {/* The AquaSpinEngine LightingSystem handles environment and main directional lights, but we can keep local point lights for the board */}
             <pointLight position={[-5, -5, 5]} intensity={1} />
             
             <group position={[-3.5, 3.5, 0]}>
@@ -298,7 +306,6 @@ export default function CandyCrushGame({
                       animate={{ y: -40, opacity: 0, scale: 1.2 }}
                       transition={{ duration: 0.8, ease: "easeOut" }}
                       className="text-2xl font-black text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-                      style={{ WebkitTextStroke: '1px #b45309' }}
                     >
                       {fx.text}
                     </motion.div>
@@ -306,7 +313,7 @@ export default function CandyCrushGame({
                 </Html>
               ))}
             </group>
-          </Canvas>
+          </AquaSpinEngine>
         </div>
       </div>
     </GameFrame>

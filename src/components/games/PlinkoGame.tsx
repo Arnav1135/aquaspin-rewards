@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { GameEngine3D } from '@/engine/GameEngine3D';
+import { AquaSpinEngine } from '@/engine/3d/AquaSpinEngine';
 import { RigidBody, CuboidCollider, BallCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import { Html, Detailed } from '@react-three/drei';
@@ -514,16 +514,23 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
         
         {/* Left Side: 3D Canvas */}
         <div className="relative flex-1 h-[50vh] md:h-full bg-slate-100/50 overflow-hidden shadow-inner">
-          <GameEngine3D 
-            enablePhysics={true} 
-            enablePostProcessing={true} // Enabled for premium Bloom/Vignette upgrades
-            cameraPosition={[0, 0, Math.max(15, rows * 1.4)]}
+          <AquaSpinEngine 
+            enablePhysics 
+            enablePostProcessing 
+            quality="high"
+            bloomIntensity={1.5}
+            cameraMode="default"
+            environmentPreset="night"
+            physicsGravity={[0, -25, 0]}
           >
-            <ambientLight intensity={1.2} />
-            <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
             <CameraAdjuster rows={rows} />
-            <PlinkoBoard key={`${rows}-${risk}`} rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
-            
+            <PlinkoBoard 
+              rows={rows} 
+              difficulty={risk} 
+              onBallLanded={handleBallLanded} 
+              bucketHits={bucketHits}
+              bigWinIdx={bigWinIdx}
+            />
             {balls.map(ball => (
               <PlinkoBall 
                 key={ball.id} 
@@ -534,7 +541,7 @@ export function PlinkoGame({ onClose }: { onClose: () => void }) {
                 onDespawn={removeBall} 
               />
             ))}
-          </GameEngine3D>
+          </AquaSpinEngine>
           
           <button
             onClick={onClose}

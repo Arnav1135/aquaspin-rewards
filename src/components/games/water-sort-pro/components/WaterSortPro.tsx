@@ -77,6 +77,9 @@ export function WaterSortPro({ onClose }: Props) {
         const diff = GameModeManager.calculateDifficulty();
         const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
         
+        // Update theme in PixiJS based on the new level
+        appRef.current.updateTheme(level);
+
         LevelGenerator.generateAsync(level, diff, seed)
           .then(levelData => {
             if (appRef.current) appRef.current.loadLevel(levelData);
@@ -144,18 +147,14 @@ export function WaterSortPro({ onClose }: Props) {
     }
   };
 
-  // Get background color based on theme
-  const getThemeBg = () => {
-    // User requested strictly off-white, light background permanently.
-    return 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)';
+  const handleNextLevel = () => {
+    // Increment the level in global state.
+    // The useEffect hook dependent on `level` will automatically trigger LevelGenerator for the new level.
+    setLevel(level + 1);
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden transition-colors duration-1000"
-      style={{
-        background: getThemeBg()
-      }}
-    >
+    <div className="w-full h-full relative overflow-hidden bg-transparent">
       {/* PixiJS Canvas Container */}
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
       
@@ -166,6 +165,7 @@ export function WaterSortPro({ onClose }: Props) {
         onHint={handleHint}
         onAddTube={handleAddTube}
         onRestart={handleRestart}
+        onNextLevel={handleNextLevel}
         onCloseGame={onClose}
       />
     </div>

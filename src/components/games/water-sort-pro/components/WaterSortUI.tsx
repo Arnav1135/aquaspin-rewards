@@ -10,10 +10,11 @@ interface WaterSortUIProps {
   onHint: () => void;
   onAddTube?: () => void;
   onRestart: () => void;
+  onNextLevel: () => void;
   onCloseGame: () => void;
 }
 
-export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onCloseGame }: WaterSortUIProps) {
+export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onNextLevel, onCloseGame }: WaterSortUIProps) {
   const { 
     level, score, moves, stats,
     theme, quality, colorBlindMode, showSettings, gameMode,
@@ -106,7 +107,7 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onCl
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1 }}
-                    onClick={onRestart}
+                    onClick={onNextLevel}
                     className="mt-10 px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full font-bold text-white shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95 transition-all"
                   >
                     NEXT LEVEL

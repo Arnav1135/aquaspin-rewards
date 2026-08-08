@@ -151,18 +151,23 @@ export class AnimationSystem {
         
         if (endP > startP) {
            stream.moveTo(currentStartX, currentStartY);
-           // Add a slight bezier curve so gravity looks real
-           stream.quadraticCurveTo(currentStartX, currentEndY, currentEndX, currentEndY);
+           
+           // Calculate a stable control point for a smooth gravity arc
+           // It should sag slightly in the middle, depending on horizontal distance
+           const midX = (currentStartX + currentEndX) / 2;
+           const controlY = Math.max(currentStartY, currentEndY) + Math.abs(currentEndX - currentStartX) * 0.15;
+           
+           stream.quadraticCurveTo(midX, controlY, currentEndX, currentEndY);
            stream.stroke({ width: 14, color: streamColor, alpha: 0.8, cap: 'round' });
            
            // Inner highlight for 3D liquid look
            stream.moveTo(currentStartX, currentStartY);
-           stream.quadraticCurveTo(currentStartX, currentEndY, currentEndX, currentEndY);
+           stream.quadraticCurveTo(midX, controlY, currentEndX, currentEndY);
            stream.stroke({ width: 6, color: 0xFFFFFF, alpha: 0.4, cap: 'round' });
         }
         
-        // Splash continuously while pouring
-        if (p > 0.1 && p < 0.9 && Math.random() > 0.5) {
+        // Splash continuously while pouring based on progress rather than random
+        if (p > 0.1 && p < 0.9 && Math.floor(p * 100) % 5 === 0) {
           ParticleSystem.emitSplash(endX, endY);
         }
       }

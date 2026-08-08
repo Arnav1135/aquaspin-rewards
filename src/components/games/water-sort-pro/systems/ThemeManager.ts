@@ -27,79 +27,58 @@ export interface ThemeConfig {
 
 export class ThemeManager {
   private static themes: Record<string, ThemeConfig> = {
-    'Daylight': {
-      id: 'Daylight',
-      name: 'Bright Daylight',
-      isUnlocked: true,
-      backgroundColor: 0xF0F4F8, // Light modern blue/grey
-      ambientLightColor: 0xFFFFFF,
+    'Theme0': {
+      id: 'Theme0', name: 'Soft Sky', isUnlocked: true,
+      backgroundColor: 0xF0F4F8, ambientLightColor: 0xFFFFFF,
       glassMaterial: { color: 0xFFFFFF, opacity: 0.6, thickness: 2, specular: 0.5 },
-      liquidPalette: [
-        0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964,
-        0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55,
-        0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F,
-        0x800080, 0x333333
-      ],
-      particleDensityMultiplier: 1.0,
-      particleColors: [0xFFFFFF, 0x5AC8FA],
-      transitionDurationMs: 1000
+      liquidPalette: [0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964, 0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55, 0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F, 0x800080, 0x333333],
+      particleDensityMultiplier: 0.5, particleColors: [0xFFFFFF], transitionDurationMs: 1000
     },
-    'Sunny Beach': {
-      id: 'Sunny Beach',
-      name: 'Sunny Beach',
-      isUnlocked: true,
-      backgroundColor: 0xFFF5E1, // Warm sand/sun
-      ambientLightColor: 0xFFFFFF,
-      glassMaterial: { color: 0xFFFFFF, opacity: 0.5, thickness: 2, specular: 0.6 },
-      liquidPalette: [
-        0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964,
-        0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55,
-        0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F,
-        0x800080, 0x333333
-      ],
-      particleDensityMultiplier: 0.5,
-      particleColors: [0xFFD700, 0xFFFFFF],
-      transitionDurationMs: 1000
-    },
-    'Morning Sky': {
-      id: 'Morning Sky',
-      name: 'Morning Sky',
-      isUnlocked: true,
-      backgroundColor: 0xE0F7FA, // Very light cyan
-      ambientLightColor: 0xFFFFFF,
+    'Theme1': {
+      id: 'Theme1', name: 'Fresh Mint', isUnlocked: true,
+      backgroundColor: 0xE8F5E9, ambientLightColor: 0xFFFFFF,
       glassMaterial: { color: 0xFFFFFF, opacity: 0.6, thickness: 2, specular: 0.5 },
-      liquidPalette: [
-        0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964,
-        0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55,
-        0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F,
-        0x800080, 0x333333
-      ],
-      particleDensityMultiplier: 0.8,
-      particleColors: [0xFFFFFF, 0xB2EBF2],
-      transitionDurationMs: 1000
+      liquidPalette: [0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964, 0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55, 0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F, 0x800080, 0x333333],
+      particleDensityMultiplier: 0.5, particleColors: [0xA5D6A7], transitionDurationMs: 1000
+    },
+    'Theme2': {
+      id: 'Theme2', name: 'Warm Cream', isUnlocked: true,
+      backgroundColor: 0xFFF8E1, ambientLightColor: 0xFFFFFF,
+      glassMaterial: { color: 0xFFFFFF, opacity: 0.6, thickness: 2, specular: 0.5 },
+      liquidPalette: [0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964, 0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55, 0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F, 0x800080, 0x333333],
+      particleDensityMultiplier: 0.5, particleColors: [0xFFE082], transitionDurationMs: 1000
+    },
+    'Theme3': {
+      id: 'Theme3', name: 'Lavender Mist', isUnlocked: true,
+      backgroundColor: 0xF3E5F5, ambientLightColor: 0xFFFFFF,
+      glassMaterial: { color: 0xFFFFFF, opacity: 0.6, thickness: 2, specular: 0.5 },
+      liquidPalette: [0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964, 0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55, 0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F, 0x800080, 0x333333],
+      particleDensityMultiplier: 0.5, particleColors: [0xCE93D8], transitionDurationMs: 1000
+    },
+    'Theme4': {
+      id: 'Theme4', name: 'Ice Blue', isUnlocked: true,
+      backgroundColor: 0xE0F7FA, ambientLightColor: 0xFFFFFF,
+      glassMaterial: { color: 0xFFFFFF, opacity: 0.6, thickness: 2, specular: 0.5 },
+      liquidPalette: [0xFF3B30, 0xFF9500, 0xFFCC00, 0x4CD964, 0x5AC8FA, 0x007AFF, 0x5856D6, 0xFF2D55, 0x8E8E93, 0x000000, 0x8B4513, 0x00FF7F, 0x800080, 0x333333],
+      particleDensityMultiplier: 0.5, particleColors: [0x80DEEA], transitionDurationMs: 1000
     }
   };
 
-  private static currentThemeId: string = 'Daylight';
+  private static currentThemeId: string = 'Theme0';
   private static targetBackgroundColor: number = 0xF0F4F8;
   private static currentBackgroundColor: number = 0xF0F4F8;
-  private static randomDaylightTheme: string | null = null;
+
+  public static getThemeForLevel(level: number): ThemeConfig {
+    const LEVELS_PER_THEME = 10;
+    // level is 1-indexed, so we do level - 1
+    const themeIndex = Math.floor(Math.max(0, level - 1) / LEVELS_PER_THEME);
+    const themeKeys = Object.keys(this.themes);
+    const selectedKey = themeKeys[themeIndex % themeKeys.length];
+    return this.themes[selectedKey];
+  }
 
   public static getTheme(id: string): ThemeConfig {
-    // If the old dark themes are requested, hijack and return a bright daylight theme
-    if (id === 'Ocean' || id === 'Crystal' || id === 'Laboratory' || id === 'Cyber' || id === 'Sunset') {
-      id = 'Daylight';
-    }
-
-    if (id === 'Daylight') {
-      if (!this.randomDaylightTheme) {
-         const brightThemes = ['Daylight', 'Sunny Beach', 'Morning Sky'];
-         this.randomDaylightTheme = brightThemes[Math.floor(Math.random() * brightThemes.length)];
-      }
-      return this.themes[this.randomDaylightTheme] || this.themes['Daylight'];
-    }
-
-    return this.themes[id] || this.themes['Daylight'];
+    return this.themes[id] || this.themes['Theme0'];
   }
 
   public static getAllThemes(): ThemeConfig[] {

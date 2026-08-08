@@ -48,7 +48,7 @@ export class GameApp {
 
   async init() {
     await this.app.init({
-      backgroundAlpha: 0, // Transparent to show React CSS background
+      backgroundAlpha: 1, // Opaque to use PixiJS dynamic theme background
       resizeTo: this.container,
       antialias: true,
       resolution: Math.min(window.devicePixelRatio || 1, 2), // Clamp DPR for performance
@@ -107,6 +107,12 @@ export class GameApp {
   }
 
   private boardContainer = new PIXI.Container();
+
+  public updateTheme(level: number) {
+    const theme = ThemeManager.getThemeForLevel(level);
+    ThemeManager.setTheme(theme.id, this.app);
+    useGameState.getState().setTheme(theme.id);
+  }
 
   public loadLevel(levelData: number[][]) {
     this.stateData = levelData.map(t => [...t]); // Deep copy

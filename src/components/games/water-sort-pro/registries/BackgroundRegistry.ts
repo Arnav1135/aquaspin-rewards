@@ -36,4 +36,8 @@ export class BackgroundRegistry {
   static getAllIds(): string[] {
     return Object.keys(this.backgrounds);
   }
+
+  static register(id: string, config: Partial<ThemeConfig>) {
+    this.backgrounds[id] = config;
+  }
 }

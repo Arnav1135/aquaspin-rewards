@@ -2,6 +2,7 @@ import { Solver } from './Solver';
 import { GameState, PuzzleEngine } from './PuzzleEngine';
 import { DifficultyEngine } from './DifficultyEngine';
 import { AntiRepetitionEngine } from './AntiRepetitionEngine';
+import { SeededRandom } from './SeededRandom';
 
 export interface LevelDefinition {
   levelId: string;
@@ -28,9 +29,12 @@ export class LevelGenerator {
     targetDifficulty: number, 
     colorCount: number, 
     tubeCount: number, 
-    tubeCapacity: number
+    tubeCapacity: number,
+    seedString: string
   ): LevelDefinition {
     
+    const rng = new SeededRandom(seedString);
+
     // Generate a candidate pool
     const poolSize = 5;
     const candidates: LevelDefinition[] = [];
@@ -38,7 +42,9 @@ export class LevelGenerator {
     let attempts = 0;
     while (candidates.length < poolSize && attempts < 100) {
       attempts++;
-      const candidate = this.generateCandidate(targetDifficulty, colorCount, tubeCount, tubeCapacity);
+      // We pass the RNG down. We might want to branch the seed for each attempt so they are distinct, 
+      // but since we are mutating the RNG state on each call, it will naturally diverge.
+      const candidate = this.generateCandidate(targetDifficulty, colorCount, tubeCount, tubeCapacity, rng, seedString, false);
       if (candidate) {
         candidates.push(candidate);
       }
@@ -50,7 +56,7 @@ export class LevelGenerator {
       let fallbackAttempts = 0;
       while (!fallbackCandidate && fallbackAttempts < 100) {
         fallbackAttempts++;
-        fallbackCandidate = this.generateCandidate(targetDifficulty, colorCount, tubeCount, tubeCapacity, true);
+        fallbackCandidate = this.generateCandidate(targetDifficulty, colorCount, tubeCount, tubeCapacity, rng, seedString, true);
       }
       if (fallbackCandidate) {
         return fallbackCandidate;
@@ -86,6 +92,8 @@ export class LevelGenerator {
     colorCount: number, 
     tubeCount: number, 
     tubeCapacity: number,
+    rng: SeededRandom,
+    baseSeed: string,
     isFallback = false
   ): LevelDefinition | null {
     // 1. Create solved state
@@ -130,14 +138,14 @@ export class LevelGenerator {
           const maxAmount = Math.min(matchingLayers, spaceInDst);
           
           if (maxAmount > 0) {
-            const amount = Math.floor(Math.random() * maxAmount) + 1;
+            const amount = Math.floor(rng.nextFloat() * maxAmount) + 1;
             validReverseMoves.push({ src, dst, amount });
           }
         }
       }
 
       if (validReverseMoves.length === 0) break; 
-      const move = validReverseMoves[Math.floor(Math.random() * validReverseMoves.length)];
+      const move = validReverseMoves[Math.floor(rng.nextFloat() * validReverseMoves.length)];
       
       const transferred = currentTubes[move.src].splice(currentTubes[move.src].length - move.amount, move.amount);
       currentTubes[move.dst].push(...transferred);
@@ -256,8 +264,8 @@ export class LevelGenerator {
     if (humanFriction > 0) qualityScore += 2; // Deceptive/tricky puzzles are higher quality
 
     return {
-      levelId: `lvl_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      seed: Math.random().toString(),
+      levelId: `lvl_${baseSeed}_${Math.floor(rng.nextFloat() * 100000)}`,
+      seed: `${baseSeed}_${Math.floor(rng.nextFloat() * 100000)}`,
       generatorVersion: '2.0',
       difficultyTarget: targetDifficulty,
       actualDifficulty,

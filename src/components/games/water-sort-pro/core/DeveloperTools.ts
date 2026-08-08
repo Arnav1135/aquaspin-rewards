@@ -15,7 +15,8 @@ export class DeveloperTools {
       const startMs = performance.now();
       const diff = 50 + (i % 50); // cycle through difficulties
       
-      const level = LevelGenerator.generate(i + 1, diff);
+      const seed = `dev_${Date.now()}_${i}`;
+      const level = LevelGenerator.generate(i + 1, diff, seed);
       const genTime = performance.now() - startMs;
       
       const report = LevelQA.runPipeline(level, diff, genTime);

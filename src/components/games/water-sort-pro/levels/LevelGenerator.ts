@@ -16,10 +16,11 @@ export class LevelGenerator {
     const capacity = 4;
     const numTubes = numColors + 2; // Always 2 empty tubes
     
+    // Define seed deterministic to level if not provided
+    const levelSeed = seed || `global_${level}_v2.0`;
+    
     // Use the new Lifetime Procedural Level Generator 2.0 to generate a puzzle DNA-verified layout
-    // (In a full implementation, we'd pass seed here to CoreLevelGenerator to guarantee determinism)
-    // For now, the existing CoreLevelGenerator just generates based on difficulty/colors
-    const levelDef = CoreLevelGenerator.generate(targetDifficulty, numColors, numTubes, capacity);
+    const levelDef = CoreLevelGenerator.generate(targetDifficulty, numColors, numTubes, capacity, levelSeed);
     
     return levelDef.initialConfiguration;
   }
@@ -32,6 +33,8 @@ export class LevelGenerator {
     const numColors = Math.min(3 + Math.floor(level / 3), 10);
     const capacity = 4;
     const numTubes = numColors + 2;
+
+    const levelSeed = seed || `global_${level}_v2.0`;
 
     return new Promise((resolve, reject) => {
       // Create worker instance
@@ -58,7 +61,7 @@ export class LevelGenerator {
       worker.postMessage({
         id,
         type: 'GENERATE',
-        payload: { targetDifficulty, colorCount: numColors, tubeCount: numTubes, tubeCapacity: capacity }
+        payload: { targetDifficulty, colorCount: numColors, tubeCount: numTubes, tubeCapacity: capacity, seedString: levelSeed }
       });
     });
   }

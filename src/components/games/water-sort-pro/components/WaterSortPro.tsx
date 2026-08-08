@@ -6,7 +6,9 @@ import { saveManager } from '../services/SaveManager';
 import { GameModeManager, GameMode } from '../core/GameModeManager';
 
 import { WaterSortUI } from './WaterSortUI';
+import { RegistryBootstrapper } from '../registries/RegistryBootstrapper';
 
+RegistryBootstrapper.bootstrap();
 interface Props {
   onClose: () => void;
 }

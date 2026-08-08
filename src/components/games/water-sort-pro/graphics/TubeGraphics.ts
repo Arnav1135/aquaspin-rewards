@@ -1,64 +1,183 @@
-import { Graphics, Container } from 'pixi.js';
+import { Graphics, Container, FillGradient } from 'pixi.js';
+import { ThemeManager } from '../systems/ThemeManager';
+import { useGameState } from '../state/useGameState';
 
 export class TubeGraphics extends Container {
   public tubeWidth: number;
   public tubeHeight: number;
-  private glass: Graphics;
+  private backgroundGlass: Graphics;
+  private glassRim: Graphics;
   private highlight: Graphics;
   private reflection: Graphics;
+  private ambientOcclusion: Graphics;
 
   constructor(width: number, height: number) {
     super();
     this.tubeWidth = width;
     this.tubeHeight = height;
 
-    this.glass = new Graphics();
+    this.backgroundGlass = new Graphics();
+    this.glassRim = new Graphics();
     this.highlight = new Graphics();
     this.reflection = new Graphics();
+    this.ambientOcclusion = new Graphics();
+
+    // Soft drop shadow / ambient occlusion on the floor
+    this.drawShadow();
 
     this.draw();
-    this.addChild(this.glass, this.highlight, this.reflection);
+    
+    // Order matters for blending and depth perception
+    this.addChild(this.ambientOcclusion, this.backgroundGlass, this.highlight, this.reflection, this.glassRim);
+
+    // AAA Gyroscope Lighting
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', this.handleGyroscope);
+    }
+  }
+
+  private handleGyroscope = (e: DeviceOrientationEvent) => {
+    // gamma is the left-to-right tilt in degrees, where right is positive
+    const gamma = e.gamma || 0; 
+    
+    // clamp between -45 and 45 degrees
+    const tilt = Math.max(-45, Math.min(45, gamma));
+    
+    // Normalize to -1 to 1
+    const normalizedTilt = tilt / 45;
+
+    // Shift reflection left/right based on tilt
+    const w = this.tubeWidth;
+    const centerOffset = w * 0.15;
+    const maxShift = w * 0.15;
+    
+    import('gsap').then(gsap => {
+      gsap.default.to(this.reflection, {
+        x: normalizedTilt * maxShift,
+        duration: 0.1,
+        ease: 'power1.out'
+      });
+    });
+  };
+
+  public destroy(options?: any) {
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      window.removeEventListener('deviceorientation', this.handleGyroscope);
+    }
+    super.destroy(options);
+  }
+
+  private drawShadow() {
+    this.ambientOcclusion.clear();
+    const radius = this.tubeWidth / 2;
+    this.ambientOcclusion.ellipse(this.tubeWidth / 2, this.tubeHeight, this.tubeWidth * 0.8, 8);
+    this.ambientOcclusion.fill({ color: 0x000000, alpha: 0.3 });
   }
 
   private draw() {
-    const w = this.width;
-    const h = this.height;
+    const w = this.tubeWidth;
+    const h = this.tubeHeight;
     const radius = w / 2;
+    
+    const activeTheme = ThemeManager.getTheme(useGameState.getState().theme);
+    const thickness = activeTheme.glassMaterial.thickness || 6;
+    const glassColor = activeTheme.glassMaterial.color;
+    const glassOpacity = activeTheme.glassMaterial.opacity;
 
-    // Base Glass (Frosted/Semi-transparent)
-    this.glass.clear();
-    this.glass.setStrokeStyle({ width: 4, color: 0xFFFFFF, alpha: 0.4 });
-    this.glass.roundRect(0, 0, w, h, radius);
-    this.glass.fill({ color: 0xFFFFFF, alpha: 0.05 });
-    this.glass.stroke();
+    // 1. Back Wall & Base (Subtle frosted glass)
+    this.backgroundGlass.clear();
+    // Don't draw the top border (open tube)
+    this.backgroundGlass.moveTo(0, 0);
+    this.backgroundGlass.lineTo(0, h - radius);
+    this.backgroundGlass.arc(radius, h - radius, radius, Math.PI, 0, true);
+    this.backgroundGlass.lineTo(w, 0);
+    this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
+    this.backgroundGlass.stroke({ width: thickness, color: glassColor, alpha: glassOpacity });
 
-    // Fresnel Edge Highlights (Left and Right edges)
+    // 2. Thick Glass Rim at the Top
+    this.glassRim.clear();
+    this.glassRim.ellipse(w / 2, 0, w / 2 + thickness/2, 4);
+    this.glassRim.fill({ color: 0xFFFFFF, alpha: 0.2 });
+    this.glassRim.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9 });
+    
+    // 3. Fresnel / Refraction Highlights (Outer edges)
     this.highlight.clear();
-    this.highlight.setStrokeStyle({ width: 2, color: 0xFFFFFF, alpha: 0.7 });
-    this.highlight.moveTo(2, radius);
-    this.highlight.lineTo(2, h - radius);
-    this.highlight.stroke();
+    this.highlight.rect(0, 5, 6, h - radius);
+    this.highlight.fill({ color: 0xFFFFFF, alpha: 0.4 });
 
-    this.highlight.setStrokeStyle({ width: 2, color: 0xFFFFFF, alpha: 0.3 });
-    this.highlight.moveTo(w - 2, radius);
-    this.highlight.lineTo(w - 2, h - radius);
-    this.highlight.stroke();
+    this.highlight.rect(w - 6, 5, 6, h - radius);
+    this.highlight.fill({ color: 0xFFFFFF, alpha: 0.4 });
 
-    // Front Curve Reflection for depth illusion
+    // 4. Inner Front Specular Reflection (Curved surface illusion)
     this.reflection.clear();
-    this.reflection.roundRect(w * 0.1, h * 0.05, w * 0.2, h * 0.8, w * 0.1);
-    this.reflection.fill({ color: 0xFFFFFF, alpha: 0.15 });
+    this.reflection.roundRect(w * 0.15, h * 0.02, w * 0.15, h * 0.85, w * 0.1);
+    this.reflection.fill({ color: 0xFFFFFF, alpha: 0.2 });
   }
 
-  public setHighlight(active: boolean) {
+  private glowTween: gsap.core.Tween | null = null;
+  private glowActive: boolean = false;
+
+  public setHighlight(active: boolean, color: number = 0xFFFFFF) {
+    if (this.glowActive === active) return;
+    this.glowActive = active;
+    
     if (active) {
-      this.glass.clear();
-      this.glass.setStrokeStyle({ width: 6, color: 0xFFFFFF, alpha: 0.9 });
-      this.glass.roundRect(-2, -2, this.width + 4, this.height + 4, this.width / 2 + 2);
-      this.glass.fill({ color: 0xFFFFFF, alpha: 0.1 });
-      this.glass.stroke();
+      // Premium Selection Glow Outline
+      this.backgroundGlass.clear();
+      
+      // Draw base glass underneath
+      const activeTheme = ThemeManager.getTheme(useGameState.getState().theme);
+      const thickness = activeTheme.glassMaterial.thickness || 6;
+      const glassColor = activeTheme.glassMaterial.color;
+      const glassOpacity = activeTheme.glassMaterial.opacity;
+      
+      this.backgroundGlass.moveTo(0, 0);
+      this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
+      this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
+      this.backgroundGlass.lineTo(this.tubeWidth, 0);
+      this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
+      this.backgroundGlass.stroke({ width: thickness, color: glassColor, alpha: glassOpacity });
+      
+      // Draw outer glowing halo using multiple strokes
+      const drawGlow = (w: number, a: number) => {
+        this.backgroundGlass.moveTo(0, 0);
+        this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
+        this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
+        this.backgroundGlass.lineTo(this.tubeWidth, 0);
+        this.backgroundGlass.stroke({ width: w, color: color, alpha: a, join: 'round' });
+      };
+      
+      // Core bright line
+      drawGlow(4, 0.9);
+      // Outer soft glow
+      drawGlow(12, 0.4);
+      // Atmospheric outer halo
+      drawGlow(24, 0.15);
+      
+      // Intense Rim
+      this.glassRim.clear();
+      this.glassRim.ellipse(this.tubeWidth / 2, 0, this.tubeWidth / 2 + 4, 6);
+      this.glassRim.fill({ color: 0xFFFFFF, alpha: 0.4 });
+      this.glassRim.stroke({ width: 4, color: color, alpha: 1.0 });
+      
+      // Subtle breathing pulse
+      if (this.glowTween) this.glowTween.kill();
+      // We animate the alpha of the whole glass container slightly
+      this.backgroundGlass.alpha = 0.7;
+      this.glowTween = gsap.to(this.backgroundGlass, {
+        alpha: 1.0,
+        duration: 1.2,
+        yoyo: true,
+        repeat: -1,
+        ease: 'sine.inOut'
+      });
     } else {
-      this.draw(); // Reset to default
+      if (this.glowTween) {
+        this.glowTween.kill();
+        this.glowTween = null;
+      }
+      this.backgroundGlass.alpha = 1.0;
+      this.draw(); // Reset to normal AAA materials
     }
   }
 }

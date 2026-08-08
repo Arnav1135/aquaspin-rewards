@@ -1,13 +1,22 @@
 import { Graphics, Container } from 'pixi.js';
 import { useGameState } from '../state/useGameState';
+import { ThemeManager } from '../systems/ThemeManager';
 
+/**
+ * Deterministic liquid renderer.
+ *
+ * Rendering is driven only by logical volume + a small, explicitly supplied
+ * surface ripple. There is no per-frame random movement or accumulated y drift.
+ */
 export class LiquidGraphics extends Container {
-  private colors: number[] = [];
   public tubeWidth: number;
   public tubeHeight: number;
   public capacity: number;
-  
+
   private liquidMask: Graphics;
+  public animatedVolume = 0;
+  private currentColors: number[] = [];
+  private surfaceRipple = 0;
 
   constructor(tubeWidth: number, tubeHeight: number, capacity: number) {
     super();
@@ -25,54 +34,86 @@ export class LiquidGraphics extends Container {
     const w = this.tubeWidth;
     const h = this.tubeHeight;
     const r = w / 2;
-    
     this.liquidMask.clear();
-    // Slightly smaller than the tube to fit inside the glass thickness
     this.liquidMask.roundRect(2, 2, w - 4, h - 4, r - 2);
     this.liquidMask.fill({ color: 0xFFFFFF });
   }
 
   public updateLiquids(colors: number[]) {
-    this.colors = colors;
-    // Remove all previous liquid layers except the mask
-    this.children.forEach(child => {
-      if (child !== this.liquidMask) this.removeChild(child);
-    });
+    this.currentColors = [...colors];
+    this.animatedVolume = colors.length;
+    this.surfaceRipple = 0;
+    this.renderLiquids();
+  }
 
-    if (colors.length === 0) return;
+  /** Update fractional volume during a pour. */
+  public setAnimatedVolume(volume: number, colors: number[], surfaceRipple = 0) {
+    this.currentColors = [...colors];
+    this.animatedVolume = Math.max(0, Math.min(this.capacity, volume));
+    this.surfaceRipple = Number.isFinite(surfaceRipple) ? surfaceRipple : 0;
+    this.renderLiquids();
+  }
+
+  private renderLiquids() {
+    const colors = this.currentColors;
+
+    // This renderer is called only at animation updates. Explicitly dispose
+    // old transient graphics so fractional-volume frames cannot accumulate.
+    for (let i = this.children.length - 1; i >= 0; i--) {
+      const child = this.children[i];
+      if (child !== this.liquidMask) {
+        this.removeChild(child);
+        child.destroy({ children: true });
+      }
+    }
+
+    if (colors.length === 0 || this.animatedVolume <= 0) return;
 
     const segmentHeight = (this.tubeHeight - this.tubeWidth) / this.capacity;
     const w = this.tubeWidth;
-    
-    // Draw each color segment
-    colors.forEach((color, i) => {
+    const activeTheme = ThemeManager.getTheme(useGameState.getState().theme);
+    const { colorBlindMode } = useGameState.getState();
+
+    let remainingVolume = this.animatedVolume;
+
+    colors.forEach((colorId, i) => {
+      if (remainingVolume <= 0) return;
+
+      const fillAmount = Math.min(1, remainingVolume);
+      remainingVolume -= fillAmount;
+
+      const hexColor = activeTheme.liquidPalette[colorId % activeTheme.liquidPalette.length];
       const g = new Graphics();
-      const yOffset = this.tubeHeight - this.tubeWidth / 2 - (i + 1) * segmentHeight;
+      const bottomY = this.tubeHeight - this.tubeWidth / 2 - i * segmentHeight;
+      const currentSegmentHeight = Math.max(0, segmentHeight * fillAmount);
+      const isSurface = remainingVolume <= 0 && currentSegmentHeight > 0;
+      const topY = bottomY - currentSegmentHeight + (isSurface ? this.surfaceRipple : 0);
 
-      // Base liquid block
-      g.rect(2, yOffset, w - 4, segmentHeight + 2);
-      g.fill({ color });
+      g.roundRect(2, topY, w - 4, currentSegmentHeight + 2, Math.min(6, (w - 4) / 2));
+      g.fill({ color: hexColor });
 
-      // Add meniscus/surface tension highlight at the top of the segment
-      const meniscus = new Graphics();
-      meniscus.ellipse(w / 2, yOffset, (w - 4) / 2, 4);
-      meniscus.fill({ color: 0xFFFFFF, alpha: 0.3 });
-      
-      // Add subtle dark gradient/shadow at the bottom of the segment for depth
-      const depth = new Graphics();
-      depth.rect(2, yOffset + segmentHeight - 4, w - 4, 6);
-      depth.fill({ color: 0x000000, alpha: 0.1 });
+      if (isSurface) {
+        // A subtle meniscus responds to the actual pour, rather than a random
+        // wave. The ripple is bounded by AnimationSystem.
+        const meniscus = new Graphics();
+        meniscus.ellipse(w / 2, topY, (w - 4) / 2, 3.5);
+        meniscus.fill({ color: 0xFFFFFF, alpha: 0.28 });
+        g.addChild(meniscus);
+      }
 
-      g.addChild(depth, meniscus);
-      
-      const { colorBlindMode } = useGameState.getState();
-      if (colorBlindMode) {
-        // Simple hash of color to pick a pattern (1 to 5 dots)
-        const hash = color % 5 + 1;
+      if (currentSegmentHeight > 2) {
+        const depth = new Graphics();
+        depth.rect(2, bottomY - Math.min(6, currentSegmentHeight), w - 4, Math.min(6, currentSegmentHeight));
+        depth.fill({ color: 0x000000, alpha: 0.1 });
+        g.addChild(depth);
+      }
+
+      if (colorBlindMode && currentSegmentHeight > segmentHeight * 0.5) {
+        const hash = colorId % 5 + 1;
         const pattern = new Graphics();
         pattern.fill({ color: 0xFFFFFF, alpha: 0.5 });
-        for(let d=0; d<hash; d++) {
-          pattern.circle(w / 2 - (hash*6)/2 + d*6 + 3, yOffset + segmentHeight / 2, 2);
+        for (let d = 0; d < hash; d++) {
+          pattern.circle(w / 2 - (hash * 6) / 2 + d * 6 + 3, topY + currentSegmentHeight / 2, 2);
         }
         g.addChild(pattern);
       }

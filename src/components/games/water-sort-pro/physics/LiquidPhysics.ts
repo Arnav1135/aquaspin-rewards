@@ -1,16 +1,18 @@
-import { Container, Graphics, Ticker } from 'pixi.js';
+import { Container, Ticker } from 'pixi.js';
 
+/**
+ * Visual liquid-motion helper.
+ *
+ * The previous implementation accumulated a sine-wave offset directly into
+ * Graphics.y on every frame. That caused the liquid mask/segments to drift
+ * over time and produced a visibly unstable fluidity pattern.
+ *
+ * Pouring is already driven by AnimationSystem. Keep this helper deterministic
+ * and non-destructive: no cumulative transforms, no random motion, and no
+ * mutation of liquid geometry every frame.
+ */
 export class LiquidPhysics {
-  static applyWaveEffect(container: Container, ticker: Ticker) {
-    let time = 0;
-    const waveGraphics = container.children.filter(c => c instanceof Graphics) as Graphics[];
-
-    ticker.add((ticker) => {
-      time += ticker.deltaTime * 0.1;
-      waveGraphics.forEach((g, i) => {
-        // Slight organic bobbing to simulate liquid physics
-        g.y += Math.sin(time + i) * 0.1;
-      });
-    });
+  static applyWaveEffect(_container: Container, _ticker: Ticker) {
+    // Intentionally no-op. Liquid volume and pour motion are authoritative.
   }
 }

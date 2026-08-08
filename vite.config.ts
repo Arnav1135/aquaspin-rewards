@@ -5,6 +5,9 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  worker: {
+    format: 'es'
+  },
   plugins: [
     react(),
     VitePWA({
@@ -84,6 +87,7 @@ export default defineConfig({
           zustand: ['zustand'],
           babylon: ['@babylonjs/core'],
           rapier: ['@dimforge/rapier3d-compat'],
+          three: ['three', '@react-three/fiber', '@react-three/drei'],
         },
       },
     },

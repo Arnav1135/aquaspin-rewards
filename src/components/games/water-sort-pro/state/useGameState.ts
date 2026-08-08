@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { saveManager } from '../services/SaveManager';
+import { ThemeManager } from '../systems/ThemeManager';
 
 export interface GameState {
   level: number;
@@ -26,6 +27,11 @@ export interface GameState {
     totalSolved: number;
     totalMoves: number;
     timePlayed: number;
+    playerSkillRating: number;
+    winStreak: number;
+    lossStreak: number;
+    highestDifficultyCleared: number;
+    dnaHistory: string[];
   };
   
   // Actions
@@ -36,6 +42,7 @@ export interface GameState {
   setAnimating: (a: boolean) => void;
   setWon: (w: boolean) => void;
   setPaused: (p: boolean) => void;
+  handleRestart: () => void;
   
   setVolumeMaster: (v: number) => void;
   setVolumeMusic: (v: number) => void;
@@ -48,6 +55,9 @@ export interface GameState {
   setGameMode: (m: string) => void;
   
   updateStats: (partial: Partial<GameState['stats']>) => void;
+  
+  activeHint: { message: string, source?: number, dest?: number } | null;
+  setActiveHint: (hint: { message: string, source?: number, dest?: number } | null) => void;
   
   loadState: () => Promise<void>;
   saveCurrentState: () => void;
@@ -66,7 +76,7 @@ export const useGameState = create<GameState>((set, get) => ({
   volumeMusic: 0.5,
   volumeEffects: 0.7,
   
-  theme: 'Ocean',
+  theme: 'Daylight',
   quality: 'High',
   colorBlindMode: false,
   showSettings: false,
@@ -75,7 +85,12 @@ export const useGameState = create<GameState>((set, get) => ({
   stats: {
     totalSolved: 0,
     totalMoves: 0,
-    timePlayed: 0
+    timePlayed: 0,
+    playerSkillRating: 1000, // ELO-style baseline
+    winStreak: 0,
+    lossStreak: 0,
+    highestDifficultyCleared: 0,
+    dnaHistory: []
   },
   
   setLevel: (level) => { set({ level }); get().saveCurrentState(); },
@@ -86,11 +101,44 @@ export const useGameState = create<GameState>((set, get) => ({
   setWon: (isWon) => {
     set({ isWon });
     if (isWon) {
-      get().updateStats({ totalSolved: get().stats.totalSolved + 1 });
+      const s = get();
+      
+      // Calculate dynamic ELO gains based on current rating and streak
+      const currentElo = s.stats.playerSkillRating;
+      const winStreak = s.stats.winStreak + 1;
+      const streakBonus = Math.min(winStreak * 2, 20); // Cap streak bonus
+      const eloGain = 10 + streakBonus; // Base gain + streak
+      
+      // Assume the level's actual difficulty (in a full integration, we'd pull the exact level def difficulty)
+      // For now, we estimate the difficulty cleared based on the level index
+      const estimatedDifficulty = 50 + (s.level * 15);
+      const newHighest = Math.max(s.stats.highestDifficultyCleared, estimatedDifficulty);
+
+      s.updateStats({ 
+        totalSolved: s.stats.totalSolved + 1,
+        playerSkillRating: currentElo + eloGain,
+        winStreak: winStreak,
+        lossStreak: 0,
+        highestDifficultyCleared: newHighest
+      });
+      // Handle score increments / coins separately
     }
   },
   setPaused: (isPaused) => set({ isPaused }),
   
+  handleRestart: () => {
+    const s = get();
+    // Penalize ELO for giving up / restarting
+    const currentElo = s.stats.playerSkillRating;
+    const penalty = Math.max(5, Math.floor(currentElo * 0.01)); // Lose 1% of ELO or 5 points minimum
+    
+    s.updateStats({
+      playerSkillRating: Math.max(100, currentElo - penalty), // Floor at 100
+      winStreak: 0,
+      lossStreak: s.stats.lossStreak + 1
+    });
+  },
+
   setVolumeMaster: (volumeMaster) => { set({ volumeMaster }); get().saveCurrentState(); },
   setVolumeMusic: (volumeMusic) => { set({ volumeMusic }); get().saveCurrentState(); },
   setVolumeEffects: (volumeEffects) => { set({ volumeEffects }); get().saveCurrentState(); },
@@ -102,23 +150,42 @@ export const useGameState = create<GameState>((set, get) => ({
   setGameMode: (gameMode) => { set({ gameMode }); get().saveCurrentState(); },
   
   updateStats: (partial) => {
-    set((state) => ({ stats: { ...state.stats, ...partial } }));
+    set((state) => {
+      const newStats = { ...state.stats, ...partial };
+      ThemeManager.checkUnlocks(newStats);
+      return { stats: newStats };
+    });
     get().saveCurrentState();
   },
   
+  activeHint: null,
+  setActiveHint: (hint) => set({ activeHint: hint }),
+  
   loadState: async () => {
     const data = await saveManager.load();
+    const loadedStats = {
+      totalSolved: data.stats?.totalSolved || 0,
+      totalMoves: data.stats?.totalMoves || 0,
+      timePlayed: data.stats?.timePlayed || 0,
+      playerSkillRating: data.stats?.playerSkillRating || 1000,
+      winStreak: data.stats?.winStreak || 0,
+      lossStreak: data.stats?.lossStreak || 0,
+      highestDifficultyCleared: data.stats?.highestDifficultyCleared || 0,
+      dnaHistory: data.stats?.dnaHistory || []
+    };
+    ThemeManager.checkUnlocks(loadedStats);
+    
     set({
-      level: data.level,
-      score: data.score,
-      theme: data.theme,
-      quality: data.quality,
-      colorBlindMode: data.colorBlindMode,
-      gameMode: data.gameMode,
-      volumeMaster: data.volumeMaster,
-      volumeMusic: data.volumeMusic,
-      volumeEffects: data.volumeEffects,
-      stats: data.stats
+      level: data.level || 1,
+      score: data.score || 0,
+      theme: data.theme || 'Daylight',
+      quality: data.quality || 'High',
+      colorBlindMode: data.colorBlindMode || false,
+      gameMode: data.gameMode || 'classic',
+      volumeMaster: data.volumeMaster ?? 0.8,
+      volumeMusic: data.volumeMusic ?? 0.5,
+      volumeEffects: data.volumeEffects ?? 0.7,
+      stats: loadedStats
     });
   },
   

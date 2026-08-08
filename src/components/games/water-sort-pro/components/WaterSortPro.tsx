@@ -3,6 +3,7 @@ import { GameApp } from '../app/GameApp';
 import { useGameState } from '../state/useGameState';
 import { LevelGenerator } from '../levels/LevelGenerator';
 import { saveManager } from '../services/SaveManager';
+import { GameModeManager, GameMode } from '../core/GameModeManager';
 
 import { WaterSortUI } from './WaterSortUI';
 
@@ -13,6 +14,7 @@ interface Props {
 export function WaterSortPro({ onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<GameApp | null>(null);
+  const generationRequestRef = useRef(0);
   const level = useGameState(state => state.level);
   const setLevel = useGameState(state => state.setLevel);
   const setScore = useGameState(state => state.setScore);
@@ -21,102 +23,122 @@ export function WaterSortPro({ onClose }: Props) {
   const colorBlindMode = useGameState(state => state.colorBlindMode);
   const quality = useGameState(state => state.quality);
 
+  const SAFE_FALLBACK_LEVEL = [
+    [0, 1, 0, 1],
+    [1, 0, 1, 0],
+    [],
+    []
+  ];
+
+  const generateAndLoadLevel = (levelNumber: number, app: GameApp) => {
+    const requestId = ++generationRequestRef.current;
+    const mode = GameModeManager.getCurrentMode();
+    const diff = GameModeManager.calculateDifficulty();
+    const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
+
+    LevelGenerator.generateAsync(levelNumber, diff, seed)
+      .then(levelData => {
+        // Ignore stale asynchronous results. This prevents a slower previous
+        // level generation request from overwriting the newly selected level.
+        if (requestId === generationRequestRef.current && appRef.current === app) {
+          app.loadLevel(levelData);
+        }
+      })
+      .catch(err => {
+        console.error('Core Engine Failure: Level Generation Error', err);
+        if (requestId === generationRequestRef.current && appRef.current === app) {
+          app.loadLevel(SAFE_FALLBACK_LEVEL);
+        }
+      });
+  };
+
   useEffect(() => {
     if (!containerRef.current) return;
-    
-    // Initialize the AAA Engine
+
     const app = new GameApp(containerRef.current);
     appRef.current = app;
-    
+
     app.init().then(async () => {
-      // Load save data
       const saved = await saveManager.load();
       setLevel(saved.level);
       setScore(saved.score);
 
-      // Start Level
-      const levelData = LevelGenerator.generate(saved.level);
-      app.loadLevel(levelData);
+      try {
+        generateAndLoadLevel(saved.level, app);
+      } catch (err) {
+        console.error('Core Engine Failure: Level Generation Request Error', err);
+        if (appRef.current === app) app.loadLevel(SAFE_FALLBACK_LEVEL);
+      }
+    }).catch(err => {
+      console.error('Core Engine Failure: GameApp initialization failed', err);
     });
 
     return () => {
+      // Invalidate all pending generation promises before destroying the app.
+      generationRequestRef.current += 1;
       app.destroy();
+      if (appRef.current === app) appRef.current = null;
     };
-  }, []); // Only init once, handle level changes internally
+  }, []);
 
-  // Listen for level changes
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
-      const levelData = LevelGenerator.generate(level);
-      appRef.current.loadLevel(levelData);
+      try {
+        appRef.current.updateTheme(level);
+        generateAndLoadLevel(level, appRef.current);
+      } catch (err) {
+        console.error('Level Generation Request Error during transition', err);
+        appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
+      }
       setWon(false);
     }
   }, [level]);
 
-  // Listen for visual setting changes
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
       appRef.current.forceRedraw();
     }
-  }, [colorBlindMode, quality]);
-  
+  }, [colorBlindMode, quality, theme]);
+
   const handleUndo = () => {
-    if (appRef.current) {
-      appRef.current.undoLastMove();
-    }
+    if (appRef.current) appRef.current.undoLastMove();
   };
-  
+
   const handleRedo = () => {
-    if (appRef.current) {
-      appRef.current.redoLastMove();
-    }
+    if (appRef.current) appRef.current.redoLastMove();
   };
-  
+
   const handleHint = () => {
-    if (appRef.current) {
-      appRef.current.showHint();
-    }
+    if (appRef.current) appRef.current.showHint();
   };
-  
+
+  const handleAddTube = () => {
+    if (appRef.current) appRef.current.addExtraTube();
+  };
+
   const handleRestart = () => {
     if (appRef.current && appRef.current.isInitialized) {
-      const levelData = LevelGenerator.generate(level);
-      appRef.current.loadLevel(levelData);
+      useGameState.getState().handleRestart();
+      generateAndLoadLevel(level, appRef.current);
       setWon(false);
     }
   };
 
-  // Get background color based on theme
-  const getThemeBg = () => {
-    switch (theme) {
-      case 'Neon': return 'radial-gradient(circle at 50% 120%, #290a3a 0%, #05010a 60%)';
-      case 'Ocean': return 'radial-gradient(circle at 50% 120%, #0c325c 0%, #020b17 60%)';
-      case 'Sunset': return 'radial-gradient(circle at 50% 120%, #521815 0%, #170504 60%)';
-      case 'Minimal Dark': return 'radial-gradient(circle at 50% 120%, #202020 0%, #0a0a0a 60%)';
-      case 'Crystal':
-      default: return 'radial-gradient(circle at 50% 120%, #1a1b4b 0%, #050510 60%)';
-    }
+  const handleNextLevel = () => {
+    setLevel(level + 1);
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden transition-colors duration-1000"
-      style={{
-        background: getThemeBg()
-      }}
-    >
-      {/* Background Parallax Stars/Bubbles */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '80px 80px', transform: 'translateY(-20px)' }} />
+    <div className="w-full h-full relative overflow-hidden bg-transparent">
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
 
-      {/* PixiJS Canvas Container */}
-      <div ref={containerRef} className="absolute inset-0 pointer-events-auto" />
-      
-      {/* High-Quality UI Overlay */}
-      <WaterSortUI 
+      <WaterSortUI
         onUndo={handleUndo}
         onRedo={handleRedo}
         onHint={handleHint}
+        onAddTube={handleAddTube}
         onRestart={handleRestart}
+        onNextLevel={handleNextLevel}
         onCloseGame={onClose}
       />
     </div>

@@ -1,42 +1,187 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from '../state/useGameState';
-import { Settings, Undo2, Redo2, Lightbulb, RotateCcw, X, Palette, Monitor, Eye, Volume2, Gamepad2, BarChart2 } from 'lucide-react';
+import { ThemeManager } from '../systems/ThemeManager';
+import { Settings, Undo2, Redo2, Lightbulb, RotateCcw, X, Palette, Monitor, Eye, Volume2, Gamepad2, BarChart2, Trophy, Award } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface WaterSortUIProps {
   onUndo: () => void;
   onRedo: () => void;
   onHint: () => void;
+  onAddTube?: () => void;
   onRestart: () => void;
+  onNextLevel: () => void;
   onCloseGame: () => void;
 }
 
-export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: WaterSortUIProps) {
+export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onNextLevel, onCloseGame }: WaterSortUIProps) {
   const { 
     level, score, moves, stats,
     theme, quality, colorBlindMode, showSettings, gameMode,
     volumeMaster, volumeMusic, volumeEffects,
     setTheme, setQuality, setColorBlindMode, setShowSettings, setGameMode,
-    setVolumeMaster, setVolumeMusic, setVolumeEffects
+    setVolumeMaster, setVolumeMusic, setVolumeEffects,
+    isWon
   } = useGameState();
 
   const [showStats, setShowStats] = useState(false);
+  const [showAchievement, setShowAchievement] = useState(false);
+  const [showChest, setShowChest] = useState(false);
+  const [chestOpened, setChestOpened] = useState(false);
 
-  const themes = ['Ocean', 'Neon', 'Crystal', 'Sunset', 'Minimal Dark'];
   const qualities = ['Low', 'Medium', 'High', 'Ultra'];
   const modes = ['classic', 'zen', 'challenge', 'hardcore'];
 
+  // Trigger achievement banner and reward chest on win
+  useEffect(() => {
+    if (isWon) {
+      setTimeout(() => setShowAchievement(true), 500);
+      setTimeout(() => setShowAchievement(false), 4500);
+      
+      // Show reward chest after a small delay
+      setTimeout(() => {
+        setShowChest(true);
+        setChestOpened(false);
+      }, 1500);
+    } else {
+      setShowChest(false);
+    }
+  }, [isWon]);
+
   return (
     <>
+      {/* Reward Chest Opening */}
+      <AnimatePresence>
+        {showChest && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
+          >
+            <div className="flex flex-col items-center gap-6">
+              {!chestOpened ? (
+                <motion.div
+                  initial={{ scale: 0.5, y: 100 }}
+                  animate={{ scale: 1, y: 0 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setChestOpened(true)}
+                  className="cursor-pointer relative"
+                >
+                  <div className="absolute inset-0 bg-yellow-500/20 blur-xl rounded-full animate-pulse" />
+                  <div className="text-8xl drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] filter hover:brightness-125 transition-all">
+                    🧰
+                  </div>
+                  <p className="text-white text-center mt-4 font-bold animate-bounce tracking-widest">TAP TO OPEN</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex flex-col items-center"
+                >
+                  <div className="relative">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                      className="absolute -inset-20 bg-[conic-gradient(from_0deg,transparent_0_340deg,rgba(255,255,255,0.3)_360deg)] rounded-full mix-blend-overlay"
+                    />
+                    <div className="text-8xl drop-shadow-[0_0_30px_rgba(255,215,0,1)]">
+                      💎
+                    </div>
+                  </div>
+                  <motion.div 
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-6 flex flex-col items-center"
+                  >
+                    <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-400 drop-shadow-lg">
+                      +100 XP
+                    </h2>
+                    <p className="text-white/80 font-semibold mt-2 tracking-widest uppercase">Level Cleared!</p>
+                  </motion.div>
+                  
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                    onClick={onNextLevel}
+                    className="mt-10 px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full font-bold text-white shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:scale-105 active:scale-95 transition-all"
+                  >
+                    NEXT LEVEL
+                  </motion.button>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Achievement Banner */}
+      <AnimatePresence>
+        {showAchievement && (
+          <motion.div 
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 20, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.5 }}
+            className="absolute top-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          >
+            <div className="bg-gradient-to-r from-yellow-500/80 via-amber-400/90 to-yellow-500/80 backdrop-blur-md border border-yellow-200/50 shadow-[0_0_30px_rgba(250,204,21,0.5)] rounded-2xl p-1 flex items-center overflow-hidden">
+              <div className="bg-black/20 rounded-xl p-3 px-6 flex items-center gap-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                <div className="bg-yellow-100/20 p-2 rounded-full shadow-inner">
+                  <Trophy className="text-yellow-100" size={32} />
+                </div>
+                <div>
+                  <h3 className="text-yellow-50 font-bold text-sm tracking-widest uppercase opacity-80">Achievement Unlocked</h3>
+                  <p className="text-white font-black text-xl drop-shadow-md">Level {level} Master!</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top HUD */}
       <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-10 pointer-events-none">
         <div className="pointer-events-auto flex flex-col gap-1">
-          <div className="text-white font-extrabold text-3xl tracking-widest uppercase drop-shadow-md">
+          <div className="text-white font-extrabold text-3xl tracking-widest uppercase drop-shadow-md flex items-center gap-2">
             Level {level}
+            {isWon && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", delay: 1 }}
+              >
+                <Award className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]" size={28} />
+              </motion.div>
+            )}
           </div>
           <div className="text-white/80 font-semibold text-sm uppercase tracking-wider">
+            Rating: {stats.playerSkillRating || 1000} | Streak: 🔥{stats.winStreak || 0}
+          </div>
+          <div className="text-white/60 font-medium text-xs uppercase tracking-wider mb-2">
             Moves: {moves} | Score: {score} | Mode: {gameMode}
           </div>
+          
+          <AnimatePresence>
+            {useGameState.getState().activeHint && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                className="bg-blue-500/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-blue-300/50 shadow-lg"
+              >
+                <div className="flex items-center gap-2 text-blue-50 text-xs font-bold uppercase tracking-widest">
+                  <Lightbulb size={14} className="text-yellow-300" />
+                  {useGameState.getState().activeHint?.message}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <button 
             onClick={() => setShowStats(true)}
             className="mt-2 flex items-center gap-1 text-xs text-white/70 hover:text-white transition-colors uppercase font-bold"
@@ -212,13 +357,18 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onRestart, onCloseGame }: 
                     <Palette size={16} /> Theme
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {themes.map(t => (
+                    {ThemeManager.getAllThemes().map(t => (
                       <button 
-                        key={t}
-                        onClick={() => setTheme(t)}
-                        className={`py-2 px-3 rounded-xl border font-semibold transition-all ${theme === t ? 'bg-white/20 border-white text-white shadow-inner' : 'bg-black/20 border-transparent text-white/60 hover:bg-black/40 hover:text-white/90'}`}
+                        key={t.id}
+                        onClick={() => { if (t.isUnlocked) setTheme(t.id); }}
+                        className={`py-2 px-3 rounded-xl border font-semibold transition-all relative ${theme === t.id ? 'bg-white/20 border-white text-white shadow-inner' : (t.isUnlocked ? 'bg-black/20 border-transparent text-white/60 hover:bg-black/40 hover:text-white/90' : 'bg-black/40 border-transparent text-white/30 cursor-not-allowed')}`}
                       >
-                        {t}
+                        {t.name}
+                        {!t.isUnlocked && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity">
+                            <span className="text-[10px] text-center px-1 leading-tight text-white/90 font-bold">{t.unlockCondition || 'Locked'}</span>
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>

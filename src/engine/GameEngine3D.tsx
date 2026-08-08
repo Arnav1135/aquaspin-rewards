@@ -161,22 +161,22 @@ export function GameEngine3D({
 
         {usePostProcessing && (
           <EffectComposer multisampling={renderProfile.quality === 'ultra' ? 8 : 4}>
-            {renderProfile.enableBloom && (
+            {renderProfile.enableBloom ? (
               <Bloom
                 luminanceThreshold={0.85}
                 luminanceSmoothing={0.7}
                 intensity={0.8}
                 mipmapBlur
               />
-            )}
-            {renderProfile.enableChromaticAberration && (
+            ) : (null as unknown as React.ReactElement)}
+            {renderProfile.enableChromaticAberration ? (
               <ChromaticAberration
                 blendFunction={BlendFunction.NORMAL}
                 offset={new THREE.Vector2(0.0005, 0.0005)}
                 radialModulation={false}
                 modulationOffset={0}
               />
-            )}
+            ) : (null as unknown as React.ReactElement)}
             <Vignette eskil={false} offset={0.18} darkness={0.55} />
             <SSAO
               samples={renderProfile.quality === 'ultra' ? 24 : 16}
@@ -188,11 +188,11 @@ export function GameEngine3D({
               worldProximityThreshold={1}
               worldProximityFalloff={2}
             />
-            {renderProfile.enableDepthOfField && (
+            {renderProfile.enableDepthOfField ? (
               <DepthOfField focusDistance={0.02} focalLength={0.02} bokehScale={1.5} height={480} />
-            )}
-            {useSSR && <SSR intensity={0.7} />}
-            {useGodRays && sunMesh && (
+            ) : (null as unknown as React.ReactElement)}
+            {useSSR ? <SSR intensity={0.7} /> : (null as unknown as React.ReactElement)}
+            {(useGodRays && sunMesh) ? (
               <GodRays
                 sun={sunMesh}
                 blendFunction={BlendFunction.SCREEN}
@@ -203,7 +203,7 @@ export function GameEngine3D({
                 exposure={0.45}
                 clampMax={1}
               />
-            )}
+            ) : (null as unknown as React.ReactElement)}
           </EffectComposer>
         )}
 

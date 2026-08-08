@@ -162,7 +162,7 @@ import { useAuthStore } from "@/features/authStore";
 import { GameSkeleton } from "@/components/ui/GameSkeleton";
 
 type Category =
-  "All" | "Casino" | "Arcade" | "3D Premium" | "Board" | "Quiz" | "Puzzle";
+  "All" | "Casino" | "Arcade" | "Board" | "Quiz" | "Puzzle";
 type Game = {
   key: string;
   title: string;
@@ -270,7 +270,7 @@ const GAMES: Game[] = [
     key: "airhockey3d",
     title: "3D Neon Air Hockey",
     emoji: "🏒",
-    category: "3D Premium",
+    category: "Arcade",
     reward: "High Score",
     difficulty: "Medium",
     color: "#3ddcff",
@@ -280,7 +280,7 @@ const GAMES: Game[] = [
     key: "basketball3d",
     title: "3D Basketball Arcade",
     emoji: "🏀",
-    category: "3D Premium",
+    category: "Arcade",
     reward: "High Score",
     difficulty: "Medium",
     color: "#ff8a3d",
@@ -290,7 +290,7 @@ const GAMES: Game[] = [
     key: "bowling3d",
     title: "3D Bowling",
     emoji: "🎳",
-    category: "3D Premium",
+    category: "Arcade",
     reward: "Strike Score",
     difficulty: "Medium",
     color: "#8b7cff",
@@ -534,7 +534,6 @@ const GAMES: Game[] = [
 ];
 const CATEGORIES: Category[] = [
   "All",
-  "3D Premium",
   "Casino",
   "Arcade",
   "Board",
@@ -577,7 +576,7 @@ export function MiniGames() {
           : "arcade";
     if (activeMeta.category === "Casino") genre = "simulation";
     const style: VisualStyle =
-      activeMeta.category === "3D Premium"
+      activeMeta.title.includes("3D")
         ? "3d-threejs"
         : activeMeta.key === "chess"
           ? "dom-css"
@@ -721,45 +720,7 @@ export function MiniGames() {
                   </div>
                 </div>
               </div>
-              <div className="mb-8 rounded-3xl overflow-hidden border border-white/70 bg-slate-950 shadow-2xl">
-                <div className="p-5 sm:p-7 bg-[radial-gradient(circle_at_15%_0%,#164e63,transparent_38%),radial-gradient(circle_at_90%_100%,#312e81,transparent_42%),#050912]">
-                  <div className="flex items-center gap-2 text-cyan-300 text-sm font-black uppercase tracking-[.18em]">
-                    <Box size={16} /> Premium 3D Arcade
-                  </div>
-                  <h2 className="mt-2 text-2xl sm:text-3xl font-black text-white">
-                    Hyper-realistic WebGL mini games
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm text-white/65">
-                    Three cinematic games built directly into Aqua Spin Rewards
-                    with responsive controls, dynamic lighting, physics-inspired
-                    motion and GPU-friendly post-processing.
-                  </p>
-                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {GAMES.filter((g) => g.category === "3D Premium").map(
-                      (g) => (
-                        <motion.button
-                          key={g.key}
-                          whileHover={{ y: -4 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => setActiveGame(g.key)}
-                          className="text-left rounded-2xl border border-white/10 bg-white/[.06] hover:bg-white/[.1] p-4"
-                        >
-                          <div className="text-3xl">{g.emoji}</div>
-                          <div className="mt-3 font-black text-white">
-                            {g.title}
-                          </div>
-                          <div className="mt-1 text-xs text-white/55">
-                            {g.desc}
-                          </div>
-                          <div className="mt-3 text-xs font-bold text-cyan-300">
-                            PLAY 3D →
-                          </div>
-                        </motion.button>
-                      ),
-                    )}
-                  </div>
-                </div>
-              </div>
+
               <div className="flex gap-2 mb-8 flex-wrap">
                 {CATEGORIES.map((cat) => (
                   <button
@@ -806,7 +767,7 @@ export function MiniGames() {
                       <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-white/90 text-[10px] font-bold text-[#7682B9]">
                         {game.category}
                       </span>
-                      {game.category === "3D Premium" && (
+                      {game.title.includes("3D") && (
                         <span className="absolute bottom-2 left-2 rounded-full bg-cyan-400 px-2 py-1 text-[9px] font-black text-slate-950">
                           WEBGL
                         </span>

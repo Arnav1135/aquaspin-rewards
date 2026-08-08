@@ -133,11 +133,7 @@ const CrashGame = lazy(() =>
     default: m.CrashGame,
   })),
 );
-const PlinkoGame = lazy(() =>
-  import("@/components/games/PlinkoGame").then((m) => ({
-    default: m.PlinkoGame,
-  })),
-);
+const PlinkoGame = lazy(() => import("@/components/games/PlinkoGame"));
 const CandyCrushGame = lazy(
   () => import("@/components/games/CandyCrushSagaMap"),
 );
@@ -624,7 +620,7 @@ export function MiniGames() {
       case "crash":
         return <CrashGame {...p} />;
       case "plinko":
-        return <PlinkoGame {...p} />;
+        return <PlinkoGame />;
       case "candycrush":
         return <CandyCrushGame onBack={close} balance={0} />;
       case "clicker":

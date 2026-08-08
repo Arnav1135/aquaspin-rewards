@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { BackgroundRegistry } from '../registries/BackgroundRegistry';
 
 export interface ThemeConfig {
   id: string;
@@ -69,12 +70,19 @@ export class ThemeManager {
   private static currentBackgroundColor: number = 0xF0F4F8;
 
   public static getThemeForLevel(level: number): ThemeConfig {
-    const LEVELS_PER_THEME = 10;
-    // level is 1-indexed, so we do level - 1
-    const themeIndex = Math.floor(Math.max(0, level - 1) / LEVELS_PER_THEME);
-    const themeKeys = Object.keys(this.themes);
-    const selectedKey = themeKeys[themeIndex % themeKeys.length];
-    return this.themes[selectedKey];
+    const bgIds = BackgroundRegistry.getAllIds();
+    const intervalIndex = Math.floor(Math.max(0, level - 1) / 10);
+    const bgId = bgIds[intervalIndex % bgIds.length];
+    const bgData = BackgroundRegistry.get(bgId);
+
+    // Merge with base theme
+    const baseTheme = this.themes['Theme0'];
+    return {
+      ...baseTheme,
+      ...bgData,
+      id: bgId,
+      name: bgId
+    };
   }
 
   public static getTheme(id: string): ThemeConfig {
@@ -86,9 +94,19 @@ export class ThemeManager {
   }
 
   public static setTheme(id: string, app?: PIXI.Application) {
-    if (this.themes[id]) {
+    let themeData = this.themes[id];
+    
+    // If it's a procedural background
+    if (!themeData) {
+       const bgData = BackgroundRegistry.get(id);
+       if (bgData) {
+         themeData = { ...this.themes['Theme0'], ...bgData, id } as ThemeConfig;
+       }
+    }
+
+    if (themeData) {
       this.currentThemeId = id;
-      this.targetBackgroundColor = this.themes[id].backgroundColor;
+      this.targetBackgroundColor = themeData.backgroundColor;
       
       // If we have access to the app, we can immediately start the transition
       // We will handle color blending in a ticker or just snap for simplicity if no app provided

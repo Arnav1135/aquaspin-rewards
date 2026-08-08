@@ -1,8 +1,10 @@
-import { Graphics, Container, FillGradient } from 'pixi.js';
+import { Graphics, Container } from 'pixi.js';
 import { ThemeManager } from '../systems/ThemeManager';
 import { useGameState } from '../state/useGameState';
+import { VesselDefinition, VesselRegistry } from '../registries/VesselRegistry';
 
 export class TubeGraphics extends Container {
+  public vesselDef: VesselDefinition;
   public tubeWidth: number;
   public tubeHeight: number;
   private backgroundGlass: Graphics;
@@ -11,8 +13,9 @@ export class TubeGraphics extends Container {
   private reflection: Graphics;
   private ambientOcclusion: Graphics;
 
-  constructor(width: number, height: number) {
+  constructor(vesselDef: VesselDefinition, width: number, height: number) {
     super();
+    this.vesselDef = vesselDef;
     this.tubeWidth = width;
     this.tubeHeight = height;
 
@@ -77,41 +80,27 @@ export class TubeGraphics extends Container {
   private draw() {
     const w = this.tubeWidth;
     const h = this.tubeHeight;
-    const radius = w / 2;
     
     const activeTheme = ThemeManager.getTheme(useGameState.getState().theme);
     const thickness = activeTheme.glassMaterial.thickness || 6;
     const glassColor = activeTheme.glassMaterial.color;
     const glassOpacity = activeTheme.glassMaterial.opacity;
 
-    // 1. Back Wall & Base (Subtle frosted glass)
+    // Clear everything
     this.backgroundGlass.clear();
-    // Don't draw the top border (open tube)
-    this.backgroundGlass.moveTo(0, 0);
-    this.backgroundGlass.lineTo(0, h - radius);
-    this.backgroundGlass.arc(radius, h - radius, radius, Math.PI, 0, true);
-    this.backgroundGlass.lineTo(w, 0);
-    this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
-    this.backgroundGlass.stroke({ width: thickness, color: glassColor, alpha: glassOpacity });
-
-    // 2. Thick Glass Rim at the Top
     this.glassRim.clear();
-    this.glassRim.ellipse(w / 2, 0, w / 2 + thickness/2, 4);
-    this.glassRim.fill({ color: 0xFFFFFF, alpha: 0.2 });
-    this.glassRim.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9 });
-    
-    // 3. Fresnel / Refraction Highlights (Outer edges)
     this.highlight.clear();
-    this.highlight.rect(0, 5, 6, h - radius);
-    this.highlight.fill({ color: 0xFFFFFF, alpha: 0.4 });
-
-    this.highlight.rect(w - 6, 5, 6, h - radius);
-    this.highlight.fill({ color: 0xFFFFFF, alpha: 0.4 });
-
-    // 4. Inner Front Specular Reflection (Curved surface illusion)
     this.reflection.clear();
-    this.reflection.roundRect(w * 0.15, h * 0.02, w * 0.15, h * 0.85, w * 0.1);
-    this.reflection.fill({ color: 0xFFFFFF, alpha: 0.2 });
+
+    // Use registry to draw the vessel
+    if (this.vesselDef && this.vesselDef.drawGlass) {
+      this.vesselDef.drawGlass(this.backgroundGlass, w, h, thickness, glassColor, glassOpacity);
+    }
+    
+    // Default or custom highlight
+    if (this.vesselDef && this.vesselDef.drawHighlight) {
+      this.vesselDef.drawHighlight(this.highlight, w, h);
+    }
   }
 
   private glowTween: gsap.core.Tween | null = null;
@@ -131,20 +120,16 @@ export class TubeGraphics extends Container {
       const glassColor = activeTheme.glassMaterial.color;
       const glassOpacity = activeTheme.glassMaterial.opacity;
       
-      this.backgroundGlass.moveTo(0, 0);
-      this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
-      this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
-      this.backgroundGlass.lineTo(this.tubeWidth, 0);
-      this.backgroundGlass.fill({ color: glassColor, alpha: glassOpacity * 0.3 });
-      this.backgroundGlass.stroke({ width: thickness, color: glassColor, alpha: glassOpacity });
+      if (this.vesselDef && this.vesselDef.drawGlass) {
+        this.vesselDef.drawGlass(this.backgroundGlass, this.tubeWidth, this.tubeHeight, thickness, glassColor, glassOpacity);
+      }
       
       // Draw outer glowing halo using multiple strokes
       const drawGlow = (w: number, a: number) => {
-        this.backgroundGlass.moveTo(0, 0);
-        this.backgroundGlass.lineTo(0, this.tubeHeight - this.tubeWidth/2);
-        this.backgroundGlass.arc(this.tubeWidth/2, this.tubeHeight - this.tubeWidth/2, this.tubeWidth/2, Math.PI, 0, true);
-        this.backgroundGlass.lineTo(this.tubeWidth, 0);
-        this.backgroundGlass.stroke({ width: w, color: color, alpha: a, join: 'round' });
+        // Approximate glow for custom shapes by just thickening stroke on the original path
+        if (this.vesselDef && this.vesselDef.drawGlass) {
+          this.vesselDef.drawGlass(this.backgroundGlass, this.tubeWidth, this.tubeHeight, thickness + w, color, a);
+        }
       };
       
       // Core bright line
@@ -153,12 +138,6 @@ export class TubeGraphics extends Container {
       drawGlow(12, 0.4);
       // Atmospheric outer halo
       drawGlow(24, 0.15);
-      
-      // Intense Rim
-      this.glassRim.clear();
-      this.glassRim.ellipse(this.tubeWidth / 2, 0, this.tubeWidth / 2 + 4, 6);
-      this.glassRim.fill({ color: 0xFFFFFF, alpha: 0.4 });
-      this.glassRim.stroke({ width: 4, color: color, alpha: 1.0 });
       
       // Subtle breathing pulse
       if (this.glowTween) this.glowTween.kill();

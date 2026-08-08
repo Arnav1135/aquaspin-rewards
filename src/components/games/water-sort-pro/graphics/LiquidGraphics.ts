@@ -1,6 +1,7 @@
 import { Graphics, Container } from 'pixi.js';
 import { useGameState } from '../state/useGameState';
 import { ThemeManager } from '../systems/ThemeManager';
+import { VesselDefinition } from '../registries/VesselRegistry';
 
 /**
  * Deterministic liquid renderer.
@@ -9,6 +10,7 @@ import { ThemeManager } from '../systems/ThemeManager';
  * surface ripple. There is no per-frame random movement or accumulated y drift.
  */
 export class LiquidGraphics extends Container {
+  public vesselDef: VesselDefinition;
   public tubeWidth: number;
   public tubeHeight: number;
   public capacity: number;
@@ -18,8 +20,9 @@ export class LiquidGraphics extends Container {
   private currentColors: number[] = [];
   private surfaceRipple = 0;
 
-  constructor(tubeWidth: number, tubeHeight: number, capacity: number) {
+  constructor(vesselDef: VesselDefinition, tubeWidth: number, tubeHeight: number, capacity: number) {
     super();
+    this.vesselDef = vesselDef;
     this.tubeWidth = tubeWidth;
     this.tubeHeight = tubeHeight;
     this.capacity = capacity;
@@ -33,9 +36,16 @@ export class LiquidGraphics extends Container {
   private createMask() {
     const w = this.tubeWidth;
     const h = this.tubeHeight;
-    const r = w / 2;
     this.liquidMask.clear();
-    this.liquidMask.roundRect(2, 2, w - 4, h - 4, r - 2);
+    
+    if (this.vesselDef && this.vesselDef.drawMask) {
+      this.vesselDef.drawMask(this.liquidMask, w, h);
+    } else {
+      // Fallback
+      const r = w / 2;
+      this.liquidMask.roundRect(2, 2, w - 4, h - 4, r - 2);
+    }
+    
     this.liquidMask.fill({ color: 0xFFFFFF });
   }
 

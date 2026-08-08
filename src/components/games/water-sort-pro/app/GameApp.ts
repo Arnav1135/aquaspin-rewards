@@ -11,6 +11,8 @@ import { LiquidFilter } from '../shaders/LiquidFilter';
 import { Solver } from '../levels/Solver';
 import { PerformanceManager } from '../systems/PerformanceManager';
 import { ThemeManager } from '../systems/ThemeManager';
+import { VesselRegistry, VesselDefinition } from '../registries/VesselRegistry';
+import { LayoutPatternRegistry } from '../registries/LayoutPatternRegistry';
 
 export class GameApp {
   public app: PIXI.Application;
@@ -24,6 +26,7 @@ export class GameApp {
   private redoHistory: { src: number, dest: number, amount: number, color: number }[] = [];
   private performanceManager!: PerformanceManager;
   private interactionLock: boolean = false;
+  private currentVesselDef: VesselDefinition;
   
   // Layout metrics
   private tubeWidth = 60;
@@ -33,6 +36,7 @@ export class GameApp {
   constructor(container: HTMLDivElement) {
     this.container = container;
     this.app = new PIXI.Application();
+    this.currentVesselDef = VesselRegistry.get('classic_tube');
   }
 
   private handleResize = () => {
@@ -120,6 +124,19 @@ export class GameApp {
     this.moveHistory = [];
     this.redoHistory = [];
     
+    // Choose deterministic vessel (changes every 10 levels)
+    const level = useGameState.getState().level;
+    const isSpecialLevel = level % 10 === 0;
+    if (isSpecialLevel) {
+      this.currentVesselDef = VesselRegistry.get('heart_container'); // special fallback
+    } else {
+      const normalTypes = VesselRegistry.getByType('normal').concat(VesselRegistry.getByType('bottle')).concat(VesselRegistry.getByType('vase'));
+      const intervalIndex = Math.floor(Math.max(0, level - 1) / 10);
+      this.currentVesselDef = normalTypes[intervalIndex % normalTypes.length] || VesselRegistry.get('classic_tube');
+    }
+    this.tubeWidth = this.currentVesselDef.logicalWidth || 60;
+    this.tubeHeight = this.currentVesselDef.logicalHeight || 240;
+    
     // Slide off existing board, then draw and slide in new board
     // In a real seamless transition, we'd swap containers, but for now
     // we fade the current board out and back in
@@ -131,18 +148,13 @@ export class GameApp {
           
           const { width, height } = this.app.screen;
           const numTubes = this.stateData.length;
-          let columns, rows;
-          if (numTubes <= 5) {
-            columns = numTubes;
-            rows = 1;
-          } else if (numTubes <= 10) {
-            columns = Math.ceil(numTubes / 2);
-            rows = 2;
-          } else {
-            columns = Math.ceil(Math.sqrt(numTubes));
-            rows = Math.ceil(numTubes / columns);
-          }
-          const gridW = columns * this.tubeWidth + (columns - 1) * this.gap;
+          
+          // Use pattern registry to calculate grid W/H just for centering transition
+          const pattern = isSpecialLevel ? LayoutPatternRegistry.get('center_shape') : LayoutPatternRegistry.get('grid');
+          const positions = pattern.getPositions(numTubes, this.tubeWidth, this.tubeHeight, this.gap);
+          let maxX = 0;
+          positions.forEach(p => { if (p.x > maxX) maxX = p.x; });
+          const gridW = maxX + this.tubeWidth;
           const scale = this.boardContainer.scale.x;
           
           const targetX = (width - gridW * scale) / 2;
@@ -177,21 +189,21 @@ export class GameApp {
     // Fallback if data is malformed
     if (numTubes === 0) return;
 
-    let columns, rows;
-    if (numTubes <= 5) {
-      columns = numTubes;
-      rows = 1;
-    } else if (numTubes <= 10) {
-      columns = Math.ceil(numTubes / 2);
-      rows = 2;
-    } else {
-      columns = Math.ceil(Math.sqrt(numTubes));
-      rows = Math.ceil(numTubes / columns);
-    }
-    
+    const level = useGameState.getState().level;
+    const isSpecialLevel = level % 10 === 0;
+    const pattern = isSpecialLevel ? LayoutPatternRegistry.get('center_shape') : LayoutPatternRegistry.get('grid');
+    const positions = pattern.getPositions(numTubes, this.tubeWidth, this.tubeHeight, this.gap);
+
+    let maxX = 0;
+    let maxY = 0;
+    positions.forEach(p => {
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    });
+
     const { width, height } = this.app.screen;
-    const gridW = columns * this.tubeWidth + (columns - 1) * this.gap;
-    const gridH = rows * this.tubeHeight + (rows - 1) * this.gap * 2;
+    const gridW = maxX + this.tubeWidth;
+    const gridH = maxY + this.tubeHeight;
     
     // Responsive scaling
     const marginX = 40;
@@ -213,27 +225,32 @@ export class GameApp {
     this.tubes.forEach(t => t.visible = false);
 
     this.stateData.forEach((colors, i) => {
-      const col = i % columns;
-      const row = Math.floor(i / columns);
-      
-      const x = col * (this.tubeWidth + this.gap);
-      const y = row * (this.tubeHeight + this.gap * 2);
+      const pos = positions[i] || { x: 0, y: 0 };
+      const x = pos.x;
+      const y = pos.y;
 
       let tubeContainer;
       let liquidGraphic;
       let tubeGraphic;
 
-      if (i < this.tubes.length) {
+      if (i < this.tubes.length && this.tubeGraphics[i].vesselDef?.id === this.currentVesselDef.id) {
         // Reuse existing
         tubeContainer = this.tubes[i];
         liquidGraphic = this.liquids[i];
         tubeGraphic = this.tubeGraphics[i];
         tubeContainer.visible = true;
       } else {
+        // Destroy old if mismatched type
+        if (i < this.tubes.length) {
+          this.tubes[i].destroy({ children: true });
+        }
+        
         // Create new
         tubeContainer = new PIXI.Container();
-        tubeGraphic = new TubeGraphics(this.tubeWidth, this.tubeHeight);
-        liquidGraphic = new LiquidGraphics(this.tubeWidth, this.tubeHeight, 4);
+        tubeGraphic = new TubeGraphics(this.currentVesselDef, this.tubeWidth, this.tubeHeight);
+        // Apply capacity multiplier if present
+        const cap = 4 * (this.currentVesselDef.capacityMultiplier || 1);
+        liquidGraphic = new LiquidGraphics(this.currentVesselDef, this.tubeWidth, this.tubeHeight, cap);
         
         try {
           LiquidPhysics.applyWaveEffect(liquidGraphic, this.app.ticker);

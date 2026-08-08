@@ -51,7 +51,14 @@ export class AnimationSystem {
       // Allow the area above the target tube
       streamMask.rect(-10000, -10000, 20000, 10000 + target.y);
       // Allow the interior of the target tube
-      streamMask.roundRect(target.x + 2, target.y + 2, tubeW - 4, tubeH - 4, (tubeW / 2) - 2);
+      if (destLiquid.vesselDef && destLiquid.vesselDef.drawMask) {
+        const tempMask = new Graphics();
+        destLiquid.vesselDef.drawMask(tempMask, tubeW, tubeH);
+        tempMask.position.set(target.x, target.y);
+        streamMask.addChild(tempMask);
+      } else {
+        streamMask.roundRect(target.x + 2, target.y + 2, tubeW - 4, tubeH - 4, (tubeW / 2) - 2);
+      }
       streamMask.fill({ color: 0xFFFFFF });
       
       source.parent.addChild(streamMask);

@@ -5,6 +5,7 @@ import { Text, RoundedBox } from '@react-three/drei';
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { AquaSpinEngine } from '../../engine/3d';
 import { GameFrame } from './GameFrame';
+import { GameEngine3D } from '../../engine/GameEngine3D';
 
 function Pin({ position, index }: { position: [number, number, number], index: number }) {
   return (

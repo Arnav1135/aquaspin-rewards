@@ -14,6 +14,7 @@ interface Props {
 export function WaterSortPro({ onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<GameApp | null>(null);
+  const generationRequestRef = useRef(0);
   const level = useGameState(state => state.level);
   const setLevel = useGameState(state => state.setLevel);
   const setScore = useGameState(state => state.setScore);
@@ -29,137 +30,109 @@ export function WaterSortPro({ onClose }: Props) {
     []
   ];
 
+  const generateAndLoadLevel = (levelNumber: number, app: GameApp) => {
+    const requestId = ++generationRequestRef.current;
+    const mode = GameModeManager.getCurrentMode();
+    const diff = GameModeManager.calculateDifficulty();
+    const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
+
+    LevelGenerator.generateAsync(levelNumber, diff, seed)
+      .then(levelData => {
+        // Ignore stale asynchronous results. This prevents a slower previous
+        // level generation request from overwriting the newly selected level.
+        if (requestId === generationRequestRef.current && appRef.current === app) {
+          app.loadLevel(levelData);
+        }
+      })
+      .catch(err => {
+        console.error('Core Engine Failure: Level Generation Error', err);
+        if (requestId === generationRequestRef.current && appRef.current === app) {
+          app.loadLevel(SAFE_FALLBACK_LEVEL);
+        }
+      });
+  };
+
   useEffect(() => {
     if (!containerRef.current) return;
-    
-    // Initialize the AAA Engine
+
     const app = new GameApp(containerRef.current);
     appRef.current = app;
-    
+
     app.init().then(async () => {
-      // Load save data
       const saved = await saveManager.load();
       setLevel(saved.level);
       setScore(saved.score);
 
       try {
-        // Start Level using GameMode logic
-        const mode = GameModeManager.getCurrentMode();
-        const diff = GameModeManager.calculateDifficulty();
-        const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
-        
-        LevelGenerator.generateAsync(saved.level, diff, seed)
-          .then(levelData => {
-            if (appRef.current) appRef.current.loadLevel(levelData);
-          })
-          .catch(err => {
-            console.error("Core Engine Failure: Level Generation Error", err);
-            if (appRef.current) appRef.current.loadLevel(SAFE_FALLBACK_LEVEL); // Graceful degradation
-          });
+        generateAndLoadLevel(saved.level, app);
       } catch (err) {
-        console.error("Core Engine Failure: Level Generation Request Error", err);
-        app.loadLevel(SAFE_FALLBACK_LEVEL);
+        console.error('Core Engine Failure: Level Generation Request Error', err);
+        if (appRef.current === app) app.loadLevel(SAFE_FALLBACK_LEVEL);
       }
     }).catch(err => {
-      console.error("Core Engine Failure: GameApp initialization failed", err);
+      console.error('Core Engine Failure: GameApp initialization failed', err);
     });
 
     return () => {
+      // Invalidate all pending generation promises before destroying the app.
+      generationRequestRef.current += 1;
       app.destroy();
+      if (appRef.current === app) appRef.current = null;
     };
-  }, []); // Only init once, handle level changes internally
+  }, []);
 
-  // Listen for level changes
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
       try {
-        const mode = GameModeManager.getCurrentMode();
-        const diff = GameModeManager.calculateDifficulty();
-        const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
-        
-        // Update theme in PixiJS based on the new level
         appRef.current.updateTheme(level);
-
-        LevelGenerator.generateAsync(level, diff, seed)
-          .then(levelData => {
-            if (appRef.current) appRef.current.loadLevel(levelData);
-          })
-          .catch(err => {
-            console.error("Level Generation Error during transition", err);
-            if (appRef.current) appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
-          });
+        generateAndLoadLevel(level, appRef.current);
       } catch (err) {
-        console.error("Level Generation Request Error during transition", err);
+        console.error('Level Generation Request Error during transition', err);
         appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
       }
       setWon(false);
     }
   }, [level]);
 
-  // Listen for visual setting changes
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
       appRef.current.forceRedraw();
     }
   }, [colorBlindMode, quality, theme]);
-  
+
   const handleUndo = () => {
-    if (appRef.current) {
-      appRef.current.undoLastMove();
-    }
+    if (appRef.current) appRef.current.undoLastMove();
   };
-  
+
   const handleRedo = () => {
-    if (appRef.current) {
-      appRef.current.redoLastMove();
-    }
+    if (appRef.current) appRef.current.redoLastMove();
   };
-  
+
   const handleHint = () => {
-    if (appRef.current) {
-      appRef.current.showHint();
-    }
+    if (appRef.current) appRef.current.showHint();
   };
-  
+
   const handleAddTube = () => {
-    if (appRef.current) {
-      appRef.current.addExtraTube();
-    }
+    if (appRef.current) appRef.current.addExtraTube();
   };
-  
+
   const handleRestart = () => {
     if (appRef.current && appRef.current.isInitialized) {
-      useGameState.getState().handleRestart(); // Penalize ELO and reset streak
-      
-      const mode = GameModeManager.getCurrentMode();
-      const diff = GameModeManager.calculateDifficulty();
-      const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
-      
-      LevelGenerator.generateAsync(level, diff, seed)
-        .then(levelData => {
-          if (appRef.current) appRef.current.loadLevel(levelData);
-        })
-        .catch(err => {
-          console.error("Level Generation Error on restart", err);
-          if (appRef.current) appRef.current.loadLevel(SAFE_FALLBACK_LEVEL);
-        });
+      useGameState.getState().handleRestart();
+      generateAndLoadLevel(level, appRef.current);
       setWon(false);
     }
   };
 
   const handleNextLevel = () => {
-    // Increment the level in global state.
-    // The useEffect hook dependent on `level` will automatically trigger LevelGenerator for the new level.
     setLevel(level + 1);
   };
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-transparent">
-      {/* PixiJS Canvas Container */}
       <div ref={containerRef} className="absolute inset-0 w-full h-full" />
-      
-      {/* High-Quality UI Overlay */}
-      <WaterSortUI 
+
+      <WaterSortUI
         onUndo={handleUndo}
         onRedo={handleRedo}
         onHint={handleHint}

@@ -33,26 +33,48 @@ export class DeviceCapabilityDetector {
         }
       }
     } catch {
-      // Fallback if WebGL context creation fails
+      // Fall back to conservative defaults when WebGL capability probing is unavailable.
     }
 
     const lowerGpu = gpuRenderer.toLowerCase();
-    const isLowGpu = lowerGpu.includes('intel') || lowerGpu.includes('mali-g3') || lowerGpu.includes('mali-400') || lowerGpu.includes('adreno 3');
-    const isHighGpu = lowerGpu.includes('rtx') || lowerGpu.includes('gtx') || lowerGpu.includes('apple m') || lowerGpu.includes('radeon rx');
+    const memory = typeof navigator !== 'undefined' && 'deviceMemory' in navigator
+      ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0)
+      : 0;
 
-    if (isLowGpu || (isTouch && window.innerWidth < 768)) {
+    const isKnownLowGpu =
+      lowerGpu.includes('mali-4') ||
+      lowerGpu.includes('mali-g3') ||
+      lowerGpu.includes('adreno 3') ||
+      lowerGpu.includes('powervr') ||
+      lowerGpu.includes('swiftshader');
+
+    const isKnownHighGpu =
+      lowerGpu.includes('rtx') ||
+      lowerGpu.includes('gtx') ||
+      lowerGpu.includes('radeon rx') ||
+      lowerGpu.includes('apple m') ||
+      lowerGpu.includes('apple gpu');
+
+    const narrowViewport = typeof window !== 'undefined' && window.innerWidth < 480;
+
+    if (isKnownLowGpu || memory > 0 && memory <= 2 || (isTouch && narrowViewport && memory > 0 && memory <= 4)) {
       tier = 'low';
-    } else if (isHighGpu) {
+    } else if (isKnownHighGpu || memory >= 12) {
       tier = 'high';
     } else {
       tier = 'medium';
     }
 
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-    const recommendedDpr = tier === 'low' ? Math.min(dpr, 1.0) : tier === 'medium' ? Math.min(dpr, 1.5) : Math.min(dpr, 2.0);
+    const recommendedDpr = tier === 'low'
+      ? Math.min(dpr, 1)
+      : tier === 'medium'
+        ? Math.min(dpr, 1.5)
+        : Math.min(dpr, 2);
+
     const shadowMapSize = tier === 'low' ? 512 : tier === 'medium' ? 1024 : 2048;
     const enablePostProcessing = tier !== 'low';
-    const maxParticles = tier === 'low' ? 100 : tier === 'medium' ? 500 : 2000;
+    const maxParticles = tier === 'low' ? 200 : tier === 'medium' ? 800 : 2000;
     const enableSSR = tier === 'high';
     const enableGodRays = tier === 'high';
     const enableMotionBlur = tier === 'high';

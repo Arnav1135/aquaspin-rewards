@@ -339,18 +339,19 @@ export class GameApp {
     
     const srcColor = src[src.length - 1];
     
+    const capacity = Math.round(4 * (this.currentVesselDef?.capacityMultiplier || 1.0));
     // Validate Pour
-    if (dest.length < 4 && (dest.length === 0 || dest[dest.length - 1] === srcColor)) {
+    if (dest.length < capacity && (dest.length === 0 || dest[dest.length - 1] === srcColor)) {
       let amount = 0;
       for (let i = src.length - 1; i >= 0; i--) {
         if (src[i] === srcColor) amount++;
         else break;
       }
-      amount = Math.min(amount, 4 - dest.length);
+      amount = Math.min(amount, capacity - dest.length);
       
       s.setAnimating(true);
       // Calculate target fullness ratio (final fullness)
-      const targetFullnessRatio = Math.min(4, dest.length + amount) / 4;
+      const targetFullnessRatio = Math.min(capacity, dest.length + amount) / capacity;
       audioMixer.playPour(sourcePan, destPan, targetFullnessRatio);
       
       const sourceContainer = this.tubes[srcIdx];

@@ -187,8 +187,22 @@ export class AnimationSystem {
 
         if (!splashFired && transferP >= 0.18) {
           splashFired = true;
-          ParticleSystem.emitSplash(target.x, targetSurfaceY);
           if (onDrop) onDrop();
+        }
+        
+        // Phase 8: Premium Fluid Sim Continuous Particles
+        if (transferP >= 0.18 && drainP < 1.0) {
+          // Emit surface splash repeatedly
+          if (Math.random() > 0.5) {
+            ParticleSystem.emitSplash(target.x, targetSurfaceY);
+          }
+          // Mid-air droplets falling from the stream arc
+          if (Math.random() > 0.7) {
+             const t = Math.random() * fallTime;
+             const px = exitX + horizontalVelocity * t;
+             const py = exitY + 0.5 * gravity * t * t;
+             ParticleSystem.emitSplash(px, py); // Using same visual for droplets
+          }
         }
       },
     });

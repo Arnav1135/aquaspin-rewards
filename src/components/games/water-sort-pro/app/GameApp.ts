@@ -120,6 +120,7 @@ export class GameApp {
   }
 
   public loadLevel(levelData: number[][]) {
+    audioMixer.stopAllPours();
     this.stateData = levelData.map(t => [...t]); // Deep copy
     this.moveHistory = [];
     this.redoHistory = [];
@@ -352,7 +353,7 @@ export class GameApp {
       s.setAnimating(true);
       // Calculate target fullness ratio (final fullness)
       const targetFullnessRatio = Math.min(capacity, dest.length + amount) / capacity;
-      audioMixer.playPour(sourcePan, destPan, targetFullnessRatio);
+      audioMixer.playPour(sourcePan, destPan, targetFullnessRatio, amount, this.currentVesselDef?.id || 'classic_tube');
       
       const sourceContainer = this.tubes[srcIdx];
       const destContainer = this.tubes[destIdx];
@@ -432,6 +433,7 @@ export class GameApp {
   }
 
   public undoLastMove() {
+    audioMixer.stopAllPours();
     const s = useGameState.getState();
     if (s.isAnimating || s.isWon || this.moveHistory.length === 0) return;
     
@@ -458,6 +460,7 @@ export class GameApp {
   }
 
   public redoLastMove() {
+    audioMixer.stopAllPours();
     const s = useGameState.getState();
     if (s.isAnimating || s.isWon || this.redoHistory.length === 0) return;
     

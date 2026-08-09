@@ -17,7 +17,6 @@ export class GameGenerator {
     
     return `import React, { useEffect, useRef } from 'react';
 import { GameSDK } from '@/engine/sdk/GameSDK';
-import { useGameStore } from '@/store/gameStore';
 
 /**
  * ${spec.name}

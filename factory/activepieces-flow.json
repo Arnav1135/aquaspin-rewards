@@ -1,0 +1,44 @@
+{
+  "name": "Aqua Spin Factory Pipeline",
+  "description": "Automated workflow that receives a game request, plans it via Gemini, validates the spec, and pushes the implementation logic back into the orchestrator.",
+  "trigger": {
+    "name": "trigger",
+    "valid": true,
+    "displayName": "Webhook Trigger (Game Request)",
+    "type": "WEBHOOK",
+    "settings": {
+      "method": "POST",
+      "path": "/create-game"
+    }
+  },
+  "steps": [
+    {
+      "name": "step_1",
+      "type": "PIECE",
+      "displayName": "Generate GameSpec (Gemini)",
+      "pieceName": "google-gemini",
+      "pieceVersion": "1.0.0",
+      "actionName": "generate_text",
+      "settings": {
+        "prompt": "Generate a JSON GameSpec for a new game based on this request: {{trigger.body.request}}",
+        "model": "gemini-1.5-pro"
+      }
+    },
+    {
+      "name": "step_2",
+      "type": "HTTP",
+      "displayName": "Validate & Scaffold Game (Aqua Spin Orchestrator)",
+      "settings": {
+        "method": "POST",
+        "url": "{{env.AQUA_SPIN_URL}}/api/factory/jobs",
+        "headers": {
+          "Authorization": "Bearer {{env.FACTORY_API_KEY}}"
+        },
+        "body": {
+          "type": "CREATE_GAME",
+          "input": "{{step_1.body.text}}"
+        }
+      }
+    }
+  ]
+}

@@ -43,6 +43,13 @@ app.post('/api/factory/jobs', (req, res) => {
   res.json({ jobId, status: 'QUEUED' });
 });
 
+app.post('/api/factory/games', (req, res) => {
+  const { input } = req.body;
+  const jobId = orchestrator.createJob('CREATE_GAME', input);
+  orchestrator.executeJob(jobId);
+  res.json({ jobId, status: 'QUEUED' });
+});
+
 app.get('/api/factory/jobs', (req, res) => {
   // Sort descending by creation
   const jobs = orchestrator.getAllJobs().reverse();
@@ -77,13 +84,70 @@ app.post('/api/factory/games/:id/build', (req, res) => {
   res.json({ jobId, status: 'QUEUED' });
 });
 
+app.post('/api/factory/games/:id/test', (req, res) => {
+  const jobId = orchestrator.createJob('RUN_TESTS', { target: 'test' }, req.params.id);
+  res.json({ jobId, status: 'QUEUED' });
+});
+
 app.post('/api/factory/games/:id/fix', (req, res) => {
   const jobId = orchestrator.createJob('FIX_BUG', req.body, req.params.id);
   res.json({ jobId, status: 'QUEUED' });
 });
 
+app.post('/api/factory/games/:id/optimize', (req, res) => {
+  const jobId = orchestrator.createJob('RUN_PERFORMANCE_TEST', { benchmark: true, optimize: true }, req.params.id);
+  res.json({ jobId, status: 'QUEUED' });
+});
+
+app.post('/api/factory/games/:id/upgrade', (req, res) => {
+  const jobId = orchestrator.createJob('SCAN_GAME', { depth: 'full', applyUpgrades: true }, req.params.id);
+  res.json({ jobId, status: 'QUEUED' });
+});
+
+app.post('/api/factory/repository/scan', (req, res) => {
+  const jobId = orchestrator.createJob('SCAN_REPOSITORY', { autoFix: req.body.autoFix ?? false });
+  res.json({ jobId, status: 'QUEUED' });
+});
+
+app.post('/api/factory/deployment/preview', (req, res) => {
+  // In a real app, this would trigger a Vercel preview deployment via Vercel API
+  const jobId = orchestrator.createJob('RUN_TESTS', { target: 'deploy_preview' });
+  res.json({ jobId, status: 'QUEUED', message: 'Preview deployment triggered' });
+});
+
+app.post('/api/factory/deployment/production', (req, res) => {
+  // Triggers Vercel production deployment
+  const jobId = orchestrator.createJob('RUN_TESTS', { target: 'deploy_production' });
+  res.json({ jobId, status: 'QUEUED', message: 'Production deployment triggered' });
+});
+
 app.get('/api/factory/health', (req, res) => {
   res.json({ status: 'OK', jobsRunning: orchestrator.getAllJobs().filter(j => j.status === 'IMPLEMENTING' || j.status === 'TESTING').length });
+});
+
+app.get('/api/factory/games/:id', (req, res) => {
+  const gamePath = path.join(gamesDir, req.params.id);
+  if (fs.existsSync(gamePath)) {
+    // Return basic game metadata
+    res.json({ id: req.params.id, exists: true });
+  } else {
+    res.status(404).json({ error: 'Game not found' });
+  }
+});
+
+app.get('/api/factory/errors', (req, res) => {
+  // Return all failed jobs
+  const failedJobs = orchestrator.getAllJobs().filter(j => j.status === 'FAILED');
+  res.json(failedJobs);
+});
+
+app.get('/api/factory/performance', (req, res) => {
+  // Mock performance metrics for the control plane
+  res.json({
+    avgBuildTimeMs: 4500,
+    successRate: 0.98,
+    activeAgents: 2
+  });
 });
 
 // SCHEDULED FACTORY JOBS (Milestone 14)

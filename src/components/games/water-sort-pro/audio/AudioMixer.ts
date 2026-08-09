@@ -147,8 +147,9 @@ export class AudioMixer {
     source.buffer = this.pourBuffer;
     source.loop = false; // We just play a section of the long file
     
-    // Add minor pitch variation for repeated pours
-    const pitchVar = 1.0 + (Math.random() - 0.5) * 0.04;
+    // Pitch goes up as the vessel fills up (simulate resonance chamber shrinking)
+    const basePitch = 0.9 + (fullnessRatio * 0.6); // 0.9 (empty) to 1.5 (full)
+    const pitchVar = basePitch + (Math.random() - 0.5) * 0.04;
     source.playbackRate.value = pitchVar;
 
     source.connect(waterBus);

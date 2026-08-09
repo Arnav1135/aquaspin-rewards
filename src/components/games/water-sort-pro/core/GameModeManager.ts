@@ -5,7 +5,10 @@ export enum GameMode {
   ENDLESS = 'ENDLESS',
   DAILY = 'DAILY',
   CHALLENGE = 'CHALLENGE',
-  PRACTICE = 'PRACTICE'
+  PRACTICE = 'PRACTICE',
+  ZEN = 'ZEN',
+  SPEED = 'SPEED',
+  HARDCORE = 'HARDCORE'
 }
 
 export interface DailyResult {
@@ -32,7 +35,8 @@ export class GameModeManager {
    */
   static getDailySeed(): string {
     const today = new Date();
-    const dateStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+    // Use UTC date to ensure global consistency
+    const dateStr = `${today.getUTCFullYear()}-${today.getUTCMonth() + 1}-${today.getUTCDate()}`;
     return `DAILY-${dateStr}-v1`;
   }
 
@@ -47,7 +51,7 @@ export class GameModeManager {
     switch (mode) {
       case GameMode.DAILY:
         // Daily is curated based on the day of the week (e.g. Sunday is hardest)
-        const day = new Date().getDay();
+        const day = new Date().getUTCDay();
         return 60 + (day * 5); // Ranges from ~60 to 90
 
       case GameMode.ENDLESS:
@@ -55,11 +59,19 @@ export class GameModeManager {
         return Math.min(100, 30 + (currentLevel * 2));
 
       case GameMode.CHALLENGE:
-        // Specific modifiers apply. We'll use a fixed hard difficulty.
         return 85;
 
+      case GameMode.HARDCORE:
+        return Math.min(100, 50 + (currentLevel * 2)); // Hardcore starts harder
+
+      case GameMode.SPEED:
+        return Math.min(100, 40 + (currentLevel * 1.5)); // Slightly harder than classic
+
+      case GameMode.ZEN:
+        return 30; // Easy practice / relaxing
+
       case GameMode.PRACTICE:
-        return 40; // Easy practice
+        return 40; 
 
       case GameMode.CLASSIC:
       default:
@@ -69,15 +81,33 @@ export class GameModeManager {
   }
 
   /**
+   * Determines starting time for SPEED mode based on difficulty
+   * Returns time in seconds
+   */
+  static getStartingTime(): number {
+    const diff = this.calculateDifficulty();
+    // High difficulty = more tubes/colors = needs more time.
+    // e.g. diff 20 -> 45s, diff 100 -> 180s
+    return Math.floor(30 + (diff * 1.5));
+  }
+
+  /**
    * Checks if current mode allows hints
    */
   static allowsHints(): boolean {
     const mode = this.getCurrentMode();
-    if (mode === GameMode.CHALLENGE) {
-      // Example Challenge Modifier: No Hints
+    if (mode === GameMode.CHALLENGE || mode === GameMode.HARDCORE) {
       return false;
     }
     return true;
+  }
+  
+  /**
+   * Checks if current mode penalizes mistakes (undos/restarts)
+   */
+  static isPenalized(): boolean {
+    const mode = this.getCurrentMode();
+    return mode !== GameMode.ZEN && mode !== GameMode.PRACTICE;
   }
 
   /**

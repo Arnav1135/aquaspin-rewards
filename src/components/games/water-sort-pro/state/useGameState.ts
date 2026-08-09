@@ -10,6 +10,8 @@ export interface GameState {
   isAnimating: boolean;
   isWon: boolean;
   isPaused: boolean;
+  isDefeat: boolean;
+  timeRemaining: number;
   
   volumeMaster: number;
   volumeMusic: number;
@@ -41,7 +43,9 @@ export interface GameState {
   setSelectedTube: (t: number) => void;
   setAnimating: (a: boolean) => void;
   setWon: (w: boolean) => void;
+  setDefeat: (d: boolean) => void;
   setPaused: (p: boolean) => void;
+  setTimeRemaining: (t: number) => void;
   handleRestart: () => void;
   
   setVolumeMaster: (v: number) => void;
@@ -70,7 +74,9 @@ export const useGameState = create<GameState>((set, get) => ({
   selectedTube: -1,
   isAnimating: false,
   isWon: false,
+  isDefeat: false,
   isPaused: false,
+  timeRemaining: 0,
   
   volumeMaster: 0.8,
   volumeMusic: 0.5,
@@ -98,19 +104,35 @@ export const useGameState = create<GameState>((set, get) => ({
   setMoves: (moves) => { set({ moves }); },
   setSelectedTube: (selectedTube) => set({ selectedTube }),
   setAnimating: (isAnimating) => set({ isAnimating }),
+  setDefeat: (isDefeat) => {
+    set({ isDefeat });
+    if (isDefeat) {
+      // Penalty on defeat (e.g. running out of time in Speed mode)
+      const s = get();
+      if (s.gameMode !== 'zen' && s.gameMode !== 'practice') {
+        const currentElo = s.stats.playerSkillRating;
+        const penalty = Math.max(10, Math.floor(currentElo * 0.02)); 
+        s.updateStats({
+          playerSkillRating: Math.max(100, currentElo - penalty),
+          winStreak: 0,
+          lossStreak: s.stats.lossStreak + 1
+        });
+      }
+    }
+  },
   setWon: (isWon) => {
     set({ isWon });
     if (isWon) {
       const s = get();
+      if (s.gameMode === 'zen' || s.gameMode === 'practice') return;
       
       // Calculate dynamic ELO gains based on current rating and streak
       const currentElo = s.stats.playerSkillRating;
       const winStreak = s.stats.winStreak + 1;
       const streakBonus = Math.min(winStreak * 2, 20); // Cap streak bonus
-      const eloGain = 10 + streakBonus; // Base gain + streak
+      const modeMultiplier = s.gameMode === 'hardcore' ? 1.5 : (s.gameMode === 'speed' ? 1.2 : 1.0);
+      const eloGain = Math.floor((10 + streakBonus) * modeMultiplier); 
       
-      // Assume the level's actual difficulty (in a full integration, we'd pull the exact level def difficulty)
-      // For now, we estimate the difficulty cleared based on the level index
       const estimatedDifficulty = 50 + (s.level * 15);
       const newHighest = Math.max(s.stats.highestDifficultyCleared, estimatedDifficulty);
 
@@ -121,22 +143,24 @@ export const useGameState = create<GameState>((set, get) => ({
         lossStreak: 0,
         highestDifficultyCleared: newHighest
       });
-      // Handle score increments / coins separately
     }
   },
   setPaused: (isPaused) => set({ isPaused }),
+  setTimeRemaining: (timeRemaining) => set({ timeRemaining }),
   
   handleRestart: () => {
     const s = get();
-    // Penalize ELO for giving up / restarting
-    const currentElo = s.stats.playerSkillRating;
-    const penalty = Math.max(5, Math.floor(currentElo * 0.01)); // Lose 1% of ELO or 5 points minimum
-    
-    s.updateStats({
-      playerSkillRating: Math.max(100, currentElo - penalty), // Floor at 100
-      winStreak: 0,
-      lossStreak: s.stats.lossStreak + 1
-    });
+    // Penalize ELO for giving up / restarting unless in Zen/Practice
+    if (s.gameMode !== 'zen' && s.gameMode !== 'practice') {
+      const currentElo = s.stats.playerSkillRating;
+      const penalty = Math.max(5, Math.floor(currentElo * 0.01)); // Lose 1% of ELO or 5 points minimum
+      
+      s.updateStats({
+        playerSkillRating: Math.max(100, currentElo - penalty), // Floor at 100
+        winStreak: 0,
+        lossStreak: s.stats.lossStreak + 1
+      });
+    }
   },
 
   setVolumeMaster: (volumeMaster) => { set({ volumeMaster }); get().saveCurrentState(); },

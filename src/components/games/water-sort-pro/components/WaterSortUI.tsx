@@ -21,7 +21,7 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onNe
     volumeMaster, volumeMusic, volumeEffects,
     setTheme, setQuality, setColorBlindMode, setShowSettings, setGameMode,
     setVolumeMaster, setVolumeMusic, setVolumeEffects,
-    isWon
+    isWon, isDefeat, timeRemaining, setDefeat
   } = useGameState();
 
   const [showStats, setShowStats] = useState(false);
@@ -30,7 +30,7 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onNe
   const [chestOpened, setChestOpened] = useState(false);
 
   const qualities = ['Low', 'Medium', 'High', 'Ultra'];
-  const modes = ['classic', 'zen', 'challenge', 'hardcore'];
+  const modes = ['classic', 'zen', 'speed', 'hardcore', 'challenge', 'endless', 'daily'];
 
   // Trigger achievement banner and reward chest on win
   useEffect(() => {
@@ -145,6 +145,42 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onNe
         )}
       </AnimatePresence>
 
+      {/* Defeat Banner */}
+      <AnimatePresence>
+        {isDefeat && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 flex items-center justify-center bg-red-900/80 backdrop-blur-sm pointer-events-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex flex-col items-center p-8 bg-black/40 rounded-3xl border border-red-500/50 shadow-[0_0_50px_rgba(220,38,38,0.3)]"
+            >
+              <div className="text-7xl mb-4">⏱️</div>
+              <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600 drop-shadow-lg mb-2">
+                TIME'S UP!
+              </h2>
+              <p className="text-red-200 font-semibold mb-8">Speed Mode Failed</p>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setDefeat(false);
+                  onRestart();
+                }}
+                className="px-8 py-3 bg-gradient-to-r from-red-500 to-red-700 rounded-full font-bold text-white shadow-[0_0_20px_rgba(220,38,38,0.5)]"
+              >
+                TRY AGAIN
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top HUD */}
       <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-10 pointer-events-none">
         <div className="pointer-events-auto flex flex-col gap-1">
@@ -166,6 +202,12 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onNe
           <div className="text-white/60 font-medium text-xs uppercase tracking-wider mb-2">
             Moves: {moves} | Score: {score} | Mode: {gameMode}
           </div>
+          
+          {gameMode === 'speed' && !isWon && !isDefeat && (
+            <div className={`font-black text-2xl drop-shadow-md ${timeRemaining <= 10 ? 'text-red-400 animate-pulse' : 'text-yellow-400'}`}>
+              {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+            </div>
+          )}
           
           <AnimatePresence>
             {useGameState.getState().activeHint && (

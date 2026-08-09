@@ -128,6 +128,20 @@ export class LiquidGraphics extends Container {
         g.addChild(pattern);
       }
 
+      // Hardcore mode masking: only the surface segment is colored, others are obscured
+      if (useGameState.getState().gameMode === 'hardcore' && !isSurface) {
+        // Draw an obscuring block over the liquid segment
+        const obscurer = new Graphics();
+        obscurer.rect(2, topY, w - 4, currentSegmentHeight);
+        obscurer.fill({ color: 0x111111, alpha: 0.95 }); // Almost pitch black
+        g.addChild(obscurer);
+        
+        // Add a question mark in the center to indicate it's hidden
+        // Because text in Pixi can be expensive to create per-frame, we'll draw a simple 
+        // procedural geometric question mark or just leave it mysteriously dark.
+        // The frosted/black glass is enough.
+      }
+
       this.addChild(g);
     });
   }

@@ -17,13 +17,12 @@ export function WaterSortPro({ onClose }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<GameApp | null>(null);
   const generationRequestRef = useRef(0);
-  const level = useGameState(state => state.level);
-  const setLevel = useGameState(state => state.setLevel);
-  const setScore = useGameState(state => state.setScore);
-  const setWon = useGameState(state => state.setWon);
-  const theme = useGameState(state => state.theme);
-  const colorBlindMode = useGameState(state => state.colorBlindMode);
-  const quality = useGameState(state => state.quality);
+  const timerRef = useRef<number | null>(null);
+
+  const {
+    level, setLevel, setScore, setWon, setDefeat, theme, colorBlindMode, quality,
+    gameMode, timeRemaining, setTimeRemaining, isWon, isDefeat, isPaused
+  } = useGameState();
 
   const SAFE_FALLBACK_LEVEL = [
     [0, 1, 0, 1],
@@ -32,18 +31,48 @@ export function WaterSortPro({ onClose }: Props) {
     []
   ];
 
+  const clearGameTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const startSpeedTimer = () => {
+    clearGameTimer();
+    if (GameModeManager.getCurrentMode() === GameMode.SPEED) {
+      setTimeRemaining(GameModeManager.getStartingTime());
+      
+      timerRef.current = window.setInterval(() => {
+        const state = useGameState.getState();
+        if (state.isPaused || state.isWon || state.isDefeat) return;
+
+        if (state.timeRemaining <= 1) {
+          clearGameTimer();
+          state.setTimeRemaining(0);
+          state.setDefeat(true); // TIME UP!
+        } else {
+          state.setTimeRemaining(state.timeRemaining - 1);
+        }
+      }, 1000);
+    }
+  };
+
   const generateAndLoadLevel = (levelNumber: number, app: GameApp) => {
     const requestId = ++generationRequestRef.current;
     const mode = GameModeManager.getCurrentMode();
     const diff = GameModeManager.calculateDifficulty();
     const seed = mode === GameMode.DAILY ? GameModeManager.getDailySeed() : undefined;
 
+    // Reset defeat and clear old timer before generation
+    setDefeat(false);
+    clearGameTimer();
+
     LevelGenerator.generateAsync(levelNumber, diff, seed)
       .then(levelData => {
-        // Ignore stale asynchronous results. This prevents a slower previous
-        // level generation request from overwriting the newly selected level.
         if (requestId === generationRequestRef.current && appRef.current === app) {
           app.loadLevel(levelData);
+          startSpeedTimer();
         }
       })
       .catch(err => {
@@ -76,13 +105,14 @@ export function WaterSortPro({ onClose }: Props) {
     });
 
     return () => {
-      // Invalidate all pending generation promises before destroying the app.
       generationRequestRef.current += 1;
+      clearGameTimer();
       app.destroy();
       if (appRef.current === app) appRef.current = null;
     };
   }, []);
 
+  // When Level or Game Mode changes
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
       try {
@@ -94,7 +124,7 @@ export function WaterSortPro({ onClose }: Props) {
       }
       setWon(false);
     }
-  }, [level]);
+  }, [level, gameMode]);
 
   useEffect(() => {
     if (appRef.current && appRef.current.isInitialized) {
@@ -123,6 +153,7 @@ export function WaterSortPro({ onClose }: Props) {
       useGameState.getState().handleRestart();
       generateAndLoadLevel(level, appRef.current);
       setWon(false);
+      setDefeat(false);
     }
   };
 

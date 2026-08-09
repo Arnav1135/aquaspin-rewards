@@ -88,6 +88,7 @@ export class AnimationSystem {
       tempMask.rotation = target.rotation;
       tempMask.scale.copyFrom(target.scale);
       tempMask.pivot.copyFrom(target.pivot);
+      tempMask.fill({ color: 0xFFFFFF });
       
       streamMask.addChild(tempMask);
       streamMask.fill({ color: 0xFFFFFF });

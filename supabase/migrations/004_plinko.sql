@@ -1,3 +1,6 @@
+-- Enable pgcrypto for digest()
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- Plinko rounds table
 CREATE TABLE IF NOT EXISTS public.plinko_rounds (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

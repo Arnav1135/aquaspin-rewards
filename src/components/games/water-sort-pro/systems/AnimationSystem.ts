@@ -33,32 +33,63 @@ export class AnimationSystem {
 
     const isRight = target.x > startX;
     const dir = isRight ? 1 : -1;
-    const pourX = target.x - dir * 30;
-    const pourY = target.y - 80;
+    const destTubeW = destLiquid.tubeWidth || 60;
+    const destTubeH = destLiquid.tubeHeight || 220;
+    const srcTubeW = srcLiquid.tubeWidth || 60;
+
     const board = source.parent as Container;
     const originalScale = board?.scale.x ?? 1;
     const originalBoardX = board?.x ?? 0;
+
+    // Use global-to-local transform to find exact destination lip position
+    const targetLipLocal = { x: destTubeW / 2, y: -20 };
+    const targetLipGlobal = target.toGlobal(targetLipLocal);
+    const targetLipBoard = board ? board.toLocal(targetLipGlobal) : { x: target.x, y: target.y - 80 };
+
+    // Calculate source lip offset after tilt
+    const rot = dir * 1.8;
+    const cosR = Math.cos(rot);
+    const sinR = Math.sin(rot);
+    const scaleFactor = 1.12;
+    const lipLocalX = srcTubeW / 2;
+    const lipLocalY = 0;
+    const scaledLipX = lipLocalX * scaleFactor;
+    const scaledLipY = lipLocalY * scaleFactor;
+    
+    const lipOffsetX = scaledLipX * cosR - scaledLipY * sinR;
+    const lipOffsetY = scaledLipX * sinR + scaledLipY * cosR;
+
+    const pourX = targetLipBoard.x - lipOffsetX;
+    const pourY = targetLipBoard.y - lipOffsetY;
 
     const stream = new Graphics();
     let streamMask: Graphics | null = null;
     if (source.parent) {
       source.parent.addChild(stream);
       
-      const tubeW = srcLiquid.tubeWidth || 60;
-      const tubeH = srcLiquid.tubeHeight || 220;
-      
       streamMask = new Graphics();
-      // Allow the area above the target tube
-      streamMask.rect(-10000, -10000, 20000, 10000 + target.y);
-      // Allow the interior of the target tube
+      const targetTopGlobal = target.toGlobal({ x: destTubeW / 2, y: 0 });
+      const targetTopBoard = board.toLocal(targetTopGlobal);
+      
+      // Allow area above the tube
+      streamMask.rect(-10000, -10000, 20000, 10000 + targetTopBoard.y);
+      
+      // Apply the target's transform to the mask shape for perfect alignment
+      const tempMask = new Graphics();
       if (destLiquid.vesselDef && destLiquid.vesselDef.drawMask) {
-        const tempMask = new Graphics();
-        destLiquid.vesselDef.drawMask(tempMask, tubeW, tubeH);
-        tempMask.position.set(target.x, target.y);
-        streamMask.addChild(tempMask);
+        destLiquid.vesselDef.drawMask(tempMask, destTubeW, destTubeH);
       } else {
-        streamMask.roundRect(target.x + 2, target.y + 2, tubeW - 4, tubeH - 4, (tubeW / 2) - 2);
+        tempMask.roundRect(2, 2, destTubeW - 4, destTubeH - 4, (destTubeW / 2) - 2);
       }
+      
+      // Since both target and streamMask are in `board` (or stream.parent),
+      // we can apply target's relative transform to tempMask.
+      tempMask.position.copyFrom(target.position);
+      tempMask.rotation = target.rotation;
+      tempMask.scale.copyFrom(target.scale);
+      tempMask.pivot.copyFrom(target.pivot);
+      
+      streamMask.addChild(tempMask);
       streamMask.fill({ color: 0xFFFFFF });
       
       source.parent.addChild(streamMask);
@@ -132,16 +163,35 @@ export class AnimationSystem {
 
         // Use a stable parabolic stream path. Its endpoints track the actual
         // source and receiving surface instead of moving independently.
-        const cos = Math.cos(source.rotation);
-        const sin = Math.sin(source.rotation);
-        const exitX = source.x - sin * 95;
-        const exitY = source.y - cos * 95 + 15;
-        const tubeHeight = 100;
-        const targetSurfaceY = target.y + tubeHeight / 2 - currentDestLen * 20;
-        const fallDistance = Math.max(24, targetSurfaceY - exitY);
+        const destTubeW = destLiquid.tubeWidth || 60;
+        const destTubeH = destLiquid.tubeHeight || 220;
+        const destCapacity = destLiquid.capacity || 4;
+        const srcTubeW = srcLiquid.tubeWidth || 60;
+
+        // 1. Calculate actual global exit point from source lip
+        const srcExitLocal = { x: srcTubeW / 2 + dir * (srcTubeW * 0.15), y: 0 }; 
+        const globalExit = source.toGlobal(srcExitLocal);
+        const boardExit = board ? board.toLocal(globalExit) : globalExit;
+        const exitX = boardExit.x;
+        const exitY = boardExit.y;
+
+        // 2. Calculate dynamic target surface point
+        const segmentHeight = (destTubeH - destTubeW) / destCapacity;
+        const destSurfaceLocalY = destTubeH - destTubeW / 2 - currentDestLen * segmentHeight;
+        
+        const targetSurfaceLocal = { x: destTubeW / 2, y: destSurfaceLocalY };
+        const globalTargetSurface = target.toGlobal(targetSurfaceLocal);
+        const boardTargetSurface = board ? board.toLocal(globalTargetSurface) : globalTargetSurface;
+        const targetSurfaceX = boardTargetSurface.x;
+        const targetSurfaceY = boardTargetSurface.y;
+
+        // 3. Trajectory physics
+        const dx = targetSurfaceX - exitX;
+        const dy = targetSurfaceY - exitY;
+        const fallDistance = Math.max(10, dy);
         const gravity = 700;
         const fallTime = Math.sqrt((2 * fallDistance) / gravity);
-        const horizontalVelocity = dir * 26;
+        const horizontalVelocity = dx / Math.max(0.001, fallTime);
 
         stream.clear();
 

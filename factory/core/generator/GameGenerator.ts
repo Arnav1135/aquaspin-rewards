@@ -31,8 +31,8 @@ export default function ${componentName}() {
   useEffect(() => {
     // 1. Initialize SDK Lifecycle
     GameSDK.Lifecycle.initialize('${spec.slug}', {
-      quality: '${spec.graphics.quality}',
-      fps: ${spec.performance.targetFPS}
+      quality: '${spec.graphics.quality || 'high'}',
+      fps: ${spec.performance?.targetFPS || 60}
     });
     
     // 2. Setup Camera
@@ -50,12 +50,12 @@ export default function ${componentName}() {
   }, []);
 
   return (
-    <div className="game-container w-full h-full relative bg-${spec.ui.theme === 'dark' ? 'black' : 'white'}">
+    <div className="game-container w-full h-full relative bg-${spec.ui?.theme === 'dark' ? 'black' : 'white'}">
       {/* Engine Mount Point */}
       <div ref={containerRef} className="w-full h-full" />
       
       {/* UI Overlay */}
-      ${spec.ui.overlay ? `<div className="absolute top-0 left-0 p-4">
+      ${spec.ui?.overlay ? `<div className="absolute top-0 left-0 p-4">
         <h1 className="text-xl font-bold text-white">${spec.name}</h1>
       </div>` : ''}
     </div>
@@ -71,10 +71,10 @@ export default function ${componentName}() {
     try {
       const componentCode = this.generateReactComponent(spec);
       const componentName = this.toPascalCase(spec.slug);
-      const filePath = path.join(srcGamesDir, \`\${componentName}.tsx\`);
+      const filePath = path.join(srcGamesDir, `${componentName}.tsx`);
       
       fs.writeFileSync(filePath, componentCode);
-      console.log(\`[GameGenerator] Scaffolded \${filePath}\`);
+      console.log(`[GameGenerator] Scaffolded ${filePath}`);
       
       return true;
     } catch (e) {

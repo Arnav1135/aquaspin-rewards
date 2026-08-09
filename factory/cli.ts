@@ -58,7 +58,7 @@ program
       name: answers.name,
       slug: answers.slug,
       genre: answers.genre,
-      description: \`A new \${answers.genre} game.\`,
+      description: `A new ${answers.genre} game.`,
       graphics: {
         style: 'Modern 2D',
         renderer: answers.renderer as any
@@ -83,10 +83,10 @@ program
     console.log(chalk.yellow('[Factory] Scaffolding components...'));
     
     // In production, we'd pass the actual generated string from LogicBuilder
-    const success = GameGenerator.scaffoldGame(spec);
+    const success = GameGenerator.scaffoldGame(spec, 'src/games');
     
     if (success) {
-      console.log(chalk.green(\`\n🎉 Success! Game "\${spec.name}" generated in src/games/\${spec.slug}/\`));
+      console.log(chalk.green(`\n🎉 Success! Game "${spec.name}" generated in src/games/${spec.slug}/`));
       console.log(chalk.white('Run ') + chalk.cyan('npm run dev') + chalk.white(' to preview it.'));
     } else {
       console.log(chalk.red('\n[Error] Failed to scaffold the game.'));

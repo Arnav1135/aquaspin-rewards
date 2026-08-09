@@ -5,9 +5,10 @@ export class AudioMixer {
   private masterGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
-  private activePours: { gain: GainNode, panner: StereoPannerNode, ctx: AudioContext }[] = [];
+  private pourBuffer: AudioBuffer | null = null;
+  private activePours: { gain: GainNode, panner: StereoPannerNode, ctx: AudioContext, source: AudioBufferSourceNode }[] = [];
   
-  public init() {
+  public async init() {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       this.masterGain = this.ctx.createGain();
@@ -17,6 +18,21 @@ export class AudioMixer {
       this.masterGain.connect(this.ctx.destination);
       
       this.updateVolumes();
+    }
+    await this.preloadPourAudio();
+  }
+
+  public async preloadPourAudio() {
+    if (this.pourBuffer || (this.ctx && this.pourBuffer)) return;
+    try {
+      const response = await fetch('/water-sort/audio/pour.mp3');
+      const arrayBuffer = await response.arrayBuffer();
+      // If ctx is not ready yet, we can decode it later, but AudioContext is usually needed to decode.
+      // We will create a temporary offline context to decode if ctx is null.
+      const ctx = this.ctx || new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.pourBuffer = await ctx.decodeAudioData(arrayBuffer);
+    } catch (err) {
+      console.error("Failed to preload pour audio", err);
     }
   }
 
@@ -88,6 +104,7 @@ export class AudioMixer {
       try {
         pour.gain.gain.cancelScheduledValues(now);
         pour.gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+        pour.source.stop(now + 0.1);
         setTimeout(() => {
           try {
             pour.gain.disconnect();
@@ -100,13 +117,15 @@ export class AudioMixer {
   }
 
   public playPour(sourcePan: number, destPan: number, fullnessRatio: number = 1.0, amount: number = 1, vesselId: string = 'classic_tube') {
-    if (!this.ctx || !this.sfxGain) return;
+    if (!this.ctx || !this.sfxGain || !this.pourBuffer) return;
+    
+    // Stop previous pour if user tapped rapidly (Phase 11)
+    this.stopAllPours();
+
     const now = this.ctx.currentTime;
     
     // Base timings derived from animation timeline constraints
     const pourDuration = Math.min(1.15, Math.max(0.70, 0.70 + (amount - 1) * 0.14)) + 0.20;
-    const intensity = Math.min(1.0, 0.6 + amount * 0.15);
-    const pitchVar = 1.0 + (Math.random() - 0.5) * 0.05;
     
     const panner = this.ctx.createStereoPanner();
     const panPos = (sourcePan + destPan) / 2;
@@ -114,168 +133,34 @@ export class AudioMixer {
     panner.connect(this.sfxGain);
     
     const waterBus = this.ctx.createGain();
-    waterBus.gain.value = 1.0;
+    // Fade in
+    waterBus.gain.setValueAtTime(0.001, now);
+    waterBus.gain.exponentialRampToValueAtTime(1.0, now + 0.05);
+    // Fade out exactly at stream end (Phase 6 Case A: fade short natural out)
+    waterBus.gain.setValueAtTime(1.0, now + pourDuration - 0.1);
+    waterBus.gain.linearRampToValueAtTime(0.001, now + pourDuration + 0.05);
+
     waterBus.connect(panner);
     
-    this.activePours.push({ gain: waterBus, panner, ctx: this.ctx });
+    // Play MP3
+    const source = this.ctx.createBufferSource();
+    source.buffer = this.pourBuffer;
+    source.loop = false; // We just play a section of the long file
     
-    // Vessel-specific acoustic profiles
-    let resonanceFreq = 800;
-    let resonanceQ = 2.0;
-    if (vesselId.includes('bottle')) { resonanceFreq = 600; resonanceQ = 3.0; }
-    else if (vesselId.includes('vase')) { resonanceFreq = 400; resonanceQ = 2.0; }
-    else if (vesselId.includes('crystal')) { resonanceFreq = 1200; resonanceQ = 5.0; }
-    else if (vesselId === 'heart_container') { resonanceFreq = 500; resonanceQ = 1.5; }
+    // Add minor pitch variation for repeated pours
+    const pitchVar = 1.0 + (Math.random() - 0.5) * 0.04;
+    source.playbackRate.value = pitchVar;
 
-    const noiseBuffer = this.getNoiseBuffer();
+    source.connect(waterBus);
     
-    // ----------------------------------------------------
-    // LAYER 1: LOW BODY (Continuous Stream)
-    // ----------------------------------------------------
-    const lowSource = this.ctx.createBufferSource();
-    lowSource.buffer = noiseBuffer;
-    lowSource.loop = true;
-    
-    const lowFilter = this.ctx.createBiquadFilter();
-    lowFilter.type = 'lowpass';
-    lowFilter.frequency.value = 350 * pitchVar;
-    
-    const lowGain = this.ctx.createGain();
-    lowGain.gain.setValueAtTime(0.001, now);
-    lowGain.gain.exponentialRampToValueAtTime(0.35 * intensity, now + 0.15);
-    lowGain.gain.setValueAtTime(0.35 * intensity, now + pourDuration - 0.2);
-    lowGain.gain.exponentialRampToValueAtTime(0.001, now + pourDuration);
-    
-    lowSource.connect(lowFilter);
-    lowFilter.connect(lowGain);
-    lowGain.connect(waterBus);
-    
-    // ----------------------------------------------------
-    // LAYER 2: MID TURBULENCE (Bubbling stream flow)
-    // ----------------------------------------------------
-    const midSource = this.ctx.createBufferSource();
-    midSource.buffer = noiseBuffer;
-    midSource.loop = true;
-    
-    const midFilter = this.ctx.createBiquadFilter();
-    midFilter.type = 'bandpass';
-    const baseMidFreq = 500 * pitchVar + (700 * fullnessRatio);
-    midFilter.frequency.setValueAtTime(baseMidFreq, now);
-    midFilter.frequency.linearRampToValueAtTime(baseMidFreq + 300, now + pourDuration);
-    midFilter.Q.value = 1.2;
-    
-    const turbulenceLfo = this.ctx.createOscillator();
-    turbulenceLfo.type = 'sine';
-    turbulenceLfo.frequency.value = 12 + Math.random() * 4; // 12-16 Hz bubbling
-    const turbulenceGainMod = this.ctx.createGain();
-    turbulenceGainMod.gain.value = 0.5;
-    turbulenceLfo.connect(turbulenceGainMod.gain);
-    
-    const midGain = this.ctx.createGain();
-    midGain.gain.setValueAtTime(0.001, now);
-    midGain.gain.exponentialRampToValueAtTime(0.25 * intensity, now + 0.2);
-    midGain.gain.setValueAtTime(0.25 * intensity, now + pourDuration - 0.25);
-    midGain.gain.exponentialRampToValueAtTime(0.001, now + pourDuration);
-    
-    midSource.connect(midFilter);
-    midFilter.connect(turbulenceGainMod);
-    turbulenceGainMod.connect(midGain);
-    midGain.connect(waterBus);
-    
-    // ----------------------------------------------------
-    // LAYER 3: POUR START (Wet Release)
-    // ----------------------------------------------------
-    const startOsc = this.ctx.createOscillator();
-    startOsc.type = 'sine';
-    startOsc.frequency.setValueAtTime(800 * pitchVar, now);
-    startOsc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
-    
-    const startGain = this.ctx.createGain();
-    startGain.gain.setValueAtTime(0.001, now);
-    startGain.gain.exponentialRampToValueAtTime(0.08, now + 0.02);
-    startGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-    
-    startOsc.connect(startGain);
-    startGain.connect(waterBus);
-    
-    // ----------------------------------------------------
-    // LAYER 4: DESTINATION IMPACT (Water hitting water)
-    // ----------------------------------------------------
-    const impactTime = now + 0.18; // Approx when visually hitting the surface
-    
-    const impactSource = this.ctx.createBufferSource();
-    impactSource.buffer = noiseBuffer;
-    
-    const impactFilter = this.ctx.createBiquadFilter();
-    impactFilter.type = 'bandpass';
-    impactFilter.frequency.setValueAtTime(350 * pitchVar, impactTime);
-    impactFilter.frequency.exponentialRampToValueAtTime(900 * pitchVar, impactTime + 0.2);
-    impactFilter.Q.value = 2.2;
-    
-    const impactGain = this.ctx.createGain();
-    impactGain.gain.setValueAtTime(0.001, now);
-    impactGain.gain.setValueAtTime(0.001, impactTime);
-    impactGain.gain.linearRampToValueAtTime(0.25 * intensity, impactTime + 0.03);
-    impactGain.gain.exponentialRampToValueAtTime(0.001, impactTime + 0.25);
-    
-    impactSource.connect(impactFilter);
-    impactFilter.connect(impactGain);
-    impactGain.connect(waterBus);
-    
-    // ----------------------------------------------------
-    // LAYER 5: GLASS RESONANCE
-    // ----------------------------------------------------
-    const resFilter = this.ctx.createBiquadFilter();
-    resFilter.type = 'bandpass';
-    resFilter.frequency.value = resonanceFreq;
-    resFilter.Q.value = resonanceQ;
-    
-    const resGain = this.ctx.createGain();
-    resGain.gain.value = 0.06; // Extremely subtle reflection body
-    
-    turbulenceGainMod.connect(resFilter);
-    resFilter.connect(resGain);
-    resGain.connect(waterBus);
-    
-    // ----------------------------------------------------
-    // LAYER 6: FINAL DROPLETS (Settle)
-    // ----------------------------------------------------
-    const settleTime = now + pourDuration - 0.05;
-    const settleOsc = this.ctx.createOscillator();
-    settleOsc.type = 'sine';
-    settleOsc.frequency.setValueAtTime(500 * pitchVar, settleTime);
-    settleOsc.frequency.exponentialRampToValueAtTime(900 * pitchVar, settleTime + 0.1);
-    
-    const settleGain = this.ctx.createGain();
-    settleGain.gain.setValueAtTime(0.001, now);
-    settleGain.gain.setValueAtTime(0.001, settleTime);
-    settleGain.gain.linearRampToValueAtTime(0.04, settleTime + 0.02);
-    settleGain.gain.exponentialRampToValueAtTime(0.001, settleTime + 0.15);
-    
-    settleOsc.connect(settleGain);
-    settleGain.connect(waterBus);
-    
-    // ----------------------------------------------------
-    // START / SCHEDULE CLEANUP
-    // ----------------------------------------------------
-    const noiseStartOffset = Math.random();
-    lowSource.start(now, noiseStartOffset);
-    midSource.start(now, noiseStartOffset + 0.5); // Different phase
-    turbulenceLfo.start(now);
-    startOsc.start(now);
-    impactSource.start(impactTime, Math.random());
-    settleOsc.start(settleTime);
-    
-    const stopTime = now + pourDuration + 0.3;
-    lowSource.stop(stopTime);
-    midSource.stop(stopTime);
-    turbulenceLfo.stop(stopTime);
-    startOsc.stop(now + 0.15);
-    impactSource.stop(impactTime + 0.3);
-    settleOsc.stop(settleTime + 0.2);
+    this.activePours.push({ gain: waterBus, panner, ctx: this.ctx, source });
+
+    // Start at a slight offset to avoid initial silence if any
+    const startOffset = 0.05; 
+    source.start(now, startOffset);
+    source.stop(now + pourDuration + 0.1);
     
     setTimeout(() => {
-      // Periodic cleanup of activePours array
       this.activePours = this.activePours.filter(p => p.gain !== waterBus);
       try {
         waterBus.disconnect();

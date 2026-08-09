@@ -27,7 +27,8 @@ export class AnimationSystem {
     startX: number,
     startY: number,
     onComplete: () => void,
-    onDrop?: () => void
+    onDrop?: () => void,
+    onStreamStart?: () => void
   ) {
     gsap.killTweensOf(source);
 
@@ -137,6 +138,9 @@ export class AnimationSystem {
       progress: 1,
       duration: T.transfer + T.drain,
       ease: 'none',
+      onStart: () => {
+        if (onStreamStart) onStreamStart();
+      },
       onUpdate: () => {
         const total = T.transfer + T.drain;
         const elapsed = state.progress * total;

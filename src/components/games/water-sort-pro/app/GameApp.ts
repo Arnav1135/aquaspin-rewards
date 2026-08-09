@@ -52,6 +52,7 @@ export class GameApp {
   };
 
   async init() {
+    audioMixer.preloadPourAudio();
     await this.app.init({
       backgroundAlpha: 1, // Opaque to use PixiJS dynamic theme background
       resizeTo: this.container,
@@ -353,7 +354,6 @@ export class GameApp {
       s.setAnimating(true);
       // Calculate target fullness ratio (final fullness)
       const targetFullnessRatio = Math.min(capacity, dest.length + amount) / capacity;
-      audioMixer.playPour(sourcePan, destPan, targetFullnessRatio, amount, this.currentVesselDef?.id || 'classic_tube');
       
       const sourceContainer = this.tubes[srcIdx];
       const destContainer = this.tubes[destIdx];

@@ -45,6 +45,23 @@ export class FactoryOrchestrator {
     this.loadJobs();
   }
 
+  /**
+   * Event Bus implementation that broadcasts to Activepieces
+   */
+  public emitEvent(eventName: string, payload: any) {
+    console.log(`[Event Bus] Emitting: ${eventName}`);
+    const activepiecesUrl = process.env.ACTIVEPIECES_WEBHOOK_URL;
+    if (activepiecesUrl) {
+      fetch(activepiecesUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: eventName, payload })
+      }).catch(err => {
+        console.error('[Event Bus] Failed to emit event to Activepieces', err);
+      });
+    }
+  }
+
   private loadJobs() {
     if (fs.existsSync(this.dbPath)) {
       try {
@@ -86,6 +103,11 @@ export class FactoryOrchestrator {
     this.log(id, 'info', `Job created: ${type}`);
     this.saveJobs();
     
+    // Map job types to specific prompt events
+    if (type === 'CREATE_GAME') this.emitEvent('GAME_REQUESTED', { jobId: id, input });
+    if (type === 'RUN_TESTS' && input?.target === 'build') this.emitEvent('BUILD_STARTED', { jobId: id, gameId });
+    if (type === 'DEPLOY_PRODUCTION' || type === 'DEPLOY_PREVIEW') this.emitEvent('DEPLOYMENT_STARTED', { jobId: id, gameId });
+    
     return id;
   }
 
@@ -105,6 +127,15 @@ export class FactoryOrchestrator {
     job.status = newState;
     this.log(id, 'info', `State transitioned: ${oldState} -> ${newState}`);
     this.saveJobs();
+
+    // Map state transitions to Activepieces events
+    if (newState === 'COMPLETED') {
+      if (job.type === 'CREATE_GAME') this.emitEvent('GAME_CREATED', { jobId: id, gameId: job.gameId });
+      if (job.type === 'RUN_TESTS' && job.input?.target === 'build') this.emitEvent('BUILD_SUCCEEDED', { jobId: id });
+      if (job.type === 'RUN_TESTS' && job.input?.target === 'test') this.emitEvent('TEST_SUCCEEDED', { jobId: id });
+      if (job.type === 'FIX_BUG') this.emitEvent('FIX_SUCCEEDED', { jobId: id });
+      if (job.type === 'DEPLOY_PREVIEW' || job.type === 'DEPLOY_PRODUCTION') this.emitEvent('DEPLOYMENT_SUCCEEDED', { jobId: id });
+    }
   }
 
   public log(id: string, level: 'info' | 'warn' | 'error', message: string, metadata?: any) {
@@ -130,6 +161,12 @@ export class FactoryOrchestrator {
     job.errors.push(error);
     this.log(id, 'error', `Job failed with error`, error);
     this.updateJobState(id, 'FAILED');
+
+    // Trigger failure events for Activepieces
+    if (job.type === 'RUN_TESTS' && job.input?.target === 'build') this.emitEvent('BUILD_FAILED', { jobId: id, error });
+    if (job.type === 'RUN_TESTS' && job.input?.target === 'test') this.emitEvent('TEST_FAILED', { jobId: id, error });
+    if (job.type === 'FIX_BUG') this.emitEvent('FIX_FAILED', { jobId: id, error });
+    if (job.type === 'DEPLOY_PREVIEW' || job.type === 'DEPLOY_PRODUCTION') this.emitEvent('DEPLOYMENT_FAILED', { jobId: id, error });
   }
 
   // Future integration point for Activepieces or Event Bus

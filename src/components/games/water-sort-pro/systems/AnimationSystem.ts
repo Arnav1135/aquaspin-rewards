@@ -51,7 +51,8 @@ export class AnimationSystem {
     const cosR = Math.cos(rot);
     const sinR = Math.sin(rot);
     const scaleFactor = 1.12;
-    const lipLocalX = srcTubeW / 2;
+    const pourLipX = dir === 1 ? srcTubeW - 4 : 4;
+    const lipLocalX = pourLipX;
     const lipLocalY = 0;
     const scaledLipX = lipLocalX * scaleFactor;
     const scaledLipY = lipLocalY * scaleFactor;
@@ -68,29 +69,21 @@ export class AnimationSystem {
       source.parent.addChild(stream);
       
       streamMask = new Graphics();
-      const targetTopGlobal = target.toGlobal({ x: destTubeW / 2, y: 0 });
-      const targetTopBoard = board.toLocal(targetTopGlobal);
+      streamMask.position.copyFrom(target.position);
+      streamMask.rotation = target.rotation;
+      streamMask.scale.copyFrom(target.scale);
+      streamMask.pivot.copyFrom(target.pivot);
       
-      // Allow area above the tube
-      streamMask.rect(-10000, -10000, 20000, 10000 + targetTopBoard.y);
+      // Allow area above the tube (y < 0 in target's local space)
+      streamMask.rect(-10000, -10000, 20000, 10000);
       
-      // Apply the target's transform to the mask shape for perfect alignment
-      const tempMask = new Graphics();
+      // Allow interior of the target tube
       if (destLiquid.vesselDef && destLiquid.vesselDef.drawMask) {
-        destLiquid.vesselDef.drawMask(tempMask, destTubeW, destTubeH);
+        destLiquid.vesselDef.drawMask(streamMask, destTubeW, destTubeH);
       } else {
-        tempMask.roundRect(2, 2, destTubeW - 4, destTubeH - 4, (destTubeW / 2) - 2);
+        streamMask.roundRect(2, 2, destTubeW - 4, destTubeH - 4, (destTubeW / 2) - 2);
       }
       
-      // Since both target and streamMask are in `board` (or stream.parent),
-      // we can apply target's relative transform to tempMask.
-      tempMask.position.copyFrom(target.position);
-      tempMask.rotation = target.rotation;
-      tempMask.scale.copyFrom(target.scale);
-      tempMask.pivot.copyFrom(target.pivot);
-      tempMask.fill({ color: 0xFFFFFF });
-      
-      streamMask.addChild(tempMask);
       streamMask.fill({ color: 0xFFFFFF });
       
       source.parent.addChild(streamMask);
@@ -170,7 +163,8 @@ export class AnimationSystem {
         const srcTubeW = srcLiquid.tubeWidth || 60;
 
         // 1. Calculate actual global exit point from source lip
-        const srcExitLocal = { x: srcTubeW / 2 + dir * (srcTubeW * 0.15), y: 0 }; 
+        const pourLipX = dir === 1 ? srcTubeW - 4 : 4;
+        const srcExitLocal = { x: pourLipX, y: 0 }; 
         const globalExit = source.toGlobal(srcExitLocal);
         const boardExit = board ? board.toLocal(globalExit) : globalExit;
         const exitX = boardExit.x;

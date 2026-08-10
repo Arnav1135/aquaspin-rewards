@@ -2,6 +2,10 @@ import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { GitHubManager } from '../github/GitHubManager.js';
+import { GameSDK } from '../sdk/GameSDK.js';
+import { AssetPipeline } from '../assets/AssetPipeline.js';
+import { AIDebugger } from '../../ai/debugger/AIDebugger.js';
+import { PerformanceEngine } from '../../qa/performance/PerformanceEngine.js';
 
 export type JobType = 
   | 'CREATE_GAME' | 'UPDATE_GAME' | 'FIX_BUG' | 'SCAN_REPOSITORY' 
@@ -198,8 +202,44 @@ export class FactoryOrchestrator {
         }
       }
 
-      // Logic for handing off to AI planner would go here
-      // ...
+      if (job.type === 'CREATE_GAME') {
+        // Milestone 3: SDK Generation
+        this.updateJobState(id, 'IMPLEMENTING');
+        const sdk = new GameSDK();
+        const wrapper = sdk.generateSDKWrapper(job.gameId || 'new-game');
+        this.log(id, 'info', 'Game SDK Wrapper generated.');
+
+        // Milestone 7: Asset Pipeline
+        this.updateJobState(id, 'OPTIMIZING');
+        const pipeline = new AssetPipeline();
+        await pipeline.processAssets(job.gameId || 'new-game', '/assets');
+
+        this.updateJobState(id, 'COMPLETED');
+      }
+
+      if (job.type === 'RUN_PERFORMANCE_TEST') {
+        // Milestone 10: Performance Engine
+        this.updateJobState(id, 'TESTING');
+        const perf = new PerformanceEngine();
+        const results = await perf.runBenchmark(job.gameId || 'target-game');
+        this.log(id, 'info', `Performance Benchmark: ${JSON.stringify(results)}`);
+        
+        if (results.passed) {
+          this.updateJobState(id, 'COMPLETED');
+        } else {
+          this.failJob(id, new Error('Failed performance benchmark'));
+        }
+      }
+
+      if (job.type === 'FIX_BUG') {
+         // Milestone 9: AI Debugger
+         this.updateJobState(id, 'FIXING');
+         const debuggerAI = new AIDebugger();
+         const patch = await debuggerAI.diagnoseFailure(job.gameId || 'target-game', job.input?.error || 'Unknown Error');
+         this.log(id, 'info', `AI Debugger proposed patch: ${patch}`);
+         this.updateJobState(id, 'COMPLETED');
+      }
+
     } catch (error) {
       this.failJob(id, error);
     }

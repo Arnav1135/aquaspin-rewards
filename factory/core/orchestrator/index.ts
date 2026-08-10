@@ -4,6 +4,7 @@ import * as path from 'path';
 import { GitHubManager } from '../github/GitHubManager.js';
 import { GameSDK } from '../sdk/GameSDK.js';
 import { AssetPipeline } from '../assets/AssetPipeline.js';
+import { RegistryManager } from '../../games/registry/RegistryManager.js';
 import { AIDebugger } from '../../ai/debugger/AIDebugger.js';
 import { PerformanceEngine } from '../../qa/performance/PerformanceEngine.js';
 
@@ -213,6 +214,17 @@ export class FactoryOrchestrator {
         this.updateJobState(id, 'OPTIMIZING');
         const pipeline = new AssetPipeline();
         await pipeline.processAssets(job.gameId || 'new-game', '/assets');
+
+        // Milestone 2: Game Registry
+        const registry = new RegistryManager();
+        registry.registerGame({
+          id: job.gameId || 'new-game',
+          name: 'Auto Generated Game',
+          version: '1.0.0',
+          status: 'development',
+          assets: ['/assets/bundle.js']
+        });
+        this.log(id, 'info', 'Game registered in factory manifest.');
 
         this.updateJobState(id, 'COMPLETED');
       }

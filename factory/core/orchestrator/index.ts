@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { GitHubManager } from '../github/GitHubManager.js';
 
 export type JobType = 
   | 'CREATE_GAME' | 'UPDATE_GAME' | 'FIX_BUG' | 'SCAN_REPOSITORY' 
@@ -39,9 +40,11 @@ export interface Job {
 export class FactoryOrchestrator {
   private jobs: Map<string, Job> = new Map();
   private dbPath: string;
+  private github: GitHubManager;
 
   constructor(dbPath: string = path.join(process.cwd(), 'factory', 'core', 'orchestrator', 'jobs.json')) {
     this.dbPath = dbPath;
+    this.github = new GitHubManager();
     this.loadJobs();
   }
 
@@ -134,7 +137,14 @@ export class FactoryOrchestrator {
       if (job.type === 'RUN_TESTS' && job.input?.target === 'build') this.emitEvent('BUILD_SUCCEEDED', { jobId: id });
       if (job.type === 'RUN_TESTS' && job.input?.target === 'test') this.emitEvent('TEST_SUCCEEDED', { jobId: id });
       if (job.type === 'FIX_BUG') this.emitEvent('FIX_SUCCEEDED', { jobId: id });
-      if (job.type === 'DEPLOY_PREVIEW' || job.type === 'DEPLOY_PRODUCTION') this.emitEvent('DEPLOYMENT_SUCCEEDED', { jobId: id });
+      if (job.type === 'DEPLOY_PREVIEW' || job.type === 'DEPLOY_PRODUCTION') {
+        this.emitEvent('DEPLOYMENT_SUCCEEDED', { jobId: id });
+      }
+    }
+    
+    // GitHub CI Triggers
+    if (newState === 'READY' && job.type === 'DEPLOY_PREVIEW') {
+      this.github.triggerGitHubAction('preview-build.yml', 'main').catch(e => console.error(e));
     }
   }
 
@@ -176,6 +186,18 @@ export class FactoryOrchestrator {
     
     try {
       this.updateJobState(id, 'PLANNING');
+      
+      // If we are creating a game or fixing bugs, AI needs an isolated branch (Milestone 11)
+      if (job.type === 'CREATE_GAME' || job.type === 'FIX_BUG') {
+        const safeBranch = `factory-auto/${job.gameId || 'core'}-${job.id.slice(0,6)}`;
+        try {
+          await this.github.createIsolatedBranch(safeBranch);
+          this.log(id, 'info', `Created isolated branch: ${safeBranch}`);
+        } catch (e) {
+          this.log(id, 'warn', 'Failed to create branch (might be disconnected from git)');
+        }
+      }
+
       // Logic for handing off to AI planner would go here
       // ...
     } catch (error) {

@@ -135,7 +135,7 @@ const CrashGame = lazy(() =>
 );
 const PlinkoGame = lazy(() => import("@/components/games/PlinkoGame"));
 const CandyCrushGame = lazy(
-  () => import("@/components/games/CandyCrushSagaMap"),
+  () => import("@/games/candy-crunch/CandyCrunchApp"),
 );
 const AirHockey3DGame = lazy(() =>
   import("@/components/games/AirHockey3DGame").then((m) => ({
@@ -268,7 +268,7 @@ export function MiniGames() {
       case "plinko":
         return <PlinkoGame {...p} />;
       case "candycrush":
-        return <CandyCrushGame onBack={close} balance={0} />;
+        return <CandyCrushGame />;
       case "clicker":
         return <ClickerGame {...p} />;
       case "tap":

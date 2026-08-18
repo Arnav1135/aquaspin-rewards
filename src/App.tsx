@@ -25,6 +25,7 @@ import { Dashboard } from '@/pages/Dashboard';
 import { WheelGame } from '@/pages/WheelGame';
 import { MiniGames } from '@/pages/MiniGames';
 import { CrashGamePage } from '@/pages/CrashGamePage';
+import CandyCrunchApp from '@/games/candy-crunch/CandyCrunchApp';
 
 import { Leaderboard } from '@/pages/Leaderboard';
 import { Profile } from '@/pages/Profile';
@@ -126,6 +127,7 @@ function AppRoutes() {
           <Route path="/wheel" element={<ProtectedRoute><WheelGame /></ProtectedRoute>} />
           <Route path="/crash" element={<ProtectedRoute><CrashGamePage /></ProtectedRoute>} />
           <Route path="/games" element={<ProtectedRoute><MiniGames /></ProtectedRoute>} />
+          <Route path="/games/candy-crunch" element={<ProtectedRoute><CandyCrunchApp /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />

@@ -9,6 +9,7 @@ import { useSpring, a } from '@react-spring/three';
 import { useGameStore } from '../../engine/GameStore';
 import { CameraController } from './CameraController';
 import { WorldEnvironmentSystem } from './WorldEnvironmentSystem';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface BoardTileProps {
   tile: TileData;
@@ -22,9 +23,9 @@ interface BoardTileProps {
 const BoardTile: React.FC<BoardTileProps> = ({ tile, x, y, isSelected, isAiSuggested, onClick }) => {
   // Spring animation for smooth dropping and swapping
   const { position, scale } = useSpring({
-    position: [x, y, 0],
-    scale: isSelected ? [1.25, 1.25, 1.25] : isAiSuggested ? [1.15, 1.15, 1.15] : [1, 1, 1],
-    config: { mass: 1, tension: 280, friction: 20 }
+    from: { position: [x, y + (tile.isFalling ? (tile.fallOffset || 0) * 1.1 : 0), 0] },
+    to: { position: [x, y, 0], scale: isSelected ? [1.25, 1.25, 1.25] : isAiSuggested ? [1.15, 1.15, 1.15] : [1, 1, 1] },
+    config: { mass: 1.2, tension: 320, friction: 22 }
   });
 
   const meshRef = useRef<THREE.Group>(null);
@@ -55,6 +56,8 @@ interface GameSceneProps {
 export const GameScene: React.FC<GameSceneProps> = ({ board, selectedCell, aiSuggestedSwap, onTileClick, onTileDragSwap, isProcessing }) => {
   const explosions = useGameStore(state => state.explosions);
   const removeExplosion = useGameStore(state => state.removeExplosion);
+  const floatingScores = useGameStore(state => state.floatingScores);
+  const removeFloatingScore = useGameStore(state => state.removeFloatingScore);
 
   const rows = board.length;
   const cols = board[0]?.length || 8;
@@ -95,6 +98,25 @@ export const GameScene: React.FC<GameSceneProps> = ({ board, selectedCell, aiSug
     }
   };
 
+  const handlePointerMove = (e: any) => {
+    e.stopPropagation();
+    if (isProcessing || !dragStart.current) return;
+
+    if (e.object && e.object.userData && e.object.userData.row !== undefined) {
+      const currentRow = e.object.userData.row;
+      const currentCol = e.object.userData.col;
+      const start = dragStart.current;
+
+      const dr = Math.abs(currentRow - start.row);
+      const dc = Math.abs(currentCol - start.col);
+
+      if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
+        onTileDragSwap(start.row, start.col, currentRow, currentCol);
+        dragStart.current = null;
+      }
+    }
+  };
+
   return (
     <div className="relative w-full max-w-[540px] aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-300/60 bg-gradient-to-b from-sky-900/80 via-indigo-900/90 to-purple-950/95 cursor-pointer touch-none select-none backdrop-blur-md">
       <Canvas
@@ -122,6 +144,10 @@ export const GameScene: React.FC<GameSceneProps> = ({ board, selectedCell, aiSug
                   userData={{ row: r, col: c }}
                   onPointerDown={handlePointerDown}
                   onPointerUp={handlePointerUp}
+                  onPointerMove={handlePointerMove}
+                  onPointerOut={(e) => {
+                    // prevent stuck drag
+                  }}
                 >
                   <planeGeometry args={[1.02, 1.02]} />
                   <meshStandardMaterial color={(r + c) % 2 === 0 ? 0xffffff : 0xf1f5f9} roughness={0.5} side={THREE.DoubleSide} />
@@ -172,6 +198,36 @@ export const GameScene: React.FC<GameSceneProps> = ({ board, selectedCell, aiSug
           <span>✨ AI Hint Active</span>
         </div>
       )}
+
+      {/* Floating Scores Overlay */}
+      <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+        <AnimatePresence>
+          {floatingScores.map((score) => {
+            // Map grid coords to CSS percentages roughly
+            const px = ((score.col + 0.5) / cols) * 100;
+            const py = ((score.row + 0.5) / rows) * 100;
+            
+            return (
+              <motion.div
+                key={score.id}
+                initial={{ opacity: 1, scale: 0.5, y: `${py}%`, x: `${px}%` }}
+                animate={{ opacity: 0, scale: 1.5, y: `${py - 15}%`, x: `${px}%` }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                onAnimationComplete={() => removeFloatingScore(score.id)}
+                className="absolute font-black italic tracking-tighter text-2xl drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]"
+                style={{ 
+                  color: '#' + score.colorHex.toString(16).padStart(6, '0'),
+                  marginLeft: '-1.5rem',
+                  marginTop: '-1.5rem'
+                }}
+              >
+                {score.text}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

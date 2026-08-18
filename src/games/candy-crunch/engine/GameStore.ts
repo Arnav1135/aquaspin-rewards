@@ -1,8 +1,10 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { TileData, LevelConfig, BoosterType } from '../types';
 import { Match3Engine } from './Match3Engine';
 import { soundEngine } from '../audio/soundEngine';
 import { getLevelConfig } from '../data/levels';
+import { rulesEngine } from './rules/RulesEngine';
 
 interface ExplosionData {
   id: string;
@@ -24,6 +26,11 @@ interface GameState {
   stars: number;
   jellyCount: number;
   ingredientCount: number;
+  floatingScores: { id: string; row: number; col: number; text: string; colorHex: number }[];
+  
+  // Meta-Progression
+  coins: number;
+  playerLevel: number;
   
   // Interactions
   selectedCell: { row: number; col: number } | null;
@@ -61,9 +68,13 @@ interface GameState {
   setMovesLeft: (moves: number) => void;
   addExplosion: (row: number, col: number, colorHex: number) => void;
   removeExplosion: (id: string) => void;
+  addFloatingScore: (row: number, col: number, text: string, colorHex: number) => void;
+  removeFloatingScore: (id: string) => void;
 }
 
-export const useGameStore = create<GameState>((set, get) => ({
+export const useGameStore = create<GameState>()(
+  persist(
+    (set, get) => ({
   levelNumber: 1,
   levelConfig: getLevelConfig(1),
   board: [],
@@ -73,6 +84,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   stars: 0,
   jellyCount: 0,
   ingredientCount: 0,
+  floatingScores: [],
+  coins: 500,
+  playerLevel: 1,
   selectedCell: null,
   activeBooster: null,
   boosterCounts: {
@@ -110,6 +124,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   
   removeExplosion: (id: string) => {
     set((state) => ({ explosions: state.explosions.filter(e => e.id !== id) }));
+  },
+
+  addFloatingScore: (row: number, col: number, text: string, colorHex: number) => {
+    const id = `fs-${Date.now()}-${Math.random()}`;
+    set((state) => ({ floatingScores: [...state.floatingScores, { id, row, col, text, colorHex }] }));
+  },
+
+  removeFloatingScore: (id: string) => {
+    set((state) => ({ floatingScores: state.floatingScores.filter(s => s.id !== id) }));
   },
 
   triggerAnnouncer: (text: string) => {
@@ -198,7 +221,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       soundEngine.playExplosion();
       newBoard[r][c].isMatched = true;
       set({ board: newBoard });
-      processBoardCascade(newBoard, 1, set, get);
+      // Kick off the cascade rules engine loop by faking a MATCH_RESOLVED event
+      rulesEngine.eventBus.emit({
+        type: 'MATCH_RESOLVED',
+        payload: { board: newBoard, matchedTiles: [newBoard[r][c]], cascadeLevel: 1 },
+        timestamp: Date.now()
+      });
     } else if (type === 'extra-moves') {
       soundEngine.playFanfare();
       set((s) => ({ movesLeft: s.movesLeft + 5 }));
@@ -212,25 +240,56 @@ export const useGameStore = create<GameState>((set, get) => ({
         newBoard[randR][randC].special = 'wrapped';
       }
       set({ board: newBoard });
-      processBoardCascade(newBoard, 1, set, get);
+      
+      const wrappedTiles = [];
+      for(let r=0; r<newBoard.length; r++) {
+         for(let c=0; c<newBoard[0].length; c++) {
+            if(newBoard[r][c].special === 'wrapped') wrappedTiles.push(newBoard[r][c]);
+         }
+      }
+
+      rulesEngine.eventBus.emit({
+        type: 'MATCH_RESOLVED',
+        payload: { board: newBoard, matchedTiles: wrappedTiles, cascadeLevel: 1 },
+        timestamp: Date.now()
+      });
     } else if (type === 'party-booster') {
       soundEngine.playExplosion();
       const bRows = newBoard.length;
       const bCols = newBoard[0]?.length || 8;
+      const matchedInBlast = [];
       for (let dr = -1; dr <= 1; dr++) {
         for (let dc = -1; dc <= 1; dc++) {
           const nr = r + dr;
           const nc = c + dc;
           if (nr >= 0 && nr < bRows && nc >= 0 && nc < bCols) {
             newBoard[nr][nc].isMatched = true;
+            matchedInBlast.push(newBoard[nr][nc]);
           }
         }
       }
+      
       set({ board: newBoard });
-      processBoardCascade(newBoard, 1, set, get);
+      rulesEngine.eventBus.emit({
+        type: 'MATCH_RESOLVED',
+        payload: { board: newBoard, matchedTiles: matchedInBlast, cascadeLevel: 1 },
+        timestamp: Date.now()
+      });
     }
   }
-}));
+}),
+{
+  name: 'candy-crunch-storage',
+  partialize: (state) => ({
+    levelStarsMap: state.levelStarsMap,
+    boosterCounts: state.boosterCounts,
+    levelNumber: state.levelNumber,
+    isMuted: state.isMuted,
+    coins: state.coins,
+    playerLevel: state.playerLevel,
+  }),
+}
+));
 
 const handleSwap = async (
   r1: number, c1: number, r2: number, c2: number,
@@ -238,123 +297,10 @@ const handleSwap = async (
 ) => {
   set({ isProcessing: true, aiSuggestedSwap: null });
   soundEngine.playSwap();
-
   const state = get();
-  let newBoard = Match3Engine.cloneBoard(state.board);
-  const tile1 = newBoard[r1][c1];
-  const tile2 = newBoard[r2][c2];
-
-  newBoard[r1][c1] = { ...tile2, row: r1, col: c1 };
-  newBoard[r2][c2] = { ...tile1, row: r2, col: c2 };
-
-  const isSpecialCombo = Match3Engine.handleSpecialSwapCombo(newBoard, r1, c1, r2, c2);
-  const matchesResult = Match3Engine.findMatches(newBoard);
-
-  if (matchesResult.matchedTiles.length === 0 && !isSpecialCombo) {
-    soundEngine.playInvalid();
-    // revert
-    set({ isProcessing: false });
-    return;
-  }
-
-  if (isSpecialCombo) {
-    soundEngine.playExplosion();
-    get().triggerAnnouncer('SUPER COMBO!');
-  }
-
-  set({ movesLeft: state.movesLeft - 1, board: newBoard });
-  await processBoardCascade(newBoard, 1, set, get);
-  set({ isProcessing: false });
-};
-
-const processBoardCascade = async (currentBoard: TileData[][], cascadeLevel: number, set: any, get: any) => {
-  let boardState = Match3Engine.cloneBoard(currentBoard);
-  const matchData = Match3Engine.findMatches(boardState);
-
-  matchData.matchedTiles.forEach((mTile) => {
-    const bTile = boardState[mTile.row][mTile.col];
-    
-    // Spawn 3D particle explosion
-    const colorHexMap: Record<string, number> = {
-      red: 0xef4444, orange: 0xf97316, yellow: 0xeab308,
-      green: 0x22c55e, blue: 0x3b82f6, purple: 0xa855f7,
-    };
-    const cHex = colorHexMap[bTile.color] || 0xef4444;
-    get().addExplosion(mTile.row, mTile.col, cHex);
-
-    if (bTile.special !== 'none') {
-      Match3Engine.activateSpecialCandy(boardState, mTile.row, mTile.col, bTile.special, bTile.color);
-      soundEngine.playExplosion();
-    }
-  });
-
-  Match3Engine.damageAdjacentBlockers(boardState);
-
-  if (matchData.matchedTiles.length === 0) {
-    boardState = Match3Engine.processChocolateSpread(boardState);
-    set({ board: boardState });
-
-    if (!Match3Engine.hasLegalMoves(boardState)) {
-      get().triggerAnnouncer('SHUFFLING BOARD!');
-      boardState = Match3Engine.shuffleBoard(boardState, get().levelConfig.colorsAvailable);
-      set({ board: boardState });
-    }
-
-    checkGameEndConditions(boardState, get().movesLeft, set, get);
-    return;
-  }
-
-  soundEngine.playPop(cascadeLevel);
-
-  const ptsGained = matchData.matchedTiles.length * 100 * cascadeLevel;
-  const state = get();
-  const newScore = state.score + ptsGained;
-  let newStars = state.stars;
   
-  if (newScore >= state.levelConfig.targetScore * 1.5) newStars = 3;
-  else if (newScore >= state.levelConfig.targetScore) newStars = 2;
-  else if (newScore >= state.levelConfig.targetScore * 0.5) newStars = 1;
-
-  let jelliesCleared = 0;
-  matchData.matchedTiles.forEach((tile) => {
-    const bTile = boardState[tile.row][tile.col];
-    bTile.isMatched = true;
-    if (bTile.jellyLayers > 0) {
-      bTile.jellyLayers--;
-      jelliesCleared++;
-    }
-  });
-
-  let newJellyCount = state.jellyCount;
-  if (jelliesCleared > 0) {
-    newJellyCount = Math.max(0, state.jellyCount - jelliesCleared);
-    soundEngine.playBlockerDamage();
-  }
-
-  matchData.specialCreations.forEach((sc) => {
-    boardState[sc.row][sc.col] = {
-      ...boardState[sc.row][sc.col],
-      special: sc.special,
-      isMatched: false,
-    };
-  });
-
-  set({ board: Match3Engine.cloneBoard(boardState), score: newScore, stars: newStars, jellyCount: newJellyCount });
-
-  await new Promise((resolve) => setTimeout(resolve, 250));
-
-  const gravityResult = Match3Engine.applyGravity(boardState, state.levelConfig.colorsAvailable, state.levelConfig.gravityDir);
-  boardState = gravityResult.board;
-  set({ board: Match3Engine.cloneBoard(boardState) });
-
-  if (cascadeLevel === 2) get().triggerAnnouncer('SWEET!');
-  else if (cascadeLevel === 3) get().triggerAnnouncer('TASTY!');
-  else if (cascadeLevel === 4) get().triggerAnnouncer('DELICIOUS!');
-  else if (cascadeLevel >= 5) get().triggerAnnouncer('DIVINE!');
-
-  await new Promise((resolve) => setTimeout(resolve, 200));
-
-  await processBoardCascade(boardState, cascadeLevel + 1, set, get);
+  // Kick off the Event-Driven Rules Engine loop
+  await rulesEngine.processPlayerSwap(r1, c1, r2, c2, state.board, state.levelConfig.colorsAvailable);
 };
 
 const checkGameEndConditions = (currentBoard: TileData[][], remainingMoves: number, set: any, get: any) => {
@@ -370,9 +316,94 @@ const checkGameEndConditions = (currentBoard: TileData[][], remainingMoves: numb
     state.triggerAnnouncer('SUGAR CRUSH!');
     set((s: any) => ({
       levelStarsMap: { ...s.levelStarsMap, [s.levelNumber]: Math.max(s.stars || 1, s.levelStarsMap[s.levelNumber] || 0) },
+      coins: s.coins + 50 + (s.stars * 25),
+      playerLevel: s.playerLevel + 1,
       showVictory: true
     }));
   } else if (remainingMoves <= 0) {
     set({ showDefeat: true });
   }
 };
+
+// --- RULES ENGINE SUBSCRIPTIONS ---
+// This acts as the visual adapter, bridging the backend event queue to the React UI
+
+rulesEngine.eventBus.subscribe('SWAP_SUCCESS', async (event) => {
+  const { board, cascadeLevel, isSpecialCombo } = event.payload;
+  if (isSpecialCombo) {
+    soundEngine.playExplosion();
+    useGameStore.getState().triggerAnnouncer('SUPER COMBO!');
+  }
+  useGameStore.setState((s) => ({ movesLeft: s.movesLeft - 1, board }));
+  await new Promise((r) => setTimeout(r, 250)); // Let the swap animation play out
+});
+
+rulesEngine.eventBus.subscribe('SWAP_FAILURE', async (event) => {
+  soundEngine.playInvalid();
+  useGameStore.setState({ isProcessing: false });
+});
+
+rulesEngine.eventBus.subscribe('MATCH_RESOLVED', async (event) => {
+  const { board, matchedTiles, cascadeLevel } = event.payload;
+  const state = useGameStore.getState();
+
+  // Handle score & stars
+  const ptsGained = matchedTiles.length * 100 * (cascadeLevel || 1);
+  const newScore = state.score + ptsGained;
+  let newStars = state.stars;
+  if (newScore >= state.levelConfig.targetScore * 1.5) newStars = 3;
+  else if (newScore >= state.levelConfig.targetScore) newStars = 2;
+  else if (newScore >= state.levelConfig.targetScore * 0.5) newStars = 1;
+
+  // Handle Jelly counts
+  let newJellyCount = state.jellyCount;
+  let jelliesCleared = 0;
+  matchedTiles.forEach((tile: TileData) => {
+    if (tile.jellyLayers > 0) jelliesCleared++;
+  });
+  if (jelliesCleared > 0) {
+    newJellyCount = Math.max(0, state.jellyCount - jelliesCleared);
+    soundEngine.playBlockerDamage();
+  }
+
+  // Visual effects
+  soundEngine.playPop(cascadeLevel || 1);
+  matchedTiles.forEach((mTile: TileData) => {
+    const colorHexMap: Record<string, number> = {
+      red: 0xef4444, orange: 0xf97316, yellow: 0xeab308, green: 0x22c55e, blue: 0x3b82f6, purple: 0xa855f7
+    };
+    const cHex = colorHexMap[mTile.color] || 0xef4444;
+    state.addExplosion(mTile.row, mTile.col, cHex);
+  });
+  
+  if (matchedTiles.length > 0) {
+    const mainTile = matchedTiles[0];
+    const cHex = (mainTile.color === 'red' ? 0xef4444 : 0xef4444); // Simplified for speed
+    state.addFloatingScore(mainTile.row, mainTile.col, `+${ptsGained}`, cHex);
+  }
+
+  useGameStore.setState({ board, score: newScore, stars: newStars, jellyCount: newJellyCount });
+  await new Promise((r) => setTimeout(r, 300)); // Explosion animation delay
+});
+
+rulesEngine.eventBus.subscribe('REFILL', async (event) => {
+  const { board } = event.payload;
+  useGameStore.setState({ board });
+  await new Promise((r) => setTimeout(r, 250)); // Gravity drop delay
+});
+
+rulesEngine.eventBus.subscribe('CASCADE_ENDED', async (event) => {
+  const { board } = event.payload;
+  useGameStore.setState({ board });
+  
+  // We're done cascading, check for game end conditions
+  const state = useGameStore.getState();
+  if (!Match3Engine.hasLegalMoves(board)) {
+    state.triggerAnnouncer('SHUFFLING BOARD!');
+    const newBoard = Match3Engine.shuffleBoard(board, state.levelConfig.colorsAvailable);
+    useGameStore.setState({ board: newBoard });
+  }
+
+  checkGameEndConditions(board, state.movesLeft, useGameStore.setState, useGameStore.getState);
+  useGameStore.setState({ isProcessing: false });
+});

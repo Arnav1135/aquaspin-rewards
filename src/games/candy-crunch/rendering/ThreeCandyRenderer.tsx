@@ -143,10 +143,52 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
       const elapsedTime = clock.getElapsedTime();
       const delta = clock.getDelta();
 
-      // Subtle float / breathing rotation for candy meshes
+      // Subtle float / breathing rotation and Physics-based falling for candy meshes
       tileMeshesRef.current.forEach((meshGroup, key) => {
+        // Idle animation
         meshGroup.rotation.z = Math.sin(elapsedTime * 2 + meshGroup.position.x) * 0.05;
         meshGroup.rotation.y = Math.cos(elapsedTime * 1.5 + meshGroup.position.y) * 0.08;
+
+        // Physics interpolation towards target
+        if (meshGroup.userData.targetY !== undefined) {
+          const targetY = meshGroup.userData.targetY;
+          const targetX = meshGroup.userData.targetX;
+          
+          // X interpolation (for horizontal shifts/swaps)
+          if (Math.abs(meshGroup.position.x - targetX) > 0.01) {
+            meshGroup.position.x += (targetX - meshGroup.position.x) * 15 * delta;
+          } else {
+            meshGroup.position.x = targetX;
+          }
+
+          // Y falling physics with acceleration
+          if (meshGroup.userData.isFalling && meshGroup.position.y > targetY) {
+            meshGroup.userData.velocityY = (meshGroup.userData.velocityY || 0) - (20 * delta); // Gravity
+            meshGroup.position.y += meshGroup.userData.velocityY * delta;
+            
+            // Bounce/stop at target
+            if (meshGroup.position.y <= targetY) {
+              meshGroup.position.y = targetY;
+              meshGroup.userData.velocityY = 0;
+              meshGroup.userData.isFalling = false;
+              // Play tiny bounce squash/stretch?
+              meshGroup.scale.set(1.1, 0.9, 1.0);
+            }
+          } else if (Math.abs(meshGroup.position.y - targetY) > 0.01) {
+            // Smooth lerp for non-falling movements (swaps)
+            meshGroup.position.y += (targetY - meshGroup.position.y) * 15 * delta;
+          } else {
+            meshGroup.position.y = targetY;
+          }
+          
+          // Recover scale from bounce
+          if (!meshGroup.userData.isFalling) {
+            const targetScale = meshGroup.userData.targetScale || 1.0;
+            meshGroup.scale.x += (targetScale - meshGroup.scale.x) * 10 * delta;
+            meshGroup.scale.y += (targetScale - meshGroup.scale.y) * 10 * delta;
+            meshGroup.scale.z += (targetScale - meshGroup.scale.z) * 10 * delta;
+          }
+        }
       });
 
       if (particleGroupRef.current) {
@@ -206,12 +248,24 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
 
         if (!meshGroup) {
           meshGroup = createCandyMeshGroup(tile);
+          
+          // If the tile is newly created and falling (refill), start it above the board
+          if (tile.isFalling && tile.fallOffset) {
+            meshGroup.position.set(x, y + tile.fallOffset * 1.1, 0);
+          } else {
+            meshGroup.position.set(x, y, 0);
+          }
+          
           sceneRef.current.add(meshGroup);
           tileMeshesRef.current.set(key, meshGroup);
         }
 
-        // Set 3D position
-        meshGroup.position.set(x, y, 0);
+        // Set Physics Target
+        meshGroup.userData.targetX = x;
+        meshGroup.userData.targetY = y;
+        if (tile.isFalling) {
+          meshGroup.userData.isFalling = true;
+        }
 
         // Highlight selected or AI suggested tile
         const isSelected = selectedCell?.row === r && selectedCell?.col === c;
@@ -221,11 +275,11 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
             (aiSuggestedSwap.toRow === r && aiSuggestedSwap.toCol === c));
 
         if (isSelected) {
-          meshGroup.scale.set(1.25, 1.25, 1.25);
+          meshGroup.userData.targetScale = 1.25;
         } else if (isAiSuggested) {
-          meshGroup.scale.set(1.15, 1.15, 1.15);
+          meshGroup.userData.targetScale = 1.15;
         } else {
-          meshGroup.scale.set(1.0, 1.0, 1.0);
+          meshGroup.userData.targetScale = 1.0;
         }
       }
     }
@@ -244,6 +298,7 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
     if (isProcessing) return;
     const rect = mountRef.current?.getBoundingClientRect();
     if (!rect) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
 
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -260,7 +315,35 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
     }
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragStartCell.current || isProcessing) return;
+    
+    const rect = mountRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const cols = board[0].length;
+    const rows = board.length;
+
+    const currentCol = Math.floor((x / rect.width) * cols);
+    const currentRow = Math.floor((y / rect.height) * rows);
+
+    const start = dragStartCell.current;
+
+    // Detect swipe (distance must be exactly 1 cell away)
+    const dr = Math.abs(currentRow - start.row);
+    const dc = Math.abs(currentCol - start.col);
+
+    if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
+      onTileDragSwap(start.row, start.col, currentRow, currentCol);
+      dragStartCell.current = null; // Reset to prevent multiple triggers
+    }
+  };
+
   const handlePointerUp = (e: React.PointerEvent) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
     if (!dragStartCell.current || isProcessing) return;
     const rect = mountRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -292,7 +375,9 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
     <div
       ref={mountRef}
       onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       className="relative w-full max-w-[540px] aspect-square rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-300/60 bg-gradient-to-b from-sky-900/80 via-indigo-900/90 to-purple-950/95 cursor-pointer touch-none select-none backdrop-blur-md"
     >
       {/* 2D/3D Overlay sparkles & AI suggestion indicator */}

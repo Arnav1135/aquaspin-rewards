@@ -11,14 +11,14 @@ interface AdvancedCandyRendererProps {
   isProcessing: boolean;
 }
 
-export const AdvancedCandyRenderer: React.FC<AdvancedCandyRendererProps> = ({
+export const AdvancedCandyRenderer = React.memo(({
   board,
   selectedCell,
   aiSuggestedSwap,
   onTileClick,
   onTileDragSwap,
   isProcessing,
-}) => {
+}: AdvancedCandyRendererProps) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<GameRenderer | null>(null);
   const dragStartCell = useRef<{ row: number; col: number } | null>(null);
@@ -36,11 +36,14 @@ export const AdvancedCandyRenderer: React.FC<AdvancedCandyRendererProps> = ({
   }, []);
 
   useEffect(() => {
+    // We only call this when selectedCell or aiSuggestedSwap change.
+    // The EventBus inside GameRenderer handles 'board' updates autonomously!
     if (rendererRef.current && board.length > 0) {
-      // Sync board data to the rendering engine
       rendererRef.current.renderBoard(board);
     }
-  }, [board, selectedCell, aiSuggestedSwap]);
+  }, [selectedCell, aiSuggestedSwap]); 
+  // Deliberately removed 'board' from deps so React doesn't force a Three.js re-sync on every cascade frame.
+
 
   // Input Handling Layer
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -133,4 +136,4 @@ export const AdvancedCandyRenderer: React.FC<AdvancedCandyRendererProps> = ({
       )}
     </div>
   );
-};
+});

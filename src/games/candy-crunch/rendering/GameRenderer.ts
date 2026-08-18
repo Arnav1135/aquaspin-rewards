@@ -71,6 +71,29 @@ export class GameRenderer {
     // Resize Event
     window.addEventListener('resize', this.onResize);
 
+    // Subscribe to Event Bus (Phase 34)
+    import('../engine/rules/RulesEngine').then(({ rulesEngine }) => {
+      rulesEngine.eventBus.subscribe('SWAP_SUCCESS', async (e) => {
+        this.renderBoard(e.payload.board);
+      });
+      rulesEngine.eventBus.subscribe('MATCH_RESOLVED', async (e) => {
+        // Spawn specific colored explosions for matched tiles!
+        e.payload.matchedTiles.forEach((tile: TileData) => {
+          const c3 = this.tileMeshes.get(tile.id)?.position;
+          if (c3) {
+            this.vfx.spawnExplosion(c3.x, c3.y, tile.color, 15);
+          }
+        });
+        this.renderBoard(e.payload.board);
+      });
+      rulesEngine.eventBus.subscribe('REFILL', async (e) => {
+        this.renderBoard(e.payload.board);
+      });
+      rulesEngine.eventBus.subscribe('CASCADE_ENDED', async (e) => {
+        this.renderBoard(e.payload.board);
+      });
+    });
+
     // Start Loop
     this.animate();
   }
@@ -129,10 +152,20 @@ export class GameRenderer {
         // We do NOT use frame-by-frame physics lerp anymore. 
         // We use the AnimationEngine to tween to the target cleanly!
         if (meshGroup.position.x !== x || meshGroup.position.y !== y) {
+           const dist = Math.sqrt(Math.pow(meshGroup.position.x - x, 2) + Math.pow(meshGroup.position.y - y, 2));
+           
            this.animation.to(meshGroup.position, 'x', x, 0.3);
            
            if (tile.isFalling) {
              // Fall animation (bounce at the end)
+             // Phase 13: Squash & Stretch during fall
+             this.animation.to(meshGroup.scale, 'y', 1.2, 0.2, undefined, 0, () => {
+               this.animation.to(meshGroup.scale, 'y', 1.0, 0.2);
+             });
+             this.animation.to(meshGroup.scale, 'x', 0.8, 0.2, undefined, 0, () => {
+               this.animation.to(meshGroup.scale, 'x', 1.0, 0.2);
+             });
+
              this.animation.to(meshGroup.position, 'y', y, 0.4, (t) => {
                // Custom bounce out easing
                if (t < 1 / 2.75) return 7.5625 * t * t;
@@ -142,7 +175,23 @@ export class GameRenderer {
              });
              tile.isFalling = false; // consume state
            } else {
-             // Swap animation
+             // Swap animation (Squash and Stretch laterally if horizontal, vertically if vertical)
+             if (Math.abs(meshGroup.position.x - x) > 0.1) {
+               this.animation.to(meshGroup.scale, 'x', 1.3, 0.15, undefined, 0, () => {
+                 this.animation.to(meshGroup.scale, 'x', 1.0, 0.15);
+               });
+               this.animation.to(meshGroup.scale, 'y', 0.7, 0.15, undefined, 0, () => {
+                 this.animation.to(meshGroup.scale, 'y', 1.0, 0.15);
+               });
+             } else if (Math.abs(meshGroup.position.y - y) > 0.1) {
+               this.animation.to(meshGroup.scale, 'y', 1.3, 0.15, undefined, 0, () => {
+                 this.animation.to(meshGroup.scale, 'y', 1.0, 0.15);
+               });
+               this.animation.to(meshGroup.scale, 'x', 0.7, 0.15, undefined, 0, () => {
+                 this.animation.to(meshGroup.scale, 'x', 1.0, 0.15);
+               });
+             }
+
              this.animation.to(meshGroup.position, 'y', y, 0.3);
            }
         }

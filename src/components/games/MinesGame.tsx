@@ -339,7 +339,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
 
   return (
     <div 
-      className={`relative flex flex-col lg:flex-row gap-6 p-4 max-w-7xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch overflow-hidden text-text-primary transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
+      className={`relative flex flex-col-reverse lg:flex-row gap-6 p-4 max-w-7xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch overflow-hidden text-text-primary transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
         vinnitusActive ? 'filter saturate-50 contrast-125' : ''
       }`}
       style={{
@@ -458,7 +458,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
       </Card>
 
       {/* 3D Game Board Viewport */}
-      <Card className="flex-1 min-w-0 w-full flex flex-col items-center justify-between relative min-h-[500px] border border-slate-800 rounded-2xl overflow-hidden z-20 bg-slate-950">
+      <Card className="flex-1 min-w-0 w-full flex flex-col items-center justify-between relative min-h-[400px] lg:min-h-[500px] border border-slate-800 rounded-2xl overflow-hidden z-20 bg-slate-950">
         <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-500 font-mono tracking-wider z-10">
           <HelpCircle size={10} className="text-cyan-400" />
           <span>3D TACTICAL GRID</span>
@@ -566,4 +566,5 @@ export function MinesGame({ onClose }: MinesGameProps) {
     </div>
   );
 }
+
 

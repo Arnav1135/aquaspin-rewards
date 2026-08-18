@@ -356,7 +356,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
   );
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 w-full h-full min-h-[calc(100vh-100px)] items-stretch rounded-2xl shadow-2xl relative overflow-hidden" 
+    <div className="flex flex-col-reverse lg:flex-row gap-6 p-4 w-full h-full min-h-[calc(100vh-100px)] items-stretch rounded-2xl shadow-2xl relative overflow-hidden" 
          style={{ background: 'radial-gradient(circle at center, #0f5132 0%, #062b19 100%)' }}>
       
       {/* Background Decor */}
@@ -415,7 +415,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       </UICard>
 
       {/* Board Area */}
-      <div className="flex-1 min-w-0 w-full relative min-h-[500px] z-10 p-2 sm:p-4 overflow-hidden">
+      <div className="flex-1 min-w-0 w-full relative min-h-[400px] lg:min-h-[500px] z-10 p-2 sm:p-4 overflow-hidden">
         {isPlaying && board ? (
           <div className="w-full max-w-5xl mx-auto w-full h-full flex flex-col gap-6 sm:gap-10">
             
@@ -523,4 +523,5 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
     </div>
   );
 }
+
 

@@ -287,7 +287,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
   return (
     <ErrorBoundary name="DragonTigerGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1c0a08 0%, #0a100a 50%, #080a1c 100%)' }}>
+      <div className="flex flex-col-reverse lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1c0a08 0%, #0a100a 50%, #080a1c 100%)' }}>
         
         {/* Screen Edge Allegiance Red/Blue glow vignette */}
         {betSelection === 'dragon' && !dealing && (
@@ -498,4 +498,5 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
     </ErrorBoundary>
   );
 }
+
 

@@ -199,7 +199,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
   return (
     <div 
-      className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl"
+      className="flex flex-col-reverse lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl"
       style={{ background: getThemeGradient() }}
     >
       <style>{`
@@ -442,4 +442,5 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     </div>
   );
 }
+
 

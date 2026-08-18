@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { HeaderHUD } from './components/HeaderHUD';
 import { BoosterBar } from './components/BoosterBar';
-import { GameScene as ThreeCandyRenderer } from './rendering/components/GameScene';
+import { AdvancedCandyRenderer as ThreeCandyRenderer } from './rendering/components/AdvancedCandyRenderer';
 import { AIAdvisorModal } from './components/AIAdvisorModal';
 import { WorldMapModal } from './components/WorldMapModal';
 import { VictoryModal } from './components/VictoryModal';

@@ -9,6 +9,7 @@ import {
   LevelValidationResult,
 } from '../types';
 import { LevelValidator } from './LevelValidator';
+import { MatchDetector } from './MatchDetector';
 
 export class Match3Engine {
   // Shape mapper based on color
@@ -143,147 +144,34 @@ export class Match3Engine {
     return board.map((row) => row.map((tile) => ({ ...tile })));
   }
 
-  // Find all matches on board
+  // Find all matches on board using the new MatchDetector
   public static findMatches(board: TileData[][]): {
     matchedTiles: TileData[];
     specialCreations: { row: number; col: number; special: SpecialType; color: CandyColor; shape: CandyShape }[];
   } {
-    const rows = board.length;
-    const cols = board[0].length;
-    const horizMatches: { r: number; c: number; len: number; color: CandyColor }[] = [];
-    const vertMatches: { r: number; c: number; len: number; color: CandyColor }[] = [];
-
-    // Scan horizontal
-    for (let r = 0; r < rows; r++) {
-      let matchLen = 1;
-      for (let c = 0; c < cols; c++) {
-        const isNextSame =
-          c < cols - 1 &&
-          board[r][c].blocker === 'none' &&
-          board[r][c + 1].blocker === 'none' &&
-          board[r][c].color === board[r][c + 1].color;
-
-        if (isNextSame) {
-          matchLen++;
-        } else {
-          if (matchLen >= 3) {
-            horizMatches.push({
-              r,
-              c: c - matchLen + 1,
-              len: matchLen,
-              color: board[r][c].color,
-            });
-          }
-          matchLen = 1;
-        }
-      }
-    }
-
-    // Scan vertical
-    for (let c = 0; c < cols; c++) {
-      let matchLen = 1;
-      for (let r = 0; r < rows; r++) {
-        const isNextSame =
-          r < rows - 1 &&
-          board[r][c].blocker === 'none' &&
-          board[r + 1][c].blocker === 'none' &&
-          board[r][c].color === board[r + 1][c].color;
-
-        if (isNextSame) {
-          matchLen++;
-        } else {
-          if (matchLen >= 3) {
-            vertMatches.push({
-              r: r - matchLen + 1,
-              c,
-              len: matchLen,
-              color: board[r][c].color,
-            });
-          }
-          matchLen = 1;
-        }
-      }
-    }
-
+    const results = MatchDetector.detectMatches(board);
+    
     const matchedSet = new Set<string>();
     const matchedTiles: TileData[] = [];
     const specialCreations: { row: number; col: number; special: SpecialType; color: CandyColor; shape: CandyShape }[] = [];
 
-    // Process horizontal matches
-    for (const hm of horizMatches) {
-      for (let i = 0; i < hm.len; i++) {
-        const tile = board[hm.r][hm.c + i];
+    for (const match of results) {
+      for (const cell of match.cells) {
+        const tile = board[cell.row][cell.col];
         if (!matchedSet.has(tile.id)) {
           matchedSet.add(tile.id);
           matchedTiles.push(tile);
         }
       }
 
-      // Check Special Creations
-      if (hm.len >= 5) {
+      if (match.specialCreation !== 'none' && match.specialCreationCoords) {
         specialCreations.push({
-          row: hm.r,
-          col: hm.c + 2,
-          special: 'color-bomb',
-          color: hm.color,
-          shape: 'circle',
+          row: match.specialCreationCoords.row,
+          col: match.specialCreationCoords.col,
+          special: match.specialCreation,
+          color: match.specialCreationColor!,
+          shape: match.specialCreationShape!
         });
-      } else if (hm.len === 4) {
-        specialCreations.push({
-          row: hm.r,
-          col: hm.c + 1,
-          special: 'striped-v',
-          color: hm.color,
-          shape: board[hm.r][hm.c + 1].shape,
-        });
-      }
-    }
-
-    // Process vertical matches
-    for (const vm of vertMatches) {
-      for (let i = 0; i < vm.len; i++) {
-        const tile = board[vm.r + i][vm.c];
-        if (!matchedSet.has(tile.id)) {
-          matchedSet.add(tile.id);
-          matchedTiles.push(tile);
-        }
-      }
-
-      if (vm.len >= 5) {
-        specialCreations.push({
-          row: vm.r + 2,
-          col: vm.c,
-          special: 'color-bomb',
-          color: vm.color,
-          shape: 'circle',
-        });
-      } else if (vm.len === 4) {
-        specialCreations.push({
-          row: vm.r + 1,
-          col: vm.c,
-          special: 'striped-h',
-          color: vm.color,
-          shape: board[vm.r + 1][vm.c].shape,
-        });
-      }
-    }
-
-    // Check T or L shapes (intersection of horizontal & vertical matches)
-    for (const hm of horizMatches) {
-      for (const vm of vertMatches) {
-        if (hm.color === vm.color) {
-          const intersectRow = vm.r <= hm.r && hm.r < vm.r + vm.len;
-          const intersectCol = hm.c <= vm.c && vm.c < hm.c + hm.len;
-          if (intersectRow && intersectCol) {
-            specialCreations.push({
-              row: hm.r,
-              col: vm.c,
-              special: 'wrapped',
-              color: hm.color,
-              shape: board[hm.r][vm.c].shape,
-            });
-          }
-        }
       }
     }
 

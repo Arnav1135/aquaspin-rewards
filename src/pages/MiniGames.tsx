@@ -266,7 +266,7 @@ export function MiniGames() {
       case "crash":
         return <CrashGame {...p} />;
       case "plinko":
-        return <PlinkoGame />;
+        return <PlinkoGame {...p} />;
       case "candycrush":
         return <CandyCrushGame onBack={close} balance={0} />;
       case "clicker":

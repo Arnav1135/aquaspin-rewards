@@ -50,7 +50,7 @@ VesselRegistry.register({
     g.arc(r, h - r, r, Math.PI, 0, true);
     g.lineTo(w, 0);
     g.fill({ color, alpha: opacity * 0.3 });
-    g.stroke({ width: thickness, color, alpha: opacity });
+    g.stroke({ width: thickness, color, alpha: opacity, join: 'round', cap: 'round' });
   },
   drawMask: (g, w, h) => {
     const r = w / 2;
@@ -61,7 +61,7 @@ VesselRegistry.register({
     // Rim
     g.ellipse(w / 2, 0, w / 2 + 3, 4);
     g.fill({ color: 0xFFFFFF, alpha: 0.2 });
-    g.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9 });
+    g.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9, join: 'round', cap: 'round' });
     
     // Side reflections
     g.rect(0, 5, 4, h - r);

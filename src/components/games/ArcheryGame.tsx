@@ -1,627 +1,304 @@
-import { useEffect, useRef, useState } from 'react';
-import { 
-    Engine, Scene, Vector3, HemisphericLight, MeshBuilder, FreeCamera, 
-    Color3, DirectionalLight, ShadowGenerator,
-    DefaultRenderingPipeline, PBRMaterial, Texture,
-    ParticleSystem, Ray, TransformNode, Animation, BezierCurveEase, EasingFunction,
-    Mesh
-} from '@babylonjs/core';
-import { GameFrame } from './GameFrame';
-import { StabilityManager } from '../../games/archery/StabilityManager';
+import React, { useRef, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Physics, RigidBody, CuboidCollider, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
+import { Environment, PerspectiveCamera, Box, Cylinder, Trail } from '@react-three/drei';
+import * as THREE from 'three';
+import { Button } from '@/components/ui/Button';
+import { GameEngine3D } from '@/engine/GameEngine3D';
 import { audio } from '@/lib/audioEngine';
+import toast from 'react-hot-toast';
 
-interface Props {
-  onClose: () => void;
+interface Props { onClose: () => void; }
+
+// --- Arrow Component ---
+function Arrow({ position, rotation, velocity, onHit }: { position: [number,number,number], rotation: [number,number,number], velocity: [number,number,number], onHit: (pos: THREE.Vector3, distFromCenter: number) => void }) {
+  const bodyRef = useRef<RapierRigidBody>(null);
+  const [stuck, setStuck] = useState(false);
+
+  useEffect(() => {
+    if (bodyRef.current && !stuck) {
+      bodyRef.current.setLinvel(new THREE.Vector3(...velocity), true);
+      audio.play('archery', 'shoot');
+    }
+  }, [velocity, stuck]);
+
+  useFrame(() => {
+    if (stuck || !bodyRef.current) return;
+    const vel = bodyRef.current.linvel();
+    if (Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z) > 0.1) {
+      // align arrow with velocity
+      const dir = new THREE.Vector3(vel.x, vel.y, vel.z).normalize();
+      const targetRotation = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        dir
+      );
+      bodyRef.current.setRotation(targetRotation, true);
+    }
+  });
+
+  return (
+    <RigidBody
+      ref={bodyRef}
+      position={position}
+      rotation={rotation}
+      colliders={false}
+      mass={0.1}
+      ccd={true}
+      linearDamping={0.1}
+      onCollisionEnter={(e) => {
+        if (stuck) return;
+        if (e.other.rigidBodyObject?.name === 'target') {
+          setStuck(true);
+          if (bodyRef.current) {
+            bodyRef.current.setBodyType(2, true); // kinematic position
+            bodyRef.current.setLinvel({x:0, y:0, z:0}, true);
+            bodyRef.current.setAngvel({x:0, y:0, z:0}, true);
+          }
+          audio.play('archery', 'hit');
+          
+          let hitPos = new THREE.Vector3();
+          if (bodyRef.current) {
+            const p = bodyRef.current.translation();
+            hitPos.set(p.x, p.y, p.z);
+          }
+          const targetCenter = new THREE.Vector3(0, 1.5, -30);
+          const dist = hitPos.distanceTo(targetCenter);
+          onHit(hitPos, dist);
+        } else if (e.other.rigidBodyObject?.name === 'ground') {
+          setStuck(true);
+        }
+      }}
+    >
+      <CylinderCollider args={[0.4, 0.02]} position={[0, 0, 0]} rotation={[Math.PI/2, 0, 0]} />
+      
+      <Trail local width={0.1} length={4} color={new THREE.Color(0.2, 0.8, 1)} attenuation={(t: number) => t * t}>
+        <group rotation={[Math.PI/2, 0, 0]}>
+          <Cylinder args={[0.02, 0.02, 0.8, 8]}>
+            <meshStandardMaterial color="#8B4513" />
+          </Cylinder>
+          <Cylinder args={[0.03, 0.001, 0.1, 8]} position={[0, -0.45, 0]}>
+            <meshStandardMaterial color="#silver" metalness={0.8} roughness={0.2} />
+          </Cylinder>
+          <Box args={[0.1, 0.1, 0.01]} position={[0, 0.35, 0]}>
+            <meshStandardMaterial color="#ff0000" />
+          </Box>
+        </group>
+      </Trail>
+    </RigidBody>
+  );
+}
+
+// --- Target Component ---
+function ArcheryTarget() {
+  return (
+    <RigidBody type="fixed" name="target" position={[0, 1.5, -30]} rotation={[Math.PI/2, 0, 0]}>
+      <CylinderCollider args={[0.1, 2]} />
+      <Cylinder args={[2, 2, 0.2, 32]}>
+        <meshStandardMaterial color="white" />
+      </Cylinder>
+      <Cylinder args={[1.6, 1.6, 0.21, 32]}>
+         <meshStandardMaterial color="black" />
+      </Cylinder>
+      <Cylinder args={[1.2, 1.2, 0.22, 32]}>
+         <meshStandardMaterial color="#00a8ff" />
+      </Cylinder>
+      <Cylinder args={[0.8, 0.8, 0.23, 32]}>
+         <meshStandardMaterial color="red" />
+      </Cylinder>
+      <Cylinder args={[0.4, 0.4, 0.24, 32]}>
+         <meshStandardMaterial color="#FFD700" />
+      </Cylinder>
+      
+      {/* Stand */}
+      <Box args={[0.2, 3, 0.2]} position={[-1, 0, -1.5]} rotation={[0, 0, Math.PI/2]}>
+        <meshStandardMaterial color="#5C4033" />
+      </Box>
+      <Box args={[0.2, 3, 0.2]} position={[1, 0, -1.5]} rotation={[0, 0, Math.PI/2]}>
+        <meshStandardMaterial color="#5C4033" />
+      </Box>
+    </RigidBody>
+  );
+}
+
+// --- Player Bow Camera ---
+function BowCamera({ isAiming, swayX, swayY, firePower }: any) {
+  const { camera } = useThree();
+  
+  useFrame((state) => {
+    const basePos = new THREE.Vector3(0, 1.8, 0);
+    const targetPos = new THREE.Vector3(
+      basePos.x + swayX * 0.5,
+      basePos.y + swayY * 0.5,
+      isAiming ? 1 : 0
+    );
+    camera.position.lerp(targetPos, 0.1);
+    
+    const lookAtPos = new THREE.Vector3(swayX * 5, 1.5 + swayY * 5, -30);
+    camera.lookAt(lookAtPos);
+  });
+  
+  return null;
 }
 
 export function ArcheryGame({ onClose }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [loading, setLoading] = useState(true);
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'result'>('menu');
+  const [arrows, setArrows] = useState<any[]>([]);
+  const [score, setScore] = useState(0);
+  const [shotsLeft, setShotsLeft] = useState(5);
+  
+  const [isAiming, setIsAiming] = useState(false);
   const [power, setPower] = useState(0);
-  const [gameState, setGameState] = useState<'idle' | 'drawing' | 'flying' | 'result'>('idle');
-  const [mode, setMode] = useState<'solo' | 'pass-and-play' | 'vs-ai'>('solo');
-  const [currentPlayer, setCurrentPlayer] = useState(1);
-  const [p1Score, setP1Score] = useState(0);
-  const [p2Score, setP2Score] = useState(0);
-  const [round, setRound] = useState(1);
-  const maxRounds = 3;
-  const [wind, setWind] = useState(0);
-  const [resultMessage, setResultMessage] = useState('');
-
-  // Refs for Babylon interactions
-  const sceneRef = useRef<Scene | null>(null);
-  const engineRef = useRef<Engine | null>(null);
-  const cameraRef = useRef<FreeCamera | null>(null);
-  const bowRef = useRef<TransformNode | null>(null);
-  const bowStringRef = useRef<Mesh | null>(null);
+  const [swayX, setSwayX] = useState(0);
+  const [swayY, setSwayY] = useState(0);
   
-  // Game state refs
-  const drawPowerRef = useRef(0);
-  const isDrawingRef = useRef(false);
-  const activeArrowRef = useRef<{mesh: Mesh, velocity: Vector3, trail: ParticleSystem, isStuck: boolean} | null>(null);
-  
-  const targetDist = 70;
-  const targetNodeRef = useRef<TransformNode | null>(null);
-
-  const matchState = useRef({
-      currentPlayer: 1,
-      round: 1,
-      p1Score: 0,
-      p2Score: 0
-  });
-
   useEffect(() => {
-    let engine: Engine;
-    let scene: Scene;
-    let stabilityManager: StabilityManager;
+    if (gameState !== 'playing') return;
     
-    const initEngine = async () => {
-      if (!canvasRef.current) return;
+    let time = 0;
+    const interval = setInterval(() => {
+      time += 0.05;
+      let magnitude = isAiming ? 0.05 + (power / 100) * 0.1 : 0.02;
+      setSwayX(Math.sin(time * 2) * magnitude);
+      setSwayY(Math.cos(time * 3) * magnitude * 0.5);
       
-      engine = new Engine(canvasRef.current, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
-      engineRef.current = engine;
-      scene = new Scene(engine);
-      sceneRef.current = scene;
-      
-      // Better rendering
-      scene.clearColor = new Color3(0.5, 0.7, 0.9).toColor4(1);
-      
-      stabilityManager = new StabilityManager(engine, scene, (err) => {
-         console.error("Critical Failure in Archery3D", err);
-      });
-
-      // Camera
-      const camera = new FreeCamera("camera1", new Vector3(0, 1.8, -10), scene);
-      camera.setTarget(new Vector3(0, 1.5, targetDist));
-      camera.minZ = 0.1;
-      cameraRef.current = camera;
-
-      // Lighting - HDR / PBR setup
-      const hemiLight = new HemisphericLight("hemiLight", new Vector3(0, 1, 0), scene);
-      hemiLight.intensity = 0.6;
-      hemiLight.specular = new Color3(0.1, 0.1, 0.1);
-      hemiLight.groundColor = new Color3(0.2, 0.3, 0.2);
-      
-      const dirLight = new DirectionalLight("dirLight", new Vector3(-0.5, -1, -0.5), scene);
-      dirLight.position = new Vector3(20, 40, 20);
-      dirLight.intensity = 1.5;
-      
-      const shadowGenerator = new ShadowGenerator(2048, dirLight);
-      shadowGenerator.useBlurExponentialShadowMap = true;
-      shadowGenerator.blurKernel = 32;
-
-      // Environment (Skybox & Ground)
-      const envHelper = scene.createDefaultEnvironment({
-          createSkybox: true,
-          skyboxSize: 1000,
-          skyboxColor: new Color3(0.3, 0.6, 0.9),
-          createGround: true,
-          groundSize: 1000,
-          groundColor: new Color3(0.15, 0.4, 0.15),
-          enableGroundShadow: true,
-      });
-      if (envHelper?.ground) {
-          envHelper.ground.receiveShadows = true;
-          const groundMat = new PBRMaterial("groundPBR", scene);
-          groundMat.albedoColor = new Color3(0.15, 0.4, 0.15);
-          groundMat.roughness = 0.9;
-          groundMat.metallic = 0.05;
-          envHelper.ground.material = groundMat;
+      if (isAiming) {
+        setPower(p => Math.min(100, p + 2)); // draw bow
       }
-
-      // Materials (PBR)
-      const createPBR = (name: string, color: Color3, roughness = 0.5, metallic = 0.1) => {
-          const mat = new PBRMaterial(name, scene);
-          mat.albedoColor = color;
-          mat.roughness = roughness;
-          mat.metallic = metallic;
-          return mat;
-      };
-
-      const targetMatRed = createPBR("red", new Color3(0.8, 0.1, 0.1), 0.4, 0.1);
-      const targetMatWhite = createPBR("white", new Color3(0.9, 0.9, 0.9), 0.4, 0.1);
-      const targetMatBlue = createPBR("blue", new Color3(0.1, 0.3, 0.8), 0.4, 0.1);
-      const targetMatGold = createPBR("gold", new Color3(0.9, 0.8, 0.1), 0.3, 0.8);
-      const woodMat = createPBR("wood", new Color3(0.4, 0.2, 0.05), 0.8, 0.0);
-      
-      // Target Setup
-      const targetGroup = new TransformNode("targetGroup", scene);
-      targetGroup.position.set(0, 1.5, targetDist);
-      targetNodeRef.current = targetGroup;
-
-      const stand = MeshBuilder.CreateCylinder("stand", {height: 2, diameter: 0.2}, scene);
-      stand.position.y = -1;
-      stand.material = woodMat;
-      stand.parent = targetGroup;
-      shadowGenerator.addShadowCaster(stand);
-
-      const targetBase = MeshBuilder.CreateCylinder("targetBase", {height: 0.2, diameter: 2.4}, scene);
-      targetBase.rotation.x = Math.PI / 2;
-      targetBase.material = targetMatWhite;
-      targetBase.parent = targetGroup;
-      shadowGenerator.addShadowCaster(targetBase);
-      
-      const ring1 = MeshBuilder.CreateCylinder("r1", {height: 0.22, diameter: 1.6}, scene);
-      ring1.rotation.x = Math.PI / 2;
-      ring1.parent = targetGroup;
-      ring1.material = targetMatBlue;
-      
-      const ring2 = MeshBuilder.CreateCylinder("r2", {height: 0.24, diameter: 0.8}, scene);
-      ring2.rotation.x = Math.PI / 2;
-      ring2.parent = targetGroup;
-      ring2.material = targetMatRed;
-      
-      const ring3 = MeshBuilder.CreateCylinder("r3", {height: 0.26, diameter: 0.4}, scene);
-      ring3.rotation.x = Math.PI / 2;
-      ring3.parent = targetGroup;
-      ring3.material = targetMatGold;
-
-      // Post Processing Pipeline
-      const pipeline = new DefaultRenderingPipeline("defaultPipeline", true, scene, [camera]);
-      pipeline.samples = 4;
-      pipeline.bloomEnabled = true;
-      pipeline.bloomThreshold = 0.7;
-      pipeline.bloomWeight = 0.8;
-      pipeline.depthOfFieldEnabled = true;
-      pipeline.depthOfField.focusDistance = 7000;
-      pipeline.depthOfField.focalLength = 100;
-      pipeline.depthOfField.fStop = 1.4;
-      pipeline.imageProcessingEnabled = true;
-      pipeline.imageProcessing.contrast = 1.2;
-      pipeline.imageProcessing.exposure = 1.1;
-
-      // Procedural Bow
-      const bowNode = new TransformNode("bow", scene);
-      bowNode.position = new Vector3(0.5, -0.5, 1.5);
-      bowNode.parent = camera;
-      bowRef.current = bowNode;
-
-      const topLimb = MeshBuilder.CreateCylinder("topLimb", {height: 0.7, diameterTop: 0.02, diameterBottom: 0.06}, scene);
-      topLimb.position.y = 0.35;
-      topLimb.rotation.z = -0.2;
-      topLimb.material = woodMat;
-      topLimb.parent = bowNode;
-
-      const bottomLimb = MeshBuilder.CreateCylinder("bottomLimb", {height: 0.7, diameterTop: 0.06, diameterBottom: 0.02}, scene);
-      bottomLimb.position.y = -0.35;
-      bottomLimb.rotation.z = 0.2;
-      bottomLimb.material = woodMat;
-      bottomLimb.parent = bowNode;
-      
-      const handle = MeshBuilder.CreateCylinder("handle", {height: 0.2, diameter: 0.08}, scene);
-      handle.material = createPBR("leather", new Color3(0.2, 0.1, 0.05), 0.9, 0.1);
-      handle.parent = bowNode;
-
-      // Bow string
-      const string = MeshBuilder.CreateCylinder("string", {height: 1.35, diameter: 0.005}, scene);
-      string.position.z = -0.15;
-      string.material = createPBR("stringMat", new Color3(0.9, 0.9, 0.9));
-      string.parent = bowNode;
-      bowStringRef.current = string;
-
-      // Wind
-      const wX = (Math.random() - 0.5) * 8; // m/s
-      setWind(parseFloat(wX.toFixed(1)));
-
-      setLoading(false);
-      
-      // Update logic via observable instead of custom render loop
-      scene.onBeforeRenderObservable.add(() => {
-          const dt = engine.getDeltaTime() / 1000;
-          
-          // Animate Bow Draw
-          if (bowNode && bowStringRef.current) {
-              const targetZ = isDrawingRef.current ? -0.5 - (drawPowerRef.current * 0.5) : -0.15;
-              string.position.z += (targetZ - string.position.z) * 10 * dt;
-              
-              // Bend limbs
-              const bend = isDrawingRef.current ? drawPowerRef.current * 0.3 : 0;
-              topLimb.rotation.z = -0.2 - bend;
-              bottomLimb.rotation.z = 0.2 + bend;
-              
-              // Add slight camera shake when drawing hard
-              if (isDrawingRef.current && drawPowerRef.current > 0.8) {
-                  const shake = (drawPowerRef.current - 0.8) * 0.05;
-                  bowNode.position.x = 0.5 + (Math.random() - 0.5) * shake;
-                  bowNode.position.y = -0.5 + (Math.random() - 0.5) * shake;
-              } else {
-                  bowNode.position.x = 0.5;
-                  bowNode.position.y = -0.5;
-              }
-          }
-          
-          // Physics Update for Arrow (Custom Raycast integration)
-          if (activeArrowRef.current && !activeArrowRef.current.isStuck) {
-              const arr = activeArrowRef.current;
-              
-              // Apply Gravity & Wind
-              arr.velocity.y -= 9.81 * dt; // Gravity
-              arr.velocity.x += (wind * 0.5) * dt; // Wind drag
-              
-              const startPos = arr.mesh.position.clone();
-              const displacement = arr.velocity.scale(dt);
-              const nextPos = startPos.add(displacement);
-              
-              // Raycast from start to next
-              const ray = new Ray(startPos, displacement.normalizeToNew(), displacement.length());
-              const hit = scene.pickWithRay(ray, (mesh) => mesh.name.startsWith("r") || mesh.name === "targetBase" || mesh.name === "ground");
-              
-              if (hit && hit.hit && hit.pickedPoint) {
-                  // STUCK!
-                  arr.mesh.position = hit.pickedPoint;
-                  arr.isStuck = true;
-                  arr.trail.stop();
-                  
-                  // Score calc
-                  if (hit.pickedMesh && hit.pickedMesh.name === "ground") {
-                      finishShot(0, "Missed! (Hit the ground)");
-                  } else {
-                      // Hit the target
-                      const dx = hit.pickedPoint.x - targetGroup.position.x;
-                      const dy = hit.pickedPoint.y - targetGroup.position.y;
-                      const dist = Math.sqrt(dx*dx + dy*dy);
-                      
-                      let points = 0;
-                      if (dist <= 0.2) {
-                          points = 10;
-                          finishShot(points, "Bullseye! 10 Points");
-                      } else if (dist <= 0.4) {
-                          points = 9;
-                          finishShot(points, "9 Points");
-                      } else if (dist <= 0.8) {
-                          points = 7;
-                          finishShot(points, "7 Points");
-                      } else if (dist <= 1.2) {
-                          points = 5;
-                          finishShot(points, "5 Points");
-                      } else {
-                          finishShot(0, "Missed the target!");
-                      }
-                  }
-              } else {
-                  // Move arrow
-                  arr.mesh.position = nextPos;
-                  // Orient arrow to velocity
-                  if (arr.velocity.lengthSquared() > 0.1) {
-                      arr.mesh.lookAt(arr.mesh.position.add(arr.velocity));
-                      arr.mesh.rotate(new Vector3(1, 0, 0), Math.PI / 2); // Cylinder alignment
-                  }
-                  
-                  // Follow camera smoothly
-                  if (cameraRef.current) {
-                      const targetCamPos = new Vector3(arr.mesh.position.x, arr.mesh.position.y + 0.5, arr.mesh.position.z - 3);
-                      cameraRef.current.position = Vector3.Lerp(cameraRef.current.position, targetCamPos, 0.15);
-                      cameraRef.current.setTarget(arr.mesh.position);
-                      
-                      // Check out of bounds
-                      if (arr.mesh.position.y < -5 || arr.mesh.position.z > targetDist + 20) {
-                          arr.isStuck = true;
-                          arr.trail.stop();
-                          finishShot(0, "Missed completely!");
-                      }
-                  }
-              }
-          }
-      });
-      
-      // Start guarded render loop via StabilityManager
-      stabilityManager.startGuardedRenderLoop();
-      
-      window.addEventListener('resize', () => engine.resize());
-    };
-
-    initEngine();
-
-    return () => {
-      if (engine) engine.dispose();
-    };
-  }, []);
-  
-  const finishShot = (points: number, message: string) => {
-      setGameState('result');
-      if (points > 0) audio.play('archery', 'hit', { bullseye: points === 10 });
-      setResultMessage(message);
-      
-      if (matchState.current.currentPlayer === 1) {
-          matchState.current.p1Score += points;
-          setP1Score(matchState.current.p1Score);
-      } else {
-          matchState.current.p2Score += points;
-          setP2Score(matchState.current.p2Score);
-      }
-  };
+    }, 50);
+    return () => clearInterval(interval);
+  }, [gameState, isAiming, power]);
 
   const handlePointerDown = () => {
-      if (gameState !== 'idle') return;
-      setGameState('drawing');
-      setResultMessage('');
-      isDrawingRef.current = true;
-      drawPowerRef.current = 0;
-      
-      // Power bar incrementer
-      const interval = setInterval(() => {
-          if (isDrawingRef.current) {
-             let p = drawPowerRef.current + 0.02;
-             if (p > 1) p = 1;
-             drawPowerRef.current = p;
-             setPower(Math.floor(p * 100));
-          } else {
-             clearInterval(interval);
-          }
-      }, 16);
+    if (shotsLeft <= 0) return;
+    setIsAiming(true);
+    setPower(0);
   };
 
   const handlePointerUp = () => {
-      if (gameState !== 'drawing') return;
-      setGameState('flying');
-      isDrawingRef.current = false;
-      audio.play('archery', 'shoot');
-      
-      // Spawn and shoot arrow
-      if (sceneRef.current && cameraRef.current) {
-          const scene = sceneRef.current;
-          
-          if (activeArrowRef.current) {
-              activeArrowRef.current.mesh.dispose();
-              activeArrowRef.current.trail.dispose();
-          }
-          
-          const arrowNode = MeshBuilder.CreateCylinder("arrow", {height: 1.2, diameter: 0.02}, scene);
-          arrowNode.position = cameraRef.current.position.clone();
-          arrowNode.position.y -= 0.2;
-          arrowNode.position.z += 0.5;
-          
-          // Fletching (feathers)
-          const fletch1 = MeshBuilder.CreatePlane("fletch", {width: 0.05, height: 0.15}, scene);
-          fletch1.parent = arrowNode;
-          fletch1.position.y = -0.55;
-          fletch1.position.x = 0.02;
-          fletch1.rotation.y = Math.PI/2;
-          fletch1.material = new PBRMaterial("redFeather", scene);
-          (fletch1.material as PBRMaterial).albedoColor = Color3.Red();
-          (fletch1.material as PBRMaterial).roughness = 0.8;
-          
-          const fletch2 = fletch1.clone("fletch2");
-          fletch2.position.x = -0.02;
-          fletch2.rotation.y = -Math.PI/2;
-          
-          const mat = new PBRMaterial("arrMat", scene);
-          mat.albedoColor = new Color3(0.1, 0.1, 0.1);
-          mat.roughness = 0.4;
-          mat.metallic = 0.6;
-          arrowNode.material = mat;
-          
-          // Particle Trail
-          const trail = new ParticleSystem("trail", 200, scene);
-          // We can't guarantee external URL texture loads, so we use a base64 or basic particle
-          // Wait, Babylon has default particle textures if we don't supply one? Actually we can supply a tiny generic texture or use the same URL. 
-          // I'll stick to a default.
-          trail.particleTexture = new Texture("https://models.babylonjs.com/Demos/WeaponsSystem/flare.png", scene);
-          trail.emitter = arrowNode;
-          trail.minEmitBox = new Vector3(-0.01, -0.6, -0.01);
-          trail.maxEmitBox = new Vector3(0.01, -0.6, 0.01);
-          trail.color1 = new Color3(1, 1, 1).toColor4(0.8);
-          trail.color2 = new Color3(0.8, 0.8, 0.8).toColor4(0.2);
-          trail.colorDead = new Color3(0, 0, 0).toColor4(0);
-          trail.minSize = 0.05;
-          trail.maxSize = 0.15;
-          trail.minLifeTime = 0.1;
-          trail.maxLifeTime = 0.3;
-          trail.emitRate = 150;
-          trail.blendMode = ParticleSystem.BLENDMODE_ADD;
-          trail.start();
-          
-          // Initial Velocity
-          const force = 30 + (drawPowerRef.current * 40); // m/s
-          const forward = cameraRef.current.getDirection(new Vector3(0, 0, 1));
-          
-          // Adjust for gravity drop by aiming slightly up
-          forward.y += 0.05; 
-          
-          activeArrowRef.current = {
-              mesh: arrowNode,
-              velocity: forward.scale(force),
-              trail,
-              isStuck: false
-          };
-      }
-  };
-  
-  const resetShot = () => {
-      setGameState('idle');
-      setPower(0);
-      setResultMessage('');
-      isDrawingRef.current = false;
-      drawPowerRef.current = 0;
-      
-      // Advance turns
-      if (mode !== 'solo') {
-          if (matchState.current.currentPlayer === 1) {
-              matchState.current.currentPlayer = 2;
-              setCurrentPlayer(2);
-              
-              if (mode === 'vs-ai') {
-                  setTimeout(() => simulateAITurn(), 1000);
-              }
-          } else {
-              matchState.current.currentPlayer = 1;
-              setCurrentPlayer(1);
-              matchState.current.round++;
-              setRound(matchState.current.round);
-              if (matchState.current.round > maxRounds) {
-                  setGameState('result');
-                  const w = matchState.current.p1Score >= matchState.current.p2Score ? 'Player 1' : (mode === 'vs-ai' ? 'AI' : 'Player 2');
-                  setResultMessage(`Match Over! ${w} Wins!`);
-                  return;
-              }
-          }
-      }
-      
-      // Reset Wind
-      const wX = (Math.random() - 0.5) * 8;
-      setWind(parseFloat(wX.toFixed(1)));
-      
-      // Reset Camera with smooth animation
-      if (cameraRef.current && sceneRef.current) {
-          const cam = cameraRef.current;
-          
-          // Create smooth transition back using Bezier Ease
-          const ease = new BezierCurveEase(0.2, 0.8, 0.2, 1);
-          ease.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
-          Animation.CreateAndStartAnimation("camReset", cam, "position", 60, 30, cam.position, new Vector3(0, 1.8, -10), 2, ease);
-          
-          setTimeout(() => {
-              cam.setTarget(new Vector3(0, 1.5, targetDist));
-          }, 500);
-      }
-      
-      if (activeArrowRef.current) {
-          // Fade out old arrow instead of instant delete
-          const arr = activeArrowRef.current;
-          setTimeout(() => {
-              arr.mesh.dispose();
-              arr.trail.dispose();
-          }, 2000);
-          activeArrowRef.current = null;
-      }
+    if (!isAiming) return;
+    setIsAiming(false);
+    
+    if (power < 10) return; // misfire
+    
+    const dir = new THREE.Vector3(swayX * 0.2, swayY * 0.2, -1).normalize();
+    const speed = 20 + (power / 100) * 60; // 20 to 80 units/sec
+    
+    const velocity = [dir.x * speed, dir.y * speed + (speed * 0.05), dir.z * speed]; // arc
+    
+    setArrows(prev => [...prev, {
+      id: Date.now(),
+      position: [0, 1.8, 0],
+      rotation: [0, 0, 0],
+      velocity
+    }]);
+    
+    setShotsLeft(s => s - 1);
+    
+    if (shotsLeft - 1 === 0) {
+      setTimeout(() => {
+        setGameState('result');
+      }, 3000);
+    }
   };
 
-  const simulateAITurn = () => {
-      if (matchState.current.currentPlayer !== 2 || mode !== 'vs-ai') return;
-      
-      setGameState('drawing');
-      isDrawingRef.current = true;
-      drawPowerRef.current = 0;
-      
-      // AI "draws" bow
-      const aiPower = 0.8 + Math.random() * 0.15;
-      const drawInt = setInterval(() => {
-          if (drawPowerRef.current >= aiPower) {
-              clearInterval(drawInt);
-              handlePointerUp(); // AI releases
-          } else {
-              drawPowerRef.current += 0.05;
-              setPower(Math.floor(drawPowerRef.current * 100));
-          }
-      }, 50);
+  const handleHit = (pos: THREE.Vector3, dist: number) => {
+    let pts = 0;
+    if (dist < 0.4) pts = 10;
+    else if (dist < 0.8) pts = 8;
+    else if (dist < 1.2) pts = 6;
+    else if (dist < 1.6) pts = 4;
+    else if (dist < 2.0) pts = 2;
+    
+    if (pts > 0) {
+      setScore(s => s + pts);
+      if (pts === 10) toast.success('🎯 BULLSEYE! +10');
+      else toast.success(`Hit! +${pts}`);
+    } else {
+      toast.error('Miss!');
+    }
   };
 
   return (
-    <GameFrame 
-      title="Archery 3D Master" 
-      onClose={onClose} 
-      score={Math.max(p1Score, p2Score)} 
-      level={round}
-    >
-      <div 
-        className="relative w-full h-full flex flex-col bg-black overflow-hidden select-none"
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-      >
-        {loading && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-900">
-            <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-cyan-400 font-bold animate-pulse text-xl">Loading Next-Gen Graphics...</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+      {gameState === 'menu' && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+          <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-emerald-600 mb-8">
+            3D ARCHERY
+          </h1>
+          <Button variant="neon" size="lg" className="px-12 py-6 text-xl" onClick={() => { setGameState('playing'); setScore(0); setShotsLeft(5); setArrows([]); }}>
+            ENTER RANGE
+          </Button>
+          <Button variant="ghost" className="mt-4 text-slate-400" onClick={onClose}>Exit</Button>
+        </div>
+      )}
+
+      {gameState === 'result' && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+          <h2 className="text-4xl text-white mb-2">ROUND COMPLETE</h2>
+          <p className="text-6xl font-black text-yellow-400 mb-8">{score} / 50</p>
+          <Button variant="neon" size="lg" className="px-12 py-6" onClick={() => { setGameState('playing'); setScore(0); setShotsLeft(5); setArrows([]); }}>
+            PLAY AGAIN
+          </Button>
+          <Button variant="ghost" className="mt-4 text-slate-400" onClick={onClose}>Exit</Button>
+        </div>
+      )}
+
+      {gameState !== 'menu' && (
+        <div 
+          className="absolute inset-0 z-10 touch-none cursor-crosshair"
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+        >
+          <div className="absolute top-1/2 left-1/2 w-8 h-8 -mt-4 -ml-4 pointer-events-none">
+            <div className="w-full h-full border-2 border-white/50 rounded-full flex items-center justify-center">
+              <div className="w-1 h-1 bg-red-500 rounded-full" />
+            </div>
           </div>
-        )}
-        
-        <canvas
-          ref={canvasRef}
-          className="w-full flex-1 outline-none cursor-crosshair"
-          style={{ touchAction: 'none' }}
-        />
-        
-        {/* HUD Overlay */}
-        <div className="absolute top-4 left-4 z-10 pointer-events-none">
-            <div className="bg-black/60 backdrop-blur-md border border-white/10 p-4 rounded-xl shadow-2xl">
-                <p className="text-white text-sm font-medium tracking-wide">MODE: {mode.toUpperCase()}</p>
-                <p className="text-white text-sm font-medium tracking-wide">ROUND: {round}/{maxRounds}</p>
-                <div className="flex gap-6 mt-3">
-                    <div className="flex flex-col items-center">
-                        <span className="text-xs text-gray-400">P1 SCORE</span>
-                        <p className={`text-2xl font-black ${currentPlayer === 1 ? 'text-cyan-400' : 'text-gray-300'}`}>{p1Score}</p>
-                    </div>
-                    {mode !== 'solo' && (
-                    <div className="flex flex-col items-center">
-                        <span className="text-xs text-gray-400">{mode === 'vs-ai' ? 'AI' : 'P2'} SCORE</span>
-                        <p className={`text-2xl font-black ${currentPlayer === 2 ? 'text-red-400' : 'text-gray-300'}`}>
-                            {p2Score}
-                        </p>
-                    </div>
-                    )}
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                    <div className="text-gray-300 text-sm font-semibold">WIND:</div>
-                    <div className="flex items-center gap-1">
-                        <span className="text-white font-bold">{Math.abs(wind)} m/s</span>
-                        <span className="text-xl">{wind > 0 ? '➡️' : wind < 0 ? '⬅️' : '➖'}</span>
-                    </div>
-                </div>
+          
+          {isAiming && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-64 h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+              <div className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500 transition-all" style={{ width: `${power}%` }} />
             </div>
+          )}
+          
+          <div className="absolute top-8 left-8 bg-slate-900/80 p-4 rounded-xl border border-slate-700 pointer-events-none">
+            <p className="text-slate-400 text-xs uppercase font-bold">Score</p>
+            <p className="text-3xl font-black text-white">{score}</p>
+          </div>
+          
+          <div className="absolute top-8 right-8 bg-slate-900/80 p-4 rounded-xl border border-slate-700 text-right pointer-events-none">
+            <p className="text-slate-400 text-xs uppercase font-bold">Arrows</p>
+            <p className="text-3xl font-black text-cyan-400">{shotsLeft}</p>
+          </div>
+          
+          <Button variant="ghost" className="absolute bottom-8 left-8 z-50 text-slate-400" onClick={onClose}>Quit</Button>
+          
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <GameEngine3D 
+               enablePhysics={true} 
+               environmentPreset="forest"
+               enablePostProcessing={true}
+               cameraPosition={[0, 1.8, 0]}
+               cameraFov={60}
+            >
+               <BowCamera isAiming={isAiming} swayX={swayX} swayY={swayY} firePower={power} />
+               
+               <RigidBody type="fixed" name="ground">
+                 <Box args={[100, 1, 100]} position={[0, -0.5, 0]}>
+                   <meshStandardMaterial color="#2d4c1e" roughness={0.9} />
+                 </Box>
+               </RigidBody>
+               
+               <ArcheryTarget />
+               
+               {arrows.map(a => (
+                 <Arrow key={a.id} position={a.position} rotation={a.rotation} velocity={a.velocity} onHit={handleHit} />
+               ))}
+            </GameEngine3D>
+          </div>
         </div>
-
-        {gameState === 'idle' && !loading && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gradient-to-b from-transparent to-black/80 pointer-events-none">
-                {round === 1 && currentPlayer === 1 && (
-                    <div className="flex gap-4 mb-8 pointer-events-auto">
-                        <button onClick={(e) => { e.stopPropagation(); setMode('solo'); matchState.current.p1Score = 0; matchState.current.p2Score = 0; setP1Score(0); setP2Score(0); }} className={`px-6 py-3 rounded-xl font-black tracking-wider transition-transform active:scale-95 ${mode === 'solo' ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.5)]' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>SOLO</button>
-                        <button onClick={(e) => { e.stopPropagation(); setMode('pass-and-play'); matchState.current.p1Score = 0; matchState.current.p2Score = 0; setP1Score(0); setP2Score(0); }} className={`px-6 py-3 rounded-xl font-black tracking-wider transition-transform active:scale-95 ${mode === 'pass-and-play' ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.5)]' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>PASS & PLAY</button>
-                        <button onClick={(e) => { e.stopPropagation(); setMode('vs-ai'); matchState.current.p1Score = 0; matchState.current.p2Score = 0; setP1Score(0); setP2Score(0); }} className={`px-6 py-3 rounded-xl font-black tracking-wider transition-transform active:scale-95 ${mode === 'vs-ai' ? 'bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.5)]' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>VS AI</button>
-                    </div>
-                )}
-                <div className="bg-black/60 backdrop-blur-md px-8 py-4 rounded-2xl border border-white/10 shadow-2xl animate-pulse">
-                    <p className="text-white font-bold text-xl text-center">
-                        {mode !== 'solo' && <span className="block text-cyan-400 mb-2">Player {currentPlayer}'s Turn</span>}
-                        Hold Click to Draw • Release to Shoot
-                    </p>
-                </div>
-            </div>
-        )}
-
-        {gameState === 'drawing' && (
-            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 w-80 pointer-events-none">
-                <p className="text-center text-white font-black tracking-widest mb-3 text-lg drop-shadow-md">DRAW POWER</p>
-                <div className="w-full h-6 bg-black/60 backdrop-blur rounded-full border-2 border-white/30 overflow-hidden p-1 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                    <div 
-                        className="h-full rounded-full transition-all duration-75 relative overflow-hidden"
-                        style={{ 
-                            width: `${power}%`,
-                            background: `linear-gradient(90deg, #4ade80, #facc15, #ef4444)`
-                        }}
-                    >
-                        <div className="absolute inset-0 bg-white/20 animate-[shimmer_1s_infinite_linear] bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full" />
-                    </div>
-                </div>
-            </div>
-        )}
-        
-        {gameState === 'result' && (
-            <div className="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
-                <div className="bg-black/80 p-10 rounded-3xl border border-white/10 flex flex-col items-center transform transition-all animate-[popIn_0.3s_ease-out]">
-                    <h2 className={`text-6xl font-black drop-shadow-[0_0_30px_rgba(255,255,255,0.3)] mb-8 text-center ${resultMessage.includes('Bullseye') ? 'text-yellow-400' : 'text-white'}`}>
-                        {resultMessage}
-                    </h2>
-                    {!resultMessage.includes('Match Over') && (
-                        <button 
-                            onClick={resetShot}
-                            className="pointer-events-auto px-10 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-black text-xl rounded-2xl transition-all active:scale-95 shadow-[0_0_40px_rgba(6,182,212,0.6)]"
-                        >
-                            NEXT ARROW
-                        </button>
-                    )}
-                </div>
-            </div>
-        )}
-        
-        {/* Advanced Crosshair */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 pointer-events-none opacity-70 mix-blend-difference transition-transform duration-200" style={{ transform: `translate(-50%, -50%) scale(${gameState === 'drawing' ? 1 - power/200 : 1})` }}>
-            <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white -translate-x-1/2" />
-            <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-white -translate-y-1/2" />
-            <div className="absolute inset-3 border-2 border-white rounded-full" />
-            <div className="absolute top-1/2 left-1/2 w-1 h-1 bg-red-500 rounded-full -translate-x-1/2 -translate-y-1/2" />
-        </div>
-      </div>
-    </GameFrame>
+      )}
+    </div>
   );
 }

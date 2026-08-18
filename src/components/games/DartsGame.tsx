@@ -1,264 +1,295 @@
-// src/components/games/DartsGame.tsx — Premium Darts Canvas Game
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Physics, RigidBody, CuboidCollider, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
+import { Box, Cylinder, Trail, Center } from '@react-three/drei';
+import * as THREE from 'three';
 import { Button } from '@/components/ui/Button';
-import { vibrate } from '@/lib/utils';
+import { GameEngine3D } from '@/engine/GameEngine3D';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
+import { useDrag } from '@use-gesture/react';
 
-interface Props { onClose: () => void }
-type Dart = { x: number; y: number; score: number; label: string };
-type Particle = { x:number; y:number; vx:number; vy:number; life:number; color:string; r:number };
+interface Props { onClose: () => void; }
 
-export function DartsGame({ onClose }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef(0);
-  const s = useRef({
-    phase: 'idle' as 'idle'|'playing'|'result',
-    darts: [] as Dart[], particles: [] as Particle[],
-    totalScore: 0, throwsLeft: 10, lastScore: '',
-    best: parseInt(localStorage.getItem('drt-best')||'0'),
-    frame: 0, lastTime: 0,
-    // Oscillating cursor
-    cursorAngle: 0, cursorR: 0, cursorDir: 1,
-    sway: 0, swayDir: 1,
-    throwPending: false,
+// --- Dart Component ---
+function Dart({ position, rotation, velocity, onHit }: { position: [number,number,number], rotation: [number,number,number], velocity: [number,number,number], onHit: (pos: THREE.Vector3) => void }) {
+  const bodyRef = useRef<RapierRigidBody>(null);
+  const [stuck, setStuck] = useState(false);
+
+  useEffect(() => {
+    if (bodyRef.current && !stuck) {
+      bodyRef.current.setLinvel(new THREE.Vector3(...velocity), true);
+      audio.play('darts', 'hit'); // throw sound
+    }
+  }, [velocity, stuck]);
+
+  useFrame(() => {
+    if (stuck || !bodyRef.current) return;
+    const vel = bodyRef.current.linvel();
+    if (Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z) > 0.1) {
+      const dir = new THREE.Vector3(vel.x, vel.y, vel.z).normalize();
+      const targetRotation = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        dir
+      );
+      bodyRef.current.setRotation(targetRotation, true);
+    }
   });
-  const [disp, setDisp] = useState({ score: 0, throwsLeft: 10, phase: 'idle' as 'idle'|'playing'|'result', best: parseInt(localStorage.getItem('drt-best')||'0'), lastScore: '' });
-  const W = 380, H = 520;
-  const CX = W / 2, CY = 200;
-
-  const SECTORS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
-
-
-  const getScore = (dx: number, dy: number): { pts: number; label: string } => {
-    const dist = Math.sqrt(dx*dx+dy*dy);
-    if (dist > 175) return { pts: 0, label: 'Miss' };
-    if (dist <= 10) return { pts: 50, label: 'BULLSEYE! 🎯' };
-    if (dist <= 25) return { pts: 25, label: 'Bull! ✅' };
-    const sectorAngle = Math.atan2(dy, dx) * 180 / Math.PI;
-    const idx = Math.floor(((sectorAngle + 360 + 9) / 18) % 20);
-    const base = SECTORS[idx % 20];
-    if (dist > 105 && dist <= 115) return { pts: base * 3, label: `Triple ${base} ×3! 🔥` };
-    if (dist > 165 && dist <= 175) return { pts: base * 2, label: `Double ${base} ×2!` };
-    return { pts: base, label: `${base}` };
-  };
-
-  const throw_ = useCallback(() => {
-    const gs = s.current;
-    if (gs.phase !== 'playing' || gs.throwPending) return;
-    gs.throwPending = true;
-    // Add randomness around cursor position
-    const noise = 12;
-    const hitX = CX + gs.cursorR * Math.cos(gs.cursorAngle) + (Math.random()-0.5)*noise;
-    const hitY = CY + gs.cursorR * Math.sin(gs.cursorAngle) + gs.sway + (Math.random()-0.5)*noise;
-    const dx = hitX - CX, dy = hitY - CY;
-    const { pts, label } = getScore(dx, dy);
-    gs.darts.push({ x: hitX, y: hitY, score: pts, label });
-    gs.totalScore += pts; gs.throwsLeft--; gs.lastScore = label;
-    // Particles
-    const color = pts >= 50 ? '#FFD700' : pts >= 25 ? '#66bdf2' : pts > 20 ? '#66bdf2' : '#aaa';
-    for (let pi = 0; pi < 10; pi++) {
-      const a = Math.random()*Math.PI*2, sp = 2+Math.random()*5;
-      gs.particles.push({ x: hitX, y: hitY, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color, r: 2+Math.random()*3 });
-    }
-    audio.play('darts', 'hit', { bullseye: pts >= 50 }); vibrate(30);
-    if (pts >= 50) toast.success(`🏆 ${label} +${pts}pts!`);
-    else if (pts >= 20) toast.success(`🎯 ${label} +${pts}pts`);
-    setDisp(d => ({ ...d, score: gs.totalScore, throwsLeft: gs.throwsLeft, lastScore: label }));
-    gs.throwPending = false;
-    if (gs.throwsLeft <= 0) {
-      gs.phase = 'result';
-      const newBest = Math.max(gs.totalScore, gs.best);
-      gs.best = newBest; localStorage.setItem('drt-best', String(newBest));
-      setDisp(d => ({ ...d, phase: 'result', best: newBest }));
-      toast.success(`🎉 Final: ${gs.totalScore}pts | Best: ${newBest}`);
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.code === 'Space') { e.preventDefault(); throw_(); } };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [throw_]);
-
-  const startGame = useCallback(() => {
-    const gs = s.current;
-    gs.phase = 'playing'; gs.darts = []; gs.particles = [];
-    gs.totalScore = 0; gs.throwsLeft = 10; gs.lastScore = '';
-    gs.cursorAngle = 0; gs.cursorR = 0; gs.cursorDir = 1; gs.sway = 0; gs.swayDir = 1;
-    setDisp(d => ({ ...d, score: 0, throwsLeft: 10, phase: 'playing', lastScore: '' }));
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-
-    const drawBoard = () => {
-      // Board bg with shadow
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 20;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 10;
-      ctx.beginPath(); ctx.arc(CX, CY, 180, 0, Math.PI*2);
-      ctx.fillStyle = '#1a1a2e'; ctx.fill();
-      ctx.shadowColor = 'transparent'; // reset shadow
-      ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke();
-
-      // Sector wedges
-      const sectorAngle = Math.PI * 2 / 20;
-      SECTORS.forEach((num, i) => {
-        const startA = (i * sectorAngle) - Math.PI/2 - sectorAngle/2;
-        const endA = startA + sectorAngle;
-        // Outer single
-        ctx.beginPath(); ctx.moveTo(CX, CY);
-        ctx.arc(CX, CY, 165, startA, endA);
-        ctx.closePath();
-        ctx.fillStyle = i % 2 === 0 ? '#1b1b2e' : '#2a2a4e'; ctx.fill();
-        // Double ring
-        ctx.beginPath(); ctx.moveTo(CX + Math.cos(startA)*165, CY + Math.sin(startA)*165);
-        ctx.arc(CX, CY, 175, startA, endA);
-        ctx.arc(CX, CY, 165, endA, startA, true);
-        ctx.closePath();
-        ctx.fillStyle = i % 2 === 0 ? '#c62828' : '#2e7d32'; ctx.fill();
-        // Inner single
-        ctx.beginPath(); ctx.moveTo(CX, CY);
-        ctx.arc(CX, CY, 115, startA, endA);
-        ctx.closePath();
-        ctx.fillStyle = i % 2 === 0 ? '#1b1b2e' : '#2a2a4e'; ctx.fill();
-        // Triple ring
-        ctx.beginPath(); ctx.moveTo(CX + Math.cos(startA)*115, CY + Math.sin(startA)*115);
-        ctx.arc(CX, CY, 105, startA, endA);
-        ctx.arc(CX, CY, 115, endA, startA, true);
-        ctx.closePath();
-        ctx.fillStyle = i % 2 === 0 ? '#c62828' : '#2e7d32'; ctx.fill();
-
-        // Sector number
-        const labelR = 140;
-        const midA = startA + sectorAngle/2;
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(String(num), CX + Math.cos(midA)*labelR, CY + Math.sin(midA)*labelR);
-      });
-      // Bull
-      ctx.beginPath(); ctx.arc(CX, CY, 25, 0, Math.PI*2); ctx.fillStyle = '#c62828'; ctx.fill();
-      ctx.beginPath(); ctx.arc(CX, CY, 10, 0, Math.PI*2); ctx.fillStyle = '#00cc44'; ctx.fill();
-
-      // Wire ring outlines
-      [10,25,105,115,165,175].forEach(r => {
-        ctx.beginPath(); ctx.arc(CX, CY, r, 0, Math.PI*2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; ctx.stroke();
-      });
-    };
-
-    const loop = (timestamp: number) => {
-      const gs = s.current;
-      const dt = Math.min((timestamp - gs.lastTime) / 16, 3);
-      gs.lastTime = timestamp; gs.frame++;
-
-      ctx.clearRect(0, 0, W, H);
-
-      // Dark background
-      ctx.fillStyle = '#1a0a2e'; ctx.fillRect(0, 0, W, H);
-      // Board shadow/glow
-      const glow = ctx.createRadialGradient(CX, CY, 80, CX, CY, 200);
-      glow.addColorStop(0, 'rgba(74,144,217,0.12)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-
-      drawBoard();
-
-      // Oscillating cursor
-      if (gs.phase === 'playing') {
-        gs.cursorAngle += 0.04 * dt;
-        gs.cursorR += gs.cursorDir * 0.8 * dt;
-        if (gs.cursorR > 80 || gs.cursorR < 0) gs.cursorDir *= -1;
-        gs.sway += gs.swayDir * 0.5 * dt;
-        if (gs.sway > 20 || gs.sway < -20) gs.swayDir *= -1;
-
-        const curX = CX + gs.cursorR * Math.cos(gs.cursorAngle);
-        const curY = CY + gs.cursorR * Math.sin(gs.cursorAngle) + gs.sway;
-
-        // Crosshair
-        ctx.strokeStyle = 'rgba(255,50,50,0.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
-        ctx.beginPath(); ctx.moveTo(curX-14, curY); ctx.lineTo(curX+14, curY); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(curX, curY-14); ctx.lineTo(curX, curY+14); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath(); ctx.arc(curX, curY, 7, 0, Math.PI*2);
-        ctx.strokeStyle = 'rgba(255,50,50,0.8)'; ctx.lineWidth = 2; ctx.stroke();
-      }
-
-      // Embedded darts with shadow
-      gs.darts.forEach((d, i) => {
-        ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(-Math.PI/4);
-        // Shadow for dart
-        ctx.shadowColor = 'rgba(0,0,0,0.6)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetX = -4;
-        ctx.shadowOffsetY = 8;
-        
-        ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -22); ctx.stroke();
-        
-        ctx.shadowColor = 'transparent'; // Reset for flight
-        ctx.fillStyle = '#9E9E9E';
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-3, 6); ctx.lineTo(3, 6); ctx.closePath(); ctx.fill();
-        // Score pop
-        if (i === gs.darts.length - 1 && gs.frame < 40) {
-          ctx.rotate(Math.PI/4);
-          ctx.fillStyle = '#FFD700'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
-          ctx.fillText(`+${d.score}`, 0, -30);
-        }
-        ctx.restore();
-      });
-
-      // Particles
-      gs.particles.forEach(p => {
-        p.x += p.vx*dt; p.y += p.vy*dt; p.life -= 0.05*dt;
-        if (p.life <= 0) return;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r*p.life, 0, Math.PI*2);
-        ctx.fillStyle = p.color + Math.floor(p.life*220).toString(16).padStart(2,'0'); ctx.fill();
-      });
-      gs.particles = gs.particles.filter(p => p.life > 0);
-
-      // HUD
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.beginPath(); ctx.roundRect(0, H-90, W, 90, [0,0,0,0]); ctx.fill();
-      ctx.fillStyle = '#FFD700'; ctx.font = 'bold 28px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText(String(gs.totalScore), W/2, H-52);
-      ctx.fillStyle = '#aaa'; ctx.font = '12px system-ui';
-      ctx.fillText(`Throws: ${gs.throwsLeft} left`, W/2, H-30);
-      if (gs.lastScore) {
-        ctx.fillStyle = '#66bdf2'; ctx.font = 'bold 13px system-ui';
-        ctx.fillText(gs.lastScore, W/2, H-10);
-      }
-
-      // Idle
-      if (gs.phase === 'idle') {
-        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.roundRect(W/2-100, CY+50, 200, 100, 20); ctx.fill();
-        ctx.fillStyle = '#7b8bc1'; ctx.font = 'bold 24px system-ui'; ctx.textAlign = 'center';
-        ctx.fillText('🎯 DARTS', W/2, CY+85);
-        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '13px system-ui';
-        ctx.fillText('Tap when cursor is on target!', W/2, CY+110);
-        ctx.fillStyle = '#FFD700'; ctx.font = '12px system-ui';
-        ctx.fillText(`Best: ${gs.best}pts`, W/2, CY+132);
-      }
-
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, []);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <canvas ref={canvasRef} width={W} height={H}
-        className="rounded-2xl select-none touch-none cursor-crosshair"
-        style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.6)', maxWidth: '100%' }}
-        onClick={disp.phase === 'idle' ? startGame : throw_}
-        onTouchStart={e => { e.preventDefault(); if (disp.phase === 'idle') startGame(); else throw_(); }}
-      />
-      <div className="flex gap-3">
-        {disp.phase === 'result' && <Button variant="neon" onClick={startGame} size="lg" className="w-full font-bold py-3.5 text-sm rounded-xl border border-cyan-400/40 shadow-lg shadow-cyan-500/20">▶ Play Again</Button>}
-        <Button variant="ghost" size="sm" onClick={onClose}>Exit</Button>
-      </div>
+    <RigidBody
+      ref={bodyRef}
+      position={position}
+      rotation={rotation}
+      colliders={false}
+      mass={0.05}
+      ccd={true}
+      linearDamping={0.1}
+      onCollisionEnter={(e) => {
+        if (stuck) return;
+        if (e.other.rigidBodyObject?.name === 'dartboard') {
+          setStuck(true);
+          if (bodyRef.current) {
+            bodyRef.current.setBodyType(2, true);
+            bodyRef.current.setLinvel({x:0, y:0, z:0}, true);
+            bodyRef.current.setAngvel({x:0, y:0, z:0}, true);
+          }
+          audio.play('darts', 'hit', { bullseye: true });
+          
+          let hitPos = new THREE.Vector3();
+          if (bodyRef.current) {
+            const p = bodyRef.current.translation();
+            hitPos.set(p.x, p.y, p.z);
+          }
+          onHit(hitPos);
+        }
+      }}
+    >
+      <CylinderCollider args={[0.2, 0.02]} position={[0, 0, 0]} rotation={[Math.PI/2, 0, 0]} />
+      
+      <Trail local width={0.05} length={2} color={new THREE.Color(1, 0.2, 0.2)} attenuation={(t: number) => t * t}>
+        <group rotation={[Math.PI/2, 0, 0]}>
+          <Cylinder args={[0.015, 0.015, 0.4, 8]}>
+            <meshStandardMaterial color="#333" metalness={0.8} />
+          </Cylinder>
+          <Cylinder args={[0.001, 0.015, 0.1, 8]} position={[0, -0.25, 0]}>
+            <meshStandardMaterial color="#silver" metalness={1} roughness={0.1} />
+          </Cylinder>
+          {/* Flights */}
+          <Box args={[0.1, 0.1, 0.01]} position={[0, 0.15, 0]}>
+            <meshStandardMaterial color="#ff0000" />
+          </Box>
+          <Box args={[0.01, 0.1, 0.1]} position={[0, 0.15, 0]}>
+            <meshStandardMaterial color="#ff0000" />
+          </Box>
+        </group>
+      </Trail>
+    </RigidBody>
+  );
+}
+
+// --- Dartboard Component ---
+function Dartboard() {
+  return (
+    <RigidBody type="fixed" name="dartboard" position={[0, 1.5, -10]} rotation={[Math.PI/2, 0, 0]}>
+      <CylinderCollider args={[0.05, 2]} />
+      
+      {/* Board Base */}
+      <Cylinder args={[2, 2, 0.1, 32]}>
+        <meshStandardMaterial color="#1a1a1a" />
+      </Cylinder>
+      
+      {/* Rings - Bullseye & Multipliers */}
+      <Cylinder args={[0.1, 0.1, 0.12, 16]}>
+         <meshStandardMaterial color="red" />
+      </Cylinder>
+      <Cylinder args={[0.25, 0.25, 0.11, 16]}>
+         <meshStandardMaterial color="green" />
+      </Cylinder>
+      
+      {/* Target Segments representation */}
+      <Cylinder args={[1.0, 1.0, 0.105, 32]}>
+         <meshStandardMaterial color="#e5e0c8" />
+      </Cylinder>
+      <Cylinder args={[1.1, 1.1, 0.11, 32]}>
+         <meshStandardMaterial color="red" />
+      </Cylinder>
+      
+      <Cylinder args={[1.6, 1.6, 0.105, 32]}>
+         <meshStandardMaterial color="#111" />
+      </Cylinder>
+      <Cylinder args={[1.7, 1.7, 0.11, 32]}>
+         <meshStandardMaterial color="green" />
+      </Cylinder>
+      
+      {/* Wall */}
+      <Box args={[10, 0.01, 10]} position={[0, -0.1, 0]}>
+         <meshStandardMaterial color="#4b3621" roughness={0.8} />
+      </Box>
+    </RigidBody>
+  );
+}
+
+// --- Camera Controller ---
+function DartsCamera({ flyingDart }: any) {
+  const { camera } = useThree();
+  
+  useFrame(() => {
+    if (flyingDart) {
+      // Follow dart
+      const tPos = new THREE.Vector3(flyingDart[0], flyingDart[1] + 1, flyingDart[2] + 4);
+      camera.position.lerp(tPos, 0.1);
+      camera.lookAt(flyingDart[0], flyingDart[1], flyingDart[2]);
+    } else {
+      // Return to aim pos
+      camera.position.lerp(new THREE.Vector3(0, 1.5, 0), 0.1);
+      camera.lookAt(0, 1.5, -10);
+    }
+  });
+  
+  return null;
+}
+
+
+export function DartsGame({ onClose }: Props) {
+  const [gameState, setGameState] = useState<'menu' | 'playing' | 'result'>('menu');
+  const [darts, setDarts] = useState<any[]>([]);
+  const [score, setScore] = useState(0);
+  const [throwsLeft, setThrowsLeft] = useState(3);
+  const [flyingDartPos, setFlyingDartPos] = useState<[number,number,number] | null>(null);
+
+  const getScore = (hitPos: THREE.Vector3) => {
+    // board center is [0, 1.5, -10]
+    const dx = hitPos.x;
+    const dy = hitPos.y - 1.5;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    
+    // Scale distance to dartboard dimensions (radius 1.7)
+    if (dist <= 0.1) return 50; // Bullseye
+    if (dist <= 0.25) return 25; // Outer bull
+    if (dist > 1.7) return 0; // Miss
+    
+    // Simplified sector calculation
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    const idx = Math.floor(((angle + 360 + 9) / 18) % 20);
+    const SECTORS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+    const base = SECTORS[idx % 20];
+    
+    if (dist > 1.0 && dist <= 1.1) return base * 3;
+    if (dist > 1.6 && dist <= 1.7) return base * 2;
+    return base;
+  };
+
+  const bind = useDrag(({ down, movement: [mx, my], velocity: [vx, vy], direction: [dx, dy] }) => {
+    if (gameState !== 'playing' || throwsLeft <= 0 || flyingDartPos) return;
+    
+    if (!down && dy < 0 && vy > 1.0) {
+      // Fired!
+      const speed = 15 + vy * 5;
+      
+      // Calculate spread based on lateral movement
+      const spreadX = (mx / window.innerWidth) * 5;
+      
+      const velocity = [spreadX, -dy * speed * 0.2, -speed];
+      
+      const newDart = {
+        id: Date.now(),
+        position: [0, 1.5, 0],
+        rotation: [0, 0, 0],
+        velocity
+      };
+      
+      setDarts(prev => [...prev, newDart]);
+      setFlyingDartPos([0, 1.5, 0]);
+      setThrowsLeft(s => s - 1);
+    }
+  });
+
+  const handleHit = (pos: THREE.Vector3) => {
+    const pts = getScore(pos);
+    setScore(s => s + pts);
+    setFlyingDartPos(null); // Return camera
+    
+    if (pts === 50) toast.success('🎯 BULLSEYE! 50 Points!');
+    else if (pts > 0) toast.success(`Hit! ${pts} Points!`);
+    else toast.error('Miss!');
+    
+    if (throwsLeft - 1 === 0) {
+      setTimeout(() => {
+        setGameState('result');
+      }, 2000);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black select-none touch-none" {...(gameState === 'playing' ? bind() : {})}>
+      {gameState === 'menu' && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+          <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-red-600 mb-8">
+            PRO 3D DARTS
+          </h1>
+          <Button variant="neon" size="lg" className="px-12 py-6 text-xl" onClick={() => { setGameState('playing'); setScore(0); setThrowsLeft(3); setDarts([]); }}>
+            PLAY MATCH
+          </Button>
+          <Button variant="ghost" className="mt-4 text-slate-400" onClick={onClose}>Exit</Button>
+        </div>
+      )}
+
+      {gameState === 'result' && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+          <h2 className="text-4xl text-white mb-2">MATCH COMPLETE</h2>
+          <p className="text-6xl font-black text-yellow-400 mb-8">{score} PTS</p>
+          <Button variant="neon" size="lg" className="px-12 py-6" onClick={() => { setGameState('playing'); setScore(0); setThrowsLeft(3); setDarts([]); }}>
+            REMATCH
+          </Button>
+          <Button variant="ghost" className="mt-4 text-slate-400" onClick={onClose}>Exit</Button>
+        </div>
+      )}
+
+      {gameState !== 'menu' && (
+        <div className="absolute inset-0 z-10">
+          {!flyingDartPos && (
+             <div className="absolute bottom-20 left-0 right-0 text-center pointer-events-none animate-pulse">
+               <p className="text-white/50 text-xl font-bold tracking-widest">SWIPE UP TO THROW</p>
+             </div>
+          )}
+          
+          <div className="absolute top-8 left-8 bg-slate-900/80 p-4 rounded-xl border border-slate-700 pointer-events-none">
+            <p className="text-slate-400 text-xs uppercase font-bold">Total Score</p>
+            <p className="text-3xl font-black text-white">{score}</p>
+          </div>
+          
+          <div className="absolute top-8 right-8 bg-slate-900/80 p-4 rounded-xl border border-slate-700 text-right pointer-events-none">
+            <p className="text-slate-400 text-xs uppercase font-bold">Throws Left</p>
+            <p className="text-3xl font-black text-cyan-400">{throwsLeft}</p>
+          </div>
+          
+          <Button variant="ghost" className="absolute bottom-8 left-8 z-50 text-slate-400" onClick={onClose}>Quit</Button>
+          
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <GameEngine3D 
+               enablePhysics={true} 
+               environmentPreset="warehouse"
+               enablePostProcessing={true}
+               cameraPosition={[0, 1.5, 0]}
+            >
+               <DartsCamera flyingDart={flyingDartPos} />
+               
+               <RigidBody type="fixed" name="floor">
+                 <Box args={[10, 1, 30]} position={[0, -0.5, -5]}>
+                   <meshStandardMaterial color="#111" roughness={0.9} />
+                 </Box>
+               </RigidBody>
+               
+               <Dartboard />
+               
+               {darts.map(d => (
+                 <Dart key={d.id} position={d.position} rotation={d.rotation} velocity={d.velocity} onHit={handleHit} />
+               ))}
+            </GameEngine3D>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

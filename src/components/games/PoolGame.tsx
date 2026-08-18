@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { GameEngine3D } from '@/engine/GameEngine3D';
 import { Scene3D } from './pool/Scene3D';
 import { TouchControls } from './pool/TouchControls';
 import { HUD } from './pool/HUD';
@@ -83,12 +84,18 @@ export function PoolGame({ onClose }: Props) {
         <div className="relative flex-1 bg-[#050505] overflow-hidden select-none">
           {mode === 'PLAYING' && (
             <>
-              <Canvas shadows camera={{ position: [0, 8, 8], fov: 45 }}>
+              <GameEngine3D 
+                enablePhysics={false} 
+                environmentPreset="warehouse"
+                enablePostProcessing={true}
+                cameraPosition={[0, 8, 8]}
+                cameraFov={45}
+              >
                 <Scene3D 
                   cueAngle={cueAngle} 
                   power={power} 
                 />
-              </Canvas>
+              </GameEngine3D>
               
               <HUD />
               

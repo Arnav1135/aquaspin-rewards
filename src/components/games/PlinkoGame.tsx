@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
 import { GameEngine3D } from '@/engine/GameEngine3D';
-import { RigidBody, CuboidCollider, BallCollider } from '@react-three/rapier';
+import { RigidBody, Physics, RapierRigidBody, InstancedRigidBodies, BallCollider, CuboidCollider, interactionGroups } from '@react-three/rapier';
+import { generateOutcome } from './plinko/outcomeEngine';
 import * as THREE from 'three';
 import { Html, Detailed } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
@@ -316,36 +317,43 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
   const spawnBall = async (bet: number) => {
     if (!profile) return false;
     
+    if (profile.tokens < bet) {
+      toast.error('Insufficient tokens');
+      return false;
+    }
+    
     const clientSeed = crypto.randomUUID();
+    const serverSeed = "local-server-seed-" + Date.now();
+    const nonce = Math.floor(Math.random() * 10000);
     
     try {
-      const { data, error } = await supabase.functions.invoke('plinko-bet', {
-        body: { betAmount: bet, rows, risk, clientSeed }
-      });
+      // Local provably fair outcome generator
+      const outcome = await generateOutcome(serverSeed, clientSeed, nonce, rows);
+      const targetBucket = outcome.targetBucket;
       
-      if (error || !data?.success) {
-        toast.error(error?.message || data?.error || 'Bet failed');
-        return false;
-      }
+      const multiplier = multipliers[targetBucket];
+      const payout = bet * multiplier;
+      const newBalance = profile.tokens - bet + payout;
       
-      // The server already deducted the bet and added the payout to the DB balance.
-      // We optimistically show the deducted balance now, and the payout when the ball lands.
-      const balanceBeforeWin = data.newBalance - data.payout;
+      const roundId = "rnd_" + crypto.randomUUID().substring(0, 8);
+      
+      // Deduct bet immediately, payout will happen visually or optimistically
+      const balanceBeforeWin = profile.tokens - bet;
       updateProfile({ tokens: balanceBeforeWin } as any);
       
       const steer: PathSteeringState = {
-        path: data.path,
+        path: outcome.path,
         currentRow: 0,
         lastSteeredRow: -1,
-        targetBucket: data.targetBucket,
+        targetBucket: targetBucket,
         totalRows: rows
       };
       
       // Deterministic start X derived from round ID
-      const hash = Array.from(clientSeed).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const startX = ((hash % 100) / 100 - 0.5) * 0.02;
+      const hashVal = Array.from(clientSeed).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const startX = ((hashVal % 100) / 100 - 0.5) * 0.02;
       
-      setBalls(prev => [...prev, { id: data.roundId, bet, startX, steer, payout: data.payout, finalBalance: data.newBalance }]);
+      setBalls(prev => [...prev, { id: roundId, bet, startX, steer, payout, finalBalance: newBalance }]);
       return true;
     } catch (e: any) {
       toast.error('Failed to place bet');

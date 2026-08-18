@@ -63,13 +63,75 @@ export class FairnessEvaluator {
   }
 
   private static hasIsolatedIslands(board: any[][]): boolean {
-    // DFS implementation to ensure all valid board tiles are connected
-    // Scaffolded for now
-    return false;
+    if (board.length === 0 || board[0].length === 0) return false;
+    
+    const rows = board.length;
+    const cols = board[0].length;
+    const visited = Array.from({ length: rows }, () => Array(cols).fill(false));
+    let validTileCount = 0;
+    
+    // Find first valid tile to start DFS
+    let startR = -1;
+    let startC = -1;
+    
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (!board[r][c].isVoid) {
+          validTileCount++;
+          if (startR === -1) {
+            startR = r;
+            startC = c;
+          }
+        }
+      }
+    }
+    
+    if (validTileCount === 0) return false;
+    
+    // DFS to count reachable tiles
+    let reachableCount = 0;
+    const stack: {r: number, c: number}[] = [{r: startR, c: startC}];
+    visited[startR][startC] = true;
+    
+    while (stack.length > 0) {
+      const {r, c} = stack.pop()!;
+      reachableCount++;
+      
+      const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc] && !board[nr][nc].isVoid) {
+          visited[nr][nc] = true;
+          stack.push({r: nr, c: nc});
+        }
+      }
+    }
+    
+    return reachableCount !== validTileCount;
   }
 
   private static hasChokePoints(board: any[][]): boolean {
-    // Scaffolded analysis of column widths
+    const rows = board.length;
+    const cols = board[0].length;
+    if (rows < 3 || cols < 3) return false;
+
+    // Scan for bottlenecks (1-tile wide gaps surrounded by voids)
+    for (let r = 1; r < rows - 1; r++) {
+      for (let c = 1; c < cols - 1; c++) {
+        if (!board[r][c].isVoid) {
+          const voidLeft = board[r][c-1].isVoid;
+          const voidRight = board[r][c+1].isVoid;
+          const voidTop = board[r-1][c].isVoid;
+          const voidBottom = board[r+1][c].isVoid;
+          
+          if ((voidLeft && voidRight) || (voidTop && voidBottom)) {
+            // It's a 1-tile choke point
+            return true;
+          }
+        }
+      }
+    }
     return false;
   }
 

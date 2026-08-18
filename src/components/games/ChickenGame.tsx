@@ -199,7 +199,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
   return (
     <div 
-      className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl"
+      className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl"
       style={{ background: getThemeGradient() }}
     >
       <style>{`
@@ -331,7 +331,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
       </Card>
 
       {/* Storybook Farm rope bridge layout */}
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[440px] bridge-table rounded-2xl p-6 overflow-hidden">
+      <Card className="flex-1 min-w-0 w-full flex flex-col items-center justify-center relative min-h-[440px] bridge-table rounded-2xl p-6 overflow-hidden">
         <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-400 font-mono tracking-wider z-10">
           <HelpCircle size={10} className="text-orange-400" />
           <span>FARMHOUSE ADVANTAGE: 3.5%</span>
@@ -405,7 +405,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
           {/* Vertically sliding hazard thermometer */}
           <div className="flex flex-col items-center gap-1.5 h-[310px] pt-1">
             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest font-mono" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>DANGER</span>
-            <div className="flex-1 w-2.5 rounded-full bg-slate-950 overflow-hidden flex flex-col justify-end border border-slate-900 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl">
+            <div className="flex-1 min-w-0 w-full w-2.5 rounded-full bg-slate-950 overflow-hidden flex flex-col justify-end border border-slate-900 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl">
               <motion.div className="w-full rounded-full" style={{ background: 'linear-gradient(to top, #10b981, #eab308, #ef4444)' }}
                 animate={{ height: `${dangerPct}%` }} transition={{ duration: 0.4 }} />
             </div>
@@ -442,3 +442,4 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     </div>
   );
 }
+

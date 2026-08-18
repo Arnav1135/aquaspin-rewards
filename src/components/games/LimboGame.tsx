@@ -282,7 +282,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
       {/* Left betting controls */}
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shrink-0 z-20 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         <div className="space-y-4">
@@ -422,3 +422,4 @@ export function LimboGame({ onClose }: LimboGameProps) {
     </div>
   );
 }
+

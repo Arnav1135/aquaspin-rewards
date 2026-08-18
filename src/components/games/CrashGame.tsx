@@ -778,7 +778,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   return (
     <div 
-      className={`flex flex-col xl:flex-row gap-6 p-4 max-w-7xl mx-auto min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
+      className={`flex flex-col xl:flex-row gap-6 p-4 max-w-7xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
         tinnitusActive ? 'filter saturate-30 contrast-125' : ''
       }`}
       style={{ transform: getScreenTremor(), background: 'linear-gradient(135deg, #0f1f3d 0%, #0a1628 50%, #0d1a30 100%)' }}
@@ -932,7 +932,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
       </Card>
 
       {/* 3D Holo projection viewport screen */}
-      <Card className="flex-1 flex flex-col relative min-h-[500px] bg-slate-950 border border-slate-900 rounded-2xl overflow-hidden z-20">
+      <Card className="flex-1 min-w-0 w-full flex flex-col relative min-h-[500px] bg-slate-950 border border-slate-900 rounded-2xl overflow-hidden z-20">
         
         <div className="absolute top-4 left-4 right-4 flex justify-between z-30 hud-digital-readout pointer-events-none">
           <AnimatePresence mode="wait">
@@ -1020,3 +1020,4 @@ export function CrashGame({ onClose }: CrashGameProps) {
     </div>
   );
 }
+

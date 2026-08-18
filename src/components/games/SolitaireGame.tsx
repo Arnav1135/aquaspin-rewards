@@ -415,9 +415,9 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       </UICard>
 
       {/* Board Area */}
-      <div className="flex-1 relative min-h-[500px] z-10 p-2 sm:p-4 overflow-hidden">
+      <div className="flex-1 min-w-0 w-full relative min-h-[500px] z-10 p-2 sm:p-4 overflow-hidden">
         {isPlaying && board ? (
-          <div className="w-full max-w-5xl mx-auto h-full flex flex-col gap-6 sm:gap-10">
+          <div className="w-full max-w-5xl mx-auto w-full h-full flex flex-col gap-6 sm:gap-10">
             
             {/* TOP ROW: Deck, Waste, Foundations */}
             <div className="flex justify-between items-start w-full">
@@ -523,3 +523,4 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
     </div>
   );
 }
+

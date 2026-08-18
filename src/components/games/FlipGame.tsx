@@ -106,7 +106,7 @@ export function FlipGame({ onClose }: FlipGameProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl">
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-navy-950 border border-navy-800/80 rounded-2xl shrink-0">
         <div className="space-y-4">
           <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={isFlipping} />
@@ -154,7 +154,7 @@ export function FlipGame({ onClose }: FlipGameProps) {
         </div>
       </Card>
 
-      <Card className="flex-1 flex flex-col items-center justify-center relative min-h-[380px] bg-navy-900/40 border border-navy-800/80 rounded-2xl overflow-hidden">
+      <Card className="flex-1 min-w-0 w-full flex flex-col items-center justify-center relative min-h-[380px] bg-navy-900/40 border border-navy-800/80 rounded-2xl overflow-hidden">
         <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted"><HelpCircle size={10} /><span>4% edge</span></div>
 
         {/* Coin */}
@@ -215,3 +215,4 @@ export function FlipGame({ onClose }: FlipGameProps) {
     </div>
   );
 }
+

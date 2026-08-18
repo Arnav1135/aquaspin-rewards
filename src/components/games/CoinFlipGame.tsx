@@ -379,7 +379,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
 
   return (
     <ErrorBoundary name="CoinFlipGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
         <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shrink-0 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="space-y-4">
             <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={flipping} />
@@ -436,7 +436,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
           </div>
         </Card>
 
-        <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] bg-slate-950/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl p-5 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+        <Card className="flex-1 min-w-0 w-full flex flex-col gap-4 relative min-h-[440px] bg-slate-950/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl p-5 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted">
             <HelpCircle size={10} />
             <span>1% edge</span>
@@ -462,7 +462,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
           </div>
 
           {/* Coin display */}
-          <div className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative"
+          <div className="flex-1 min-w-0 w-full rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative"
             style={{
               background: 'radial-gradient(ellipse at center, #1a2847 0%, #0f1729 100%)',
               backgroundImage: 'radial-gradient(ellipse at center, #1a2847 0%, #0f1729 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 0, transparent 50%)',
@@ -508,3 +508,4 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
     </ErrorBoundary>
   );
 }
+

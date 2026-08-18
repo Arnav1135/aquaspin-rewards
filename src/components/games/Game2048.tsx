@@ -8,7 +8,7 @@ export function Game2048({ onClose }: Props) {
       title="2048" 
       onClose={onClose}
     >
-      <div className="flex-1 w-full h-full bg-[#faf8ef] rounded-xl overflow-hidden relative">
+      <div className="flex-1 min-w-0 w-full w-full h-full bg-[#faf8ef] rounded-xl overflow-hidden relative">
         <iframe 
           src="/mini-games/2048/index.html" 
           className="w-full h-full border-none"
@@ -18,3 +18,4 @@ export function Game2048({ onClose }: Props) {
     </GameFrame>
   );
 }
+

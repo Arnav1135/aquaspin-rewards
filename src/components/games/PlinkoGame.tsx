@@ -577,7 +577,7 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          <div className="flex-1 space-y-6">
+          <div className="flex-1 min-w-0 w-full space-y-6">
             <div className={autoRunning ? 'opacity-50 pointer-events-none transition-opacity' : ''}>
               <BetControl betAmount={betAmount} setBetAmount={setBetAmount} minBet={10} maxBet={5000} disabled={autoRunning} />
             </div>
@@ -723,3 +723,4 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+

@@ -287,7 +287,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
 
   return (
     <ErrorBoundary name="DragonTigerGame">
-      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1c0a08 0%, #0a100a 50%, #080a1c 100%)' }}>
+      <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #1c0a08 0%, #0a100a 50%, #080a1c 100%)' }}>
         
         {/* Screen Edge Allegiance Red/Blue glow vignette */}
         {betSelection === 'dragon' && !dealing && (
@@ -380,7 +380,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
         </Card>
 
         {/* Floating ancient altar view */}
-        <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] temple-felt rounded-2xl p-5 overflow-hidden">
+        <Card className="flex-1 min-w-0 w-full flex flex-col gap-4 relative min-h-[440px] temple-felt rounded-2xl p-5 overflow-hidden">
           <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-400 font-mono tracking-wider z-10">
             <HelpCircle size={10} className="text-yellow-500" />
             <span>ALTAR DECAY: 3.73%</span>
@@ -409,7 +409,7 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
           </div>
 
           {/* Elemental Table felt */}
-          <div className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative overflow-hidden border border-slate-700/40" style={{ background: 'linear-gradient(135deg, #1c0a0a 0%, #0d1a0d 50%, #0a0a1c 100%)' }}>
+          <div className="flex-1 min-w-0 w-full rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative overflow-hidden border border-slate-700/40" style={{ background: 'linear-gradient(135deg, #1c0a0a 0%, #0d1a0d 50%, #0a0a1c 100%)' }}>
             {/* Background elements */}
             <div className="absolute inset-y-0 left-0 w-1/2 dragon-ember-bg pointer-events-none" />
             <div className="absolute inset-y-0 right-0 w-1/2 tiger-wind-bg pointer-events-none" />
@@ -498,3 +498,4 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
     </ErrorBoundary>
   );
 }
+

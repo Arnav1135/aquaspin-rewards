@@ -419,7 +419,7 @@ export function FlappyBirdGame({ onClose }: Props) {
       level={display.level}
       isWarping={display.isWarping}
     >
-      <div className="flex-1 w-full flex items-center justify-center bg-black">
+      <div className="flex-1 min-w-0 w-full w-full flex items-center justify-center bg-black">
         <div className="relative" style={{ width: 380, height: 520, maxWidth: '100%', aspectRatio: '38/52' }}>
           <canvas
             ref={canvasRef}
@@ -479,3 +479,4 @@ export function FlappyBirdGame({ onClose }: Props) {
     </GameFrame>
   );
 }
+

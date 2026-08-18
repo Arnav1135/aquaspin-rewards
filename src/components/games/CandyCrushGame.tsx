@@ -256,7 +256,7 @@ export default function CandyCrushGame({
           <div className="text-[#be0e11] font-bold drop-shadow-sm">Moves: {moves}</div>
         </div>
         
-        <div className="flex-1 w-full max-w-md relative">
+        <div className="flex-1 min-w-0 w-full w-full max-w-md relative">
           <AquaSpinEngine 
             orthographic 
             zoom={45} 
@@ -319,3 +319,4 @@ export default function CandyCrushGame({
     </GameFrame>
   );
 }
+

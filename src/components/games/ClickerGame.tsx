@@ -161,7 +161,7 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
           {/* Click area */}
           <div
             ref={gameAreaRef}
-            className="flex-1 min-h-[300px] relative rounded-2xl border border-cyan-400/50 bg-slate-900/50 backdrop-blur-lg cursor-pointer select-none active:scale-[0.98] transition-all overflow-hidden flex items-center justify-center shadow-[inset_0_0_30px_rgba(0,240,255,0.1)]"
+            className="flex-1 min-w-0 w-full min-h-[300px] relative rounded-2xl border border-cyan-400/50 bg-slate-900/50 backdrop-blur-lg cursor-pointer select-none active:scale-[0.98] transition-all overflow-hidden flex items-center justify-center shadow-[inset_0_0_30px_rgba(0,240,255,0.1)]"
             onClick={handleClick}
             style={{ boxShadow: `0 0 40px rgba(0, 240, 255, ${0.1 + (clicks / 100) * 0.3})` }}
           >
@@ -212,3 +212,4 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
     </div>
   );
 }
+

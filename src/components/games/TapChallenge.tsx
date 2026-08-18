@@ -182,7 +182,7 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
           {/* Game area */}
           <div
             ref={areaRef}
-            className="flex-1 relative rounded-2xl bg-navy-800 border-2 border-navy-600 overflow-hidden"
+            className="flex-1 min-w-0 w-full relative rounded-2xl bg-navy-800 border-2 border-navy-600 overflow-hidden"
             style={{ touchAction: 'none' }}
           >
             <AnimatePresence>
@@ -245,3 +245,4 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
     </div>
   );
 }
+

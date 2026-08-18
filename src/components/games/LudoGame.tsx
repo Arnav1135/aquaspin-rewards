@@ -526,8 +526,8 @@ export function LudoGame({ onClose }: Props) {
                   </Button>
                   
                   <div className="flex gap-2">
-                    <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(2)}>👥 Pass & Play (2P)</Button>
-                    <Button variant="ghost" className="flex-1 bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(4)}>👥 Pass & Play (4P)</Button>
+                    <Button variant="ghost" className="flex-1 min-w-0 w-full bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(2)}>👥 Pass & Play (2P)</Button>
+                    <Button variant="ghost" className="flex-1 min-w-0 w-full bg-white/5 border border-white/10 text-white" onClick={() => startPassAndPlay(4)}>👥 Pass & Play (4P)</Button>
                   </div>
 
                   <Button variant="neon" size="lg" className="w-full border-cyan-400/40" onClick={startOnlineMultiplayer}>
@@ -591,7 +591,7 @@ export function LudoGame({ onClose }: Props) {
             </span>
           </div>
 
-          <div className="flex-1 flex justify-end items-center gap-4">
+          <div className="flex-1 min-w-0 w-full flex justify-end items-center gap-4">
             {playerConfig[currentColor] === 'human' && !rolling && movable.length === 0 && (
               <Button onClick={rollDice} variant="neon" className="px-6 py-3 font-semibold rounded-xl text-sm">
                 Roll Dice
@@ -1356,3 +1356,4 @@ function Token3D({ token, tokens, movable, onClick }: Token3DProps) {
     </group>
   );
 }
+

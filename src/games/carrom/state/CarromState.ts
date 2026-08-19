@@ -20,6 +20,7 @@ interface CarromStore {
   setStrikerPosition: (pos: [number, number, number]) => void;
   setAimAngle: (angle: number) => void;
   setPower: (power: number) => void;
+  recordReplay: () => void;
   pocketCoin: (id: string) => void;
   resetTurn: () => void;
   initGame: (initialCoins: CarromCoinData[]) => void;

@@ -4,6 +4,7 @@ import { Environment, ContactShadows, OrbitControls, Sparkles, Html, Perspective
 import { useSpring, a } from '@react-spring/three';
 import * as THREE from 'three';
 import { audio } from './audioManager';
+import confetti from 'canvas-confetti';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 type ColorId = number;
@@ -248,6 +249,11 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
 
   const [isGenerating, setIsGenerating] = useState<boolean>(true);
   const [nextLevelCache, setNextLevelCache] = useState<TubeData[] | null>(null);
+  
+  // Cinematic states
+  const [showWinScreen, setShowWinScreen] = useState<boolean>(false);
+  const [startTime, setStartTime] = useState<number>(Date.now());
+  const [endTime, setEndTime] = useState<number | null>(null);
 
   // Phase 40+: Endless Level Engine - Async initialization and pre-generation
   useEffect(() => {
@@ -273,6 +279,9 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         setSelected(null);
         setHint(null);
         setIsGenerating(false);
+        setStartTime(Date.now());
+        setEndTime(null);
+        setShowWinScreen(false);
       }
 
       // Automatically pre-generate the next level in the background
@@ -292,11 +301,41 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
     const isWon = tubes.length > 0 && tubes.every(tube => 
       tube.length === 0 || (tube.length === TUBE_CAPACITY && tube.every(c => c === tube[0]))
     );
-    if (isWon) {
+    if (isWon && !showWinScreen) {
       audio.playWin();
-      setTimeout(() => onWin(), 1000);
+      setEndTime(Date.now());
+      setShowWinScreen(true);
+      
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#00ffcc', '#ff00cc', '#ffff00']
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#00ffcc', '#ff00cc', '#ffff00']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
     }
-  }, [tubes, onWin]);
+  }, [tubes, showWinScreen]);
+
+  const handleNextLevel = () => {
+    onWin();
+  };
 
   const getTubePos = (idx: number) => {
     const col = idx % cols;
@@ -430,30 +469,37 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   const startX = -((cols - 1) * TUBE_SPACING) / 2;
   const startZ = -((rows - 1) * TUBE_SPACING) / 2;
 
-  // Dynamic lighting animation
-  const lightRef = useRef<THREE.DirectionalLight>(null);
-  useFrame(({ clock }) => {
-    if (lightRef.current) {
-      const t = clock.elapsedTime * 0.2;
-      lightRef.current.position.set(Math.cos(t) * 10, 10, Math.sin(t) * 10);
-    }
-  });
+  // Extracted Lighting component to fix useFrame error
+  const Lighting = () => {
+    const lightRef = useRef<THREE.DirectionalLight>(null);
+    useFrame(({ clock }) => {
+      if (lightRef.current) {
+        const t = clock.elapsedTime * 0.2;
+        lightRef.current.position.set(Math.cos(t) * 10, 10, Math.sin(t) * 10);
+      }
+    });
+    return (
+      <>
+        <ambientLight intensity={0.5} />
+        <directionalLight 
+          ref={lightRef}
+          position={[10, 10, 5]} 
+          intensity={1.5} 
+          castShadow 
+          shadow-mapSize={[1024, 1024]}
+        />
+        <pointLight position={[-10, -10, -10]} intensity={0.5} color="#00ffff" />
+      </>
+    );
+  };
 
   return (
-    <Canvas shadows dpr={[1, 1.5]} onPointerDown={() => audio.init()}>
-      <CameraController isPouring={pouringInto !== null} />
-      <color attach="background" args={['#050510']} />
-      
-      <ambientLight intensity={0.5} />
-      <directionalLight 
-        ref={lightRef}
-        position={[10, 10, 5]} 
-        intensity={2} 
-        castShadow 
-        shadow-mapSize-width={1024} 
-        shadow-mapSize-height={1024} 
-      />
-      <spotLight position={[-10, 10, -5]} intensity={1} color="#5ab8ea" />
+    <div className="w-full h-full relative">
+      <Canvas shadows dpr={[1, 1.5]} onPointerDown={() => audio.init()}>
+        <CameraController isPouring={pouringInto !== null} />
+        <color attach="background" args={['#050510']} />
+        
+        <Lighting />
 
       <Environment preset="studio" />
 
@@ -545,6 +591,52 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         maxDistance={30}
         autoRotate={false} /* Disabled autoRotate for better player focus during pours */
       />
-    </Canvas>
+      </Canvas>
+
+      {/* Level Completion Cinematic Overlay */}
+      {showWinScreen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all duration-1000 animate-in fade-in zoom-in-95">
+          <div className="bg-slate-900/90 border border-cyan-500/50 rounded-3xl p-8 max-w-sm w-full mx-4 shadow-[0_0_50px_-12px_rgba(0,255,204,0.5)] flex flex-col items-center">
+            
+            <div className="w-24 h-24 mb-6 rounded-full bg-cyan-500/20 flex items-center justify-center animate-bounce">
+              <span className="text-5xl">🏆</span>
+            </div>
+
+            <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500 mb-2 text-center">
+              LEVEL {level} CLEARED
+            </h2>
+            <p className="text-cyan-200/60 font-medium mb-8 text-center text-sm uppercase tracking-widest">
+              Brilliant Synthesis
+            </p>
+
+            <div className="w-full space-y-3 mb-8">
+              <div className="flex justify-between items-center p-3 rounded-xl bg-black/40 border border-white/5">
+                <span className="text-slate-400 font-medium">Moves</span>
+                <span className="text-cyan-400 font-bold text-xl">{history.length}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-black/40 border border-white/5">
+                <span className="text-slate-400 font-medium">Time</span>
+                <span className="text-fuchsia-400 font-bold text-xl">
+                  {endTime ? Math.round((endTime - startTime) / 1000) : 0}s
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-black/40 border border-white/5">
+                <span className="text-slate-400 font-medium">Liquid Score</span>
+                <span className="text-yellow-400 font-bold text-xl">
+                  +{level * 100}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleNextLevel}
+              className="w-full py-4 rounded-xl font-black text-lg text-slate-900 bg-gradient-to-r from-cyan-400 to-cyan-300 hover:from-cyan-300 hover:to-cyan-200 shadow-[0_0_20px_rgba(0,255,204,0.4)] transition-all hover:scale-105 active:scale-95"
+            >
+              NEXT LEVEL
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

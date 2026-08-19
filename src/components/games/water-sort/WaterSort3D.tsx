@@ -37,7 +37,7 @@ import { liquidVisualEngine } from '../../../engine/rendering/shaders/LiquidVisu
 import { WaterSortLiquidProfile } from './WaterSortLiquidProfile';
 import { VisualStreamController } from './VisualStreamController';
 
-import { LevelGenerator } from '../water-sort-pro/core/LevelGenerator';
+import { LevelGenerator } from '../water-sort-pro/levels/LevelGenerator';
 import { HintEngine } from '../water-sort-pro/core/HintEngine';
 import { GameState } from '../water-sort-pro/core/PuzzleEngine';
 
@@ -246,25 +246,50 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   const [pouringInto, setPouringInto] = useState<number | null>(null);
   const [hint, setHint] = useState<{from: number, to: number} | null>(null);
 
-  // Initialize Level
+  const [isGenerating, setIsGenerating] = useState<boolean>(true);
+  const [nextLevelCache, setNextLevelCache] = useState<TubeData[] | null>(null);
+
+  // Phase 40+: Endless Level Engine - Async initialization and pre-generation
   useEffect(() => {
-    const colorCount = Math.min(3 + Math.floor(level / 1.5), 14);
-    const tubeCount = colorCount + 2;
-    const targetDifficulty = Math.min(level * 5, 100);
-    const seed = `level_${level}_${Date.now()}`;
-    
-    const levelDef = LevelGenerator.generate(targetDifficulty, colorCount, tubeCount, TUBE_CAPACITY, seed);
-    
-    setTubes(levelDef.initialConfiguration);
-    setHistory([]);
-    setSelected(null);
-    setHint(null);
+    let active = true;
+
+    const initLevel = async () => {
+      setIsGenerating(true);
+      
+      // If we have a cached level ready for the current request, use it!
+      if (nextLevelCache) {
+        setTubes(nextLevelCache);
+        setHistory([]);
+        setSelected(null);
+        setHint(null);
+        setNextLevelCache(null); // consume cache
+        setIsGenerating(false);
+      } else {
+        // First load or cache miss (e.g. user skipped levels too fast)
+        const tubesConfig = await LevelGenerator.generateAsync(level);
+        if (!active) return;
+        setTubes(tubesConfig);
+        setHistory([]);
+        setSelected(null);
+        setHint(null);
+        setIsGenerating(false);
+      }
+
+      // Automatically pre-generate the next level in the background
+      LevelGenerator.generateAsync(level + 1).then(config => {
+        if (active) setNextLevelCache(config);
+      }).catch(err => console.error("Failed to pre-generate next level:", err));
+    };
+
+    initLevel();
+
+    return () => { active = false; };
   }, [level]);
 
   // Check Win Condition
   useEffect(() => {
     if (tubes.length === 0) return;
-    const isWon = tubes.every(tube => 
+    const isWon = tubes.length > 0 && tubes.every(tube => 
       tube.length === 0 || (tube.length === TUBE_CAPACITY && tube.every(c => c === tube[0]))
     );
     if (isWon) {
@@ -502,6 +527,15 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         <Sparkles count={150} scale={20} size={1.5} speed={0.2} opacity={0.3} color="#ffffff" />
         <Sparkles count={50} scale={15} size={2.5} speed={0.5} opacity={0.6} color="#00ffcc" position-y={2} />
       </group>
+
+      {isGenerating && (
+        <Html center>
+          <div className="flex flex-col items-center justify-center p-6 bg-black/80 backdrop-blur-md rounded-2xl border border-cyan-500/30">
+            <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
+            <p className="text-cyan-400 font-bold tracking-widest text-sm uppercase">Synthesizing Level</p>
+          </div>
+        </Html>
+      )}
 
       <OrbitControls 
         enablePan={false} 

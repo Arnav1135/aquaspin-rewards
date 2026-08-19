@@ -41,8 +41,11 @@ export function VisualStreamController({ active, sourcePos, targetPos, color }: 
   const dropletData = useRef(Array(maxDroplets).fill(0).map(() => ({
     progress: Math.random(),
     speed: 1.5 + Math.random(),
-    scale: 0.1 + Math.random() * 0.1,
-    offset: new THREE.Vector3((Math.random()-0.5)*0.2, (Math.random()-0.5)*0.2, (Math.random()-0.5)*0.2)
+    baseScale: 0.1 + Math.random() * 0.1,
+    offset: new THREE.Vector3((Math.random()-0.5)*0.2, (Math.random()-0.5)*0.2, (Math.random()-0.5)*0.2),
+    mergedScale: 0,
+    merged: false,
+    currentPos: new THREE.Vector3()
   })));
 
   // Phase 9: Splash Crown Physics
@@ -86,35 +89,62 @@ export function VisualStreamController({ active, sourcePos, targetPos, color }: 
       
       let spawnSplash = false;
 
-      // Update droplets along the curve (Phase 7: Stream Breakup & Phase 8: Droplet Physics)
-      dropletData.current.forEach((drop, i) => {
+      // Phase 7 & 8: Stream Breakup and Movement
+      dropletData.current.forEach((drop) => {
         drop.progress += drop.speed * delta;
         
-        // Wrap droplets only if stream is fully active, otherwise they fall out
+        // Wrap droplets
         if (drop.progress > 1) {
-          drop.progress = active ? 0 : 2; // Move out of view if inactive
-          if (active) spawnSplash = true; // Trigger splash on loop
+          drop.progress = active ? 0 : 2;
+          drop.merged = false; // Unmerge on reset
+          drop.mergedScale = 0;
+          if (active) spawnSplash = true; 
         }
 
-        // Only render droplet if it hasn't fallen out and is within the current pour front
-        if (drop.progress <= 1 && drop.progress <= pourState.current.progress * 1.5) {
+        // Calculate positions for active droplets
+        if (!drop.merged && drop.progress <= 1 && drop.progress <= pourState.current.progress * 1.5) {
           const point = curve.getPoint(drop.progress);
-          
-          // As progress increases, spread them out (stream breakup)
           const spread = drop.progress * 0.5;
-          dummy.position.copy(point).add(new THREE.Vector3(
+          drop.currentPos.copy(point).add(new THREE.Vector3(
             drop.offset.x * spread,
             drop.offset.y * spread,
             drop.offset.z * spread
           ));
+        }
+      });
+
+      // Phase 8: True Spatial Droplet Merging (Collision Detection)
+      for (let i = 0; i < maxDroplets; i++) {
+        const dropA = dropletData.current[i];
+        if (dropA.merged || dropA.progress > 1 || dropA.progress === 0) continue;
+
+        for (let j = i + 1; j < maxDroplets; j++) {
+          const dropB = dropletData.current[j];
+          if (dropB.merged || dropB.progress > 1 || dropB.progress === 0) continue;
+
+          const distSq = dropA.currentPos.distanceToSquared(dropB.currentPos);
+          const mergeThreshold = (dropA.baseScale + dropB.baseScale) * 0.6; // spatial threshold
           
-          const scale = drop.scale * (1 - drop.progress * 0.5) * pourState.current.progress; // Shrink as they fall and tie to pour state
+          if (distSq < mergeThreshold * mergeThreshold) {
+            // Absorb droplet B into droplet A
+            dropB.merged = true;
+            // Mass combination (volume scales cubically, radius scales by cuberoot, but simplified to visual pop here)
+            dropA.mergedScale += (dropB.baseScale + dropB.mergedScale) * 0.8;
+          }
+        }
+      }
+
+      // Render Final Droplet Matrices
+      dropletData.current.forEach((drop, i) => {
+        if (!drop.merged && drop.progress <= 1 && drop.progress <= pourState.current.progress * 1.5) {
+          const totalScale = drop.baseScale + drop.mergedScale;
+          const scale = totalScale * (1 - drop.progress * 0.5) * pourState.current.progress;
+          dummy.position.copy(drop.currentPos);
           dummy.scale.set(scale, scale, scale);
         } else {
           dummy.scale.set(0, 0, 0);
         }
         dummy.updateMatrix();
-        
         dropletsRef.current!.setMatrixAt(i, dummy.matrix);
       });
       dropletsRef.current.instanceMatrix.needsUpdate = true;

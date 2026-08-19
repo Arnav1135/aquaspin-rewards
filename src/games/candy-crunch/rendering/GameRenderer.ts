@@ -5,6 +5,9 @@ import { EnvironmentManager } from './managers/EnvironmentManager';
 import { CameraManager } from './managers/CameraManager';
 import { AnimationEngine } from './managers/AnimationEngine';
 import { VFXManager } from './managers/VFXManager';
+import { CascadeAnimationController } from './managers/CascadeAnimationController';
+import { SpecialComboCinematics } from './managers/SpecialComboCinematics';
+import { WorldVisualIdentity } from './managers/WorldVisualIdentity';
 import { BoardRenderer } from './entities/BoardRenderer';
 import { CandyRenderer } from './entities/CandyRenderer';
 import { TileData } from '../types';
@@ -24,6 +27,9 @@ export class GameRenderer {
   public cameraManager: CameraManager;
   public animation: AnimationEngine;
   public vfx: VFXManager;
+  public cascadeController: CascadeAnimationController;
+  public specialComboCinematics: SpecialComboCinematics;
+  public worldIdentity: WorldVisualIdentity;
 
   // Entities
   private boardRenderer: BoardRenderer;
@@ -47,20 +53,37 @@ export class GameRenderer {
     this.renderer.setSize(width, height);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    // Phase 3: Better tone mapping
+
+    // Phase 2: Color Space & Tone Mapping
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.2;
     
     container.appendChild(this.renderer.domElement);
     this.clock = new THREE.Clock();
 
-    // Initialize Sub-Systems (Phase 2 Architecture)
+    // Initialize Sub-Systems
     this.quality = new QualityManager(preset);
     this.resources = new ResourceManager();
     this.environment = new EnvironmentManager(this.scene);
     this.animation = new AnimationEngine();
     this.cameraManager = new CameraManager(this.camera, this.animation);
     this.vfx = new VFXManager(this.scene);
+    
+    this.cascadeController = new CascadeAnimationController(
+      this.animation,
+      this.vfx,
+      this.cameraManager,
+      this.environment
+    );
+
+    this.specialComboCinematics = new SpecialComboCinematics(
+      this.vfx,
+      this.cameraManager,
+      this.environment
+    );
+
+    this.worldIdentity = new WorldVisualIdentity(this.environment);
     
     this.boardRenderer = new BoardRenderer();
     this.scene.add(this.boardRenderer.getGroup());
@@ -71,25 +94,20 @@ export class GameRenderer {
     // Resize Event
     window.addEventListener('resize', this.onResize);
 
-    // Subscribe to Event Bus (Phase 34)
+    // Phase 34: Event-Driven Logic Synchronization
     import('../engine/rules/RulesEngine').then(({ rulesEngine }) => {
       rulesEngine.eventBus.subscribe('SWAP_SUCCESS', async (e) => {
         this.renderBoard(e.payload.board);
       });
       rulesEngine.eventBus.subscribe('MATCH_RESOLVED', async (e) => {
-        // Spawn specific colored explosions for matched tiles!
-        e.payload.matchedTiles.forEach((tile: TileData) => {
-          const c3 = this.tileMeshes.get(tile.id)?.position;
-          if (c3) {
-            this.vfx.spawnExplosion(c3.x, c3.y, tile.color, 15);
-          }
-        });
+        this.cascadeController.handleMatchResolved(e.payload.matchedTiles, this.tileMeshes, e.payload.cascadeDepth || 1);
         this.renderBoard(e.payload.board);
       });
       rulesEngine.eventBus.subscribe('REFILL', async (e) => {
         this.renderBoard(e.payload.board);
       });
       rulesEngine.eventBus.subscribe('CASCADE_ENDED', async (e) => {
+        this.cascadeController.handleCascadeEnded(e.payload.cascadeCount || 0);
         this.renderBoard(e.payload.board);
       });
     });
@@ -101,7 +119,6 @@ export class GameRenderer {
   private applyQualitySettings() {
     const s = this.quality.getSettings();
     this.renderer.setPixelRatio(s.pixelRatio);
-    // Future: implement composer and post-processing based on s.enablePostProcessing
   }
 
   private onResize = () => {
@@ -116,7 +133,6 @@ export class GameRenderer {
     const rows = board.length;
     const cols = board[0]?.length || 8;
     
-    // Rebuild background if dimensions change
     if (this.boardRenderer.getGroup().children.length === 0) {
       this.boardRenderer.rebuildBoardBackground(rows, cols);
       this.cameraManager.frameBoard(rows, cols);
@@ -136,11 +152,11 @@ export class GameRenderer {
         let meshGroup = this.tileMeshes.get(key);
 
         if (!meshGroup) {
-          // New Candy Created
           meshGroup = this.candyRenderer.createCandyMeshGroup(tile);
           
           if (tile.isFalling && tile.fallOffset) {
             meshGroup.position.set(x, y + tile.fallOffset * 1.1, 0);
+            this.animation.animateProfile(meshGroup, 'FALL', { x, y });
           } else {
             meshGroup.position.set(x, y, 0);
           }
@@ -149,51 +165,13 @@ export class GameRenderer {
           this.tileMeshes.set(key, meshGroup);
         }
 
-        // We do NOT use frame-by-frame physics lerp anymore. 
-        // We use the AnimationEngine to tween to the target cleanly!
         if (meshGroup.position.x !== x || meshGroup.position.y !== y) {
-           const dist = Math.sqrt(Math.pow(meshGroup.position.x - x, 2) + Math.pow(meshGroup.position.y - y, 2));
-           
-           this.animation.to(meshGroup.position, 'x', x, 0.3);
-           
-           if (tile.isFalling) {
-             // Fall animation (bounce at the end)
-             // Phase 13: Squash & Stretch during fall
-             this.animation.to(meshGroup.scale, 'y', 1.2, 0.2, undefined, 0, () => {
-               this.animation.to(meshGroup.scale, 'y', 1.0, 0.2);
-             });
-             this.animation.to(meshGroup.scale, 'x', 0.8, 0.2, undefined, 0, () => {
-               this.animation.to(meshGroup.scale, 'x', 1.0, 0.2);
-             });
-
-             this.animation.to(meshGroup.position, 'y', y, 0.4, (t) => {
-               // Custom bounce out easing
-               if (t < 1 / 2.75) return 7.5625 * t * t;
-               else if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
-               else if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
-               else return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
-             });
-             tile.isFalling = false; // consume state
-           } else {
-             // Swap animation (Squash and Stretch laterally if horizontal, vertically if vertical)
-             if (Math.abs(meshGroup.position.x - x) > 0.1) {
-               this.animation.to(meshGroup.scale, 'x', 1.3, 0.15, undefined, 0, () => {
-                 this.animation.to(meshGroup.scale, 'x', 1.0, 0.15);
-               });
-               this.animation.to(meshGroup.scale, 'y', 0.7, 0.15, undefined, 0, () => {
-                 this.animation.to(meshGroup.scale, 'y', 1.0, 0.15);
-               });
-             } else if (Math.abs(meshGroup.position.y - y) > 0.1) {
-               this.animation.to(meshGroup.scale, 'y', 1.3, 0.15, undefined, 0, () => {
-                 this.animation.to(meshGroup.scale, 'y', 1.0, 0.15);
-               });
-               this.animation.to(meshGroup.scale, 'x', 0.7, 0.15, undefined, 0, () => {
-                 this.animation.to(meshGroup.scale, 'x', 1.0, 0.15);
-               });
-             }
-
-             this.animation.to(meshGroup.position, 'y', y, 0.3);
-           }
+          if (tile.isFalling) {
+            this.animation.animateProfile(meshGroup, 'FALL', { x, y });
+            tile.isFalling = false;
+          } else {
+            this.animation.animateProfile(meshGroup, 'SWAP', { x, y });
+          }
         }
       }
     }
@@ -201,13 +179,10 @@ export class GameRenderer {
     // Cleanup destroyed candies
     this.tileMeshes.forEach((meshGroup, key) => {
       if (!currentKeys.has(key)) {
-        // Spawn explosion VFX before removing
-        const c3 = meshGroup.position;
-        // Basic hack to get color (since we don't have it directly mapped here, ideally we pass it)
-        this.vfx.spawnExplosion(c3.x, c3.y, 'red', 10);
-        
-        this.scene.remove(meshGroup);
-        this.tileMeshes.delete(key);
+        this.animation.animateProfile(meshGroup, 'MATCH', undefined, () => {
+          this.scene.remove(meshGroup);
+          this.tileMeshes.delete(key);
+        });
       }
     });
   }
@@ -223,15 +198,16 @@ export class GameRenderer {
 
     this.animation.update(delta);
     this.vfx.update(delta);
+    this.cameraManager.update(delta);
+    this.environment.update(delta);
 
     // Subtle idle floating for candies
     const time = this.clock.getElapsedTime();
     this.tileMeshes.forEach((meshGroup) => {
-      // Find CandyMesh inside Group
       const candy = meshGroup.children.find(c => c.name === "CandyMesh");
       if (candy) {
-        candy.rotation.y = Math.sin(time * 1.5 + meshGroup.position.y) * 0.1;
-        candy.rotation.z = Math.cos(time * 2 + meshGroup.position.x) * 0.05;
+        candy.rotation.y = Math.sin(time * 1.5 + meshGroup.position.y) * 0.08;
+        candy.rotation.z = Math.cos(time * 2 + meshGroup.position.x) * 0.04;
       }
     });
 
@@ -242,6 +218,7 @@ export class GameRenderer {
     window.removeEventListener('resize', this.onResize);
     cancelAnimationFrame(this.animationFrameId);
     this.environment.dispose();
+    this.vfx.dispose();
     this.resources.disposeAll();
     this.renderer.dispose();
     if (this.container.contains(this.renderer.domElement)) {

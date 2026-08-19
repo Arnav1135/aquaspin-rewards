@@ -10,7 +10,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "preview": "vite preview",
     "test:watersort": "npx tsx src/components/games/water-sort-pro/qa/AutomatedTestLab.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "qa:visual": "npx tsx factory/qa/AIVisualCritic.ts"
   },
   "dependencies": {
     "@babylonjs/core": "^9.17.0",
@@ -43,7 +44,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
-    "react-router-dom": "^6.26.0",
+    "react-router-dom": "^7.18.2",
     "react-unity-webgl": "^10.2.0",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^2.4.0",
@@ -72,7 +73,7 @@
     "puppeteer": "^25.5.0",
     "tailwindcss": "^3.4.9",
     "typescript": "^5.5.3",
-    "vite": "^5.3.5",
+    "vite": "^8.2.1",
     "vite-plugin-pwa": "^0.20.1",
     "workbox-window": "^7.4.1"
   }

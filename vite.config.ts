@@ -73,27 +73,11 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   build: {
     target: 'esnext',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Split vendor chunks for better caching
-          react: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
-          framer: ['framer-motion'],
-          query: ['@tanstack/react-query'],
-          zustand: ['zustand'],
-          babylon: ['@babylonjs/core'],
-          rapier: ['@dimforge/rapier3d-compat'],
-          three: ['three', '@react-three/fiber', '@react-three/drei'],
-        },
-      },
-    },
     chunkSizeWarningLimit: 4000,
   },
 });

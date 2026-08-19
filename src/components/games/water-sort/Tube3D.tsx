@@ -1,7 +1,7 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { useSpring, a } from '@react-spring/three';
+import { useSpring, useSprings, a } from '@react-spring/three';
 import { Sparkles } from '@react-three/drei';
 import { TUBE_CAPACITY, TUBE_RADIUS, TUBE_HEIGHT, LIQUID_HEIGHT, COLORS } from './constants';
 import { liquidVisualEngine } from '../../../engine/rendering/shaders/LiquidVisualEngine';
@@ -77,62 +77,125 @@ function useCondensationTexture() {
 
 import { LiquidSurfaceSolver } from '../../../engine/physics/LiquidSurfaceSolver';
 
-function LiquidSegment({ color, position, height, isTopLayer, tubeRotZSpring, isFrozenSegment }: { color: string, position: [number, number, number], height: number, isTopLayer?: boolean, tubeRotZSpring?: any, isFrozenSegment?: boolean }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const solver = useRef(new LiquidSurfaceSolver());
-  const lastRotZ = useRef<number>(0);
-
-  const profile = useMemo(() => WaterSortLiquidProfile.getProfileForColor(color), [color]);
+function InstancedLiquidSegments({ segments, tubeRotZSpring }: { segments: any[], tubeRotZSpring?: any }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  
+  const baseColorHex = segments.length > 0 ? COLORS[segments[0].colorId % COLORS.length] : '#ffffff';
+  const profile = useMemo(() => WaterSortLiquidProfile.getProfileForColor(baseColorHex), [baseColorHex]);
+  
   const material = useMemo(() => {
-    return liquidVisualEngine.getLiquidMaterial(profile).clone();
+    const mat = liquidVisualEngine.getLiquidMaterial(profile).clone();
+    mat.defines = { ...mat.defines, USE_INSTANCING: '' };
+    return mat;
   }, [profile]);
   
-  const { scaleY, posY } = useSpring({
-    scaleY: height,
-    posY: position[1],
-    config: { mass: 1, tension: 200, friction: 20 }
-  });
+  const [springs] = useSprings(
+    segments.length,
+    (i) => {
+      const seg = segments[i];
+      return {
+        scaleY: seg ? seg.height : 0,
+        posY: seg ? seg.startY + seg.height / 2 : 0,
+        config: { mass: 1, tension: 200, friction: 20 }
+      };
+    },
+    [segments]
+  );
+
+  const solvers = useRef(segments.map(() => new LiquidSurfaceSolver()));
+  useEffect(() => {
+    solvers.current = segments.map(() => new LiquidSurfaceSolver());
+  }, [segments.length]);
+
+  const lastRotZ = useRef<number>(0);
+  const tempMatrix = useMemo(() => new THREE.Matrix4(), []);
+  const tempColor = useMemo(() => new THREE.Color(), []);
+
+  const { attrSloshX, attrSloshZ, attrTopLayer, attrHeight, attrWaveAmp, attrFrozen } = useMemo(() => {
+    return {
+      attrSloshX: new Float32Array(4),
+      attrSloshZ: new Float32Array(4),
+      attrTopLayer: new Float32Array(4),
+      attrHeight: new Float32Array(4),
+      attrWaveAmp: new Float32Array(4),
+      attrFrozen: new Float32Array(4),
+    };
+  }, []);
+
+  const attrSloshXRef = useRef<any>(null);
+  const attrSloshZRef = useRef<any>(null);
+  const attrTopLayerRef = useRef<any>(null);
+  const attrHeightRef = useRef<any>(null);
+  const attrWaveAmpRef = useRef<any>(null);
+  const attrFrozenRef = useRef<any>(null);
 
   useFrame((state, delta) => {
-    if (meshRef.current && (material as any).userData?.shader) {
-      const uniforms = (material as any).userData.shader.uniforms;
-      
-      const currentRotZ = tubeRotZSpring ? tubeRotZSpring.get() : 0;
-      const angularVelocity = delta > 0 ? (currentRotZ - lastRotZ.current) / delta : 0;
-      lastRotZ.current = currentRotZ;
+    if (!meshRef.current) return;
+    
+    const currentRotZ = tubeRotZSpring ? tubeRotZSpring.get() : 0;
+    const angularVelocity = delta > 0 ? (currentRotZ - lastRotZ.current) / delta : 0;
+    lastRotZ.current = currentRotZ;
 
-      // Step the solver
-      const solverOutput = solver.current.step({
-        rotationZ: currentRotZ,
-        angularVelocity: angularVelocity,
-        fillPercentage: height / TUBE_HEIGHT,
-        viscosity: profile.viscosity,
-        gravity: 9.8,
-        deltaTime: Math.min(delta, 0.05)
-      });
+    springs.forEach((springProps, i) => {
+      const seg = segments[i];
+      if (!seg) return;
 
-      if (uniforms) {
-        uniforms.uIsTopLayer.value = isTopLayer ? 1.0 : 0.0;
-        uniforms.uHeight.value = height;
-        uniforms.uIsFrozen.value = isFrozenSegment ? 1.0 : 0.0;
-        
-        // Pass solver outputs to shader
-        uniforms.uSloshX.value = solverOutput.surfaceTilt * 0.5; // Scale tilt to match shader expectations
-        uniforms.uSloshZ.value = 0.0;
-        
-        if (uniforms.uTime) {
-          uniforms.uTime.value = state.clock.elapsedTime;
-          uniforms.uWaveAmplitude.value = solverOutput.waveAmplitude * 0.1; 
-        }
+      tempMatrix.makeTranslation(0, springProps.posY.get(), 0);
+      tempMatrix.scale(new THREE.Vector3(1, Math.max(springProps.scaleY.get(), 0.001), 1));
+      meshRef.current!.setMatrixAt(i, tempMatrix);
+
+      tempColor.set(COLORS[seg.colorId % COLORS.length]);
+      meshRef.current!.setColorAt(i, tempColor);
+
+      if (solvers.current[i]) {
+        const segProfile = WaterSortLiquidProfile.getProfileForColor(COLORS[seg.colorId % COLORS.length]);
+        const output = solvers.current[i].step({
+           rotationZ: currentRotZ,
+           angularVelocity,
+           fillPercentage: seg.height / TUBE_HEIGHT,
+           viscosity: segProfile.viscosity,
+           gravity: 9.8,
+           deltaTime: Math.min(delta, 0.05)
+        });
+
+        attrSloshX[i] = output.surfaceTilt * 0.5;
+        attrSloshZ[i] = 0;
+        attrTopLayer[i] = i === segments.length - 1 ? 1.0 : 0.0;
+        attrHeight[i] = seg.height;
+        attrWaveAmp[i] = output.waveAmplitude * 0.1;
+        attrFrozen[i] = seg.isFrozenSegment ? 1.0 : 0.0;
       }
+    });
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
+    
+    if (attrSloshXRef.current) {
+      attrSloshXRef.current.needsUpdate = true;
+      attrSloshZRef.current.needsUpdate = true;
+      attrTopLayerRef.current.needsUpdate = true;
+      attrHeightRef.current.needsUpdate = true;
+      attrWaveAmpRef.current.needsUpdate = true;
+      attrFrozenRef.current.needsUpdate = true;
+    }
+
+    if ((material as any).userData?.shader?.uniforms?.uTime) {
+      (material as any).userData.shader.uniforms.uTime.value = state.clock.elapsedTime;
     }
   });
 
   return (
-    <a.mesh ref={meshRef} position-y={posY} position-x={position[0]} position-z={position[2]} scale-y={scaleY} castShadow>
-      <cylinderGeometry args={[TUBE_RADIUS - 0.02, TUBE_RADIUS - 0.02, 1, 32, 16]} />
+    <instancedMesh ref={meshRef} args={[undefined, undefined, 4]} count={segments.length} castShadow>
+      <cylinderGeometry args={[TUBE_RADIUS - 0.02, TUBE_RADIUS - 0.02, 1, 32, 16]}>
+        <instancedBufferAttribute ref={attrSloshXRef} attach="attributes-aSloshX" args={[attrSloshX, 1]} usage={THREE.DynamicDrawUsage} />
+        <instancedBufferAttribute ref={attrSloshZRef} attach="attributes-aSloshZ" args={[attrSloshZ, 1]} usage={THREE.DynamicDrawUsage} />
+        <instancedBufferAttribute ref={attrTopLayerRef} attach="attributes-aIsTopLayer" args={[attrTopLayer, 1]} usage={THREE.DynamicDrawUsage} />
+        <instancedBufferAttribute ref={attrHeightRef} attach="attributes-aHeight" args={[attrHeight, 1]} usage={THREE.DynamicDrawUsage} />
+        <instancedBufferAttribute ref={attrWaveAmpRef} attach="attributes-aWaveAmplitude" args={[attrWaveAmp, 1]} usage={THREE.DynamicDrawUsage} />
+        <instancedBufferAttribute ref={attrFrozenRef} attach="attributes-aIsFrozen" args={[attrFrozen, 1]} usage={THREE.DynamicDrawUsage} />
+      </cylinderGeometry>
       <primitive object={material} attach="material" />
-    </a.mesh>
+    </instancedMesh>
   );
 }
 
@@ -321,17 +384,12 @@ export function Tube({
         />
       </mesh>
 
-      {segments.map((seg, i) => (
-        <LiquidSegment 
-          key={i} 
-          color={COLORS[seg.colorId % COLORS.length]} 
-          position={[0, seg.startY + seg.height / 2, 0]} 
-          height={seg.height} 
-          isTopLayer={i === segments.length - 1}
-          tubeRotZSpring={rot.to((x, y, z) => z)}
-          isFrozenSegment={seg.isFrozenSegment}
+      {segments.length > 0 && (
+        <InstancedLiquidSegments 
+          segments={segments} 
+          tubeRotZSpring={rot.to((x, y, z) => z)} 
         />
-      ))}
+      )}
       
       {/* Portal Visualizer */}
       {metadata?.portalTarget !== null && metadata?.portalTarget !== undefined && (

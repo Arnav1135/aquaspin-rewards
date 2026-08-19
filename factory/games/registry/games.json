@@ -1,6 +1,15 @@
 [
   {
-    "key": "mines",
+    "key": "waterdrop",
+    "title": "Water Drop 3D",
+    "emoji": "💧",
+    "category": "Arcade",
+    "reward": "High Scores",
+    "difficulty": "Hard",
+    "color": "#42a5f5",
+    "desc": "Catch the physically simulated water droplets in your moving glass container!"
+  },
+  {
     "title": "Mines",
     "emoji": "💣",
     "category": "Casino",

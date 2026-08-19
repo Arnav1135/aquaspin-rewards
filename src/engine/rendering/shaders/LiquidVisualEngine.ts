@@ -53,43 +53,67 @@ export class LiquidVisualEngine {
         '#include <common>',
         `
         #include <common>
-        uniform float uSloshX;
-        uniform float uSloshZ;
-        uniform float uIsTopLayer;
-        uniform float uHeight;
+        #ifdef USE_INSTANCING
+          attribute float aSloshX;
+          attribute float aSloshZ;
+          attribute float aIsTopLayer;
+          attribute float aHeight;
+          attribute float aWaveAmplitude;
+          attribute float aIsFrozen;
+        #else
+          uniform float uSloshX;
+          uniform float uSloshZ;
+          uniform float uIsTopLayer;
+          uniform float uHeight;
+          uniform float uWaveAmplitude;
+          uniform float uIsFrozen;
+        #endif
+        
         uniform float uTime;
-        uniform float uWaveAmplitude;
         varying vec3 vWorldPos;
         varying vec3 vLocalPos;
+        varying float vIsFrozenFrag;
         `
       );
 
       shader.vertexShader = shader.vertexShader.replace(
         '#include <project_vertex>',
         `
+        // Setup local variables bridging instanced vs uniform
+        #ifdef USE_INSTANCING
+          float localSloshX = aSloshX;
+          float localSloshZ = aSloshZ;
+          float localIsTopLayer = aIsTopLayer;
+          float localHeight = max(aHeight, 0.01);
+          float localWaveAmplitude = aWaveAmplitude;
+          vIsFrozenFrag = aIsFrozen;
+        #else
+          float localSloshX = uSloshX;
+          float localSloshZ = uSloshZ;
+          float localIsTopLayer = uIsTopLayer;
+          float localHeight = max(uHeight, 0.01);
+          float localWaveAmplitude = uWaveAmplitude;
+          vIsFrozenFrag = uIsFrozen;
+        #endif
+
         // Phase 4: Liquid Inertia (Sloshing)
-        // Adjust the Y position of the top vertices based on slosh angles
-        // For a unit cylinder (-0.5 to 0.5), position.y > 0 is the top half.
         float topMask = smoothstep(0.2, 0.5, position.y);
-        
         vec3 transformedPos = position;
         
-        // Apply slosh displacement
-        transformedPos.y += (position.x * uSloshX + position.z * uSloshZ) * topMask / uHeight;
+        transformedPos.y += (position.x * localSloshX + position.z * localSloshZ) * topMask / localHeight;
         
         // Phase 2: Multi-frequency surface waves
         float primaryWave = sin(position.x * 10.0 + uTime * 5.0) * cos(position.z * 8.0 + uTime * 4.0);
         float secondaryWave = sin(position.z * 15.0 - uTime * 6.0) * 0.5;
         float microRipple = sin((position.x + position.z) * 30.0 + uTime * 15.0) * 0.2;
-        float wave = (primaryWave + secondaryWave + microRipple) * uWaveAmplitude;
+        float wave = (primaryWave + secondaryWave + microRipple) * localWaveAmplitude;
         
-        transformedPos.y += wave * topMask / uHeight;
+        transformedPos.y += wave * topMask / localHeight;
 
         // Phase 19 & 3: Procedural Meniscus (Surface Tension)
-        // Curve the edges upward slightly if this is the top layer
         float distFromCenter = length(position.xz);
         float meniscus = smoothstep(0.7, 1.0, distFromCenter / (0.85 - wave * 0.1)); 
-        transformedPos.y += (meniscus * 0.1 * uIsTopLayer * topMask) / uHeight;
+        transformedPos.y += (meniscus * 0.1 * localIsTopLayer * topMask) / localHeight;
 
         vLocalPos = transformedPos;
 
@@ -98,7 +122,6 @@ export class LiquidVisualEngine {
           mvPosition = instanceMatrix * mvPosition;
         #endif
         
-        // Pass world position for depth shading
         vec4 worldPosition = modelMatrix * vec4(transformedPos, 1.0);
         #ifdef USE_INSTANCING
           worldPosition = instanceMatrix * worldPosition;
@@ -116,8 +139,7 @@ export class LiquidVisualEngine {
         #include <common>
         varying vec3 vWorldPos;
         varying vec3 vLocalPos;
-        uniform float uHeight;
-        uniform float uIsFrozen;
+        varying float vIsFrozenFrag;
         `
       );
 
@@ -127,22 +149,19 @@ export class LiquidVisualEngine {
         #include <color_fragment>
         
         // Phase 5: Liquid Depth Fog (Absorption Approximation)
-        // Darken base color linearly based on local depth (Y goes from ~0.5 top to -0.5 bottom of segment)
         float normalizedDepth = smoothstep(0.5, -0.5, vLocalPos.y); 
         vec3 depthColor = mix(diffuseColor.rgb, diffuseColor.rgb * 0.4, normalizedDepth);
         
-        // Phase 6: Internal Liquid Lighting (Subsurface Scattering Approximation)
-        // Light travels through liquid, creating a glow where rim meets view
+        // Phase 6: Internal Liquid Lighting
         float viewFactor = max(0.0, dot(vNormal, normalize(vViewPosition)));
-        float sssEffect = pow(1.0 - viewFactor, 3.0) * 0.5; // Rim glow representing internal light scatter
+        float sssEffect = pow(1.0 - viewFactor, 3.0) * 0.5; 
         
         diffuseColor.rgb = depthColor + sssEffect * diffuseColor.rgb;
 
         // Phase 40-46: Frozen Effect (Ice)
-        // If it's a frozen segment, tint it white/cyan and increase subsurface glow significantly
-        if (uIsFrozen > 0.5) {
+        if (vIsFrozenFrag > 0.5) {
            vec3 iceTint = mix(diffuseColor.rgb, vec3(0.8, 0.95, 1.0), 0.7);
-           diffuseColor.rgb = iceTint + vec3(0.3) * viewFactor; // Specular rough sheen
+           diffuseColor.rgb = iceTint + vec3(0.3) * viewFactor;
         }
         `
       );

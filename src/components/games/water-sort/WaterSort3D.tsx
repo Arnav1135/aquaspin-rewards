@@ -305,6 +305,17 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
     }
   };
 
+  // Phase 27 & 28: Procedural World Themes deterministic selection
+  const WORLD_THEMES = [
+    { name: 'LABORATORY', floor: '#ffffff', lightInt: 1.5, bg: '#f0f0f0', ambient: 0.8 },
+    { name: 'NEON', floor: '#101015', lightInt: 0.8, bg: '#050510', ambient: 0.3 },
+    { name: 'AQUARIUM', floor: '#001a33', lightInt: 1.0, bg: '#000510', ambient: 0.5 },
+    { name: 'LUXURY', floor: '#4a3500', lightInt: 1.2, bg: '#100a00', ambient: 0.6 },
+    { name: 'ALCHEMY', floor: '#1a0033', lightInt: 0.9, bg: '#050010', ambient: 0.4 },
+    { name: 'SPACE', floor: '#000000', lightInt: 0.6, bg: '#000000', ambient: 0.2 },
+  ];
+  const activeTheme = WORLD_THEMES[(level - 1) % WORLD_THEMES.length];
+
   // Layout calculations
   const totalTubes = tubes.length;
   const cols = Math.ceil(totalTubes / 2);
@@ -323,15 +334,15 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
     });
     return (
       <>
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={activeTheme.ambient} />
         <directionalLight 
           ref={lightRef}
           position={[10, 10, 5]} 
-          intensity={1.5} 
+          intensity={activeTheme.lightInt} 
           castShadow 
           shadow-mapSize={[1024, 1024]}
         />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} color="#00ffff" />
+        <pointLight position={[-10, -10, -10]} intensity={activeTheme.ambient} color="#00ffff" />
       </>
     );
   };
@@ -340,7 +351,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
     <div className="w-full h-full relative">
       <Canvas shadows dpr={[1, 1.5]} onPointerDown={() => audio.init()}>
         <CameraController isPouring={pouringInto !== null} />
-        <color attach="background" args={['#050510']} />
+        <color attach="background" args={[activeTheme.bg]} />
         
         <Lighting />
 
@@ -408,7 +419,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
             depthScale={1.2}
             minDepthThreshold={0.4}
             maxDepthThreshold={1.4}
-            color="#101015"
+            color={activeTheme.floor}
             metalness={0.6}
             mirror={0.8}
           />

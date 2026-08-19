@@ -138,6 +138,70 @@ function LiquidSegment({ color, position, height, isTopLayer, slosh }: { color: 
   );
 }
 
+// Phase 7 & 8: Liquid Bubbles System
+function LiquidBubbles({ segments, isActive }: { segments: any[], isActive: boolean }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  
+  const count = 20;
+  const bubbles = useRef(Array(count).fill(0).map(() => ({
+    pos: new THREE.Vector3((Math.random() - 0.5) * 0.6, Math.random() * 2, (Math.random() - 0.5) * 0.6),
+    speed: 0.5 + Math.random() * 1.5,
+    wobbleSpeed: 2 + Math.random() * 3,
+    wobbleOffset: Math.random() * Math.PI * 2,
+    scale: 0.02 + Math.random() * 0.03,
+    active: Math.random() > 0.5
+  })));
+
+  useFrame((state, delta) => {
+    if (!meshRef.current || segments.length === 0) return;
+    
+    // Total liquid height
+    const totalHeight = segments.reduce((acc, seg) => acc + seg.height, 0);
+    if (totalHeight === 0) return;
+
+    bubbles.current.forEach((b, i) => {
+      if (b.active || isActive) {
+        b.active = true;
+        b.pos.y += b.speed * delta;
+        b.pos.x += Math.sin(state.clock.elapsedTime * b.wobbleSpeed + b.wobbleOffset) * 0.01;
+        
+        if (b.pos.y > totalHeight) {
+          b.pos.y = 0;
+          b.pos.x = (Math.random() - 0.5) * 0.6;
+          b.pos.z = (Math.random() - 0.5) * 0.6;
+          if (!isActive) b.active = false;
+        }
+
+        if (b.active) {
+          dummy.position.copy(b.pos);
+          dummy.scale.set(b.scale, b.scale, b.scale);
+          dummy.updateMatrix();
+          meshRef.current!.setMatrixAt(i, dummy.matrix);
+        } else {
+          dummy.scale.set(0, 0, 0);
+          dummy.updateMatrix();
+          meshRef.current!.setMatrixAt(i, dummy.matrix);
+        }
+      }
+    });
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 8, 8]} />
+      <meshPhysicalMaterial 
+        transmission={0.9} 
+        roughness={0} 
+        ior={1.1}
+        thickness={0.1}
+        color="#ffffff"
+      />
+    </instancedMesh>
+  );
+}
+
 // ─── TUBE COMPONENT ──────────────────────────────────────────────────────────
 function Tube({
   index,
@@ -171,11 +235,12 @@ function Tube({
   });
 
   // Animation springs
-  const { pos, rot, slosh, glow } = useSpring({
+  const { pos, rot, slosh, glow, scale } = useSpring({
     pos: [positionX, isSelected ? 1.5 : 0, positionZ] as [number, number, number],
     rot: [0, 0, isPouring ? -Math.PI / 2.5 : (isInvalidShake ? Math.PI / 12 : 0)] as [number, number, number],
     slosh: isSelected ? 1 : (isPouring ? -1 : (isInvalidShake ? 1.5 : 0)),
     glow: isSelected ? 1.0 : (isValidTarget ? 0.4 : 0),
+    scale: isSelected ? 1.05 : 1, // Phase 36: Micro scale
     config: { mass: 1, tension: isInvalidShake ? 300 : 170, friction: isInvalidShake ? 5 : 14 }
   });
 
@@ -206,7 +271,7 @@ function Tube({
   const condensationMap = useCondensationTexture();
 
   return (
-    <a.group ref={groupRef} position={pos as any} rotation={rot as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
+    <a.group ref={groupRef} position={pos as any} rotation={rot as any} scale={scale as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
       {/* Phase 13 & 14: Hyper-realistic Glass System with Wall Thickness */}
       <mesh position={[0, TUBE_HEIGHT / 2 - 0.2, 0]}>
         {/* Using a tube geometry for the walls instead of double sided cylinder to create actual thickness */}
@@ -269,6 +334,11 @@ function Tube({
           slosh={slosh}
         />
       ))}
+      
+      {/* Phase 7 & 8: Internal Liquid Bubbles */}
+      {segments.length > 0 && (
+        <LiquidBubbles segments={segments} isActive={isPouring || isSelected} />
+      )}
       
       {/* Hint Highlight */}
       {isHinted && (

@@ -58,6 +58,8 @@ export class LiquidVisualEngine {
         uniform float uHeight;
         uniform float uTime;
         uniform float uWaveAmplitude;
+        varying vec3 vWorldPos;
+        varying vec3 vLocalPos;
         `
       );
 
@@ -88,12 +90,32 @@ export class LiquidVisualEngine {
         float meniscus = smoothstep(0.7, 1.0, distFromCenter / (0.85 - wave * 0.1)); 
         transformedPos.y += (meniscus * 0.1 * uIsTopLayer * topMask) / uHeight;
 
+        vLocalPos = transformedPos;
+
         vec4 mvPosition = vec4( transformedPos, 1.0 );
         #ifdef USE_INSTANCING
           mvPosition = instanceMatrix * mvPosition;
         #endif
+        
+        // Pass world position for depth shading
+        vec4 worldPosition = modelMatrix * vec4(transformedPos, 1.0);
+        #ifdef USE_INSTANCING
+          worldPosition = instanceMatrix * worldPosition;
+        #endif
+        vWorldPos = worldPosition.xyz;
+
         mvPosition = modelViewMatrix * mvPosition;
         gl_Position = projectionMatrix * mvPosition;
+        `
+      );
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        `
+        #include <common>
+        varying vec3 vWorldPos;
+        varying vec3 vLocalPos;
+        uniform float uHeight;
         `
       );
 
@@ -101,9 +123,18 @@ export class LiquidVisualEngine {
         '#include <color_fragment>',
         `
         #include <color_fragment>
-        // Phase 17: Liquid Depth Shading
+        
+        // Phase 5: Liquid Depth Fog (Absorption Approximation)
+        // Darken base color linearly based on local depth (Y goes from ~0.5 top to -0.5 bottom of segment)
+        float normalizedDepth = smoothstep(0.5, -0.5, vLocalPos.y); 
+        vec3 depthColor = mix(diffuseColor.rgb, diffuseColor.rgb * 0.4, normalizedDepth);
+        
+        // Phase 6: Internal Liquid Lighting (Subsurface Scattering Approximation)
+        // Light travels through liquid, creating a glow where rim meets view
         float viewFactor = max(0.0, dot(vNormal, normalize(vViewPosition)));
-        diffuseColor.rgb = mix(diffuseColor.rgb * uDepthDarkening, diffuseColor.rgb, viewFactor);
+        float sssEffect = pow(1.0 - viewFactor, 3.0) * 0.5; // Rim glow representing internal light scatter
+        
+        diffuseColor.rgb = depthColor + sssEffect * diffuseColor.rgb;
         `
       );
     };

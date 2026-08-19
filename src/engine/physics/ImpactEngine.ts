@@ -25,32 +25,58 @@ export class ImpactEngine {
     this.environment = environment;
   }
 
-  // Phase 3: Universal Impact Solver
+  // Phase 1, 2 & 3: Material-Aware Impact Physics & Directional Bias
   public processImpact(input: ImpactInput) {
     const profile = MaterialReactionEngine.getProfile(input.material);
-    const effectiveEnergy = input.impactStrength * input.velocity * (input.mass / 0.5);
+    
+    // Kinetic Energy E = 0.5 * m * v^2 * impactStrength
+    const kineticEnergy = 0.5 * input.mass * Math.pow(input.velocity, 2) * input.impactStrength;
+    
+    // Energy normalized to 0.0 - 1.0 curve sampling range
+    const normalizedEnergy = Math.min(1.0, kineticEnergy / 5.0);
+    
+    // Evaluate curve
+    const evalCurve = (curve: { subtle: number, visible: number, strong: number, cinematic: number }, e: number) => {
+      if (e < 0.2) return curve.subtle + (curve.visible - curve.subtle) * (e / 0.2);
+      if (e < 0.5) return curve.visible + (curve.strong - curve.visible) * ((e - 0.2) / 0.3);
+      if (e < 0.8) return curve.strong + (curve.cinematic - curve.strong) * ((e - 0.5) / 0.3);
+      return curve.cinematic;
+    };
+
+    const particleScale = evalCurve(profile.particleCurve, normalizedEnergy);
+    const cameraScale = evalCurve(profile.cameraCurve, normalizedEnergy);
+    const soundScale = evalCurve(profile.soundCurve, normalizedEnergy);
+    const lightScale = evalCurve(profile.lightCurve, normalizedEnergy);
+
+    // Directional Bias
+    let biasX = 0;
+    let biasY = 0;
+    if (input.direction) {
+      biasX = input.direction.x;
+      biasY = input.direction.y;
+    }
 
     // 1. Particle Response
-    const particleCount = Math.min(60, Math.floor(12 * effectiveEnergy));
+    const particleCount = Math.floor(20 * particleScale);
     if (particleCount > 0) {
-      this.vfx.spawnExplosion(input.position.x, input.position.y, 'yellow', particleCount);
+      // In a full implementation, we pass biasX, biasY to VFXManager to steer particles
+      this.vfx.spawnExplosion(input.position.x + biasX * 0.1, input.position.y + biasY * 0.1, 'yellow', particleCount);
     }
 
     // 2. Camera Response
-    const cameraPunch = Math.min(1.2, 0.15 * effectiveEnergy);
-    if (cameraPunch > 0.05) {
-      this.camera.punchCamera(cameraPunch);
+    if (cameraScale > 0.1) {
+      this.camera.punchCamera(cameraScale * 0.5);
     }
-    if (effectiveEnergy > 2.5) {
-      this.camera.shakeCamera(0.4, Math.min(1.0, effectiveEnergy * 0.2));
+    if (cameraScale > 0.8) {
+      this.camera.shakeCamera(0.4, cameraScale * 0.3);
     }
 
     // 3. Lighting Response
-    if (effectiveEnergy > 1.5) {
+    if (lightScale > 0.5) {
       this.environment.triggerLightingReaction('MATCH', { x: input.position.x, y: input.position.y });
     }
 
     // 4. Audio Response
-    soundEngine.playPop(Math.min(5, Math.ceil(effectiveEnergy)));
+    soundEngine.playPop(Math.min(5, Math.ceil(soundScale * 4)));
   }
 }

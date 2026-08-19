@@ -143,11 +143,35 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
       const elapsedTime = clock.getElapsedTime();
       const delta = clock.getDelta();
 
-      // Subtle float / breathing rotation and Physics-based falling for candy meshes
       tileMeshesRef.current.forEach((meshGroup, key) => {
-        // Idle animation
-        meshGroup.rotation.z = Math.sin(elapsedTime * 2 + meshGroup.position.x) * 0.05;
-        meshGroup.rotation.y = Math.cos(elapsedTime * 1.5 + meshGroup.position.y) * 0.08;
+        const identity = meshGroup.userData.identity;
+        if (identity && identity.animationProfile) {
+          const profile = identity.animationProfile;
+          const phaseOffset = meshGroup.position.x + meshGroup.position.y;
+          
+          if (profile.idleMotion === 'wobble') {
+            meshGroup.rotation.z = Math.sin(elapsedTime * 2.5 + phaseOffset) * 0.08;
+            meshGroup.rotation.x = Math.cos(elapsedTime * 2.0 + phaseOffset) * 0.04;
+          } else if (profile.idleMotion === 'spin') {
+            meshGroup.rotation.y += delta * 0.5;
+            meshGroup.rotation.z = Math.sin(elapsedTime + phaseOffset) * 0.02;
+          } else if (profile.idleMotion === 'breathe') {
+            const scale = 1.0 + Math.sin(elapsedTime * 1.5 + phaseOffset) * 0.03;
+            // Only apply base scale if not targeted for scaling (like selection)
+            if (!meshGroup.userData.targetScale || meshGroup.userData.targetScale === 1.0) {
+              meshGroup.scale.set(scale, 1.0 / scale, scale); // Squash & stretch breathing
+            }
+          } else if (profile.idleMotion === 'sparkle') {
+            meshGroup.rotation.y = Math.sin(elapsedTime * 4 + phaseOffset) * 0.05;
+            meshGroup.rotation.x = Math.cos(elapsedTime * 3 + phaseOffset) * 0.05;
+          } else if (profile.idleMotion === 'light_sweep') {
+            meshGroup.rotation.y = Math.sin(elapsedTime * 1.0 + phaseOffset) * 0.15;
+          }
+        } else {
+          // Fallback legacy Idle animation
+          meshGroup.rotation.z = Math.sin(elapsedTime * 2 + meshGroup.position.x) * 0.05;
+          meshGroup.rotation.y = Math.cos(elapsedTime * 1.5 + meshGroup.position.y) * 0.08;
+        }
 
         // Physics interpolation towards target
         if (meshGroup.userData.targetY !== undefined) {
@@ -162,8 +186,10 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
           }
 
           // Y falling physics with acceleration
+          const fallMultiplier = identity?.animationProfile?.fallSpeed === 'fast' ? 1.5 : identity?.animationProfile?.fallSpeed === 'slow' ? 0.7 : 1.0;
+          
           if (meshGroup.userData.isFalling && meshGroup.position.y > targetY) {
-            meshGroup.userData.velocityY = (meshGroup.userData.velocityY || 0) - (20 * delta); // Gravity
+            meshGroup.userData.velocityY = (meshGroup.userData.velocityY || 0) - (20 * fallMultiplier * delta); // Gravity
             meshGroup.position.y += meshGroup.userData.velocityY * delta;
             
             // Bounce/stop at target
@@ -171,8 +197,9 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
               meshGroup.position.y = targetY;
               meshGroup.userData.velocityY = 0;
               meshGroup.userData.isFalling = false;
-              // Play tiny bounce squash/stretch?
-              meshGroup.scale.set(1.1, 0.9, 1.0);
+              
+              const squash = identity?.animationProfile?.squashStretch || 1.1;
+              meshGroup.scale.set(squash, 2.0 - squash, 1.0); // Maintain volume approximation
             }
           } else if (Math.abs(meshGroup.position.y - targetY) > 0.01) {
             // Smooth lerp for non-falling movements (swaps)
@@ -183,10 +210,13 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
           
           // Recover scale from bounce
           if (!meshGroup.userData.isFalling) {
-            const targetScale = meshGroup.userData.targetScale || 1.0;
-            meshGroup.scale.x += (targetScale - meshGroup.scale.x) * 10 * delta;
-            meshGroup.scale.y += (targetScale - meshGroup.scale.y) * 10 * delta;
-            meshGroup.scale.z += (targetScale - meshGroup.scale.z) * 10 * delta;
+            // Do not override 'breathe' idle scale if no interaction target scale is set
+            if (identity?.animationProfile?.idleMotion !== 'breathe' || meshGroup.userData.targetScale > 1.0) {
+              const targetScale = meshGroup.userData.targetScale || 1.0;
+              meshGroup.scale.x += (targetScale - meshGroup.scale.x) * 10 * delta;
+              meshGroup.scale.y += (targetScale - meshGroup.scale.y) * 10 * delta;
+              meshGroup.scale.z += (targetScale - meshGroup.scale.z) * 10 * delta;
+            }
           }
         }
       });
@@ -287,6 +317,14 @@ export const ThreeCandyRenderer: React.FC<ThreeCandyRendererProps> = ({
     // Remove old tiles that are destroyed
     tileMeshesRef.current.forEach((meshGroup, key) => {
       if (!currentKeys.has(key)) {
+        // Trigger VFX based on identity
+        if (meshGroup.userData.identity && particleGroupRef.current) {
+          CandyVFXProfile.createMatchParticles(
+            meshGroup.userData.identity.colorName, 
+            meshGroup.position, 
+            particleGroupRef.current
+          );
+        }
         sceneRef.current?.remove(meshGroup);
         tileMeshesRef.current.delete(key);
       }

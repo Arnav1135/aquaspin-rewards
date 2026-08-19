@@ -1,4 +1,4 @@
-import { LevelGenerator, LevelGenerationOptions } from './LevelGenerator';
+import { LevelGenerator } from './LevelGenerator';
 import { LevelQA, QAReport } from './LevelQA';
 import { AiLevelCritic, CritiqueReport } from './AiLevelCritic';
 import { SeededRandom } from './SeededRandom';

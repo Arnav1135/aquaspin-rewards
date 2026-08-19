@@ -314,6 +314,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   const [history, setHistory] = useState<TubeData[][]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [pouringInto, setPouringInto] = useState<number | null>(null);
+  const [streamData, setStreamData] = useState<{ source: number; target: number; color: string; active: boolean } | null>(null);
   const [hint, setHint] = useState<{from: number, to: number} | null>(null);
   const [invalidShakeIndex, setInvalidShakeIndex] = useState<number | null>(null);
 
@@ -467,6 +468,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         
         // Valid pour
         setPouringInto(index);
+        setStreamData({ source: selected, target: index, color: colorHex, active: true });
         audio.playPour(target.length / TUBE_CAPACITY); // Note: Audio engine handles its own timing, could pass duration
         
         // Execute pour logic after realistic delay for animation (Phase 5 & 6)
@@ -488,6 +490,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
           });
           setSelected(null);
           setPouringInto(null);
+          setStreamData(prev => prev ? { ...prev, active: false } : null);
         }, pourDuration);
       } else {
         // Invalid pour, trigger feedback
@@ -609,13 +612,13 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
           );
         })}
 
-        {/* Phase 6: Pour Stream Solver (Visual Interpolation) */}
-        {selected !== null && pouringInto !== null && tubes[selected].length > 0 && (
+        {/* Phase 6 & 9: Pour Stream Solver (Decoupled Lifecycle for Splash Decay) */}
+        {streamData && (
           <VisualStreamController 
-            active={true}
-            sourcePos={getTubePos(selected).add(new THREE.Vector3(0, TUBE_HEIGHT - 0.5, 0))}
-            targetPos={getTubePos(pouringInto).add(new THREE.Vector3(0, TUBE_HEIGHT / 2, 0))}
-            color={COLORS[tubes[selected][tubes[selected].length - 1] % COLORS.length]}
+            active={streamData.active}
+            sourcePos={getTubePos(streamData.source).add(new THREE.Vector3(0, TUBE_HEIGHT - 0.5, 0))}
+            targetPos={getTubePos(streamData.target).add(new THREE.Vector3(0, TUBE_HEIGHT / 2, 0))}
+            color={streamData.color}
           />
         )}
 

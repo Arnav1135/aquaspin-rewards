@@ -104,16 +104,28 @@ function LiquidSegment({ color, position, height, isTopLayer, slosh }: { color: 
   });
 
   // Phase 4 & 19: Drive shader uniforms dynamically
-  useFrame(() => {
+  useFrame((state) => {
     if (meshRef.current && (material as any).userData?.shader) {
       const uniforms = (material as any).userData.shader.uniforms;
       if (uniforms) {
         uniforms.uIsTopLayer.value = isTopLayer ? 1.0 : 0.0;
         uniforms.uHeight.value = height;
+        
         // Read the spring value dynamically
         const currentSlosh = slosh ? slosh.get() : 0;
+        
+        // Phase 4: Sloshing displacement
         uniforms.uSloshX.value = currentSlosh * 0.15; 
         uniforms.uSloshZ.value = 0.0;
+        
+        // Phase 1-3: Deformation and Waves
+        if (uniforms.uTime) {
+          uniforms.uTime.value = state.clock.elapsedTime;
+          // Calculate wave amplitude based on slosh intensity. 
+          // If currentSlosh is non-zero, amplitude spikes, then decays.
+          const sloshIntensity = Math.abs(currentSlosh);
+          uniforms.uWaveAmplitude.value = sloshIntensity * 0.05; // Ripple amplitude proportional to slosh
+        }
       }
     }
   });

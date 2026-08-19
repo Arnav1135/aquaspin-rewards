@@ -42,6 +42,8 @@ export class LiquidVisualEngine {
       shader.uniforms.uSloshZ = { value: 0.0 };
       shader.uniforms.uIsTopLayer = { value: 0.0 };
       shader.uniforms.uHeight = { value: 1.0 };
+      shader.uniforms.uTime = { value: 0.0 };
+      shader.uniforms.uWaveAmplitude = { value: 0.0 };
 
       // Link userData to uniforms so they can be updated per-mesh in R3F
       mat.userData.shader = shader;
@@ -54,6 +56,8 @@ export class LiquidVisualEngine {
         uniform float uSloshZ;
         uniform float uIsTopLayer;
         uniform float uHeight;
+        uniform float uTime;
+        uniform float uWaveAmplitude;
         `
       );
 
@@ -70,10 +74,18 @@ export class LiquidVisualEngine {
         // Apply slosh displacement
         transformedPos.y += (position.x * uSloshX + position.z * uSloshZ) * topMask / uHeight;
         
-        // Phase 19: Procedural Meniscus (Surface Tension)
+        // Phase 2: Multi-frequency surface waves
+        float primaryWave = sin(position.x * 10.0 + uTime * 5.0) * cos(position.z * 8.0 + uTime * 4.0);
+        float secondaryWave = sin(position.z * 15.0 - uTime * 6.0) * 0.5;
+        float microRipple = sin((position.x + position.z) * 30.0 + uTime * 15.0) * 0.2;
+        float wave = (primaryWave + secondaryWave + microRipple) * uWaveAmplitude;
+        
+        transformedPos.y += wave * topMask / uHeight;
+
+        // Phase 19 & 3: Procedural Meniscus (Surface Tension)
         // Curve the edges upward slightly if this is the top layer
         float distFromCenter = length(position.xz);
-        float meniscus = smoothstep(0.7, 1.0, distFromCenter / 0.85); // 0.85 is approx radius
+        float meniscus = smoothstep(0.7, 1.0, distFromCenter / (0.85 - wave * 0.1)); 
         transformedPos.y += (meniscus * 0.1 * uIsTopLayer * topMask) / uHeight;
 
         vec4 mvPosition = vec4( transformedPos, 1.0 );

@@ -147,7 +147,9 @@ function Tube({
   onClick,
   positionX,
   positionZ,
-  isHinted
+  isHinted,
+  isValidTarget,
+  isInvalidShake
 }: {
   index: number;
   data: TubeData;
@@ -157,6 +159,8 @@ function Tube({
   positionX: number;
   positionZ: number;
   isHinted?: boolean;
+  isValidTarget?: boolean;
+  isInvalidShake?: boolean;
 }) {
   // Idle breathing animation
   const groupRef = useRef<THREE.Group>(null);
@@ -169,10 +173,10 @@ function Tube({
   // Animation springs
   const { pos, rot, slosh, glow } = useSpring({
     pos: [positionX, isSelected ? 1.5 : 0, positionZ] as [number, number, number],
-    rot: [0, 0, isPouring ? -Math.PI / 2.5 : 0] as [number, number, number],
-    slosh: isSelected ? 1 : (isPouring ? -1 : 0),
-    glow: isSelected ? 1 : 0,
-    config: { mass: 1, tension: 170, friction: 14 }
+    rot: [0, 0, isPouring ? -Math.PI / 2.5 : (isInvalidShake ? Math.PI / 12 : 0)] as [number, number, number],
+    slosh: isSelected ? 1 : (isPouring ? -1 : (isInvalidShake ? 1.5 : 0)),
+    glow: isSelected ? 1.0 : (isValidTarget ? 0.4 : 0),
+    config: { mass: 1, tension: isInvalidShake ? 300 : 170, friction: isInvalidShake ? 5 : 14 }
   });
 
   // Phase 18: Liquid Diffusion (Consolidate contiguous colors into unified segments)
@@ -311,6 +315,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   const [selected, setSelected] = useState<number | null>(null);
   const [pouringInto, setPouringInto] = useState<number | null>(null);
   const [hint, setHint] = useState<{from: number, to: number} | null>(null);
+  const [invalidShakeIndex, setInvalidShakeIndex] = useState<number | null>(null);
 
   const [isGenerating, setIsGenerating] = useState<boolean>(true);
   const [nextLevelCache, setNextLevelCache] = useState<TubeData[] | null>(null);
@@ -417,6 +422,10 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
     if (selected === null) {
       // Select if not empty
       if (tubes[index].length > 0) setSelected(index);
+      else {
+        setInvalidShakeIndex(index);
+        setTimeout(() => setInvalidShakeIndex(null), 300);
+      }
     } else if (selected === index) {
       // Deselect
       setSelected(null);
@@ -481,11 +490,22 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
           setPouringInto(null);
         }, pourDuration);
       } else {
-        // Invalid pour, just switch selection
-        if (tubes[index].length > 0) setSelected(index);
-        else setSelected(null);
+        // Invalid pour, trigger feedback
+        setInvalidShakeIndex(index);
+        setTimeout(() => setInvalidShakeIndex(null), 300);
       }
     }
+  };
+
+  const isValidTarget = (index: number) => {
+    if (selected === null || selected === index) return false;
+    const source = tubes[selected];
+    const target = tubes[index];
+    if (source.length === 0) return false;
+    
+    const sourceTop = source[source.length - 1];
+    const targetTop = target[target.length - 1];
+    return target.length < TUBE_CAPACITY && (target.length === 0 || targetTop === sourceTop);
   };
 
   const handleUndo = () => {
@@ -580,6 +600,8 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
               isSelected={selected === i}
               isPouring={selected === i && pouringInto !== null}
               isHinted={hint?.from === i || hint?.to === i}
+              isValidTarget={isValidTarget(i)}
+              isInvalidShake={invalidShakeIndex === i}
               onClick={() => handleTubeClick(i)}
               positionX={startX + col * TUBE_SPACING}
               positionZ={startZ + row * TUBE_SPACING * 1.5}

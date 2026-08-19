@@ -44,6 +44,7 @@ export class LiquidVisualEngine {
       shader.uniforms.uHeight = { value: 1.0 };
       shader.uniforms.uTime = { value: 0.0 };
       shader.uniforms.uWaveAmplitude = { value: 0.0 };
+      shader.uniforms.uIsFrozen = { value: 0.0 }; // Phase 40-46 Frozen mechanics
 
       // Link userData to uniforms so they can be updated per-mesh in R3F
       mat.userData.shader = shader;
@@ -116,6 +117,7 @@ export class LiquidVisualEngine {
         varying vec3 vWorldPos;
         varying vec3 vLocalPos;
         uniform float uHeight;
+        uniform float uIsFrozen;
         `
       );
 
@@ -135,6 +137,13 @@ export class LiquidVisualEngine {
         float sssEffect = pow(1.0 - viewFactor, 3.0) * 0.5; // Rim glow representing internal light scatter
         
         diffuseColor.rgb = depthColor + sssEffect * diffuseColor.rgb;
+
+        // Phase 40-46: Frozen Effect (Ice)
+        // If it's a frozen segment, tint it white/cyan and increase subsurface glow significantly
+        if (uIsFrozen > 0.5) {
+           vec3 iceTint = mix(diffuseColor.rgb, vec3(0.8, 0.95, 1.0), 0.7);
+           diffuseColor.rgb = iceTint + vec3(0.3) * viewFactor; // Specular rough sheen
+        }
         `
       );
     };

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, ContactShadows, OrbitControls, Sparkles, Html, PerspectiveCamera } from '@react-three/drei';
+import { Environment, ContactShadows, OrbitControls, Sparkles, Html, PerspectiveCamera, MeshReflectorMaterial } from '@react-three/drei';
 import { useSpring, a } from '@react-spring/three';
 import * as THREE from 'three';
+import { EffectComposer, DepthOfField, Bloom, Vignette } from '@react-three/postprocessing';
 import { audio } from './audioManager';
 import confetti from 'canvas-confetti';
 
@@ -10,345 +11,21 @@ import confetti from 'canvas-confetti';
 type ColorId = number;
 type TubeData = ColorId[];
 
-// ─── CONSTANTS & PALETTE ────────────────────────────────────────────────────
-const TUBE_CAPACITY = 4;
-const LIQUID_HEIGHT = 1.2;
-const TUBE_HEIGHT = TUBE_CAPACITY * LIQUID_HEIGHT + 0.5;
-const TUBE_RADIUS = 0.6;
-const TUBE_SPACING = 2.5;
-
-const COLORS = [
-  '#ff003c', // Ruby Red
-  '#00ff66', // Emerald Green
-  '#00ccff', // Ocean Blue
-  '#ffcc00', // Golden Yellow
-  '#9900ff', // Purple
-  '#ff66cc', // Pink
-  '#ff9900', // Orange
-  '#00ffff', // Cyan
-  '#66ff99', // Mint
-  '#ffffff', // Pearl
-  '#8B4513', // Bronze
-  '#00fa9a', // Spring Green
-  '#dc143c', // Crimson
-  '#4169e1', // Royal Blue
-];
+import { TUBE_CAPACITY, TUBE_RADIUS, TUBE_HEIGHT, LIQUID_HEIGHT, TUBE_SPACING, COLORS } from './constants';
 
 import { liquidVisualEngine } from '../../../engine/rendering/shaders/LiquidVisualEngine';
 import { WaterSortLiquidProfile } from './WaterSortLiquidProfile';
 import { VisualStreamController } from './VisualStreamController';
+import { Tube } from './Tube3D';
 
 import { LevelGenerator } from '../water-sort-pro/levels/LevelGenerator';
+import { WaterSortRulesEngine, TubeMetadata } from './WaterSortRulesEngine';
 import { HintEngine } from '../water-sort-pro/core/HintEngine';
 import { GameState } from '../water-sort-pro/core/PuzzleEngine';
 
 // Phase 14: Procedural Condensation Texture Generator
-function useCondensationTexture() {
-  return useMemo(() => {
-    if (typeof document === 'undefined') return null;
-    const size = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
-    
-    // Background: Smooth baseline
-    ctx.fillStyle = '#111111';
-    ctx.fillRect(0, 0, size, size);
-    
-    // Droplets
-    ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < 3000; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const r = Math.random() * 2 + 0.2;
-      ctx.globalAlpha = Math.random() * 0.8 + 0.2;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    
-    // Streaks
-    for (let i = 0; i < 100; i++) {
-      const x = Math.random() * size;
-      const y = Math.random() * size;
-      const length = Math.random() * 60 + 20;
-      const width = Math.random() * 1.5 + 0.5;
-      ctx.globalAlpha = Math.random() * 0.6 + 0.1;
-      ctx.fillRect(x, y, width, length);
-      ctx.beginPath();
-      ctx.arc(x + width/2, y + length, width * 1.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
 
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(3, 3);
-    return tex;
-  }, []);
-}
-
-function LiquidSegment({ color, position, height, isTopLayer, slosh }: { color: string, position: [number, number, number], height: number, isTopLayer?: boolean, slosh?: any }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const profile = useMemo(() => WaterSortLiquidProfile.getProfileForColor(color), [color]);
-  const material = useMemo(() => {
-    // Clone so uniforms are unique per segment
-    return liquidVisualEngine.getLiquidMaterial(profile).clone();
-  }, [profile]);
-  
-  const { scaleY, posY } = useSpring({
-    scaleY: height,
-    posY: position[1],
-    config: { mass: 1, tension: 200, friction: 20 }
-  });
-
-  // Phase 4 & 19: Drive shader uniforms dynamically
-  useFrame((state) => {
-    if (meshRef.current && (material as any).userData?.shader) {
-      const uniforms = (material as any).userData.shader.uniforms;
-      if (uniforms) {
-        uniforms.uIsTopLayer.value = isTopLayer ? 1.0 : 0.0;
-        uniforms.uHeight.value = height;
-        
-        // Read the spring value dynamically
-        const currentSlosh = slosh ? slosh.get() : 0;
-        
-        // Phase 4: Sloshing displacement
-        uniforms.uSloshX.value = currentSlosh * 0.15; 
-        uniforms.uSloshZ.value = 0.0;
-        
-        // Phase 1-3: Deformation and Waves
-        if (uniforms.uTime) {
-          uniforms.uTime.value = state.clock.elapsedTime;
-          // Calculate wave amplitude based on slosh intensity. 
-          // If currentSlosh is non-zero, amplitude spikes, then decays.
-          const sloshIntensity = Math.abs(currentSlosh);
-          uniforms.uWaveAmplitude.value = sloshIntensity * 0.05; // Ripple amplitude proportional to slosh
-        }
-      }
-    }
-  });
-
-  return (
-    <a.mesh ref={meshRef} position-y={posY} position-x={position[0]} position-z={position[2]} scale-y={scaleY} castShadow>
-      <cylinderGeometry args={[TUBE_RADIUS - 0.02, TUBE_RADIUS - 0.02, 1, 32, 16]} />
-      <primitive object={material} attach="material" />
-    </a.mesh>
-  );
-}
-
-// Phase 7 & 8: Liquid Bubbles System
-function LiquidBubbles({ segments, isActive }: { segments: any[], isActive: boolean }) {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  
-  const count = 20;
-  const bubbles = useRef(Array(count).fill(0).map(() => ({
-    pos: new THREE.Vector3((Math.random() - 0.5) * 0.6, Math.random() * 2, (Math.random() - 0.5) * 0.6),
-    speed: 0.5 + Math.random() * 1.5,
-    wobbleSpeed: 2 + Math.random() * 3,
-    wobbleOffset: Math.random() * Math.PI * 2,
-    scale: 0.02 + Math.random() * 0.03,
-    active: Math.random() > 0.5
-  })));
-
-  useFrame((state, delta) => {
-    if (!meshRef.current || segments.length === 0) return;
-    
-    // Total liquid height
-    const totalHeight = segments.reduce((acc, seg) => acc + seg.height, 0);
-    if (totalHeight === 0) return;
-
-    bubbles.current.forEach((b, i) => {
-      if (b.active || isActive) {
-        b.active = true;
-        b.pos.y += b.speed * delta;
-        b.pos.x += Math.sin(state.clock.elapsedTime * b.wobbleSpeed + b.wobbleOffset) * 0.01;
-        
-        if (b.pos.y > totalHeight) {
-          b.pos.y = 0;
-          b.pos.x = (Math.random() - 0.5) * 0.6;
-          b.pos.z = (Math.random() - 0.5) * 0.6;
-          if (!isActive) b.active = false;
-        }
-
-        if (b.active) {
-          dummy.position.copy(b.pos);
-          dummy.scale.set(b.scale, b.scale, b.scale);
-          dummy.updateMatrix();
-          meshRef.current!.setMatrixAt(i, dummy.matrix);
-        } else {
-          dummy.scale.set(0, 0, 0);
-          dummy.updateMatrix();
-          meshRef.current!.setMatrixAt(i, dummy.matrix);
-        }
-      }
-    });
-    meshRef.current.instanceMatrix.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
-      <sphereGeometry args={[1, 8, 8]} />
-      <meshPhysicalMaterial 
-        transmission={0.9} 
-        roughness={0} 
-        ior={1.1}
-        thickness={0.1}
-        color="#ffffff"
-      />
-    </instancedMesh>
-  );
-}
-
-// ─── TUBE COMPONENT ──────────────────────────────────────────────────────────
-function Tube({
-  index,
-  data,
-  isSelected,
-  isPouring,
-  onClick,
-  positionX,
-  positionZ,
-  isHinted,
-  isValidTarget,
-  isInvalidShake
-}: {
-  index: number;
-  data: TubeData;
-  isSelected: boolean;
-  isPouring: boolean;
-  onClick: () => void;
-  positionX: number;
-  positionZ: number;
-  isHinted?: boolean;
-  isValidTarget?: boolean;
-  isInvalidShake?: boolean;
-}) {
-  // Idle breathing animation
-  const groupRef = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (groupRef.current && !isPouring && !isSelected) {
-      groupRef.current.position.y = (isSelected ? 1.5 : 0) + Math.sin(clock.elapsedTime * 2 + index) * 0.05;
-    }
-  });
-
-  // Animation springs
-  const { pos, rot, slosh, glow, scale } = useSpring({
-    pos: [positionX, isSelected ? 1.5 : 0, positionZ] as [number, number, number],
-    rot: [0, 0, isPouring ? -Math.PI / 2.5 : (isInvalidShake ? Math.PI / 12 : 0)] as [number, number, number],
-    slosh: isSelected ? 1 : (isPouring ? -1 : (isInvalidShake ? 1.5 : 0)),
-    glow: isSelected ? 1.0 : (isValidTarget ? 0.4 : 0),
-    scale: isSelected ? 1.05 : 1, // Phase 36: Micro scale
-    config: { mass: 1, tension: isInvalidShake ? 300 : 170, friction: isInvalidShake ? 5 : 14 }
-  });
-
-  // Phase 18: Liquid Diffusion (Consolidate contiguous colors into unified segments)
-  const segments: { colorId: number; height: number; startY: number }[] = [];
-  if (data.length > 0) {
-    let currentColor = data[0];
-    let currentCount = 1;
-    for (let i = 1; i <= data.length; i++) {
-      if (i < data.length && data[i] === currentColor) {
-        currentCount++;
-      } else {
-        const startY = segments.reduce((sum, s) => sum + s.height, 0);
-        segments.push({ colorId: currentColor, height: currentCount * LIQUID_HEIGHT, startY });
-        if (i < data.length) {
-          currentColor = data[i];
-          currentCount = 1;
-        }
-      }
-    }
-  }
-
-  // Phase 20: Tube Selection Feedback
-  const envIntensity = glow.to((g: number) => 2.0 + g * 1.5);
-  const rimIntensity = glow.to((g: number) => 2.5 + g * 2.0);
-
-  // Phase 14: Condensation
-  const condensationMap = useCondensationTexture();
-
-  return (
-    <a.group ref={groupRef} position={pos as any} rotation={rot as any} scale={scale as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
-      {/* Phase 13 & 14: Hyper-realistic Glass System with Wall Thickness */}
-      <mesh position={[0, TUBE_HEIGHT / 2 - 0.2, 0]}>
-        {/* Using a tube geometry for the walls instead of double sided cylinder to create actual thickness */}
-        <tubeGeometry args={[
-          new THREE.LineCurve3(new THREE.Vector3(0, -TUBE_HEIGHT/2, 0), new THREE.Vector3(0, TUBE_HEIGHT/2, 0)),
-          1, TUBE_RADIUS, 32, false
-        ]} />
-        <a.meshPhysicalMaterial 
-          transmission={1.0} 
-          thickness={0.2} 
-          roughness={0.05} 
-          ior={1.52} 
-          clearcoat={1.0}
-          clearcoatRoughness={0.0} 
-          transparent
-          side={THREE.DoubleSide}
-          envMapIntensity={envIntensity as any}
-          roughnessMap={condensationMap as any}
-          bumpMap={condensationMap as any}
-          bumpScale={0.005}
-        />
-      </mesh>
-      
-      {/* Base of Tube (Thick glass base) */}
-      <mesh position={[0, -0.2, 0]}>
-        <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, 0.4, 32]} />
-        <a.meshPhysicalMaterial 
-          transmission={1.0} 
-          thickness={0.5} 
-          roughness={0.05} 
-          ior={1.52}
-          clearcoat={1.0}
-          envMapIntensity={envIntensity as any}
-        />
-      </mesh>
-      
-      {/* Phase 14 & 20: Glass Edge Detail (Rim Highlight) */}
-      <mesh position={[0, TUBE_HEIGHT - 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[TUBE_RADIUS, 0.04, 16, 64]} />
-        <a.meshPhysicalMaterial 
-          transmission={1.0}
-          thickness={0.1}
-          ior={1.52}
-          roughness={0.02}
-          clearcoat={1.0}
-          envMapIntensity={rimIntensity as any}
-          emissive={"#ffffff"}
-          emissiveIntensity={glow.to((g: number) => g * 0.2) as any}
-        />
-      </mesh>
-
-      {/* Liquids */}
-      {segments.map((seg, i) => (
-        <LiquidSegment 
-          key={i} 
-          color={COLORS[seg.colorId % COLORS.length]} 
-          position={[0, seg.startY + seg.height / 2, 0]} 
-          height={seg.height} 
-          isTopLayer={i === segments.length - 1}
-          slosh={slosh}
-        />
-      ))}
-      
-      {/* Phase 7 & 8: Internal Liquid Bubbles */}
-      {segments.length > 0 && (
-        <LiquidBubbles segments={segments} isActive={isPouring || isSelected} />
-      )}
-      
-      {/* Hint Highlight */}
-      {isHinted && (
-        <Sparkles count={30} scale={2} size={3} speed={2} color="#ffffff" opacity={1} position-y={TUBE_HEIGHT/2} />
-      )}
-    </a.group>
-  );
-}
-
-// Phase 26 & 31: Camera Modes and Intro Cinematic
+// Phase 26 & 31: Camera Modes, Intro Cinematic & Procedural Parallax
 function CameraController({ isPouring }: { isPouring: boolean }) {
   const { pos } = useSpring({
     pos: isPouring ? [0, 6, 10] : [0, 8, 12],
@@ -356,22 +33,37 @@ function CameraController({ isPouring }: { isPouring: boolean }) {
   });
   
   const introState = useRef({ elapsed: 0 });
+  const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
+  
   useFrame((state, delta) => {
     const currentPos = pos.get() as number[];
+    
+    // Phase 24: Ambient World Animation & Procedural Parallax
+    const parallaxX = state.pointer.x * 2.0;
+    const parallaxY = state.pointer.y * 1.5;
+    const sway = Math.sin(state.clock.elapsedTime * 0.5) * 0.5;
+
     if (introState.current.elapsed < 2.0) {
       introState.current.elapsed += delta;
       const progress = Math.min(1.0, introState.current.elapsed / 1.5);
       const ease = 1 - Math.pow(1 - progress, 3);
       
       state.camera.position.set(
-        currentPos[0],
-        THREE.MathUtils.lerp(20, currentPos[1], ease),
+        currentPos[0] + parallaxX,
+        THREE.MathUtils.lerp(20, currentPos[1] + parallaxY, ease),
         THREE.MathUtils.lerp(20, currentPos[2], ease)
       );
-      state.camera.lookAt(0, 0, 0);
+      state.camera.lookAt(targetLookAt.current);
     } else {
-      state.camera.position.set(currentPos[0], currentPos[1], currentPos[2]);
-      state.camera.lookAt(0, 0, 0);
+      // Smoothly interpolate to new parallax positions
+      state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, currentPos[0] + parallaxX + sway, delta * 3);
+      state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, currentPos[1] + parallaxY, delta * 3);
+      state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, currentPos[2], delta * 3);
+      
+      // Look slightly offset based on pointer for deeper parallax effect
+      targetLookAt.current.x = THREE.MathUtils.lerp(targetLookAt.current.x, parallaxX * 0.2, delta * 5);
+      targetLookAt.current.y = THREE.MathUtils.lerp(targetLookAt.current.y, parallaxY * 0.2, delta * 5);
+      state.camera.lookAt(targetLookAt.current);
     }
   });
 
@@ -381,6 +73,7 @@ function CameraController({ isPouring }: { isPouring: boolean }) {
 // ─── MAIN GAME COMPONENT ─────────────────────────────────────────────────────
 export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin: () => void }) {
   const [tubes, setTubes] = useState<TubeData[]>([]);
+  const [tubeMetadata, setTubeMetadata] = useState<TubeMetadata[]>([]);
   const [history, setHistory] = useState<TubeData[][]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [pouringInto, setPouringInto] = useState<number | null>(null);
@@ -406,6 +99,15 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
       // If we have a cached level ready for the current request, use it!
       if (nextLevelCache) {
         setTubes(nextLevelCache);
+        
+        // Setup metadata features for testing mechanics
+        const metadata = nextLevelCache.map((_, i) => ({
+          isLocked: level > 5 && i === 0, // Mock: first tube locked on level > 5
+          frozenLayers: level > 10 && i === 1 ? 1 : 0, // Mock: second tube frozen on level > 10
+          portalTarget: null
+        }));
+        setTubeMetadata(metadata);
+        
         setHistory([]);
         setSelected(null);
         setHint(null);
@@ -416,6 +118,14 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         const tubesConfig = await LevelGenerator.generateAsync(level);
         if (!active) return;
         setTubes(tubesConfig);
+        
+        const metadata = tubesConfig.map((_, i) => ({
+          isLocked: level > 5 && i === 0,
+          frozenLayers: level > 10 && i === 1 ? 1 : 0,
+          portalTarget: null
+        }));
+        setTubeMetadata(metadata);
+
         setHistory([]);
         setSelected(null);
         setHint(null);
@@ -438,10 +148,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
 
   // Check Win Condition
   useEffect(() => {
-    if (tubes.length === 0) return;
-    const isWon = tubes.length > 0 && tubes.every(tube => 
-      tube.length === 0 || (tube.length === TUBE_CAPACITY && tube.every(c => c === tube[0]))
-    );
+    const isWon = WaterSortRulesEngine.isSolved(tubes, TUBE_CAPACITY);
     if (isWon && !showWinScreen) {
       audio.playWin();
       setEndTime(Date.now());
@@ -491,9 +198,10 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
   const handleTubeClick = (index: number) => {
     if (pouringInto !== null) return;
     if (selected === null) {
-      // Select if not empty
-      if (tubes[index].length > 0) setSelected(index);
-      else {
+      // Select if not empty and not frozen/locked
+      if (tubes[index].length > 0 && (!tubeMetadata[index] || (!tubeMetadata[index].isLocked && tubeMetadata[index].frozenLayers === 0))) {
+        setSelected(index);
+      } else {
         setInvalidShakeIndex(index);
         setTimeout(() => setInvalidShakeIndex(null), 300);
       }
@@ -501,67 +209,44 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
       // Deselect
       setSelected(null);
     } else {
-      // Try to pour
-      const source = tubes[selected];
-      const target = tubes[index];
-      
-      const sourceTop = source[source.length - 1];
-      const targetTop = target[target.length - 1];
+      // Try to pour using RulesEngine
+      if (WaterSortRulesEngine.canPour(tubes, selected, index, TUBE_CAPACITY, tubeMetadata)) {
+        const amount = WaterSortRulesEngine.getPourAmount(tubes, selected, index, TUBE_CAPACITY, tubeMetadata);
+        if (amount > 0) {
+          const resolvedTarget = WaterSortRulesEngine.resolveTarget(index, tubeMetadata);
+          const sourceTop = tubes[selected][tubes[selected].length - 1];
+          const colorHex = COLORS[sourceTop % COLORS.length];
+          const profile = WaterSortLiquidProfile.getProfileForColor(colorHex); 
 
-      if (target.length < TUBE_CAPACITY && (target.length === 0 || targetTop === sourceTop)) {
-        // Calculate exactly how many blocks will move
-        let movedCount = 0;
-        let s = [...source];
-        let t = [...target];
-        while (
-          s.length > 0 && 
-          t.length < TUBE_CAPACITY && 
-          (t.length === 0 || t[t.length - 1] === s[s.length - 1])
-        ) {
-          const color = s.pop()!;
-          t.push(color);
-          movedCount++;
-          if (s.length > 0 && s[s.length - 1] !== color) break;
-        }
-
-        if (movedCount === 0) return; // Should not happen given outer condition, but safe
-
-        // Phase 5 & 18: Dynamic Pour Flow Rate based on amount and viscosity
-        const colorHex = COLORS[sourceTop % COLORS.length];
-        // For demonstration, map color IDs to LiquidType if we want. Default WATER is viscosity 0.2
-        const profile = WaterSortLiquidProfile.getProfileForColor(colorHex); 
-        // Base pour is 600ms + 200ms per block, scaled by viscosity
-        const pourDuration = (600 + movedCount * 200) * (1 + profile.viscosity);
-
-        // Capture state before modifying for undo history
-        setHistory(h => [...h, tubes.map(t => [...t])]);
-        
-        // Valid pour
-        setPouringInto(index);
-        setStreamData({ source: selected, target: index, color: colorHex, active: true });
-        audio.playPour(target.length / TUBE_CAPACITY); // Note: Audio engine handles its own timing, could pass duration
-        
-        // Execute pour logic after realistic delay for animation (Phase 5 & 6)
-        setTimeout(() => {
-          setTubes(prev => {
-            const next = [...prev.map(t => [...t])];
-            let moved = 0;
-            while (
-              next[selected].length > 0 && 
-              next[index].length < TUBE_CAPACITY && 
-              (next[index].length === 0 || next[index][next[index].length - 1] === next[selected][next[selected].length - 1])
-            ) {
-              const color = next[selected].pop()!;
-              next[index].push(color);
-              moved++;
-              if (next[selected].length > 0 && next[selected][next[selected].length - 1] !== color) break;
-            }
-            return next;
+          setPouringInto(resolvedTarget);
+          setStreamData({
+            source: selected,
+            target: resolvedTarget,
+            color: colorHex,
+            active: true
           });
-          setSelected(null);
-          setPouringInto(null);
-          setStreamData(prev => prev ? { ...prev, active: false } : null);
-        }, pourDuration);
+          audio.playPour(tubes[resolvedTarget].length / TUBE_CAPACITY);
+
+          // Base pour is 600ms + 200ms per block, scaled by viscosity
+          const pourDuration = (600 + amount * 200) * (1 + profile.viscosity);
+
+          // Capture state before modifying for undo history
+          setHistory(h => [...h, tubes.map(t => [...t])]);
+
+          // Execute pour logic after realistic delay for animation
+          setTimeout(() => {
+            const { nextTubes, nextMetadata } = WaterSortRulesEngine.applyPour(tubes, selected, index, TUBE_CAPACITY, tubeMetadata);
+            setTubes(nextTubes);
+            if (nextMetadata) setTubeMetadata(nextMetadata);
+            setSelected(null);
+            setPouringInto(null);
+            setStreamData(prev => prev ? { ...prev, active: false } : null);
+          }, pourDuration);
+        } else {
+          // Valid logically but 0 amount? (Edge case)
+          setInvalidShakeIndex(index);
+          setTimeout(() => setInvalidShakeIndex(null), 300);
+        }
       } else {
         // Invalid pour, trigger feedback
         setInvalidShakeIndex(index);
@@ -659,7 +344,7 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         
         <Lighting />
 
-      <Environment preset="studio" />
+      <Environment preset="warehouse" />
 
       <group position={[0, -2, 0]}>
         {tubes.map((tube, i) => {
@@ -711,16 +396,21 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
           </div>
         </Html>
 
-        {/* Phase 23 & 24: PBR Environment / Lab Table */}
+        {/* Phase 23, 24 & 31: Mirror Floor & PBR Environment */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
           <planeGeometry args={[100, 100]} />
-          <meshPhysicalMaterial 
-            color="#1a1a24" 
-            roughness={0.15} 
-            metalness={0.8} 
-            clearcoat={1.0} 
-            clearcoatRoughness={0.2} 
-            envMapIntensity={1.0} 
+          <MeshReflectorMaterial
+            blur={[300, 100]}
+            resolution={2048}
+            mixBlur={1}
+            mixStrength={80}
+            roughness={0.2}
+            depthScale={1.2}
+            minDepthThreshold={0.4}
+            maxDepthThreshold={1.4}
+            color="#101015"
+            metalness={0.6}
+            mirror={0.8}
           />
         </mesh>
         
@@ -733,6 +423,13 @@ export default function WaterSort3D({ level = 1, onWin }: { level: number, onWin
         <Sparkles count={150} scale={20} size={1.5} speed={0.2} opacity={0.3} color="#ffffff" />
         <Sparkles count={50} scale={15} size={2.5} speed={0.5} opacity={0.6} color="#00ffcc" position-y={2} />
       </group>
+
+      {/* Phase 31: Cinematic Post-Processing */}
+      <EffectComposer>
+        <DepthOfField focusDistance={0.015} focalLength={0.05} bokehScale={3} height={480} />
+        <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} height={300} intensity={1.5} />
+        <Vignette eskil={false} offset={0.1} darkness={0.8} />
+      </EffectComposer>
 
       {isGenerating && (
         <Html center>

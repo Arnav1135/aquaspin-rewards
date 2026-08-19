@@ -16,52 +16,86 @@ export class CandyShapeFactory {
   private static createGeometry(shape: CandyShape): THREE.BufferGeometry {
     switch (shape) {
       case 'jelly-bean': {
-        // Curved Jelly Bean
-        const geo = new THREE.TorusGeometry(0.28, 0.22, 16, 32, Math.PI * 0.85);
+        const geo = new THREE.TorusGeometry(0.28, 0.22, 24, 48, Math.PI * 0.85);
         geo.rotateX(Math.PI / 2);
-        geo.translate(0, -0.1, 0); // Center it
+        geo.translate(0, -0.1, 0); 
         return geo;
       }
       
       case 'lozenge': {
-        // Rounded Lozenge (Oval/Pill)
-        const geo = new THREE.CapsuleGeometry(0.35, 0.4, 16, 32);
+        // High quality rounded pill
+        const geo = new THREE.CapsuleGeometry(0.35, 0.4, 24, 48);
         geo.rotateZ(Math.PI / 2);
         return geo;
       }
       
       case 'teardrop': {
-        // Lemon drop / Teardrop
-        const geo = new THREE.ConeGeometry(0.4, 0.8, 32, 1, false, 0, Math.PI * 2);
-        // Slightly round the bottom by modifying the cone
+        // Sculpted teardrop
+        const geo = new THREE.ConeGeometry(0.4, 0.8, 32, 16, true, 0, Math.PI * 2);
+        // Soften tip and base
+        const pos = geo.attributes.position as THREE.BufferAttribute;
+        for (let i = 0; i < pos.count; i++) {
+          const y = pos.getY(i);
+          if (y > 0.2) {
+             const factor = 1.0 - Math.pow((y - 0.2) / 0.6, 2);
+             pos.setX(i, pos.getX(i) * factor);
+             pos.setZ(i, pos.getZ(i) * factor);
+          }
+        }
+        geo.computeVertexNormals();
         geo.translate(0, -0.1, 0);
         return geo;
       }
 
       case 'square': {
-        // Rounded box (using standard Box for now but scaled properly)
-        // A true rounded box would require a custom geometry, but we can simulate a soft square
-        const geo = new THREE.BoxGeometry(0.7, 0.7, 0.5, 4, 4, 2);
-        // Soften edges by normalizing slightly
+        // Phase 4: Procedural Beveled Box
+        const shape = new THREE.Shape();
+        const width = 0.7;
+        const height = 0.7;
+        const radius = 0.15;
+        shape.moveTo(-width / 2 + radius, -height / 2);
+        shape.lineTo(width / 2 - radius, -height / 2);
+        shape.quadraticCurveTo(width / 2, -height / 2, width / 2, -height / 2 + radius);
+        shape.lineTo(width / 2, height / 2 - radius);
+        shape.quadraticCurveTo(width / 2, height / 2, width / 2 - radius, height / 2);
+        shape.lineTo(-width / 2 + radius, height / 2);
+        shape.quadraticCurveTo(-width / 2, height / 2, -width / 2, height / 2 - radius);
+        shape.lineTo(-width / 2, -height / 2 + radius);
+        shape.quadraticCurveTo(-width / 2, -height / 2, -width / 2 + radius, -height / 2);
+        
+        const extrudeSettings = {
+          depth: 0.3,
+          bevelEnabled: true,
+          bevelSegments: 6,
+          steps: 2,
+          bevelSize: 0.08,
+          bevelThickness: 0.1
+        };
+        const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geo.center();
         return geo;
       }
 
       case 'circle': {
-        // Flat round candy
-        const geo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 32);
-        geo.rotateX(Math.PI / 2);
+        // Flattened spheroid
+        const geo = new THREE.SphereGeometry(0.45, 32, 32);
+        geo.scale(1, 0.5, 1);
         return geo;
       }
 
       case 'cluster': {
-        // A berry-like cluster
-        const geo = new THREE.DodecahedronGeometry(0.4, 1);
+        const geo = new THREE.DodecahedronGeometry(0.4, 2); // Higher detail
+        const pos = geo.attributes.position as THREE.BufferAttribute;
+        for(let i=0; i<pos.count; i++) {
+           const l = new THREE.Vector3().fromBufferAttribute(pos, i).length();
+           pos.setXYZ(i, pos.getX(i)*(1 + Math.sin(l*10)*0.1), pos.getY(i)*(1 + Math.sin(l*10)*0.1), pos.getZ(i)*(1 + Math.sin(l*10)*0.1));
+        }
+        geo.computeVertexNormals();
         return geo;
       }
 
       case 'fish': {
-        // Fish body (sphere stretched)
-        const geo = new THREE.SphereGeometry(0.4, 24, 24);
+        const geo = new THREE.SphereGeometry(0.4, 32, 32);
         geo.scale(1.2, 0.8, 0.6);
         return geo;
       }

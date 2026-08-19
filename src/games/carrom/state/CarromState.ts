@@ -12,6 +12,9 @@ interface CarromStore {
   power: number;
   gameMode: 'FREESTYLE' | 'VS_AI' | 'MULTIPLAYER';
   
+  // Replay System
+  replays: any[];
+  
   // Actions
   setTurnState: (state: TurnState) => void;
   setStrikerPosition: (pos: [number, number, number]) => void;
@@ -35,11 +38,22 @@ export const useCarromStore = create<CarromStore>((set) => ({
   aimAngle: 0,
   power: 0,
   gameMode: 'FREESTYLE',
+  replays: [],
 
   setTurnState: (state) => set({ turnState: state }),
   setStrikerPosition: (pos) => set({ strikerPosition: pos }),
   setAimAngle: (angle) => set({ aimAngle: angle }),
   setPower: (power) => set({ power }),
+  
+  recordReplay: () => set((state) => ({
+    replays: [...state.replays, {
+      strikerPos: [...state.strikerPosition],
+      aimAngle: state.aimAngle,
+      power: state.power,
+      timestamp: Date.now()
+    }]
+  })),
+
   pocketCoin: (id) => set((state) => ({
     coins: {
       ...state.coins,

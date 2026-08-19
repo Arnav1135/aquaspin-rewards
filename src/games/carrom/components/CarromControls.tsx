@@ -51,6 +51,7 @@ export function CarromControls() {
 
   const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
     if (turnState === 'AIMING' && dragStart) {
+      useCarromStore.getState().recordReplay();
       setTurnState('SHOOTING');
       setDragStart(null);
       setCurrentDrag(null);

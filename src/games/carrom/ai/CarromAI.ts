@@ -49,6 +49,7 @@ export class CarromAI {
     
     // Wait a brief moment to show aim, then shoot
     setTimeout(() => {
+      useCarromStore.getState().recordReplay();
       useCarromStore.getState().setTurnState('SHOOTING');
       this.isCalculating = false;
     }, 500);

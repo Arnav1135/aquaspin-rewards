@@ -42,6 +42,53 @@ import { LevelGenerator } from '../water-sort-pro/levels/LevelGenerator';
 import { HintEngine } from '../water-sort-pro/core/HintEngine';
 import { GameState } from '../water-sort-pro/core/PuzzleEngine';
 
+// Phase 14: Procedural Condensation Texture Generator
+function useCondensationTexture() {
+  return useMemo(() => {
+    if (typeof document === 'undefined') return null;
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+    
+    // Background: Smooth baseline
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(0, 0, size, size);
+    
+    // Droplets
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 3000; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const r = Math.random() * 2 + 0.2;
+      ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Streaks
+    for (let i = 0; i < 100; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const length = Math.random() * 60 + 20;
+      const width = Math.random() * 1.5 + 0.5;
+      ctx.globalAlpha = Math.random() * 0.6 + 0.1;
+      ctx.fillRect(x, y, width, length);
+      ctx.beginPath();
+      ctx.arc(x + width/2, y + length, width * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(3, 3);
+    return tex;
+  }, []);
+}
+
 function LiquidSegment({ color, position, height, isTopLayer, slosh }: { color: string, position: [number, number, number], height: number, isTopLayer?: boolean, slosh?: any }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const profile = useMemo(() => WaterSortLiquidProfile.getProfileForColor(color), [color]);
@@ -139,6 +186,9 @@ function Tube({
   const envIntensity = glow.to((g: number) => 2.0 + g * 1.5);
   const rimIntensity = glow.to((g: number) => 2.5 + g * 2.0);
 
+  // Phase 14: Condensation
+  const condensationMap = useCondensationTexture();
+
   return (
     <a.group ref={groupRef} position={pos as any} rotation={rot as any} onClick={(e: any) => { e.stopPropagation(); onClick(); }}>
       {/* Phase 13 & 14: Hyper-realistic Glass System with Wall Thickness */}
@@ -158,6 +208,9 @@ function Tube({
           transparent
           side={THREE.DoubleSide}
           envMapIntensity={envIntensity as any}
+          roughnessMap={condensationMap as any}
+          bumpMap={condensationMap as any}
+          bumpScale={0.005}
         />
       </mesh>
       

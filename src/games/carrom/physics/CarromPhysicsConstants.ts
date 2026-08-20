@@ -30,6 +30,8 @@ export const CARROM_PHYSICS = {
     CCD_ENABLED: true, // Continuous Collision Detection
     MAX_VELOCITY: 5.0, // Terminal velocity limit
     SLEEP_THRESHOLD: 0.01,
+    RENDER_INDEPENDENT: true, // separates physics from render
+    INTERPOLATION_FACTOR: 0.15, // for smooth visual blending
   },
   POCKET: {
     RADIUS: 0.0222, // 4.45cm diameter (generous)

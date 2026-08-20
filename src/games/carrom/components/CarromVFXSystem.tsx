@@ -1,9 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 interface Particle {
-  id: number;
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   life: number;
@@ -13,11 +12,15 @@ interface Particle {
 }
 
 // Global VFX Event Emitter (Simple singleton for performance)
-type VFXEvent = {
-  type: 'impact' | 'pocket';
+export type VFXEvent = {
+  type: 'impact' | 'pocket' | 'dust' | 'pocket_shadow' | 'queen_capture' | 'victory' | 'striker_move' | 'shot' | 'foul' | 'rail_hit' | 'multi_collision';
   position: [number, number, number];
   intensity: number;
+  mass?: number;
+  velocity?: [number, number, number];
   color?: string;
+  normal?: [number, number, number];
+  sequenceIndex?: number;
 };
 export const carromVfxEvents = new EventTarget();
 export const triggerVFX = (event: VFXEvent) => {
@@ -27,37 +30,127 @@ export const triggerVFX = (event: VFXEvent) => {
 const MAX_PARTICLES = 1000;
 const dummy = new THREE.Object3D();
 
+/**
+ * Carrom VFX System (Phase 43)
+ * - GPU-friendly: uses InstancedMesh for batch rendering
+ * - BufferGeometry shared across all instances
+ * - Attribute updates via setMatrixAt/setColorAt
+ * - No unbounded allocation (circular buffer index)
+ */
+
+import { carromQualityEvents, QualityLevel } from './CarromPerformanceManager';
+
 export function CarromVFXSystem() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const particleId = useRef(0);
+  const qualityRef = useRef<QualityLevel>('HIGH');
+  
+  useEffect(() => {
+    const handleQuality = (e: Event) => {
+      qualityRef.current = (e as CustomEvent).detail as QualityLevel;
+    };
+    carromQualityEvents.addEventListener('quality', handleQuality);
+    return () => carromQualityEvents.removeEventListener('quality', handleQuality);
+  }, []);
+
+  
+  // Use a static buffer instead of React state for performance
+  const particles = useRef<Particle[]>(
+    Array.from({ length: MAX_PARTICLES }, () => ({
+      position: new THREE.Vector3(),
+      velocity: new THREE.Vector3(),
+      life: 0,
+      maxLife: 1,
+      color: new THREE.Color(),
+      size: 0.01
+    }))
+  );
+  
+  const particleIndex = useRef(0);
 
   useEffect(() => {
     const handleEvent = ((e: CustomEvent<VFXEvent>) => {
-      const { type, position, intensity, color } = e.detail;
-      const count = type === 'impact' ? Math.floor(intensity * 10) : 30;
-      
-      const newParticles: Particle[] = [];
-      const baseColor = new THREE.Color(color || '#FFD700');
+      const { type, position, intensity, color, mass = 1, velocity = [0,0,0] } = e.detail;
+      if (type === 'pocket_shadow') return; // Handled elsewhere
 
-      for (let i = 0; i < count; i++) {
-        const vel = new THREE.Vector3(
-          (Math.random() - 0.5) * intensity * 2,
-          (Math.random() * intensity * 2) + 0.5,
-          (Math.random() - 0.5) * intensity * 2
-        );
-        newParticles.push({
-          id: particleId.current++,
-          position: new THREE.Vector3(...position),
-          velocity: vel,
-          life: 1.0,
-          maxLife: 1.0 + Math.random() * 0.5,
-          color: baseColor.clone().addScalar((Math.random() - 0.5) * 0.2), // variance
-          size: Math.random() * 0.01 + 0.005
-        });
+      if (type === 'dust' && qualityRef.current === 'LOW') return;
+
+      let count = 0;
+      let baseColor = new THREE.Color(color || '#FFD700');
+      
+      if (type === 'impact') {
+        count = Math.min(Math.floor(intensity * mass * 5), 50);
+      } else if (type === 'pocket') {
+        count = 40; // Downward cone, gold sparkle
+        baseColor = new THREE.Color('#FFD700');
+        triggerVFX({ type: 'pocket_shadow', position, intensity }); // Emit shadow
+      } else if (type === 'dust') {
+        count = Math.floor(Math.random() * 6) + 5; // 5-10
+        baseColor = new THREE.Color('#8b5a2b'); // brownish
+      } else if (type === 'queen_capture') {
+        count = 60; // premium alternating
+      } else if (type === 'victory') {
+        count = 100; // Gold shower
+        baseColor = new THREE.Color('#FFD700');
+      } else {
+        count = 30;
       }
 
-      setParticles(prev => [...prev, ...newParticles].slice(-MAX_PARTICLES));
+      for (let i = 0; i < count; i++) {
+        const pIdx = particleIndex.current % MAX_PARTICLES;
+        const p = particles.current[pIdx];
+        
+        p.position.set(position[0], position[1], position[2]);
+        
+        if (type === 'dust') {
+          p.velocity.set(
+            (Math.random() - 0.5) * 0.1,
+            Math.random() * 0.1,
+            (Math.random() - 0.5) * 0.1
+          );
+          p.life = 0.5;
+          p.maxLife = 0.5;
+          p.color.copy(baseColor);
+          p.size = 0.003;
+        } else if (type === 'pocket') {
+          p.velocity.set(
+            (Math.random() - 0.5) * 0.5,
+            -Math.random() * 1.5,
+            (Math.random() - 0.5) * 0.5
+          );
+          p.life = 1.5;
+          p.maxLife = 1.5;
+          p.color.copy(baseColor).addScalar((Math.random() - 0.5) * 0.2);
+          p.size = Math.random() * 0.01 + 0.005;
+        } else if (type === 'queen_capture') {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 2 + 1;
+          p.velocity.set(Math.cos(angle) * speed, Math.random() * 2, Math.sin(angle) * speed);
+          p.life = 2.0;
+          p.maxLife = 2.0;
+          p.color.copy(new THREE.Color(i % 2 === 0 ? '#E91E63' : '#FFD700'));
+          p.size = 0.015;
+        } else if (type === 'victory') {
+          p.position.set(position[0] + (Math.random() - 0.5) * 2, 2.0 + Math.random(), position[2] + (Math.random() - 0.5) * 2);
+          p.velocity.set(0, -Math.random() * 2, 0);
+          p.life = 3.0;
+          p.maxLife = 3.0;
+          p.color.copy(baseColor).addScalar((Math.random() - 0.5) * 0.1);
+          p.size = 0.01;
+        } else {
+          // impact or other
+          p.velocity.set(
+            velocity[0] * 0.2 + (Math.random() - 0.5) * intensity * 2,
+            Math.abs(velocity[1]) * 0.2 + (Math.random() * intensity * 2) + 0.5,
+            velocity[2] * 0.2 + (Math.random() - 0.5) * intensity * 2
+          );
+          p.life = 1.0;
+          p.maxLife = 1.0 + Math.random() * 0.5;
+          p.color.copy(baseColor).addScalar((Math.random() - 0.5) * 0.2);
+          p.size = Math.random() * 0.01 + 0.005;
+        }
+        
+        particleIndex.current++;
+      }
     }) as EventListener;
 
     carromVfxEvents.addEventListener('vfx', handleEvent);
@@ -67,30 +160,33 @@ export function CarromVFXSystem() {
   useFrame((state, delta) => {
     if (!meshRef.current) return;
     
-    // Gravity and updates
+    let activeCount = 0;
     const gravity = -4.0;
     
-    setParticles(prev => prev.filter(p => p.life > 0).map(p => {
-      p.life -= delta;
-      p.velocity.y += gravity * delta;
-      p.position.addScaledVector(p.velocity, delta);
-      return p;
-    }));
-
-    // Update InstancedMesh
-    particles.forEach((p, i) => {
-      if (i >= MAX_PARTICLES) return;
-      dummy.position.copy(p.position);
-      const scale = p.size * (p.life / p.maxLife); // Shrink over time
-      dummy.scale.set(scale, scale, scale);
-      dummy.updateMatrix();
-      meshRef.current!.setMatrixAt(i, dummy.matrix);
-      meshRef.current!.setColorAt(i, p.color);
-    });
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      const p = particles.current[i];
+      if (p.life > 0) {
+        p.life -= delta;
+        
+        if (p.life > 0) {
+          p.velocity.y += gravity * delta;
+          p.position.addScaledVector(p.velocity, delta);
+          
+          dummy.position.copy(p.position);
+          const scale = p.size * (p.life / p.maxLife); // Shrink over time
+          dummy.scale.set(scale, scale, scale);
+          dummy.updateMatrix();
+          
+          meshRef.current.setMatrixAt(activeCount, dummy.matrix);
+          meshRef.current.setColorAt(activeCount, p.color);
+          activeCount++;
+        }
+      }
+    }
     
+    meshRef.current.count = activeCount;
     meshRef.current.instanceMatrix.needsUpdate = true;
     if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
-    meshRef.current.count = Math.min(particles.length, MAX_PARTICLES);
   });
 
   return (

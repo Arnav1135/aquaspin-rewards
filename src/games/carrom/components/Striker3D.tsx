@@ -1,8 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { RigidBody, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
 import { Trail, Line } from '@react-three/drei';
 import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
 import { useCarromStore } from '../state/CarromState';
+import { CarromMaterialProfile } from '../materials/CarromMaterialProfile';
 import * as THREE from 'three';
 
 export function Striker3D() {
@@ -11,6 +12,10 @@ export function Striker3D() {
   const turnState = useCarromStore(state => state.turnState);
   const aimAngle = useCarromStore(state => state.aimAngle);
   const power = useCarromStore(state => state.power);
+  const variant = useCarromStore(state => state.strikerVariant);
+  
+  const strikerMaterial = useMemo(() => CarromMaterialProfile.getStrikerVariant(variant), [variant]);
+
   
   useEffect(() => {
     if (turnState === 'SHOOTING' && bodyRef.current) {
@@ -70,14 +75,8 @@ export function Striker3D() {
       )}
 
       <Trail width={0.05} length={4} color="#00bcd4" attenuation={(t) => t * t}>
-        <mesh castShadow receiveShadow>
+        <mesh castShadow receiveShadow material={strikerMaterial}>
           <cylinderGeometry args={[r, r, h, 64]} />
-          <meshPhysicalMaterial 
-            color="#FFF9C4" 
-            roughness={0.2} 
-            metalness={0.1} 
-            clearcoat={0.8}
-          />
         </mesh>
       </Trail>
     </RigidBody>

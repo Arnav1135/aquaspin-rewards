@@ -21,10 +21,11 @@ export function useCarromQuality() {
 }
 
 export function CarromPerformanceManager() {
-  const { gl } = useThree();
+  const { gl, scene } = useThree();
   const frames = useRef(0);
   const prevTime = useRef(performance.now());
   const qualityRef = useRef<QualityLevel>('HIGH');
+  const highFpsCounter = useRef(0);
 
   useFrame(() => {
     frames.current++;
@@ -35,19 +36,35 @@ export function CarromPerformanceManager() {
       
       // Basic governor logic
       let newQuality = qualityRef.current;
+      
+      const drawCalls = gl.info.render.calls;
+      const triangles = gl.info.render.triangles;
+      // activeVFX and physics bodies could be polled from their systems
+      
       if (fps < 40 && qualityRef.current !== 'LOW') {
         newQuality = 'LOW';
-      } else if (fps > 55 && qualityRef.current === 'LOW') {
-        newQuality = 'MEDIUM'; // recover slowly
+        highFpsCounter.current = 0;
+      } else if (fps > 55) {
+        highFpsCounter.current++;
+        if (highFpsCounter.current >= 5) {
+          if (qualityRef.current === 'LOW') newQuality = 'MEDIUM';
+          else if (qualityRef.current === 'MEDIUM') newQuality = 'HIGH';
+          else if (qualityRef.current === 'HIGH') newQuality = 'ULTRA';
+          highFpsCounter.current = 0;
+        }
+      } else {
+        highFpsCounter.current = 0;
       }
       
       if (newQuality !== qualityRef.current) {
         qualityRef.current = newQuality;
-        console.log(`[PerformanceGovernor] Adjusting quality to ${newQuality} (FPS: ${fps.toFixed(1)})`);
+        console.log(`[PerformanceGovernor] Adjusting quality to ${newQuality} (FPS: ${fps.toFixed(1)}, Calls: ${drawCalls}, Tris: ${triangles})`);
         
         // Adjust DPR dynamically
         if (newQuality === 'LOW') {
           gl.setPixelRatio(1);
+        } else if (newQuality === 'MEDIUM') {
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         } else {
           gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         }

@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier';
 import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
 import { useCarromStore } from '../state/CarromState';
 import { triggerVFX } from './CarromVFXSystem';
 import { getWoodTexture } from '../materials/ProceduralWood';
+import { CarromMaterialProfile } from '../materials/CarromMaterialProfile';
 import * as THREE from 'three';
 
 export function Board3D() {
   const pocketCoin = useCarromStore(state => state.pocketCoin);
   const woodTex = getWoodTexture();
+  const surfaceMaterial = useMemo(() => CarromMaterialProfile.getBoardSurfaceMaterial(), []);
+  const edgeMaterial = useMemo(() => CarromMaterialProfile.getBoardEdgeMaterial(woodTex), [woodTex]);
   
   const bw = CARROM_PHYSICS.BOARD.WIDTH;
   const border = CARROM_PHYSICS.BOARD.BORDER_WIDTH;
@@ -34,9 +37,18 @@ export function Board3D() {
         friction={CARROM_PHYSICS.BOARD.FRICTION}
       >
         <CuboidCollider args={[halfBw, surfaceH / 2, halfBw]} position={[0, -surfaceH / 2, 0]} />
-        <mesh position={[0, -surfaceH / 2, 0]} receiveShadow>
+        <mesh position={[0, -surfaceH / 2, 0]} receiveShadow material={surfaceMaterial}>
           <boxGeometry args={[bw, surfaceH, bw]} />
-          <meshStandardMaterial color="#f0d5a3" roughness={0.6} />
+        </mesh>
+        
+        {/* Decorations */}
+        <mesh position={[0, 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.1, 0.102, 64]} />
+          <meshBasicMaterial color="#a67c52" transparent opacity={0.6} />
+        </mesh>
+        <mesh position={[0, 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.4, 0.403, 64]} />
+          <meshBasicMaterial color="#a67c52" transparent opacity={0.6} />
         </mesh>
       </RigidBody>
 
@@ -48,30 +60,26 @@ export function Board3D() {
       >
         {/* Top Border */}
         <CuboidCollider args={[halfBw + border, edgeH / 2, halfBorder]} position={[0, edgeH / 2, -halfBw - halfBorder]} />
-        <mesh position={[0, edgeH / 2, -halfBw - halfBorder]} receiveShadow castShadow>
+        <mesh position={[0, edgeH / 2, -halfBw - halfBorder]} receiveShadow castShadow material={edgeMaterial}>
           <boxGeometry args={[bw + border * 2, edgeH, border]} />
-          <meshPhysicalMaterial map={woodTex} color="#6b3e1b" roughness={0.8} clearcoat={0.1} />
         </mesh>
         
         {/* Bottom Border */}
         <CuboidCollider args={[halfBw + border, edgeH / 2, halfBorder]} position={[0, edgeH / 2, halfBw + halfBorder]} />
-        <mesh position={[0, edgeH / 2, halfBw + halfBorder]} receiveShadow castShadow>
+        <mesh position={[0, edgeH / 2, halfBw + halfBorder]} receiveShadow castShadow material={edgeMaterial}>
           <boxGeometry args={[bw + border * 2, edgeH, border]} />
-          <meshPhysicalMaterial map={woodTex} color="#6b3e1b" roughness={0.8} clearcoat={0.1} />
         </mesh>
 
         {/* Left Border */}
         <CuboidCollider args={[halfBorder, edgeH / 2, halfBw]} position={[-halfBw - halfBorder, edgeH / 2, 0]} />
-        <mesh position={[-halfBw - halfBorder, edgeH / 2, 0]} receiveShadow castShadow>
+        <mesh position={[-halfBw - halfBorder, edgeH / 2, 0]} receiveShadow castShadow material={edgeMaterial}>
           <boxGeometry args={[border, edgeH, bw]} />
-          <meshPhysicalMaterial map={woodTex} color="#6b3e1b" roughness={0.8} clearcoat={0.1} />
         </mesh>
 
         {/* Right Border */}
         <CuboidCollider args={[halfBorder, edgeH / 2, halfBw]} position={[halfBw + halfBorder, edgeH / 2, 0]} />
-        <mesh position={[halfBw + halfBorder, edgeH / 2, 0]} receiveShadow castShadow>
+        <mesh position={[halfBw + halfBorder, edgeH / 2, 0]} receiveShadow castShadow material={edgeMaterial}>
           <boxGeometry args={[border, edgeH, bw]} />
-          <meshPhysicalMaterial map={woodTex} color="#6b3e1b" roughness={0.8} clearcoat={0.1} />
         </mesh>
       </RigidBody>
 

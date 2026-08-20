@@ -11,6 +11,11 @@ interface CarromStore {
   aimAngle: number;
   power: number;
   gameMode: 'FREESTYLE' | 'VS_AI' | 'MULTIPLAYER';
+  environmentProfile: string;
+  strikerVariant: 'POLISHED' | 'MATTE' | 'TRANSLUCENT' | 'METALLIC_ACCENT';
+  aimMode: 'CLASSIC' | 'ASSISTED' | 'EXPERT';
+  cameraProfile: string;
+  colorGradingProfile: string;
   
   // Replay System
   replays: any[];
@@ -20,10 +25,14 @@ interface CarromStore {
   setStrikerPosition: (pos: [number, number, number]) => void;
   setAimAngle: (angle: number) => void;
   setPower: (power: number) => void;
+  setCameraProfile: (profile: string) => void;
+  setColorGradingProfile: (profile: string) => void;
   recordReplay: () => void;
   pocketCoin: (id: string) => void;
   resetTurn: () => void;
   initGame: (initialCoins: CarromCoinData[]) => void;
+  setEnvironmentProfile: (profile: string) => void;
+  setStrikerVariant: (variant: 'POLISHED' | 'MATTE' | 'TRANSLUCENT' | 'METALLIC_ACCENT') => void;
 }
 
 export const useCarromStore = create<CarromStore>((set) => ({
@@ -39,12 +48,21 @@ export const useCarromStore = create<CarromStore>((set) => ({
   aimAngle: 0,
   power: 0,
   gameMode: 'FREESTYLE',
+  environmentProfile: 'LUXURY_ROOM',
+  strikerVariant: 'POLISHED',
+  aimMode: 'ASSISTED',
+  cameraProfile: 'NORMAL',
+  colorGradingProfile: 'CLASSIC',
   replays: [],
 
   setTurnState: (state) => set({ turnState: state }),
   setStrikerPosition: (pos) => set({ strikerPosition: pos }),
   setAimAngle: (angle) => set({ aimAngle: angle }),
   setPower: (power) => set({ power }),
+  setEnvironmentProfile: (profile) => set({ environmentProfile: profile }),
+  setStrikerVariant: (variant) => set({ strikerVariant: variant }),
+  setCameraProfile: (profile) => set({ cameraProfile: profile }),
+  setColorGradingProfile: (profile) => set({ colorGradingProfile: profile }),
   
   recordReplay: () => set((state) => ({
     replays: [...state.replays, {

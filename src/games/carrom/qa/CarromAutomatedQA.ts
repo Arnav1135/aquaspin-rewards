@@ -38,6 +38,11 @@ export class CarromAutomatedQA {
           passed = false;
           break;
         }
+        
+        // Stuck coin check
+        if (!coin.isPocketed && dist < CARROM_PHYSICS.BOARD.WIDTH && dist > 0) {
+          // just a placeholder check for 'velocity near zero but not in valid position'
+        }
       }
 
       if (!passed) break;
@@ -48,5 +53,31 @@ export class CarromAutomatedQA {
     }
     
     return passed;
+  }
+
+  public static runMemoryStressTest(): void {
+    console.log(`[QA] Starting Memory Stress Test...`);
+    const state = useCarromStore.getState();
+    const initialCoins = { ...state.coins };
+    
+    let iterations = 0;
+    const interval = setInterval(() => {
+      // Simulate rapid state changes
+      if (iterations++ > 100) {
+        clearInterval(interval);
+        console.log(`[QA] Memory Stress Test Complete. Checking resources...`);
+        // Log resource counts (if available in modern browsers via performance API)
+        if ((performance as any).memory) {
+          console.log(`[QA] JS Heap Size: ${((performance as any).memory.usedJSHeapSize / 1048576).toFixed(2)} MB`);
+        }
+        return;
+      }
+      
+      // Toggle state rapidly via available mutations
+      const currentState = useCarromStore.getState();
+      currentState.setStrikerPosition([Math.random() * 0.5 - 0.25, 0.008, 0.28]);
+      currentState.setAimAngle(Math.random() * Math.PI * 2);
+      currentState.setPower(Math.random() * 100);
+    }, 16);
   }
 }

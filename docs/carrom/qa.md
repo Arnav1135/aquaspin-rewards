@@ -1,7 +1,6 @@
-# Carrom Automated QA
+# Automated QA
 
-## Physics Simulator
-A headless simulator can execute 1000 randomized valid shots to verify that no coins tunnel, escape the board bounds, or achieve infinite velocity (NaN state).
-
-## Visual Regression
-The QA pipeline takes deterministic screenshots of the board at rest and after a fixed shot sequence to ensure material or lighting upgrades do not break visibility.
+Carrom runs constant automated QA checks:
+1. **Asset Load Validation**: Catching NaN and missing textures.
+2. **Visual QA**: Ensures WebGL context recovery handles properly.
+3. **Physics Stability**: Deterministic tests ensure simulation divergence doesn't happen.

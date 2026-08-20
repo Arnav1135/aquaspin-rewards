@@ -100,7 +100,7 @@ export class ProceduralGeometrySystem {
   private static applyGummyDeformation(geometry: THREE.BufferGeometry, smoothness: number) {
     const pos = geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < pos.count; i++) {
-      let y = pos.getY(i);
+      const y = pos.getY(i);
       // Flatten bottom slightly for a gummy look
       if (y < -0.3) {
          pos.setY(i, -0.3 + (y + 0.3) * (1.0 - smoothness));

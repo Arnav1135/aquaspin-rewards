@@ -135,7 +135,7 @@ export class MatchDetector {
         const h = horizLines[hIdx];
         let specialCreation: SpecialType = 'none';
         let specialCoords = null;
-        let type: MatchShapeType = h.len === 3 ? '3-horizontal' : h.len === 4 ? '4-horizontal' : '5-horizontal';
+        const type: MatchShapeType = h.len === 3 ? '3-horizontal' : h.len === 4 ? '4-horizontal' : '5-horizontal';
         
         if (h.len >= 5) {
           specialCreation = 'color-bomb';
@@ -162,7 +162,7 @@ export class MatchDetector {
         const v = vertLines[vIdx];
         let specialCreation: SpecialType = 'none';
         let specialCoords = null;
-        let type: MatchShapeType = v.len === 3 ? '3-vertical' : v.len === 4 ? '4-vertical' : '5-vertical';
+        const type: MatchShapeType = v.len === 3 ? '3-vertical' : v.len === 4 ? '4-vertical' : '5-vertical';
         
         if (v.len >= 5) {
           specialCreation = 'color-bomb';

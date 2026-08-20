@@ -75,7 +75,7 @@ export class WaterSortRulesEngine {
     const color = source[source.length - 1];
 
     let movedCount = 0;
-    let s = [...source];
+    const s = [...source];
     let tLength = target.length;
 
     while (s.length > 0 && tLength < capacity && s[s.length - 1] === color) {

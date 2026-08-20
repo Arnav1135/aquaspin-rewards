@@ -215,7 +215,7 @@ export const useGameStore = create<GameState>()(
 
     set((s) => ({ boosterCounts: { ...s.boosterCounts, [type]: s.boosterCounts[type] - 1 } }));
     
-    let newBoard = Match3Engine.cloneBoard(state.board);
+    const newBoard = Match3Engine.cloneBoard(state.board);
     
     if (type === 'lollipop-hammer') {
       soundEngine.playExplosion();

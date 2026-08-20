@@ -16,7 +16,7 @@ function generateLevel(level: number) {
   const tubes: number[][] = Array.from({ length: numTubes }, () => []);
   
   // Create all liquid segments
-  let segments: number[] = [];
+  const segments: number[] = [];
   for (let i = 0; i < numColors; i++) {
     for (let j = 0; j < TUBE_CAP; j++) segments.push(COLORS[i]);
   }

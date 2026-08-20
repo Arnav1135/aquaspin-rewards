@@ -31,7 +31,7 @@ export default function WaterSort2D({ level, onWin }: WaterSort2DProps) {
     const levelColors = COLORS.slice(0, numColors);
     
     // Create an array with TUBE_CAPACITY of each color
-    let allLiquids: string[] = [];
+    const allLiquids: string[] = [];
     levelColors.forEach(color => {
       for (let i = 0; i < TUBE_CAPACITY; i++) {
         allLiquids.push(color);

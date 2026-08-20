@@ -32,7 +32,7 @@ export class Solver {
       if (nonEmptyTubes.length === 0 || notFullTubes.length === 0) break;
 
       const src = nonEmptyTubes[Math.floor(Math.random() * nonEmptyTubes.length)];
-      let dest = notFullTubes[Math.floor(Math.random() * notFullTubes.length)];
+      const dest = notFullTubes[Math.floor(Math.random() * notFullTubes.length)];
       
       // Ensure we don't just pour back into the same tube
       if (src === dest) continue;

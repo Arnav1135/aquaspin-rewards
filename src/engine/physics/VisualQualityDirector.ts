@@ -26,7 +26,7 @@ export class VisualQualityDirector {
 
   // Phase 30: AI Auto-Repair Placeholder
   public static detectAndRepair(errorLog: string): boolean {
-    let retries = 0;
+    const retries = 0;
     const maxRetries = 3;
 
     if (errorLog.includes('WebGL context lost') || errorLog.includes('Out of memory')) {

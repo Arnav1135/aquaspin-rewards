@@ -56,7 +56,7 @@ export const usePoolRules = create<PoolRulesState>((set, get) => ({
 
   resolveTurn: (firstHit: number | null, pocketedThisTurn: number[], railHit: boolean) => {
     const state = get();
-    let nextPlayer: PlayerId = state.currentPlayer === 'PLAYER_1' ? 'PLAYER_2' : 'PLAYER_1';
+    const nextPlayer: PlayerId = state.currentPlayer === 'PLAYER_1' ? 'PLAYER_2' : 'PLAYER_1';
     let isFoul = false;
     let foulMsg = '';
     let keepTurn = false;

@@ -59,7 +59,7 @@ function RocketExhaust({ rocketGroupRef, isActive }: { rocketGroupRef: React.Ref
     };
   }, []);
 
-  let nextIdx = useRef(0);
+  const nextIdx = useRef(0);
 
   useFrame((_state, delta) => {
     if (!pointsRef.current) return;
@@ -307,7 +307,7 @@ function Rocket3D({
 
       // Add turbulence wobble
       let wobble = Math.sin(state.clock.elapsedTime * 15) * 0.1;
-      let sway = Math.cos(state.clock.elapsedTime * 10) * 0.05;
+      const sway = Math.cos(state.clock.elapsedTime * 10) * 0.05;
       if (gameState === 'countdown') wobble += (Math.random() - 0.5) * 0.15;
       rocketGroup.current.position.y = wobble;
       rocketGroup.current.position.z = sway;

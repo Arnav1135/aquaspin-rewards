@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Sparkles, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface Particle {

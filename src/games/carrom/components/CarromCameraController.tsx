@@ -55,7 +55,7 @@ export function CarromCameraController() {
     
     const profile = CAMERA_PROFILES[profileName] || CAMERA_PROFILES.NORMAL;
     
-    let targetFov = profile.fov;
+    const targetFov = profile.fov;
 
     if (profileName === 'AIM') {
       const camDist = 0.5;
@@ -101,7 +101,8 @@ export function CarromCameraController() {
   return <PerspectiveCamera ref={cameraRef} makeDefault fov={45} />;
 }
 
-const handleCameraProfile = () => {
+  const cameraState = useCarromStore((state: any) => state.cameraState);
+  const handleCameraProfile = () => {
     switch(cameraState?.profile) {
       case 'AIM': return { fov: 40, pos: [0, 4, 3] };
       case 'QUEEN': return { fov: 35, pos: [0, 2, 0], focus: 'queen' };

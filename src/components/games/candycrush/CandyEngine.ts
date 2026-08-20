@@ -297,7 +297,7 @@ export class CandyEngine {
 
   async processCascades(initialGroups: MatchGroup[] = [], initialDetonateQueue: {r: number, c: number}[] = []) {
     let matchGroups = initialGroups;
-    let detonateQueue = initialDetonateQueue;
+    const detonateQueue = initialDetonateQueue;
     
     while (matchGroups.length > 0 || detonateQueue.length > 0) {
       const specialsToSpawn: {candy: Candy, r: number, c: number}[] = [];

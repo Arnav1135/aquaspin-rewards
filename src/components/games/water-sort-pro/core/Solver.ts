@@ -153,7 +153,7 @@ export class Solver {
 
   private static analyzeSolution(path: { source: number, destination: number }[], initialState: GameState) {
     let meaningfulMoves = 0;
-    let wastedMoves = 0;
+    const wastedMoves = 0;
     
     // A heuristic: pouring into empty is often temporary unless it's a solid stack
     path.forEach(move => {

@@ -51,9 +51,9 @@ export function CarromAudioSystem() {
 
       const velMag = Math.sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1] + velocity[2]*velocity[2]);
       
-      let volume = Math.min(intensity * 0.1, 1.0);
-      let pitchMod = (velMag * 5); // + up to ~50Hz
-      let decay = Math.min(Math.max(mass * 0.1, 0.05), 0.15); // heavier = longer decay
+      const volume = Math.min(intensity * 0.1, 1.0);
+      const pitchMod = (velMag * 5); // + up to ~50Hz
+      const decay = Math.min(Math.max(mass * 0.1, 0.05), 0.15); // heavier = longer decay
 
       if (type === 'impact' || type === 'coin_hit') {
         if (volume > 0.01) {

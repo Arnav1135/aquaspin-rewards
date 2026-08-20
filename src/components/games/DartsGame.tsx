@@ -56,7 +56,7 @@ function Dart({ position, rotation, velocity, onHit }: { position: [number,numbe
           }
           audio.play('darts', 'hit', { bullseye: true });
           
-          let hitPos = new THREE.Vector3();
+          const hitPos = new THREE.Vector3();
           if (bodyRef.current) {
             const p = bodyRef.current.translation();
             hitPos.set(p.x, p.y, p.z);

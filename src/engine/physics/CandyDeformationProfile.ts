@@ -33,7 +33,7 @@ export class CandyDeformationProfile {
     // Lerp from 1.0 to squash/stretch factor based on energy
     let sx = 1.0 + (config.stretchFactor - 1.0) * energy;
     let sy = 1.0 - (1.0 - config.squashFactor) * energy;
-    let sz = sx; // Uniform stretch on X and Z
+    const sz = sx; // Uniform stretch on X and Z
     
     // If hitting from side, swap axes
     if (Math.abs(directionY) < 0.5) {

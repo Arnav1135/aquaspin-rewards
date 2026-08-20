@@ -56,7 +56,7 @@ function Arrow({ position, rotation, velocity, onHit }: { position: [number,numb
           }
           audio.play('archery', 'hit');
           
-          let hitPos = new THREE.Vector3();
+          const hitPos = new THREE.Vector3();
           if (bodyRef.current) {
             const p = bodyRef.current.translation();
             hitPos.set(p.x, p.y, p.z);
@@ -157,7 +157,7 @@ export function ArcheryGame({ onClose }: Props) {
     let time = 0;
     const interval = setInterval(() => {
       time += 0.05;
-      let magnitude = isAiming ? 0.05 + (power / 100) * 0.1 : 0.02;
+      const magnitude = isAiming ? 0.05 + (power / 100) * 0.1 : 0.02;
       setSwayX(Math.sin(time * 2) * magnitude);
       setSwayY(Math.cos(time * 3) * magnitude * 0.5);
       

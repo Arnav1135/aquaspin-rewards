@@ -465,7 +465,7 @@ export class Match3Engine {
   public static shuffleBoard(board: TileData[][], availableColors: CandyColor[]): TileData[][] {
     const rows = board.length;
     const cols = board[0].length;
-    let newBoard = this.cloneBoard(board);
+    const newBoard = this.cloneBoard(board);
     let attempts = 0;
 
     while (attempts < 50) {

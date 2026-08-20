@@ -15,7 +15,7 @@ export default function CandyCrunchApp() {
 
   useEffect(() => {
     store.loadLevel(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const handleGenerateAILevel = async () => {

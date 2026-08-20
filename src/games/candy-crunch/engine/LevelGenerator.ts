@@ -45,7 +45,7 @@ export class LevelGenerator {
     }
 
     // 2. Programmatically calculate Available Colors
-    let colorsAvailable: CandyColor[] = [...(config.colorsAvailable || ['red', 'orange', 'yellow', 'green', 'blue'])];
+    const colorsAvailable: CandyColor[] = [...(config.colorsAvailable || ['red', 'orange', 'yellow', 'green', 'blue'])];
     if (tier > 40 && !colorsAvailable.includes('purple')) {
       colorsAvailable.push('purple');
     }

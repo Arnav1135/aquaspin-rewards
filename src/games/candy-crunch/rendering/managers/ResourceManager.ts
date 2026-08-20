@@ -63,7 +63,7 @@ export class ResourceManager {
     const key = `geo_blocker_${blocker}`;
     if (this.geometryCache.has(key)) return this.geometryCache.get(key)!;
     
-    let geo = new THREE.BoxGeometry(0.9, 0.9, 0.4); // default
+    const geo = new THREE.BoxGeometry(0.9, 0.9, 0.4); // default
     this.geometryCache.set(key, geo);
     return geo;
   }

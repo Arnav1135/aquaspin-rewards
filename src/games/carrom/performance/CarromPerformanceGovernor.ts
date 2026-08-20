@@ -47,3 +47,5 @@ export const useCarromPerformance = create<PerformanceState>((set) => ({
     });
   }
 }));
+
+// Phase 3: Track active bodies, VFX budget, Quality Degradation Order

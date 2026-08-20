@@ -26,11 +26,7 @@ export function CarromPostProcessing() {
   const isCinematic = cameraProfile === 'QUEEN' || cameraProfile === 'VICTORY';
 
   const bloom = (
-    <Bloom 
-      luminanceThreshold={1.2} 
-      luminanceSmoothing={0.9} 
-      intensity={0.5} 
-    />
+    <Bloom intensity={0.6} luminanceThreshold={0.8} />
   );
   
   const vignette = (

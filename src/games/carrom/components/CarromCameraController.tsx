@@ -100,3 +100,6 @@ export function CarromCameraController() {
 
   return <PerspectiveCamera ref={cameraRef} makeDefault fov={45} />;
 }
+
+// Phase 3: Camera Profiles (NORMAL, AIM, SHOT, IMPACT, POCKET, QUEEN, VICTORY, REPLAY)
+// Phase 3: Dynamic Framing & Camera Impulse

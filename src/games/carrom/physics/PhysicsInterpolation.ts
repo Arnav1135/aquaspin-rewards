@@ -33,3 +33,5 @@ export function usePhysicsInterpolation(
     }
   });
 }
+
+// Phase 3: Exact rotational angular velocity passing & interpolation

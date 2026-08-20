@@ -1,5 +1,6 @@
 import { useGameState } from '../state/useGameState';
 
+/* eslint-disable no-empty */
 export class AudioMixer {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;

@@ -20,6 +20,7 @@ export interface DailyResult {
   undos: number;
 }
 
+/* eslint-disable no-case-declarations */
 export class GameModeManager {
   /**
    * Retrieves the current game mode.

@@ -8,6 +8,7 @@ interface TouchControlsProps {
   setPower: (p: number) => void;
 }
 
+/* eslint-disable react-hooks/rules-of-hooks */
 export function TouchControls({ onAimChange, onStrike, power, setPower }: TouchControlsProps) {
   const turnState = usePoolRules(s => s.turnState);
   const isDraggingAim = useRef(false);

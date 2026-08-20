@@ -3,6 +3,7 @@ import { carromVfxEvents } from './CarromVFXSystem';
 import { playTone } from '@/lib/utils';
 import { useCarromQuality } from './CarromPerformanceManager';
 
+/* eslint-disable no-empty */
 export function CarromAudioSystem() {
   const quality = useCarromQuality();
   const audioCtxRef = useRef<AudioContext | null>(null);

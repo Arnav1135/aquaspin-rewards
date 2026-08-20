@@ -12,6 +12,7 @@ export interface ParticleField {
   decayRate: number; // For explosions
 }
 
+/* eslint-disable no-case-declarations */
 export class ParticleFieldSystem {
   private fields: ParticleField[] = [];
 

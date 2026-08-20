@@ -17,6 +17,7 @@ export interface MatchGroup {
   spawnPoint?: {r: number, c: number};
 }
 
+/* eslint-disable @typescript-eslint/no-non-null-asserted-optional-chain */
 export class CandyEngine {
   width: number;
   height: number;

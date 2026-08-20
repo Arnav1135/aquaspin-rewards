@@ -48,4 +48,8 @@ export const useCarromPerformance = create<PerformanceState>((set) => ({
   }
 }));
 
-// Phase 3: Track active bodies, VFX budget, Quality Degradation Order
+export class PerformanceGovernor {
+    static checkBudget(activeParticles: number) {
+        return activeParticles < 500; // Limit VFX based on budget
+    }
+}

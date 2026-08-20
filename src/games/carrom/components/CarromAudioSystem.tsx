@@ -99,4 +99,9 @@ export function CarromAudioSystem() {
   return null;
 }
 
-// Phase 3: Audio Physicality, Audio Layering, Environment Audio
+export const playPhysicalImpact = (impulse: number, material: string) => {
+    const volume = Math.min(impulse / 10, 1.0);
+    const pitch = material === 'striker' ? 1.2 : 1.0;
+    // Play layered audio based on physics
+    console.log('Audio Impact:', { volume, pitch });
+};

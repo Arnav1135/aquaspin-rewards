@@ -34,4 +34,9 @@ export function usePhysicsInterpolation(
   });
 }
 
-// Phase 3: Exact rotational angular velocity passing & interpolation
+export const interpolateRotation = (body: any, delta: number) => {
+    if (!body) return;
+    const angVel = body.angVel();
+    // Smooth out rotational jitter
+    body.setRotation({ x: body.rotation().x + angVel.x * delta, y: body.rotation().y + angVel.y * delta, z: body.rotation().z + angVel.z * delta }, true);
+};

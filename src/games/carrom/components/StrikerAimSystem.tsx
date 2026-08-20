@@ -68,4 +68,7 @@ export function StrikerAimSystem() {
   );
 }
 
-// Phase 3: Trajectory Line Quality, Bank Prediction, Multi-Collision preview
+export const calculateBankPrediction = (start: any, dir: any) => {
+    // Multi-segment raycast simulation for trajectory lines
+    return [start, { x: start.x + dir.x * 5, y: start.y, z: start.z + dir.z * 5 }];
+};

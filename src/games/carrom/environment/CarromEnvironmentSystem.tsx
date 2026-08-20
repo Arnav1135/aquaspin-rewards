@@ -4,7 +4,8 @@ import { useCarromStore } from '../state/CarromState';
 
 export type CarromEnvironmentProfile = {
   name: string;
-  preset: "apartment" | "city" | "dawn" | "forest" | "lobby" | "night" | "park" | "studio" | "sunset" | "warehouse";
+  preset?: "apartment" | "city" | "dawn" | "forest" | "lobby" | "night" | "park" | "studio" | "sunset" | "warehouse";
+  files?: string;
   backgroundIntensity: number;
   envMapIntensity: number;
   lightIntensity: number;
@@ -74,7 +75,13 @@ export function useEnvironmentProfile() {
 export function CarromEnvironmentSystem() {
   const profile = useEnvironmentProfile();
   
-  return (
+  return profile.files ? (
+    <Environment 
+      files={profile.files}
+      environmentIntensity={profile.envMapIntensity}
+      background={false}
+    />
+  ) : (
     <Environment 
       preset={profile.preset} 
       environmentIntensity={profile.envMapIntensity}

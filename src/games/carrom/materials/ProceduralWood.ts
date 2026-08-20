@@ -43,6 +43,7 @@ export function createProceduralWoodTexture(): { color: THREE.CanvasTexture, rou
 
     nCtx.beginPath();
     nCtx.strokeStyle = `rgba(150, 150, 255, ${Math.random() * 0.1})`;
+    rCtx.lineWidth = 0.15;
     nCtx.lineWidth = ctx.lineWidth;
 
     if (isKnot) {

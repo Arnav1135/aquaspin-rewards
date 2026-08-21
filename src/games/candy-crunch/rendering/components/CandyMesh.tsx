@@ -1,118 +1,113 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { TileData } from '../../types';
+import { CandyIdentityRegistry } from '../CandyDesignSystem/CandyIdentityRegistry';
+import { CandyMaterialFactory } from '../CandyDesignSystem/CandyMaterialFactory';
 
 interface CandyMeshProps {
   tile: TileData;
 }
 
-const colorHexMap: Record<string, number> = {
-  red: 0xef4444,
-  orange: 0xf97316,
-  yellow: 0xeab308,
-  green: 0x22c55e,
-  blue: 0x3b82f6,
-  purple: 0xa855f7,
-};
-
 export const CandyMesh: React.FC<CandyMeshProps> = ({ tile }) => {
-  const colorHex = colorHexMap[tile.color] || 0xef4444;
-
-  const mainMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: colorHex,
-    metalness: 0.1,
-    roughness: 0.15,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.1,
-    transmission: 0.4,
-    ior: 1.5,
-    thickness: 0.8,
-  }), [colorHex]);
-
-  const opaqueMat = useMemo(() => new THREE.MeshPhysicalMaterial({
-    color: colorHex,
-    metalness: 0.1,
-    roughness: 0.15,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.1,
-    transmission: 0.0,
-  }), [colorHex]);
-
-  const stripeMat = useMemo(() => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }), []);
+  const meshGroupRef = useRef<THREE.Group>(null);
   
+  // Phase 1: Retrieve Unique Candy Identity
+  const identity = useMemo(() => CandyIdentityRegistry.getIdentityForColor(tile.color), [tile.color]);
+
+  // Phase 2: Physically Based Material System
+  const mainMat = useMemo(() => {
+    return CandyMaterialFactory.createMaterial(identity.materialProfile, colorHexMap[tile.color] || 0xef4444);
+  }, [identity, tile.color]);
+
+  // Procedural Phase 3 offsets
+  const timeOffset = useMemo(() => Math.random() * Math.PI * 2, []);
+
+  // Phase 3: CANDY BREATHING SYSTEM (Procedural Idle Motion)
+  useFrame((state) => {
+    if (!meshGroupRef.current) return;
+    
+    // Only apply breathing if not currently being animated by SWAP/FALL tweens
+    // A more advanced integration checks engine states, but here we add base sine waves
+    const t = state.clock.getElapsedTime() + timeOffset;
+    
+    switch (identity.animationProfile.idleMotion) {
+      case 'breathe':
+        meshGroupRef.current.scale.x = 1.0 + Math.sin(t * 2) * 0.03;
+        meshGroupRef.current.scale.y = 1.0 - Math.sin(t * 2) * 0.03;
+        break;
+      case 'wobble':
+        meshGroupRef.current.rotation.z = Math.sin(t * 3) * 0.05;
+        meshGroupRef.current.position.y = Math.cos(t * 4) * 0.02;
+        break;
+      case 'spin':
+        meshGroupRef.current.rotation.y = Math.sin(t) * 0.1;
+        break;
+      case 'light_sweep':
+        // Highlight movement via slight rotation
+        meshGroupRef.current.rotation.x = Math.sin(t * 1.5) * 0.05;
+        meshGroupRef.current.rotation.y = Math.cos(t * 1.5) * 0.05;
+        break;
+      case 'sparkle':
+        meshGroupRef.current.position.y = Math.sin(t * 5) * 0.015;
+        meshGroupRef.current.scale.setScalar(1.0 + Math.sin(t * 4) * 0.015);
+        break;
+      default:
+        break;
+    }
+  });
+
   const renderShape = () => {
-    switch (tile.shape) {
+    const { proportions, shapeFamily } = identity;
+
+    switch (shapeFamily) {
       case 'fish':
         return (
-          <group>
-            <mesh material={mainMat} scale={[1.2, 0.7, 0.5]}>
-              <sphereGeometry args={[0.38, 16, 16]} />
-              <mesh material={stripeMat} position={[-0.18, 0, 0]} rotation={[Math.PI / 4, Math.PI / 6, 0]}>
-                <torusGeometry args={[0.28, 0.03, 8, 24]} />
-              </mesh>
-              <mesh material={stripeMat} position={[0, 0, 0]} rotation={[Math.PI / 4, Math.PI / 6, 0]}>
-                <torusGeometry args={[0.28, 0.03, 8, 24]} />
-              </mesh>
-              <mesh material={stripeMat} position={[0.18, 0, 0]} rotation={[Math.PI / 4, Math.PI / 6, 0]}>
-                <torusGeometry args={[0.28, 0.03, 8, 24]} />
-              </mesh>
+          <group scale={[proportions.width, proportions.height, proportions.depth]}>
+            <mesh material={mainMat}>
+              <sphereGeometry args={[0.38, 32, 32]} />
             </mesh>
-            <mesh material={opaqueMat} position={[-0.45, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-              <coneGeometry args={[0.25, 0.4, 12]} />
+            <mesh material={mainMat} position={[-0.45, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+              <coneGeometry args={[0.25, 0.4, 16]} />
             </mesh>
           </group>
         );
       case 'jelly-bean':
         return (
-          <mesh material={mainMat} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.28, 0.18, 16, 32, Math.PI * 0.8]} />
+          <mesh material={mainMat} rotation={[Math.PI / 2, 0, 0]} scale={[proportions.width, proportions.height, proportions.depth]}>
+            <torusGeometry args={[0.28, 0.18, 24, 48, Math.PI * 0.8]} />
           </mesh>
         );
       case 'lozenge':
         return (
-          <mesh material={mainMat}>
-            <boxGeometry args={[0.65, 0.45, 0.35]} />
+          <mesh material={mainMat} scale={[proportions.width, proportions.height, proportions.depth]}>
+            <boxGeometry args={[0.65, 0.45, 0.35, 4, 4, 4]} />
           </mesh>
         );
       case 'teardrop':
         return (
-          <mesh material={mainMat} rotation={[Math.PI, 0, 0]}>
-            <coneGeometry args={[0.38, 0.7, 16]} />
+          <mesh material={mainMat} rotation={[Math.PI, 0, 0]} scale={[proportions.width, proportions.height, proportions.depth]}>
+            <coneGeometry args={[0.38, 0.7, 32, 1, false, 0, Math.PI * 2]} />
           </mesh>
         );
       case 'square':
         return (
-          <mesh material={mainMat}>
-            <boxGeometry args={[0.55, 0.55, 0.35]} />
+          <mesh material={mainMat} scale={[proportions.width, proportions.height, proportions.depth]}>
+            <boxGeometry args={[0.55, 0.55, 0.35, 8, 8, 8]} />
           </mesh>
         );
-      case 'cluster':
-        return (
-          <group>
-            {[0, 1, 2, 3, 4, 5].map((i) => {
-              const angle = (i * Math.PI) / 3;
-              return (
-                <mesh key={i} material={mainMat} position={[Math.cos(angle) * 0.22, Math.sin(angle) * 0.22, 0]}>
-                  <sphereGeometry args={[0.18, 12, 12]} />
-                </mesh>
-              );
-            })}
-            <mesh material={mainMat}>
-              <sphereGeometry args={[0.22, 12, 12]} />
-            </mesh>
-          </group>
-        );
+      case 'circle':
       default:
         return (
-          <mesh material={mainMat}>
-            <sphereGeometry args={[0.38, 20, 20]} />
+          <mesh material={mainMat} scale={[proportions.width, proportions.height, proportions.depth]}>
+            <sphereGeometry args={[0.4, 32, 32]} />
           </mesh>
         );
     }
   };
 
   return (
-    <group>
+    <group ref={meshGroupRef}>
       {/* Jelly Underlay */}
       {tile.jellyLayers > 0 && (
         <mesh position={[0, 0, -0.25]}>
@@ -121,36 +116,28 @@ export const CandyMesh: React.FC<CandyMeshProps> = ({ tile }) => {
         </mesh>
       )}
 
-      {/* Main Candy */}
+      {/* Main Premium Geometry */}
       {renderShape()}
 
       {/* Special Overlays */}
       {(tile.special === 'striped-h' || tile.special === 'striped-v') && (
         <mesh rotation={tile.special === 'striped-v' ? [0, 0, Math.PI / 2] : [0, 0, 0]}>
-          <cylinderGeometry args={[0.42, 0.42, 0.08, 16]} />
-          <meshBasicMaterial color={0xffffff} />
+          <cylinderGeometry args={[0.45, 0.45, 0.08, 32]} />
+          <meshStandardMaterial color={0xffffff} emissive={0xffffff} emissiveIntensity={0.5} />
         </mesh>
       )}
       
       {tile.special === 'wrapped' && (
         <mesh>
           <boxGeometry args={[0.75, 0.75, 0.5]} />
-          <meshPhysicalMaterial color={0xffffff} transmission={0.85} roughness={0.1} clearcoat={1.0} transparent opacity={0.7} />
+          <meshPhysicalMaterial color={0xffffff} transmission={0.95} roughness={0.0} clearcoat={1.0} transparent opacity={0.7} />
         </mesh>
       )}
 
       {tile.special === 'color-bomb' && (
         <mesh>
-          <sphereGeometry args={[0.42, 20, 20]} />
-          <meshStandardMaterial color={0x3d2314} roughness={0.4} />
-          {/* Simple sprinkles via random mapping could be added, skipping explicit meshes for performance */}
-        </mesh>
-      )}
-
-      {tile.isWrappedCellophane && (
-        <mesh rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.45, 0.45, 0.8, 12]} />
-          <meshPhysicalMaterial color={0xffffff} transmission={0.9} transparent opacity={0.6} />
+          <sphereGeometry args={[0.42, 32, 32]} />
+          <meshStandardMaterial color={0x221100} roughness={0.2} metalness={0.8} />
         </mesh>
       )}
 
@@ -169,4 +156,13 @@ export const CandyMesh: React.FC<CandyMeshProps> = ({ tile }) => {
       )}
     </group>
   );
+};
+
+const colorHexMap: Record<string, number> = {
+  red: 0xff1133,
+  orange: 0xff7700,
+  yellow: 0xffcc00,
+  green: 0x33ff66,
+  blue: 0x2266ff,
+  purple: 0xaa22ff,
 };

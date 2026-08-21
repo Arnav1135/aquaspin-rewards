@@ -1,8 +1,9 @@
+import { interactionRegistry } from './SpecialInteractionRegistry';
 import { RuleEvent } from '../interfaces';
 import { EventBus } from '../RulesEngine';
 import { Match3Engine } from '../../Match3Engine';
 import { TileData } from '../../../types';
-import { interactionRegistry } from './SpecialInteractionRegistry';
+// removed
 
 export class SwapMechanic {
   constructor(private eventBus: EventBus) {
@@ -67,3 +68,4 @@ export class SwapMechanic {
     }
   }
 }
+

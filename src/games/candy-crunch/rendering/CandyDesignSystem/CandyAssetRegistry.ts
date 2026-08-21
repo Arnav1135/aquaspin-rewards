@@ -15,7 +15,7 @@ export class CandyAssetRegistry {
     geo.scale(identity.proportions.width, identity.proportions.height, identity.proportions.depth);
     
     // Material from identity
-    const mat = CandyMaterialFactory.getMaterial(identity.materialProfile, cp);
+    const mat = CandyMaterialFactory.createMaterial(identity.materialProfile, cp);
     
     const mesh = new THREE.Mesh(geo, mat);
     mesh.castShadow = true;
@@ -31,7 +31,7 @@ export class CandyAssetRegistry {
     const identity = CandyIdentityRegistry.getIdentityForColor(color);
 
     if (special === 'striped-h' || special === 'striped-v') {
-      const ringMat = CandyMaterialFactory.getMaterial('STRIPE', cp);
+      const ringMat = CandyMaterialFactory.createMaterial('STRIPE', cp);
       // Stripe scales dynamically with the base shape's proportions
       const baseR = 0.42 * Math.max(identity.proportions.width, identity.proportions.depth);
       const ringGeo = new THREE.CylinderGeometry(baseR, baseR, 0.08, 16);
@@ -45,13 +45,13 @@ export class CandyAssetRegistry {
         0.75 * identity.proportions.height, 
         0.5 * identity.proportions.depth
       );
-      const wrapMat = CandyMaterialFactory.getMaterial('WRAPPER', cp);
+      const wrapMat = CandyMaterialFactory.createMaterial('WRAPPER', cp);
       group.add(new THREE.Mesh(wrapGeo, wrapMat));
     } else if (special === 'color-bomb') {
       group.clear(); // Wipe base for bomb
       
       const bombGeo = new THREE.SphereGeometry(0.42, 20, 20);
-      const bombMat = CandyMaterialFactory.getMaterial('CHOCOLATE', cp);
+      const bombMat = CandyMaterialFactory.createMaterial('CHOCOLATE', cp);
       const bomb = new THREE.Mesh(bombGeo, bombMat);
 
       const sprinkleColors = [
@@ -95,7 +95,7 @@ export class CandyAssetRegistry {
         const tailGeo = CandyShapeFactory.getFishTailGeometry().clone();
         tailGeo.scale(identity.proportions.width, identity.proportions.height, identity.proportions.depth);
         const cp = CANDY_COLOR_PALETTE[color] || CANDY_COLOR_PALETTE.red;
-        const tailMat = CandyMaterialFactory.getMaterial(identity.materialProfile, cp);
+        const tailMat = CandyMaterialFactory.createMaterial(identity.materialProfile, cp);
         const tail = new THREE.Mesh(tailGeo, tailMat);
         group.add(tail);
       }
@@ -112,7 +112,7 @@ export class CandyAssetRegistry {
         12
       );
       wrapGeo.rotateZ(Math.PI / 2);
-      const wrapMat = CandyMaterialFactory.getMaterial('WRAPPER', cp);
+      const wrapMat = CandyMaterialFactory.createMaterial('WRAPPER', cp);
       group.add(new THREE.Mesh(wrapGeo, wrapMat));
     }
 

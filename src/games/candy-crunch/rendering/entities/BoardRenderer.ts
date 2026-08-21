@@ -1,24 +1,37 @@
-// Phase 13: Board Depth
-import React from 'react';
 import * as THREE from 'three';
 
-export const BoardRenderer = () => {
-  return (
-    <group position={[0,0,-1]}>
-      {/* Deep Shadow Layer */}
-      <mesh position={[0,0,-0.5]}>
-         <boxGeometry args={[10, 10, 1]} />
-         <meshStandardMaterial color={0x0a0a0a} roughness={0.9} />
-      </mesh>
-      
-      {/* 3D Contact Bevel Grid */}
-      <gridHelper args={[10, 10, 0x333333, 0x111111]} rotation={[Math.PI/2, 0, 0]} />
-      
-      {/* Parallax Background Glass */}
-      <mesh position={[0,0,-1.5]}>
-         <planeGeometry args={[15, 15]} />
-         <meshPhysicalMaterial color={0x110033} transmission={0.9} roughness={0.3} clearcoat={1.0} />
-      </mesh>
-    </group>
-  )
+export class BoardRenderer {
+  private boardGroup: THREE.Group;
+
+  constructor(scene?: THREE.Scene) {
+    this.boardGroup = new THREE.Group();
+    this.boardGroup.position.set(0, 0, -1);
+    
+    // Deep Shadow Layer
+    const shadowMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(10, 10, 1),
+      new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9 })
+    );
+    shadowMesh.position.set(0, 0, -0.5);
+    this.boardGroup.add(shadowMesh);
+    
+    // 3D Contact Bevel Grid
+    const gridHelper = new THREE.GridHelper(10, 10, 0x333333, 0x111111);
+    gridHelper.rotation.x = Math.PI / 2;
+    this.boardGroup.add(gridHelper);
+    
+    // Parallax Background Glass
+    const glassMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(15, 15),
+      new THREE.MeshPhysicalMaterial({ color: 0x110033, transmission: 0.9, roughness: 0.3, clearcoat: 1.0 })
+    );
+    glassMesh.position.set(0, 0, -1.5);
+    this.boardGroup.add(glassMesh);
+
+    if (scene) scene.add(this.boardGroup);
+  }
+
+  public renderBoard(rows: number, cols: number) {}
+  public getGroup() { return this.boardGroup; }
+  public rebuildBoardBackground(r: number, c: number) {}
 }

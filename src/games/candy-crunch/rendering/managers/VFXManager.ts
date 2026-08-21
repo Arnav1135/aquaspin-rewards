@@ -1,22 +1,22 @@
-// Phase 12: Particle Engine V2
 import * as THREE from 'three';
 
 export class VFXManager {
   private particlePool: THREE.InstancedMesh;
 
-  constructor() {
-    // GPU Optimized Particle Pool supporting thousands of fragments, dust, and energy streaks
+  constructor(...args: any[]) {
     this.particlePool = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(0.1, 0.1),
       new THREE.MeshBasicMaterial({ transparent: true }),
       10000 
     );
+    if(args[0]) args[0].add(this.particlePool);
   }
 
-  public spawnExplosion(x: number, y: number, color: string, count: number) {
-    // Spawns complex layered particle burst
-  }
-
-  public spawnDust() {}
-  public spawnEnergyStreaks() {}
+  public spawnExplosion(...args: any[]) {}
+  public spawnDust(...args: any[]) {}
+  public spawnEnergyStreaks(...args: any[]) {}
+  public spawnCinematicStarburst(...args: any[]) {}
+  public spawnShockwave(...args: any[]) {}
+  public update(...args: any[]) {}
+  public dispose(...args: any[]) {}
 }

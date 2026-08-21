@@ -17,6 +17,9 @@ export class CandyDeformationProfile {
     CRYSTAL: { squashFactor: 0.95, stretchFactor: 1.05, wobbleDecay: 25, settleDuration: 0.08 },
     WRAPPER: { squashFactor: 0.75, stretchFactor: 1.25, wobbleDecay: 10, settleDuration: 0.25 },
     STRIPE: { squashFactor: 0.8, stretchFactor: 1.2, wobbleDecay: 14, settleDuration: 0.18 },
+    GLASS: { squashFactor: 1, stretchFactor: 1, wobbleDecay: 1, settleDuration: 1 },
+    CANDY: { squashFactor: 1, stretchFactor: 1, wobbleDecay: 1, settleDuration: 1 },
+    GEM: { squashFactor: 1, stretchFactor: 1, wobbleDecay: 1, settleDuration: 1 },
   };
 
   public static getConfig(type: CandyMaterialType): DeformationConfig {

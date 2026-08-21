@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 
 export class SpecialComboCinematics {
+  constructor(...args: any[]) {}
   public async playMegaCombo(comboType: string, row: number, col: number) {
     switch (comboType) {
       case 'STRIPED_WRAPPED':

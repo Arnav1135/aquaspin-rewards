@@ -1,4 +1,4 @@
-export type CandyColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
+export type CandyColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'none';
 
 export type CandyShape = 'fish' | 'jelly-bean' | 'lozenge' | 'teardrop' | 'square' | 'circle' | 'cluster';
 
@@ -10,7 +10,10 @@ export type SpecialType =
   | 'color-bomb'
   | 'jelly-fish'
   | 'coconut-wheel'
-  | 'lucky-candy';
+  | 'lucky-candy'
+  | 'galaxy'
+  | 'rainbow-bomb'
+  | 'lightning';
 
 export type BlockerType =
   | 'none'
@@ -105,4 +108,5 @@ export interface LevelValidationResult {
   initialLegalMoves: number;
   config: LevelConfig;
 }
+
 

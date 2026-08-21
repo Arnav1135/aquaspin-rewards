@@ -42,9 +42,22 @@ export class CascadeAnimationController {
     this.currentCascadeStep = cascadeDepth;
     this.currentPhase = 'MATCH_DETECTED';
 
-    // Camera feedback based on cascade depth
+    // Phase 7: Cascade Cinematics - Scale intensity with cascade depth
+    const intensityMultiplier = Math.min(cascadeDepth, 10);
+    const isLegendary = cascadeDepth >= 10;
+    
+    // Dynamic Camera Response
     if (cascadeDepth > 1) {
-      this.cameraManager.punchCamera(0.2 * Math.min(cascadeDepth, 5));
+      this.cameraManager.punchCamera(0.2 * intensityMultiplier);
+    }
+    
+    // Dynamic Environment Reaction
+    if (isLegendary) {
+      this.environmentManager.triggerLightingReaction('LEGENDARY_COMBO');
+      // trigger legendary audio here
+    } else if (cascadeDepth >= 5) {
+      this.environmentManager.triggerLightingReaction('MEGA_COMBO');
+    } else if (cascadeDepth > 1) {
       this.environmentManager.triggerLightingReaction('COMBO');
     } else {
       this.environmentManager.triggerLightingReaction('MATCH');
@@ -55,13 +68,15 @@ export class CascadeAnimationController {
       const meshGroup = tileMeshMap.get(tile.id);
       if (meshGroup) {
         // Staggered destruction pop based on index
-        const delay = index * 0.03;
+        const delay = index * (0.05 / Math.max(1, cascadeDepth * 0.5)); // Faster stagger on high cascades
         
-        this.animationEngine.to(meshGroup.scale, 'x', 1.4, 0.12, undefined, delay, () => {
-          this.vfxManager.spawnExplosion(meshGroup.position.x, meshGroup.position.y, tile.color, 18);
+        this.animationEngine.to(meshGroup.scale, 'x', 1.4 + (intensityMultiplier * 0.05), 0.12, undefined, delay, () => {
+          // Multiply particles based on cascade
+          const particles = 15 + (intensityMultiplier * 5);
+          this.vfxManager.spawnExplosion(meshGroup.position.x, meshGroup.position.y, tile.color, particles);
         });
-        this.animationEngine.to(meshGroup.scale, 'y', 1.4, 0.12, undefined, delay);
-        this.animationEngine.to(meshGroup.scale, 'z', 1.4, 0.12, undefined, delay);
+        this.animationEngine.to(meshGroup.scale, 'y', 1.4 + (intensityMultiplier * 0.05), 0.12, undefined, delay);
+        this.animationEngine.to(meshGroup.scale, 'z', 1.4 + (intensityMultiplier * 0.05), 0.12, undefined, delay);
       }
     });
   }
@@ -70,9 +85,12 @@ export class CascadeAnimationController {
     this.currentPhase = 'IDLE';
     this.currentCascadeStep = 0;
 
-    if (cascadeCount >= 3) {
-      this.cameraManager.punchCamera(0.8);
-      this.environmentManager.triggerLightingReaction('MEGA_COMBO');
+    if (cascadeCount >= 10) {
+      this.cameraManager.punchCamera(1.5);
+    } else if (cascadeCount >= 5) {
+      this.cameraManager.punchCamera(1.0);
+    } else if (cascadeCount >= 3) {
+      this.cameraManager.punchCamera(0.6);
     }
   }
 

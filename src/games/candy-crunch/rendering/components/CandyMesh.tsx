@@ -20,15 +20,11 @@ export const CandyMesh: React.FC<CandyMeshProps> = ({ tile }) => {
     return CandyMaterialFactory.createMaterial(identity.materialProfile, colorHexMap[tile.color] || 0xef4444);
   }, [identity, tile.color]);
 
-  // Procedural Phase 3 offsets
   const timeOffset = useMemo(() => Math.random() * Math.PI * 2, []);
 
   // Phase 3: CANDY BREATHING SYSTEM (Procedural Idle Motion)
   useFrame((state) => {
     if (!meshGroupRef.current) return;
-    
-    // Only apply breathing if not currently being animated by SWAP/FALL tweens
-    // A more advanced integration checks engine states, but here we add base sine waves
     const t = state.clock.getElapsedTime() + timeOffset;
     
     switch (identity.animationProfile.idleMotion) {
@@ -44,7 +40,6 @@ export const CandyMesh: React.FC<CandyMeshProps> = ({ tile }) => {
         meshGroupRef.current.rotation.y = Math.sin(t) * 0.1;
         break;
       case 'light_sweep':
-        // Highlight movement via slight rotation
         meshGroupRef.current.rotation.x = Math.sin(t * 1.5) * 0.05;
         meshGroupRef.current.rotation.y = Math.cos(t * 1.5) * 0.05;
         break;
@@ -116,10 +111,10 @@ export const CandyMesh: React.FC<CandyMeshProps> = ({ tile }) => {
         </mesh>
       )}
 
-      {/* Main Premium Geometry */}
-      {renderShape()}
+      {/* Main Premium Geometry (Hide if Galaxy/Color-Bomb since they replace the entire shape) */}
+      {(tile.special !== 'color-bomb' && tile.special !== 'galaxy' && tile.special !== 'rainbow-bomb') && renderShape()}
 
-      {/* Special Overlays */}
+      {/* Special Overlays - Phase 8 */}
       {(tile.special === 'striped-h' || tile.special === 'striped-v') && (
         <mesh rotation={tile.special === 'striped-v' ? [0, 0, Math.PI / 2] : [0, 0, 0]}>
           <cylinderGeometry args={[0.45, 0.45, 0.08, 32]} />
@@ -133,11 +128,36 @@ export const CandyMesh: React.FC<CandyMeshProps> = ({ tile }) => {
           <meshPhysicalMaterial color={0xffffff} transmission={0.95} roughness={0.0} clearcoat={1.0} transparent opacity={0.7} />
         </mesh>
       )}
+      
+      {tile.special === 'lightning' && (
+        <mesh position={[0, 0, 0.3]}>
+          <planeGeometry args={[0.8, 0.8]} />
+          <meshBasicMaterial color={0xffff00} transparent opacity={0.9} />
+          {/* Realistically, this would be a custom texture or lightning shape */}
+        </mesh>
+      )}
 
       {tile.special === 'color-bomb' && (
         <mesh>
-          <sphereGeometry args={[0.42, 32, 32]} />
+          <sphereGeometry args={[0.45, 32, 32]} />
           <meshStandardMaterial color={0x221100} roughness={0.2} metalness={0.8} />
+          {/* Chocolate base */}
+        </mesh>
+      )}
+
+      {tile.special === 'rainbow-bomb' && (
+        <mesh>
+          <sphereGeometry args={[0.5, 32, 32]} />
+          <meshPhysicalMaterial color={0xffffff} transmission={0.5} iridescence={1.0} roughness={0.05} />
+          <pointLight color={0xffffff} distance={2} intensity={2} />
+        </mesh>
+      )}
+      
+      {tile.special === 'galaxy' && (
+        <mesh>
+          <torusKnotGeometry args={[0.3, 0.1, 64, 8]} />
+          <meshStandardMaterial color={0x110033} emissive={0xaa22ff} emissiveIntensity={2.0} />
+          <pointLight color={0xaa22ff} distance={3} intensity={5} />
         </mesh>
       )}
 

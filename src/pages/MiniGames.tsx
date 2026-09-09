@@ -142,6 +142,7 @@ const AirHockey3DGame = lazy(() =>
     default: m.AirHockey3DGame,
   })),
 );
+const CarromApp = lazy(() => import("@/games/carrom/CarromApp"));
 
 const Basketball3DGame = lazy(() =>
   import("@/components/games/Basketball3DGame").then((m) => ({
@@ -246,6 +247,8 @@ export function MiniGames() {
     if (!key) return null;
     const p = { onClose: close };
     switch (key) {
+      case "carrom":
+        return <CarromApp />;
       case "airhockey3d":
         return <AirHockey3DGame {...p} />;
 

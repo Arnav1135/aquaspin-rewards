@@ -1,5 +1,17 @@
 [
   {
+    "key": "carrom",
+    "title": "Carrom 3D",
+    "emoji": "🎯",
+    "category": "Board",
+    "reward": "High Scores",
+    "difficulty": "Hard",
+    "color": "#F59E0B",
+    "desc": "Realistic 3D Carrom board game with physics.",
+    "thumbnail": "/thumbnails/carrom.jpg",
+    "thumbnailFit": "cover"
+  },
+  {
     "title": "Mines",
     "emoji": "💣",
     "category": "Casino",

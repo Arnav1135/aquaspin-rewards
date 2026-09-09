@@ -100,13 +100,3 @@ export function CarromCameraController() {
 
   return <PerspectiveCamera ref={cameraRef} makeDefault fov={45} />;
 }
-
-  const cameraState = useCarromStore((state: any) => state.cameraState);
-  const handleCameraProfile = () => {
-    switch(cameraState?.profile) {
-      case 'AIM': return { fov: 40, pos: [0, 4, 3] };
-      case 'QUEEN': return { fov: 35, pos: [0, 2, 0], focus: 'queen' };
-      default: return { fov: 50, pos: [0, 6, 0] };
-    }
-  };
-// Phase 3: Dynamic Framing & Camera Impulse

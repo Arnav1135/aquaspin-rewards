@@ -142,9 +142,7 @@ const AirHockey3DGame = lazy(() =>
     default: m.AirHockey3DGame,
   })),
 );
-const WaterDropApp = lazy(() =>
-  import("@/games/water-drop-challenge/WaterDropApp")
-);
+
 const Basketball3DGame = lazy(() =>
   import("@/components/games/Basketball3DGame").then((m) => ({
     default: m.Basketball3DGame,
@@ -250,8 +248,7 @@ export function MiniGames() {
     switch (key) {
       case "airhockey3d":
         return <AirHockey3DGame {...p} />;
-      case "waterdrop":
-        return <WaterDropApp />;
+
       case "basketball3d":
         return <Basketball3DGame {...p} />;
       case "bowling3d":

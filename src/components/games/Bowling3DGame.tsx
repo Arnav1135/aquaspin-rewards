@@ -21,15 +21,15 @@ function Pin({ position, index }: { position: [number, number, number], index: n
       <group>
         <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[0.08, 0.2, 0.8, 16]} />
-          <meshStandardMaterial color="#f5f7fb" metalness={0.1} roughness={0.1} />
+          <meshPhysicalMaterial color="#ffffff" metalness={0.1} roughness={0.1} clearcoat={1.0} clearcoatRoughness={0.05} />
         </mesh>
         <mesh position={[0, 0.8, 0]} castShadow receiveShadow>
           <sphereGeometry args={[0.15, 16, 16]} />
-          <meshStandardMaterial color="#f5f7fb" metalness={0.1} roughness={0.1} />
+          <meshPhysicalMaterial color="#ffffff" metalness={0.1} roughness={0.1} clearcoat={1.0} clearcoatRoughness={0.05} />
         </mesh>
         <mesh position={[0, 0.65, 0]}>
           <torusGeometry args={[0.12, 0.03, 8, 16]} />
-          <meshStandardMaterial color="#e94b4b" emissive="#7d1111" emissiveIntensity={0.5} />
+          <meshPhysicalMaterial color="#e94b4b" emissive="#7d1111" emissiveIntensity={0.5} clearcoat={1.0} />
         </mesh>
       </group>
     </RigidBody>
@@ -43,7 +43,7 @@ function BowlingLane() {
       <RigidBody type="fixed" restitution={0.1} friction={0.05}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -5]} receiveShadow>
           <planeGeometry args={[4, 20]} />
-          <meshStandardMaterial color="#d39a5e" metalness={0.2} roughness={0.1} />
+          <meshPhysicalMaterial color="#d39a5e" metalness={0.1} roughness={0.1} clearcoat={1.0} clearcoatRoughness={0.05} />
         </mesh>
       </RigidBody>
       
@@ -51,11 +51,11 @@ function BowlingLane() {
       <RigidBody type="fixed" restitution={0} friction={0.5}>
         <mesh position={[-2.3, -0.1, -5]} receiveShadow>
           <boxGeometry args={[0.6, 0.2, 20]} />
-          <meshStandardMaterial color="#222" metalness={0.5} roughness={0.5} />
+          <meshPhysicalMaterial color="#111" metalness={0.5} roughness={0.6} />
         </mesh>
         <mesh position={[2.3, -0.1, -5]} receiveShadow>
           <boxGeometry args={[0.6, 0.2, 20]} />
-          <meshStandardMaterial color="#222" metalness={0.5} roughness={0.5} />
+          <meshPhysicalMaterial color="#111" metalness={0.5} roughness={0.6} />
         </mesh>
       </RigidBody>
 
@@ -63,11 +63,11 @@ function BowlingLane() {
       <RigidBody type="fixed" restitution={0.5} friction={0}>
         <mesh position={[-2.7, 0.2, -5]}>
           <boxGeometry args={[0.2, 0.6, 20]} />
-          <meshStandardMaterial color="#445" metalness={0.5} roughness={0.2} />
+          <meshPhysicalMaterial color="#445" metalness={0.5} roughness={0.2} clearcoat={0.5} />
         </mesh>
         <mesh position={[2.7, 0.2, -5]}>
           <boxGeometry args={[0.2, 0.6, 20]} />
-          <meshStandardMaterial color="#445" metalness={0.5} roughness={0.2} />
+          <meshPhysicalMaterial color="#445" metalness={0.5} roughness={0.2} clearcoat={0.5} />
         </mesh>
       </RigidBody>
       
@@ -75,7 +75,7 @@ function BowlingLane() {
       <RigidBody type="fixed" restitution={0.2} friction={0.5}>
         <mesh position={[0, 1, -15.5]}>
           <boxGeometry args={[6, 2, 1]} />
-          <meshStandardMaterial color="#112" metalness={0.5} roughness={0.5} />
+          <meshPhysicalMaterial color="#112" metalness={0.5} roughness={0.5} />
         </mesh>
       </RigidBody>
     </group>
@@ -115,7 +115,7 @@ function BowlingBall({ rolling, power, spin, onFinish }: { rolling: boolean, pow
     >
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[0.3, 32, 32]} />
-        <meshStandardMaterial color="#17233a" metalness={0.8} roughness={0.1} emissive="#263e72" emissiveIntensity={0.2} />
+        <meshPhysicalMaterial color="#17233a" metalness={0.9} roughness={0.05} emissive="#0d1b38" emissiveIntensity={0.2} clearcoat={1.0} clearcoatRoughness={0.05} />
       </mesh>
     </RigidBody>
   );

@@ -1,7 +1,8 @@
 import { ReactNode, useMemo, Suspense } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom, Vignette, ToneMapping } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, ToneMapping, SSAO, DepthOfField, ChromaticAberration, BrightnessContrast, HueSaturation } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import { PerformanceMonitor, Preload } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { LightingSystem } from './LightingSystem';
@@ -38,7 +39,7 @@ export function AquaSpinEngine({
     return typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio) : 1;
   }, [quality]);
 
-  const shadowMapSize = quality === 'high' ? 2048 : (quality === 'medium' ? 1024 : 512);
+  const shadowMapSize = quality === 'high' ? 4096 : (quality === 'medium' ? 2048 : 512);
 
   return (
     <div className="absolute inset-0 bg-black overflow-hidden select-none touch-none">
@@ -68,6 +69,36 @@ export function AquaSpinEngine({
 
           {enablePostProcessing && (
             <EffectComposer multisampling={quality === 'high' ? 4 : 0}>
+              <ToneMapping 
+                blendFunction={BlendFunction.NORMAL} 
+                adaptive={true} 
+                resolution={256}
+                middleGrey={0.6}
+                maxLuminance={16.0}
+                averageLuminance={1.0}
+                adaptationRate={1.0}
+              />
+              <BrightnessContrast brightness={0.02} contrast={0.1} />
+              <HueSaturation hue={0} saturation={0.05} />
+              
+              {quality === 'high' ? (
+                <SSAO 
+                  samples={16} 
+                  radius={0.1} 
+                  intensity={20} 
+                  luminanceInfluence={0.6} 
+                  color={new THREE.Color("black") as any}
+                  worldDistanceThreshold={0.5}
+                  worldDistanceFalloff={0.1}
+                  worldProximityThreshold={0.1}
+                  worldProximityFalloff={0.1}
+                />
+              ) : <></>}
+              
+              {cameraMode === 'cinematic' && quality === 'high' ? (
+                <DepthOfField focusDistance={0} focalLength={0.04} bokehScale={3} height={480} />
+              ) : <></>}
+
               <Bloom 
                 intensity={bloomIntensity} 
                 luminanceThreshold={0.6} 

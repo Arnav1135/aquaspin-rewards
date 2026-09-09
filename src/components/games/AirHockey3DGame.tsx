@@ -24,7 +24,16 @@ function AirHockeyTable() {
       {/* Surface */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
         <planeGeometry args={[TABLE_W, TABLE_H]} />
-        <meshStandardMaterial color="#051224" metalness={0.6} roughness={0.2} emissive="#020a14" emissiveIntensity={0.5} />
+        <meshPhysicalMaterial 
+          color="#051224" 
+          metalness={0.7} 
+          roughness={0.1} 
+          emissive="#020a14" 
+          emissiveIntensity={0.5} 
+          clearcoat={1.0} 
+          clearcoatRoughness={0.05} 
+          envMapIntensity={2.0} 
+        />
       </mesh>
 
       {/* Center Line and Circle */}
@@ -97,11 +106,26 @@ function Paddle({ position, color, isPlayer, rigidBodyRef }: { position: [number
       <group>
         <mesh position={[0, 0.3, 0]} castShadow>
           <cylinderGeometry args={[PADDLE_R, PADDLE_R * 1.1, 0.6, 64]} />
-          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.8} metalness={0.8} roughness={0.1} />
+          <meshPhysicalMaterial 
+            color={color} 
+            emissive={color} 
+            emissiveIntensity={0.8} 
+            metalness={0.9} 
+            roughness={0.05}
+            clearcoat={1.0}
+            clearcoatRoughness={0.1}
+            envMapIntensity={2.5}
+          />
         </mesh>
         <mesh position={[0, 0.65, 0]} castShadow>
           <sphereGeometry args={[PADDLE_R * 0.6, 32, 32]} />
-          <meshStandardMaterial color="#ffffff" metalness={0.9} roughness={0.1} />
+          <meshPhysicalMaterial 
+            color="#ffffff" 
+            metalness={0.95} 
+            roughness={0.05} 
+            clearcoat={1.0}
+            envMapIntensity={3.0}
+          />
         </mesh>
       </group>
     </RigidBody>
@@ -146,8 +170,18 @@ function Puck({ onGoal }: { onGoal: (isPlayer: boolean) => void }) {
     >
       <mesh castShadow receiveShadow position={[0, 0.1, 0]}>
         <cylinderGeometry args={[PUCK_R, PUCK_R, 0.2, 64]} />
-        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={1.5} metalness={0.5} roughness={0.1} />
-        <pointLight color="#ffffff" intensity={2} distance={3} />
+        <meshPhysicalMaterial 
+          color="#ffffff" 
+          emissive="#ffffff" 
+          emissiveIntensity={2.5} 
+          metalness={0.8} 
+          roughness={0.05} 
+          clearcoat={1.0}
+          transmission={0.8}
+          thickness={0.5}
+          ior={1.5}
+        />
+        <pointLight color="#ffffff" intensity={3} distance={5} decay={2} />
       </mesh>
     </RigidBody>
   );

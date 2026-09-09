@@ -15,6 +15,7 @@ import { CarromPostProcessing } from './CarromPostProcessing';
 import { PocketNetSystem } from './PocketNetSystem';
 import { VictoryCinematic } from './VictoryCinematic';
 import { StrikerAimSystem } from './StrikerAimSystem';
+import { CarromWaterSystem } from './CarromWaterSystem';
 import { carromAI } from '../ai/CarromAI';
 import { useCarromStore } from '../state/CarromState';
 import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
@@ -82,8 +83,8 @@ export function CarromGame3D() {
             <CarromAudioSystem />
             {/* Phase 21-23: Advanced Aim System */}
             <StrikerAimSystem />
-            {/* Phase 28-29: Pocket Net Animation */}
             <PocketNetSystem />
+            <CarromWaterSystem />
           </Physics>
 
           {/* Phase 36-38: Post-Processing with Color Grading */}

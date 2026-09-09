@@ -1,5 +1,5 @@
 import React from 'react';
-import { EffectComposer, Bloom, SSAO, ToneMapping, Vignette, BrightnessContrast, HueSaturation, DepthOfField } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, SSAO, ToneMapping, Vignette, BrightnessContrast, HueSaturation, DepthOfField, ChromaticAberration } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useCarromQuality } from './CarromPerformanceManager';
 import { BlendFunction } from 'postprocessing';
@@ -26,7 +26,7 @@ export function CarromPostProcessing() {
   const isCinematic = cameraProfile === 'QUEEN' || cameraProfile === 'VICTORY';
 
   const bloom = (
-    <Bloom intensity={0.6} luminanceThreshold={0.8} />
+    <Bloom intensity={1.2} luminanceThreshold={0.5} luminanceSmoothing={0.9} mipmapBlur={true} />
   );
   
   const vignette = (
@@ -36,6 +36,10 @@ export function CarromPostProcessing() {
       eskil={false} 
       blendFunction={BlendFunction.NORMAL} 
     />
+  );
+
+  const chromaticAberration = (
+    <ChromaticAberration offset={new THREE.Vector2(0.002, 0.002)} blendFunction={BlendFunction.NORMAL} radialModulation={true} modulationOffset={0.5} />
   );
 
   const tone = (
@@ -58,8 +62,10 @@ export function CarromPostProcessing() {
   );
 
   const dof = isCinematic ? (
-    <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} />
-  ) : null;
+    <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={4} height={480} />
+  ) : (
+    <DepthOfField focusDistance={0} focalLength={0.05} bokehScale={1} height={480} />
+  );
 
   if (quality === 'MEDIUM') {
     return (
@@ -89,6 +95,7 @@ export function CarromPostProcessing() {
       />
       {dof || <></>}
       {bloom}
+      {chromaticAberration}
       {vignette}
     </EffectComposer>
   );

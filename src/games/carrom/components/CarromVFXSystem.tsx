@@ -138,16 +138,20 @@ export function CarromVFXSystem() {
           p.color.copy(baseColor).addScalar((Math.random() - 0.5) * 0.1);
           p.size = 0.01;
         } else {
-          // impact or other
+          // Cinematic Impact
+          const impactScale = intensity > 2 ? 3 : intensity > 0.5 ? 1.5 : 0.5;
           p.velocity.set(
-            velocity[0] * 0.2 + (Math.random() - 0.5) * intensity * 2,
-            Math.abs(velocity[1]) * 0.2 + (Math.random() * intensity * 2) + 0.5,
-            velocity[2] * 0.2 + (Math.random() - 0.5) * intensity * 2
+            velocity[0] * 0.2 + (Math.random() - 0.5) * intensity * impactScale,
+            Math.abs(velocity[1]) * 0.2 + (Math.random() * intensity * impactScale) + (intensity > 2 ? 1.0 : 0.2),
+            velocity[2] * 0.2 + (Math.random() - 0.5) * intensity * impactScale
           );
-          p.life = 1.0;
-          p.maxLife = 1.0 + Math.random() * 0.5;
+          p.life = intensity > 2 ? 1.5 : 0.8;
+          p.maxLife = p.life + Math.random() * 0.5;
           p.color.copy(baseColor).addScalar((Math.random() - 0.5) * 0.2);
-          p.size = Math.random() * 0.01 + 0.005;
+          if (intensity > 2) {
+             p.color.lerp(new THREE.Color('#ffffff'), 0.5); // Impact flash glow
+          }
+          p.size = (Math.random() * 0.01 + 0.005) * (intensity > 2 ? 1.5 : 1.0);
         }
         
         particleIndex.current++;

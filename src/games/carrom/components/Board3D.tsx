@@ -5,6 +5,7 @@ import { useCarromStore } from '../state/CarromState';
 import { triggerVFX } from './CarromVFXSystem';
 import { getWoodTexture } from '../materials/ProceduralWood';
 import { CarromMaterialProfile } from '../materials/CarromMaterialProfile';
+import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 
 export function Board3D() {
@@ -60,27 +61,19 @@ export function Board3D() {
       >
         {/* Top Border */}
         <CuboidCollider args={[halfBw + border, edgeH / 2, halfBorder]} position={[0, edgeH / 2, -halfBw - halfBorder]} />
-        <mesh position={[0, edgeH / 2, -halfBw - halfBorder]} receiveShadow castShadow material={edgeMaterial}>
-          <boxGeometry args={[bw + border * 2, edgeH, border]} />
-        </mesh>
+        <RoundedBox args={[bw + border * 2, edgeH, border]} radius={0.01} smoothness={16} position={[0, edgeH / 2, -halfBw - halfBorder]} receiveShadow castShadow material={edgeMaterial} />
         
         {/* Bottom Border */}
         <CuboidCollider args={[halfBw + border, edgeH / 2, halfBorder]} position={[0, edgeH / 2, halfBw + halfBorder]} />
-        <mesh position={[0, edgeH / 2, halfBw + halfBorder]} receiveShadow castShadow material={edgeMaterial}>
-          <boxGeometry args={[bw + border * 2, edgeH, border]} />
-        </mesh>
+        <RoundedBox args={[bw + border * 2, edgeH, border]} radius={0.01} smoothness={16} position={[0, edgeH / 2, halfBw + halfBorder]} receiveShadow castShadow material={edgeMaterial} />
 
         {/* Left Border */}
         <CuboidCollider args={[halfBorder, edgeH / 2, halfBw]} position={[-halfBw - halfBorder, edgeH / 2, 0]} />
-        <mesh position={[-halfBw - halfBorder, edgeH / 2, 0]} receiveShadow castShadow material={edgeMaterial}>
-          <boxGeometry args={[border, edgeH, bw]} />
-        </mesh>
+        <RoundedBox args={[border, edgeH, bw]} radius={0.01} smoothness={16} position={[-halfBw - halfBorder, edgeH / 2, 0]} receiveShadow castShadow material={edgeMaterial} />
 
         {/* Right Border */}
         <CuboidCollider args={[halfBorder, edgeH / 2, halfBw]} position={[halfBw + halfBorder, edgeH / 2, 0]} />
-        <mesh position={[halfBw + halfBorder, edgeH / 2, 0]} receiveShadow castShadow material={edgeMaterial}>
-          <boxGeometry args={[border, edgeH, bw]} />
-        </mesh>
+        <RoundedBox args={[border, edgeH, bw]} radius={0.01} smoothness={16} position={[halfBw + halfBorder, edgeH / 2, 0]} receiveShadow castShadow material={edgeMaterial} />
       </RigidBody>
 
       {/* Pocket Sensors */}

@@ -75,7 +75,7 @@ export function CarromCameraController() {
       }
     }
 
-    // Apply Shake
+    // Apply Shake and Breathing
     if (shakeIntensity.current > 0) {
       shakeRef.current.set(
         (Math.random() - 0.5) * shakeIntensity.current,
@@ -83,8 +83,12 @@ export function CarromCameraController() {
         (Math.random() - 0.5) * shakeIntensity.current
       );
       vec.add(shakeRef.current);
-      shakeIntensity.current *= 0.9; // decay
+      shakeIntensity.current *= 0.9;
       if (shakeIntensity.current < 0.0001) shakeIntensity.current = 0;
+    } else if (profileName === 'AIM' || profileName === 'NORMAL') {
+      // Cinematic Camera Breathing
+      vec.y += Math.sin(state.clock.elapsedTime * 2.0) * 0.005;
+      vec.x += Math.cos(state.clock.elapsedTime * 1.5) * 0.005;
     }
 
     cameraRef.current.position.lerp(vec, 0.05); // Smooth transition

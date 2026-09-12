@@ -1,9 +1,14 @@
 // src/components/layout/AmbientBackground.tsx
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ParticleSystem } from '@/engine/renderers/ParticleSystem';
 
 export function AmbientBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const location = useLocation();
+  const isPlayingHeavyGame = location.pathname.includes('/games/carrom') || location.pathname.includes('/games/candy-crunch');
+
+  if (isPlayingHeavyGame) return null;
 
   useEffect(() => {
     if (!canvasRef.current) return;

@@ -52,7 +52,7 @@ export function Auth() {
         }
         const { error } = await signup(email, password, username);
         if (error) { toast.error(error); return; }
-        toast.success('Account created! You earned 500 bonus tokens! 🎊');
+        toast.success('Account created! You earned 500 bonus tokens! 🎁');
         navigate('/dashboard');
       }
     } finally {
@@ -67,7 +67,7 @@ export function Auth() {
 
   const handleGuest = () => {
     loginAsGuest();
-    toast('Playing as guest. Sign up to save your progress!', { icon: '👋' });
+    toast('Playing as guest. Sign up to save your progress!', { icon: '🎮' });
     navigate('/dashboard');
   };
 

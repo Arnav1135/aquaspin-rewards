@@ -25,8 +25,19 @@ import { Dashboard } from '@/pages/Dashboard';
 import { WheelGame } from '@/pages/WheelGame';
 import { MiniGames } from '@/pages/MiniGames';
 import { CrashGamePage } from '@/pages/CrashGamePage';
-import CandyCrunchApp from '@/games/candy-crunch/CandyCrunchApp';
-import CarromApp from '@/games/carrom/CarromApp';
+import { lazy, Suspense } from 'react';
+
+const CandyCrunchApp = lazy(() => import('@/games/candy-crunch/CandyCrunchApp'));
+const CarromApp = lazy(() => import('@/games/carrom/CarromApp'));
+
+function GameFallback() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--c-navy)] text-white">
+      <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white animate-spin mb-4" />
+      <p className="text-white/60 text-sm font-medium animate-pulse">Initializing Engine...</p>
+    </div>
+  );
+}
 
 import { Leaderboard } from '@/pages/Leaderboard';
 import { Profile } from '@/pages/Profile';
@@ -128,8 +139,8 @@ function AppRoutes() {
           <Route path="/wheel" element={<ProtectedRoute><WheelGame /></ProtectedRoute>} />
           <Route path="/crash" element={<ProtectedRoute><CrashGamePage /></ProtectedRoute>} />
           <Route path="/games" element={<ProtectedRoute><MiniGames /></ProtectedRoute>} />
-          <Route path="/games/candy-crunch" element={<ProtectedRoute><CandyCrunchApp /></ProtectedRoute>} />
-          <Route path="/games/carrom" element={<ProtectedRoute><CarromApp /></ProtectedRoute>} />
+          <Route path="/games/candy-crunch" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><CandyCrunchApp /></Suspense></ProtectedRoute>} />
+          <Route path="/games/carrom" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><CarromApp /></Suspense></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />

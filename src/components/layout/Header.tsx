@@ -15,6 +15,8 @@ import { cn, getInitials, getAvatarColor } from '@/lib/utils';
 
 export function Header() {
   const location = useLocation();
+  const isGameActive = location.pathname.includes('/games/') && location.pathname !== '/games';
+  if (isGameActive) return null;
   const { profile, logout, isGuest } = useAuthStore();
   const { toggleSidebar, toggleSettings, theme, toggleTheme } = useUIStore();
   const { soundEnabled, toggleSound } = useGameStore();

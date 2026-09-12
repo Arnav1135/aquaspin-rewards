@@ -158,6 +158,7 @@ import { AGEA, GameGenre, VisualStyle } from "@/engine/AIGameEngineArchitect";
 import { AIGameEnginePanel } from "@/components/AIGameEnginePanel";
 import { useAuthStore } from "@/features/authStore";
 import { GameSkeleton } from "@/components/ui/GameSkeleton";
+import { GameCard } from "@/components/ui/GameCard";
 
 type Category =
   "All" | "Casino" | "Arcade" | "Board" | "Quiz" | "Puzzle";
@@ -386,63 +387,11 @@ export function MiniGames() {
                 className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
               >
                 {filtered.map((game) => (
-                  <motion.button
+                  <GameCard
                     key={game.key}
-                    onClick={() => setActiveGame(game.key)}
-                    whileHover={{ y: -4, scale: 1.015 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="text-left group bg-white/75 backdrop-blur-xl rounded-2xl p-2 border border-[#C7E9F7]/60 shadow-sm flex flex-col h-full"
-                  >
-                    <div
-                      className="rounded-xl h-28 sm:h-32 flex items-center justify-center relative overflow-hidden mb-3"
-                      style={{
-                        background: `radial-gradient(circle at 30% 20%,${game.color}55,transparent 60%),#e5f2f9`,
-                      }}
-                    >
-                      {game.thumbnail ? (
-                        <img
-                          src={game.thumbnail}
-                          alt={game.title}
-                          className={`absolute inset-0 w-full h-full group-hover:scale-110 transition-transform duration-500 ${game.thumbnailFit === "contain" ? "object-contain p-2" : "object-cover"}`}
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="text-5xl">{game.emoji}</div>
-                      )}
-                      <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-white/90 text-[10px] font-bold text-[#7682B9]">
-                        {game.category}
-                      </span>
-                      {game.title.includes("3D") && (
-                        <span className="absolute bottom-2 left-2 rounded-full bg-cyan-400 px-2 py-1 text-[9px] font-black text-slate-950">
-                          WEBGL
-                        </span>
-                      )}
-                    </div>
-                    <div className="px-1 pb-1 flex-1 flex flex-col">
-                      <h3 className="font-extrabold text-sm text-[#7682B9] group-hover:text-[#5AB8EA]">
-                        {game.emoji} {game.title}
-                      </h3>
-                      <p className="mt-1 text-[10px] text-slate-500 line-clamp-2">
-                        {game.desc}
-                      </p>
-                      <div className="mt-auto flex items-center justify-between pt-2">
-                        <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                          style={{
-                            color: DIFFICULTY_COLOR[game.difficulty],
-                            background: `${DIFFICULTY_COLOR[game.difficulty]}15`,
-                          }}
-                        >
-                          {game.difficulty}
-                        </span>
-                        <span className="text-[10px] font-bold text-[#5AB8EA]">
-                          {game.reward}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.button>
+                    game={game as any}
+                    onClick={(key) => setActiveGame(key)}
+                  />
                 ))}
               </motion.div>
               {!filtered.length && (

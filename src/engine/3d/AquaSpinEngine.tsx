@@ -82,31 +82,7 @@ export function AquaSpinEngine({
               <HueSaturation hue={0} saturation={0.05} />
               
               {quality === 'high' ? (
-                // @ts-ignore
-                <SSR 
-                  intensity={1.5} 
-                  distance={10} 
-                  fade={10} 
-                  roughnessFade={1} 
-                  thickness={10} 
-                  ior={1.45} 
-                  maxRoughness={1} 
-                  maxDepthDifference={10} 
-                  correction={1} 
-                  correctionRadius={1} 
-                  blur={0.5} 
-                  blurKernel={1} 
-                  blurSharpness={10} 
-                  jitter={0.1} 
-                  jitterRoughness={0.1} 
-                  steps={20} 
-                  refineSteps={5} 
-                  missedRays={true} 
-                  useNormalMap={true} 
-                  useRoughnessMap={true} 
-                  resolutionScale={1} 
-                  velocityResolutionScale={1} 
-                />
+                <SSR />
               ) : <></>}
               
               {cameraMode === 'cinematic' && quality === 'high' ? (

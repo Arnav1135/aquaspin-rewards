@@ -44,8 +44,19 @@ export function CameraSystem({ mode, fov = 50, position = [0, 8, 12], orthograph
     }
   }, [mode, position]);
 
-  useFrame(() => {
+  useFrame((state) => {
     if (cam.current) {
+      if (mode === 'cinematic') {
+        const t = state.clock.getElapsedTime();
+        const breathX = Math.sin(t * 0.5) * Math.cos(t * 0.3) * 0.05;
+        const breathY = Math.cos(t * 0.4) * Math.sin(t * 0.2) * 0.05;
+        
+        // Target focal point is [0,0,0]
+        const currentTargetPos = { x: position[0], y: position[1] - 2, z: position[2] - 4 };
+        
+        cam.current.position.x += (currentTargetPos.x + breathX - cam.current.position.x) * 0.05;
+        cam.current.position.y += (currentTargetPos.y + breathY - cam.current.position.y) * 0.05;
+      }
       cam.current.lookAt(0, 0, 0);
     }
   });

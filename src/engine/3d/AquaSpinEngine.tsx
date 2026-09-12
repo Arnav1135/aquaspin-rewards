@@ -1,7 +1,7 @@
 import { ReactNode, useMemo, Suspense } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Bloom, Vignette, ToneMapping, SSAO, DepthOfField, ChromaticAberration, BrightnessContrast, HueSaturation } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, ToneMapping, SSR, SSAO, DepthOfField, ChromaticAberration, BrightnessContrast, HueSaturation } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { PerformanceMonitor, Preload } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
@@ -82,16 +82,31 @@ export function AquaSpinEngine({
               <HueSaturation hue={0} saturation={0.05} />
               
               {quality === 'high' ? (
-                <SSAO 
-                  samples={16} 
-                  radius={0.1} 
-                  intensity={20} 
-                  luminanceInfluence={0.6} 
-                  color={new THREE.Color("black") as any}
-                  worldDistanceThreshold={0.5}
-                  worldDistanceFalloff={0.1}
-                  worldProximityThreshold={0.1}
-                  worldProximityFalloff={0.1}
+                <SSR 
+                  intensity={1.5} 
+                  exponent={1} 
+                  distance={10} 
+                  fade={10} 
+                  roughnessFade={1} 
+                  thickness={10} 
+                  ior={1.45} 
+                  maxRoughness={1} 
+                  maxDepthDifference={10} 
+                  blend={0.9} 
+                  correction={1} 
+                  correctionRadius={1} 
+                  blur={0.5} 
+                  blurKernel={1} 
+                  blurSharpness={10} 
+                  jitter={0.1} 
+                  jitterRoughness={0.1} 
+                  steps={20} 
+                  refineSteps={5} 
+                  missedRays={true} 
+                  useNormalMap={true} 
+                  useRoughnessMap={true} 
+                  resolutionScale={1} 
+                  velocityResolutionScale={1} 
                 />
               ) : <></>}
               

@@ -1,5 +1,26 @@
 import * as THREE from 'three';
 
+const generateMicroSurfaceTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024; canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    // Procedural Noise for Dust/Scratches
+    for(let i=0; i<50000; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+      ctx.fillRect(Math.random() * 1024, Math.random() * 1024, 2, 2);
+    }
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+};
+
+const microSurfaceMap = generateMicroSurfaceTexture();
+
+
 export class CarromMaterialProfile {
   public static getWoodBoardMaterial(woodTexObj: { color: THREE.CanvasTexture, roughness: THREE.CanvasTexture, normal: THREE.CanvasTexture }): THREE.MeshPhysicalMaterial {
     return new THREE.MeshPhysicalMaterial({
@@ -19,6 +40,7 @@ export class CarromMaterialProfile {
     return new THREE.MeshPhysicalMaterial({
       color: '#f0d5a3',
       roughness: 0.3,
+      roughnessMap: microSurfaceMap,
       metalness: 0.0,
       clearcoat: 0.2,
       clearcoatRoughness: 0.1,
@@ -55,6 +77,7 @@ export class CarromMaterialProfile {
     return new THREE.MeshPhysicalMaterial({
       color: isWhite ? '#fdf5e6' : '#111111', // Ivory and Polished Ebony
       roughness: isWhite ? 0.15 : 0.1, 
+      roughnessMap: microSurfaceMap,
       metalness: 0.2,
       clearcoat: 1.0,
       clearcoatRoughness: 0.05,
@@ -83,6 +106,7 @@ export class CarromMaterialProfile {
       emissive: '#330000',
       emissiveIntensity: 0.1,
       roughness: 0.05,
+      roughnessMap: microSurfaceMap,
       metalness: 0.3,
       clearcoat: 1.0,
       clearcoatRoughness: 0.02,
@@ -99,6 +123,7 @@ export class CarromMaterialProfile {
         return new THREE.MeshPhysicalMaterial({
           color: '#2a2a2a', // Obsidian matte
           roughness: 0.8,
+          roughnessMap: microSurfaceMap,
           metalness: 0.2,
           clearcoat: 0.2,
           clearcoatRoughness: 0.9,
@@ -108,6 +133,7 @@ export class CarromMaterialProfile {
         return new THREE.MeshPhysicalMaterial({
           color: '#ffffff',
           roughness: 0.0,
+          roughnessMap: microSurfaceMap,
           metalness: 0.1,
           transmission: 1.0, // Glass
           thickness: 0.8,
@@ -122,6 +148,7 @@ export class CarromMaterialProfile {
         return new THREE.MeshPhysicalMaterial({
           color: '#ffdf00', // Gold
           roughness: 0.1,
+          roughnessMap: microSurfaceMap,
           metalness: 1.0,
           clearcoat: 1.0,
           clearcoatRoughness: 0.05,
@@ -132,6 +159,7 @@ export class CarromMaterialProfile {
         return new THREE.MeshPhysicalMaterial({
           color: '#f8f8f8',
           roughness: 0.05,
+          roughnessMap: microSurfaceMap,
           metalness: 0.4,
           clearcoat: 1.0,
           clearcoatRoughness: 0.02,

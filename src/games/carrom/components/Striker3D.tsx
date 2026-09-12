@@ -75,9 +75,30 @@ export function Striker3D() {
       )}
 
       <Trail width={0.05} length={4} color="#00bcd4" attenuation={(t) => t * t}>
-        <mesh castShadow receiveShadow material={strikerMaterial}>
-          <cylinderGeometry args={[r, r, h, 64]} />
-        </mesh>
+        <group>
+          <mesh castShadow receiveShadow material={strikerMaterial}>
+            <cylinderGeometry args={[r - 0.001, r - 0.001, h - 0.002, 64]} />
+          </mesh>
+          {/* Micro-bevel Top */}
+          <mesh castShadow receiveShadow material={strikerMaterial} position={[0, h/2 - 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
+            <torusGeometry args={[r - 0.001, 0.001, 16, 64]} />
+          </mesh>
+          {/* Micro-bevel Bottom */}
+          <mesh castShadow receiveShadow material={strikerMaterial} position={[0, -h/2 + 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
+            <torusGeometry args={[r - 0.001, 0.001, 16, 64]} />
+          </mesh>
+          
+          {/* Center detail */}
+          <mesh position={[0, h/2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[r * 0.4, 32]} />
+            <meshStandardMaterial color="#333" emissive="#111" />
+          </mesh>
+          {/* Indicator mark */}
+          <mesh position={[r * 0.7, h/2 + 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.003, 16]} />
+            <meshBasicMaterial color="#00bcd4" />
+          </mesh>
+        </group>
       </Trail>
     </RigidBody>
   );

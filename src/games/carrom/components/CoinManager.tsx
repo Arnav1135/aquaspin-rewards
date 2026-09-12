@@ -77,12 +77,23 @@ function Coin3D({ coin }: { coin: CarromCoinData }) {
 
   const CoinVisuals = (
     <a.group scale={scale} position-y={coin.isPocketed ? y : 0}>
+      {/* Main Cylinder */}
       <mesh castShadow receiveShadow material={[edgeMaterial, coinMaterial, coinMaterial]}>
-        <cylinderGeometry args={[r * 1.02, r, h, 32]} />
+        <cylinderGeometry args={[r - 0.001, r - 0.001, h - 0.002, 32]} />
+      </mesh>
+      
+      {/* Micro-bevel Top */}
+      <mesh castShadow receiveShadow material={coinMaterial} position={[0, h/2 - 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
+        <torusGeometry args={[r - 0.001, 0.001, 16, 32]} />
+      </mesh>
+
+      {/* Micro-bevel Bottom */}
+      <mesh castShadow receiveShadow material={coinMaterial} position={[0, -h/2 + 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
+        <torusGeometry args={[r - 0.001, 0.001, 16, 32]} />
       </mesh>
       
       {/* Tiny face detail circle with subtle emissive */}
-      <mesh position={[0, h/2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[0, h/2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[r * 0.5, r * 0.8, 32]} />
         <meshStandardMaterial 
           color={coin.type === 'queen' ? '#f44336' : (coin.type === 'white' ? '#ffcc00' : '#444')} 
@@ -92,12 +103,12 @@ function Coin3D({ coin }: { coin: CarromCoinData }) {
       </mesh>
       
       {/* Indicator mark to visualize spin */}
-      <mesh position={[r * 0.6, h/2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[r * 0.6, h/2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.005, 16]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
       
-      <mesh position={[0, -h/2 - 0.001, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, -h/2, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[r * 0.5, r * 0.8, 32]} />
         <meshStandardMaterial color={coin.type === 'queen' ? '#f44336' : (coin.type === 'white' ? '#ffcc00' : '#444')} />
       </mesh>

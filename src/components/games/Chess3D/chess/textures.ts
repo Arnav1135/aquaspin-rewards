@@ -77,6 +77,33 @@ export function createRoughnessMap(baseRoughness: number): THREE.CanvasTexture {
   return texture;
 }
 
+// Generate Micro-Surface Map for Dust/Scratches (AAA Realism)
+export function createMicroSurfaceTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.fillStyle = 'rgba(200, 200, 200, 1)';
+  ctx.fillRect(0, 0, 1024, 1024);
+  
+  // Procedural Noise for Dust/Scratches
+  for(let i=0; i<50000; i++) {
+    ctx.fillStyle = "rgba(255, 255, 255, " + (Math.random() * 0.15) + ")";
+    ctx.fillRect(Math.random() * 1024, Math.random() * 1024, Math.random() * 2, Math.random() * 2);
+  }
+  
+  for(let i=0; i<10000; i++) {
+    ctx.fillStyle = "rgba(0, 0, 0, " + (Math.random() * 0.1) + ")";
+    ctx.fillRect(Math.random() * 1024, Math.random() * 1024, Math.random() * 3, Math.random() * 3);
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
 // Generate Felt Pad Texture for piece bottoms
 export function createFeltTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');

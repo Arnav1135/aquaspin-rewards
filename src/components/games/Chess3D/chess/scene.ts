@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect } from 'postprocessing';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TouchController, triggerHaptic } from './touch';
 import { Chess, Square } from 'chess.js';
@@ -23,6 +24,7 @@ export class Chess3DScene {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
+  private composer!: EffectComposer;
   private controls: OrbitControls;
   private touchController: TouchController;
   private cameraController: CameraController;
@@ -1116,6 +1118,7 @@ export class Chess3DScene {
 
     this.cameraController.updateResponsiveFraming();
     this.renderer.setSize(width, height);
+    if (this.composer) this.composer.setSize(width, height);
   };
 
   private animate = () => {
@@ -1141,7 +1144,11 @@ export class Chess3DScene {
       this.boardContainer.updateLabels(cameraDistance);
     }
 
-    this.renderer.render(this.scene, this.camera);
+    if (this.composer && this.qualityConfig.tier !== 'low') {
+      this.composer.render();
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
   };
 
   public destroy() {

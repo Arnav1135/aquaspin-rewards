@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MaterialTheme, PieceColor } from '../types';
-import { createWoodNormalMap, createRoughnessMap } from './textures';
+import { createWoodNormalMap, createRoughnessMap, createMicroSurfaceTexture } from './textures';
 
 /**
  * PBR Material Manager
@@ -10,12 +10,20 @@ import { createWoodNormalMap, createRoughnessMap } from './textures';
 
 // Cached procedural textures
 let normalMapCache: THREE.CanvasTexture | null = null;
+let microSurfaceCache: THREE.CanvasTexture | null = null;
 
 function getNormalMap(): THREE.CanvasTexture {
   if (!normalMapCache) {
     normalMapCache = createWoodNormalMap();
   }
   return normalMapCache;
+}
+
+function getMicroSurfaceMap(): THREE.CanvasTexture {
+  if (!microSurfaceCache) {
+    microSurfaceCache = createMicroSurfaceTexture();
+  }
+  return microSurfaceCache;
 }
 
 export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): THREE.MeshPhysicalMaterial {
@@ -26,7 +34,8 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
       // White pieces: Polished Warm Boxwood / Hand-Rubbed Satin Sheen
       return new THREE.MeshPhysicalMaterial({
         color: 0xf4e6c3,
-        roughness: 0.11,
+        roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
         metalness: 0.02,
         clearcoat: 0.75,
         clearcoatRoughness: 0.04,
@@ -40,7 +49,8 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
       // Black pieces: Ebonized Dark Walnut / Weighted Polish
       return new THREE.MeshPhysicalMaterial({
         color: 0x1c1714,
-        roughness: 0.13,
+        roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
         metalness: 0.18,
         clearcoat: 0.8,
         clearcoatRoughness: 0.04,
@@ -55,7 +65,8 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
       // White Marble / Translucent Ivory (Mirror Polish)
       return new THREE.MeshPhysicalMaterial({
         color: 0xfbf9f5,
-        roughness: 0.05,
+        roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
         metalness: 0.01,
         transmission: 0.2, // SSS translucency
         thickness: 0.5,
@@ -70,7 +81,8 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
       // Black Obsidian Onyx (High Gloss Polish)
       return new THREE.MeshPhysicalMaterial({
         color: 0x0c0e12,
-        roughness: 0.06,
+        roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
         metalness: 0.08,
         transmission: 0.08,
         thickness: 0.8,
@@ -99,7 +111,8 @@ export function createTileMaterials(): { light: THREE.MeshPhysicalMaterial; dark
 
   const lightMaterial = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(TILE_COLORS.light),
-    roughness: 0.25,
+    roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
     metalness: 0.02,
     clearcoat: 0.2,
     clearcoatRoughness: 0.1,
@@ -109,7 +122,8 @@ export function createTileMaterials(): { light: THREE.MeshPhysicalMaterial; dark
 
   const darkMaterial = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(TILE_COLORS.dark),
-    roughness: 0.28,
+    roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
     metalness: 0.02,
     clearcoat: 0.2,
     clearcoatRoughness: 0.1,
@@ -126,7 +140,8 @@ export function createFrameMaterial(theme: MaterialTheme): THREE.MeshPhysicalMat
   if (theme === 'wood-bronze') {
     return new THREE.MeshPhysicalMaterial({
       color: 0x3d2314, // Dark mahogany border
-      roughness: 0.3,
+      roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
       metalness: 0.1,
       clearcoat: 0.4,
       normalMap: normalMap,
@@ -135,7 +150,8 @@ export function createFrameMaterial(theme: MaterialTheme): THREE.MeshPhysicalMat
   } else {
     return new THREE.MeshPhysicalMaterial({
       color: 0x181a1e, // Brushed dark titanium/onyx border
-      roughness: 0.2,
+      roughness: 0.15,
+        roughnessMap: getMicroSurfaceMap(),
       metalness: 0.6,
       clearcoat: 0.6,
       normalMap: normalMap,

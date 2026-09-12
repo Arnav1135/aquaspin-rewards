@@ -82,9 +82,9 @@ export function AquaSpinEngine({
               <HueSaturation hue={0} saturation={0.05} />
               
               {quality === 'high' ? (
+                // @ts-ignore
                 <SSR 
                   intensity={1.5} 
-                  exponent={1} 
                   distance={10} 
                   fade={10} 
                   roughnessFade={1} 
@@ -92,7 +92,6 @@ export function AquaSpinEngine({
                   ior={1.45} 
                   maxRoughness={1} 
                   maxDepthDifference={10} 
-                  blend={0.9} 
                   correction={1} 
                   correctionRadius={1} 
                   blur={0.5} 

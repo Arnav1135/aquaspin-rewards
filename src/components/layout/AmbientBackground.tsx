@@ -8,8 +8,6 @@ export function AmbientBackground() {
   const location = useLocation();
   const isPlayingHeavyGame = location.pathname.includes('/games/carrom') || location.pathname.includes('/games/candy-crunch');
 
-  if (isPlayingHeavyGame) return null;
-
   useEffect(() => {
     if (!canvasRef.current) return;
     const system = new ParticleSystem(canvasRef.current);
@@ -18,6 +16,8 @@ export function AmbientBackground() {
       system.destroy();
     };
   }, []);
+
+  if (isPlayingHeavyGame) return null;
 
   return (
     <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden bg-[#EFF6FF]">

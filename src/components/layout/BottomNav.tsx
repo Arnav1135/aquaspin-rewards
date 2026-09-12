@@ -14,6 +14,7 @@ const navItems = [
 export function BottomNav() {
   const location = useLocation();
   const isGameActive = location.pathname.includes('/games/') && location.pathname !== '/games';
+
   if (isGameActive) return null;
 
   return (

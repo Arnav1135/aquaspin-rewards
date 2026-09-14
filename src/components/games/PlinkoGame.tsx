@@ -35,6 +35,26 @@ const PEG_RADIUS = 0.15;
 const PEG_SPACING_X = 1.2;
 const PEG_SPACING_Y = 0.8;
 
+// Module-level geometries and materials for batching and performance
+const dividerBoxGeo = new THREE.BoxGeometry(0.04, 1.0, 0.4);
+const dividerSphereGeo = new THREE.SphereGeometry(0.04, 16, 16);
+const dividerMat = new THREE.MeshStandardMaterial({ color: "#CBD5E1", roughness: 0.5 });
+
+const boardBgGeo = new THREE.BoxGeometry(1, 1, 1);
+const boardBgMat = new THREE.MeshStandardMaterial({ color: "#F0F4F8", roughness: 0.7, metalness: 0.1 });
+
+const pegGeoHigh = new THREE.CylinderGeometry(PEG_RADIUS, PEG_RADIUS, 0.8, 32);
+const pegMatHigh = new THREE.MeshPhysicalMaterial({ color: "#94A3B8", roughness: 0.1, metalness: 0.9, clearcoat: 1.0 });
+
+const pegGeoMid = new THREE.CylinderGeometry(PEG_RADIUS, PEG_RADIUS, 0.8, 16);
+const pegMatMid = new THREE.MeshStandardMaterial({ color: "#94A3B8", roughness: 0.2, metalness: 0.8 });
+
+const pegGeoLow = new THREE.CylinderGeometry(PEG_RADIUS, PEG_RADIUS, 0.8, 6);
+const pegMatLow = new THREE.MeshStandardMaterial({ color: "#94A3B8", roughness: 0.5, metalness: 0.5 });
+
+const ballGeo = new THREE.SphereGeometry(0.25, 16, 16);
+const ballMat = new THREE.MeshStandardMaterial({ color: "#FF6B6B", emissive: "#FF6B6B", emissiveIntensity: 3.5, metalness: 0.2, roughness: 0.1 });
+
 function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, onBallLanded }: { style: any, x: number, bucketY: number, i: number, hitCount: number, isBigWin: boolean, numBuckets: number, onBallLanded: (idx: number, ballId: string) => void }) {
   const [blinking, setBlinking] = useState(false);
   
@@ -84,14 +104,8 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, on
       <RigidBody type="fixed" position={[PEG_SPACING_X/2, -0.2, 0]} restitution={0.4} friction={0}>
          <CuboidCollider args={[0.02, 0.5, 0.25]} />
          <BallCollider args={[0.04]} position={[0, 0.5, 0]} />
-         <mesh position={[0, 0, 0]}>
-           <boxGeometry args={[0.04, 1.0, 0.4]} />
-           <meshStandardMaterial color="#CBD5E1" roughness={0.5} />
-         </mesh>
-         <mesh position={[0, 0.5, 0]}>
-           <sphereGeometry args={[0.04, 16, 16]} />
-           <meshStandardMaterial color="#CBD5E1" roughness={0.5} />
-         </mesh>
+         <mesh position={[0, 0, 0]} geometry={dividerBoxGeo} material={dividerMat} />
+         <mesh position={[0, 0.5, 0]} geometry={dividerSphereGeo} material={dividerMat} />
       </RigidBody>
     </group>
   );
@@ -120,11 +134,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
   return (
     <group position={[0, rows * 0.4, 0]}>
       {/* Background board (No RigidBody to prevent ball scraping against it) */}
-      <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} receiveShadow>
-        <boxGeometry args={[(rows + 2) * PEG_SPACING_X + 4, (rows + 2) * PEG_SPACING_Y + 4, 0.5]} />
-        {/* Light Mode Board Background */}
-        <meshStandardMaterial color="#F0F4F8" roughness={0.7} metalness={0.1} />
-      </mesh>
+      <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} scale={[(rows + 2) * PEG_SPACING_X + 4, (rows + 2) * PEG_SPACING_Y + 4, 0.5]} receiveShadow geometry={boardBgGeo} material={boardBgMat} />
 
       {/* Individual Pegs */}
       {pegPositions.map((peg) => (
@@ -139,22 +149,13 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
           <BallCollider args={[PEG_RADIUS]} />
           <Detailed distances={[0, 15, 30]}>
             {/* High Poly (LOD 0) - Zoomed In */}
-            <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
-               <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 32]} />
-               <meshPhysicalMaterial color="#94A3B8" roughness={0.1} metalness={0.9} clearcoat={1.0} />
-            </mesh>
+            <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]} geometry={pegGeoHigh} material={pegMatHigh} />
             
             {/* Medium Poly (LOD 1) - Mid Distance */}
-            <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]}>
-               <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 16]} />
-               <meshStandardMaterial color="#94A3B8" roughness={0.2} metalness={0.8} />
-            </mesh>
+            <mesh receiveShadow castShadow rotation={[Math.PI / 2, 0, 0]} geometry={pegGeoMid} material={pegMatMid} />
             
             {/* Low Poly (LOD 2) - Zoomed Out */}
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-               <cylinderGeometry args={[PEG_RADIUS, PEG_RADIUS, 0.8, 6]} />
-               <meshStandardMaterial color="#94A3B8" roughness={0.5} metalness={0.5} />
-            </mesh>
+            <mesh rotation={[Math.PI / 2, 0, 0]} geometry={pegGeoLow} material={pegMatLow} />
           </Detailed>
         </RigidBody>
       ))}
@@ -248,10 +249,7 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
       onCollisionEnter={handleCollision}
       collisionGroups={BALL_COLLISION_GROUP}
     >
-      <mesh castShadow receiveShadow>
-        <sphereGeometry args={[0.25, 16, 16]} />
-        <meshStandardMaterial color="#FF6B6B" emissive="#FF6B6B" emissiveIntensity={3.5} metalness={0.2} roughness={0.1} />
-      </mesh>
+      <mesh castShadow receiveShadow geometry={ballGeo} material={ballMat} />
     </RigidBody>
   );
 }

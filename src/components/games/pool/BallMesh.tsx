@@ -38,10 +38,12 @@ export const BallMesh = React.forwardRef<RapierRigidBody, PoolBallProps>(({ id, 
   const material = useMemo(() => {
     return new THREE.MeshPhysicalMaterial({
       color: baseColor,
-      roughness: 0.1,
-      metalness: 0.05,
+      roughness: 0.05, // Highly polished
+      metalness: 0.0,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
+      clearcoatRoughness: 0.05,
+      envMapIntensity: 2.5, // HDRI reflections boost
+      ior: 1.5, // Polymer/phenolic resin index of refraction
     });
   }, [baseColor]);
 
@@ -56,10 +58,10 @@ export const BallMesh = React.forwardRef<RapierRigidBody, PoolBallProps>(({ id, 
       position={position}
       colliders={false}
       type="dynamic"
-      linearDamping={0.4} // Friction on the felt
-      angularDamping={0.4} 
-      restitution={0.9} // Bouncy collisions
-      friction={0.2}
+      linearDamping={0.45} // Friction on the felt
+      angularDamping={0.8} // Rolling friction/spin
+      restitution={0.92} // Energy-preserving bouncy collisions
+      friction={0.3} // Surface friction for spin/english transfer
       ccd={true} // Continuous Collision Detection (prevents tunneling through rails/balls)
       userData={{ id, isCue }}
       onIntersectionEnter={({ other }) => {

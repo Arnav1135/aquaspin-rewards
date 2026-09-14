@@ -77,7 +77,10 @@ const QualityEnforcer: React.FC<{ settings: QualitySettings }> = ({ settings }) 
   const { gl } = useThree();
 
   useEffect(() => {
-    gl.setPixelRatio(window.devicePixelRatio * settings.resolutionScale);
+    // Cap pixel ratio to max 2.0 to avoid mobile overheating and massive performance hits
+    const targetPixelRatio = Math.min(2.0, window.devicePixelRatio) * settings.resolutionScale;
+    gl.setPixelRatio(targetPixelRatio);
+    
     gl.shadowMap.enabled = settings.shadows;
     if (settings.shadows) {
       gl.shadowMap.type = THREE.PCFSoftShadowMap;

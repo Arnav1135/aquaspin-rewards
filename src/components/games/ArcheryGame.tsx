@@ -12,6 +12,32 @@ import { Button } from '@/components/ui/Button';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
+
+const GEO_ARROW_SHAFT = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8);
+const MAT_ARROW_SHAFT = new THREE.MeshStandardMaterial({ color: "#8B4513" });
+const GEO_ARROW_HEAD = new THREE.CylinderGeometry(0.03, 0.001, 0.1, 8);
+const MAT_ARROW_HEAD = new THREE.MeshStandardMaterial({ color: "#silver", metalness: 0.8, roughness: 0.2 });
+const GEO_ARROW_FEATHER = new THREE.BoxGeometry(0.1, 0.1, 0.01);
+const MAT_ARROW_FEATHER = new THREE.MeshStandardMaterial({ color: "#ff0000" });
+
+const GEO_TARGET_1 = new THREE.CylinderGeometry(2, 2, 0.2, 32);
+const MAT_TARGET_1 = new THREE.MeshStandardMaterial({ color: "white" });
+const GEO_TARGET_2 = new THREE.CylinderGeometry(1.6, 1.6, 0.21, 32);
+const MAT_TARGET_2 = new THREE.MeshStandardMaterial({ color: "black" });
+const GEO_TARGET_3 = new THREE.CylinderGeometry(1.2, 1.2, 0.22, 32);
+const MAT_TARGET_3 = new THREE.MeshStandardMaterial({ color: "#00a8ff" });
+const GEO_TARGET_4 = new THREE.CylinderGeometry(0.8, 0.8, 0.23, 32);
+const MAT_TARGET_4 = new THREE.MeshStandardMaterial({ color: "red" });
+const GEO_TARGET_5 = new THREE.CylinderGeometry(0.4, 0.4, 0.24, 32);
+const MAT_TARGET_5 = new THREE.MeshStandardMaterial({ color: "#FFD700" });
+
+const GEO_STAND = new THREE.BoxGeometry(0.2, 3, 0.2);
+const MAT_STAND = new THREE.MeshStandardMaterial({ color: "#5C4033" });
+
+const GEO_GROUND = new THREE.BoxGeometry(100, 1, 100);
+const MAT_GROUND = new THREE.MeshStandardMaterial({ color: "#2d4c1e", roughness: 0.9 });
+
+
 interface Props { onClose: () => void; }
 
 // --- Arrow Component ---

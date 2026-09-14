@@ -216,11 +216,21 @@ function GPUParticleExplosion({ position, isActive }: { position: THREE.Vector3,
 }
 
 // --- Flight Path renderer ---
-function RocketFlightPath({ points, crashed }: { points: THREE.Vector3[], crashed: boolean }) {
-  if (points.length < 2) return null;
+function RocketFlightPath({ pathRef, crashed }: { pathRef: React.MutableRefObject<THREE.Vector3[]>, crashed: boolean }) {
+  const lineRef = useRef<any>(null);
+  
+  useFrame(() => {
+    if (lineRef.current && pathRef.current.length >= 2) {
+      const positions = pathRef.current.flatMap(p => [p.x, p.y, p.z]);
+      lineRef.current.geometry.setPositions(positions);
+      lineRef.current.material.color.set(crashed ? "#ef4444" : "#00FFFF");
+    }
+  });
+
   return (
     <Line 
-      points={points} 
+      ref={lineRef}
+      points={[[0,0,0], [0,0,0]]} 
       color={crashed ? "#ef4444" : "#00FFFF"} 
       lineWidth={5} 
       dashed={false} 
@@ -234,13 +244,13 @@ function Rocket3D({
   multiplier, 
   crashed, 
   elapsed, 
-  onPathUpdate,
+  pathRef,
   gameState
 }: { 
   multiplier: number, 
   crashed: boolean, 
   elapsed: number,
-  onPathUpdate: (p: THREE.Vector3) => void,
+  pathRef: React.MutableRefObject<THREE.Vector3[]>,
   gameState: string
 }) {
   const rocketGroup = useRef<THREE.Group>(null);
@@ -313,7 +323,8 @@ function Rocket3D({
       rocketGroup.current.position.y = wobble;
       rocketGroup.current.position.z = sway;
       
-      onPathUpdate(newPos);
+      pathRef.current.push(newPos.clone());
+      if (pathRef.current.length > 50) pathRef.current.shift();
       
       // 3. Cinematic Camera Orbit
       // The camera slowly swings from side to side to constantly reveal depth
@@ -519,7 +530,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
   const [serverSeed, setServerSeed] = useState<string | null>(null);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [flightPath, setFlightPath] = useState<THREE.Vector3[]>([]);
+  const flightPathRef = useRef<THREE.Vector3[]>([]);
   const [flashOpacity, setFlashOpacity] = useState(0);
   const [shakeActive, setShakeActive] = useState(false);
   
@@ -652,7 +663,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
     setEarnedTokens(0);
     setSocialFeed([]);
     setSafetyCoverOpen(false);
-    setFlightPath([]);
+    flightPathRef.current = [];
     setElapsedSeconds(0);
     setFlashOpacity(0);
     setShakeActive(false);
@@ -769,13 +780,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
     return `translate3d(${rx}px, ${ry}px, 0px)`;
   };
 
-  const handlePathUpdate = (p: THREE.Vector3) => {
-    setFlightPath(prev => {
-       const newPath = [...prev, p.clone()];
-       if (newPath.length > 50) newPath.shift(); // Keep trail clean
-       return newPath;
-    });
-  };
+
 
   return (
     <div 
@@ -976,12 +981,12 @@ export function CrashGame({ onClose }: CrashGameProps) {
                  <Physics>
                    <SpaceEnvironment crashed={gameState === 'crashed'} speed={15} />
                    
-                   <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
+                   <RocketFlightPath pathRef={flightPathRef} crashed={gameState === 'crashed'} />
                    <Rocket3D 
                      multiplier={multiplier} 
                      crashed={gameState === 'crashed'} 
                      elapsed={elapsedSeconds} 
-                     onPathUpdate={handlePathUpdate}
+                     pathRef={flightPathRef}
                      gameState={gameState}
                    />
                    

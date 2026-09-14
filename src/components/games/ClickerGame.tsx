@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Zap, Trophy } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { vibrate } from '@/lib/utils';

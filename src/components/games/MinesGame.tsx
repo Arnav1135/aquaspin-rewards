@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, AlertTriangle, Trophy, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';

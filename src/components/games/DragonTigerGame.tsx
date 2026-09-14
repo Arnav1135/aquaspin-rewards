@@ -5,6 +5,7 @@ import { HelpCircle, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -109,12 +110,23 @@ export function DragonTigerGame({ onClose }: any) {
     async (newBalance: number, freeTrialsUsed?: boolean) => {
       const pr = profileRef.current;
       if (!pr || pr.id.startsWith('guest')) return true;
-      const dbUpdates: any = { tokens: newBalance };
+      const tokensChange = newBalance - balanceRef.current;
+      const dbUpdates: any = {};
       if (freeTrialsUsed) {
         const currentTrials = pr.free_trials ?? 3;
         dbUpdates.free_trials = Math.max(0, currentTrials - 1);
       }
-      const { error } = await (supabase.from('users') as any).update(dbUpdates).eq('id', pr.id);
+      
+      let error = null;
+      if (Object.keys(dbUpdates).length > 0) {
+        const res = await (supabase.from('users') as any).update(dbUpdates).eq('id', pr.id);
+        error = res.error;
+      }
+      
+      if (!error && tokensChange !== 0) {
+        const res = await secureUpdateTokens(pr.id, tokensChange);
+        error = res.error;
+      }
       return !error;
     },
     []

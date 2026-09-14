@@ -1,0 +1,24 @@
+import fs from 'fs';
+
+let code = fs.readFileSync('d:/Web App - Aqua Blue/src/components/games/CoinFlipGame.tsx', 'utf8');
+
+// Import useSafeTimeout
+code = code.replace(
+  "import { useAuthStore } from '@/features/authStore';", 
+  "import { useAuthStore } from '@/features/authStore';\nimport { useSafeTimeout } from '@/hooks/useSafeTimeout';"
+);
+
+// Add the hook to component
+code = code.replace(
+  "export function CoinFlipGame({ onClose }: { onClose: () => void }) {",
+  "export function CoinFlipGame({ onClose }: { onClose: () => void }) {\n  const { setSafeTimeout } = useSafeTimeout();"
+);
+
+// Replace setTimeout with setSafeTimeout
+code = code.replace(
+  "setTimeout(async () => {",
+  "setSafeTimeout(async () => {"
+);
+
+fs.writeFileSync('d:/Web App - Aqua Blue/src/components/games/CoinFlipGame.tsx', code);
+console.log('CoinFlipGame patched!');

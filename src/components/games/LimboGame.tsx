@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, Sparkles, Navigation, Gauge } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -14,7 +15,8 @@ import toast from 'react-hot-toast';
 interface LimboGameProps { onClose: () => void; }
 type Star = { x: number; y: number; z: number; size: number; color: string; };
 
-export function LimboGame({ onClose }: LimboGameProps) {
+export function LimboGame({ onClose }: any) {
+  const { setSafeTimeout } = useSafeTimeout();
   const { profile, updateProfile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(50);
   const [targetMultiplier, setTargetMultiplier] = useState(2.0);
@@ -237,7 +239,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
       if (isNearMiss) {
         // Dissonant reality correcting glitch
         setGlitchActive(true);
-        setTimeout(() => setGlitchActive(false), 500);
+        setSafeTimeout(() => setGlitchActive(false), 500);
 
         toast.custom(() => (
           <div className="bg-orange-950/90 border border-orange-500/50 px-3.5 py-2.5 rounded-xl text-xs text-orange-400 font-bold flex items-center gap-2 backdrop-blur-md">

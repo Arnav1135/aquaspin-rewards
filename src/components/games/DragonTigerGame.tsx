@@ -3,6 +3,7 @@ import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -77,7 +78,8 @@ function PlayingPlaque({ card, revealed, side, isWinner }: { card: CardData | nu
   );
 }
 
-export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
+export function DragonTigerGame({ onClose }: any) {
+  const { setSafeTimeout } = useSafeTimeout();
   const { profile, updateProfile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(50);
   const [betSelection, setBetSelection] = useState<BetType>(null);
@@ -202,32 +204,32 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
       const tCard = getRandomCard();
 
       // Card draw sequence (Heavy drops)
-      setTimeout(() => {
+      setSafeTimeout(() => {
         setDragonCard(dCard);
         audio.play('dragontiger', 'card-flip-reveal', { win: dCard.value > tCard.value });
         vibrate(30);
       }, 600);
 
-      setTimeout(() => {
+      setSafeTimeout(() => {
         setDragonRevealed(true);
         // Crack flame casing sound
         audio.play('dragontiger', 'card-deal');
       }, 1200);
 
-      setTimeout(() => {
+      setSafeTimeout(() => {
         setTigerCard(tCard);
         audio.play('dragontiger', 'card-flip-reveal', { win: tCard.value > dCard.value });
         vibrate(30);
       }, 1800);
 
-      setTimeout(() => {
+      setSafeTimeout(() => {
         setTigerRevealed(true);
         // Wind swirl dissolve sound
         audio.play('dragontiger', 'card-deal');
       }, 2400);
 
       // Resolve Outcome
-      setTimeout(async () => {
+      setSafeTimeout(async () => {
         try {
           let winner: 'dragon' | 'tiger' | 'tie';
           if (dCard.value > tCard.value) winner = 'dragon';

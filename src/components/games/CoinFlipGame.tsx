@@ -9,6 +9,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
+import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -130,7 +131,8 @@ function Coin3D({ flipping, result, selectedSide }: { flipping: boolean; result:
   );
 }
 
-export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
+export function CoinFlipGame({ onClose }: any) {
+  const { setSafeTimeout } = useSafeTimeout();
   const { profile, updateProfile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(50);
   const [selectedSide, setSelectedSide] = useState<CoinSide>(null);
@@ -334,7 +336,7 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
       const coinResult: CoinSide = random < 0.5 ? 'heads' : 'tails';
 
       // Wait for animation to complete
-      setTimeout(async () => {
+      setSafeTimeout(async () => {
         try {
           setResult(coinResult);
           setFlipping(false);

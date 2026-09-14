@@ -20,6 +20,8 @@ export class LiquidGraphics extends Container {
   private currentColors: number[] = [];
   public surfaceRipple = 0;
 
+  private contentLayer: Graphics;
+
   constructor(vesselDef: VesselDefinition, tubeWidth: number, tubeHeight: number, capacity: number) {
     super();
     this.vesselDef = vesselDef;
@@ -31,6 +33,9 @@ export class LiquidGraphics extends Container {
     this.createMask();
     this.mask = this.liquidMask;
     this.addChild(this.liquidMask);
+    
+    this.contentLayer = new Graphics();
+    this.addChild(this.contentLayer);
   }
 
   private createMask() {
@@ -67,15 +72,7 @@ export class LiquidGraphics extends Container {
   private renderLiquids() {
     const colors = this.currentColors;
 
-    // This renderer is called only at animation updates. Explicitly dispose
-    // old transient graphics so fractional-volume frames cannot accumulate.
-    for (let i = this.children.length - 1; i >= 0; i--) {
-      const child = this.children[i];
-      if (child !== this.liquidMask) {
-        this.removeChild(child);
-        child.destroy({ children: true });
-      }
-    }
+    this.contentLayer.clear();
 
     if (colors.length === 0 || this.animatedVolume <= 0) return;
 
@@ -93,7 +90,7 @@ export class LiquidGraphics extends Container {
       remainingVolume -= fillAmount;
 
       const hexColor = activeTheme.liquidPalette[colorId % activeTheme.liquidPalette.length];
-      const g = new Graphics();
+      const g = this.contentLayer;
       const bottomY = this.tubeHeight - this.tubeWidth / 2 - i * segmentHeight;
       const currentSegmentHeight = Math.max(0, segmentHeight * fillAmount);
       const isSurface = remainingVolume <= 0 && currentSegmentHeight > 0;
@@ -103,46 +100,28 @@ export class LiquidGraphics extends Container {
       g.fill({ color: hexColor });
 
       if (isSurface) {
-        // A subtle meniscus responds to the actual pour, rather than a random
-        // wave. The ripple is bounded by AnimationSystem.
-        const meniscus = new Graphics();
-        meniscus.ellipse(w / 2, topY, (w - 4) / 2, 3.5);
-        meniscus.fill({ color: 0xFFFFFF, alpha: 0.28 });
-        g.addChild(meniscus);
+        g.ellipse(w / 2, topY, (w - 4) / 2, 3.5);
+        g.fill({ color: 0xFFFFFF, alpha: 0.28 });
       }
 
       if (currentSegmentHeight > 2) {
-        const depth = new Graphics();
-        depth.rect(2, bottomY - Math.min(6, currentSegmentHeight), w - 4, Math.min(6, currentSegmentHeight));
-        depth.fill({ color: 0x000000, alpha: 0.1 });
-        g.addChild(depth);
+        g.rect(2, bottomY - Math.min(6, currentSegmentHeight), w - 4, Math.min(6, currentSegmentHeight));
+        g.fill({ color: 0x000000, alpha: 0.1 });
       }
 
       if (colorBlindMode && currentSegmentHeight > segmentHeight * 0.5) {
         const hash = colorId % 5 + 1;
-        const pattern = new Graphics();
-        pattern.fill({ color: 0xFFFFFF, alpha: 0.5 });
         for (let d = 0; d < hash; d++) {
-          pattern.circle(w / 2 - (hash * 6) / 2 + d * 6 + 3, topY + currentSegmentHeight / 2, 2);
+          g.circle(w / 2 - (hash * 6) / 2 + d * 6 + 3, topY + currentSegmentHeight / 2, 2);
         }
-        g.addChild(pattern);
+        g.fill({ color: 0xFFFFFF, alpha: 0.5 });
       }
 
-      // Hardcore mode masking: only the surface segment is colored, others are obscured
+      // Hardcore mode masking
       if (useGameState.getState().gameMode === 'hardcore' && !isSurface) {
-        // Draw an obscuring block over the liquid segment
-        const obscurer = new Graphics();
-        obscurer.rect(2, topY, w - 4, currentSegmentHeight);
-        obscurer.fill({ color: 0x111111, alpha: 0.95 }); // Almost pitch black
-        g.addChild(obscurer);
-        
-        // Add a question mark in the center to indicate it's hidden
-        // Because text in Pixi can be expensive to create per-frame, we'll draw a simple 
-        // procedural geometric question mark or just leave it mysteriously dark.
-        // The frosted/black glass is enough.
+        g.rect(2, topY, w - 4, currentSegmentHeight);
+        g.fill({ color: 0x111111, alpha: 0.95 }); 
       }
-
-      this.addChild(g);
     });
   }
 }

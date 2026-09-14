@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useSpring, a } from '@react-spring/three';
+import * as THREE from 'three';
 import { RigidBody, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
 import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
 import { useCarromStore } from '../state/CarromState';
 import { CarromCoinData } from '../types/CarromTypes';
-import { triggerVFX } from './CarromVFXSystem';
+import { useVFX } from '../../../engine/aaa';
 import { CarromMaterialProfile } from '../materials/CarromMaterialProfile';
 
 function createInitialCoins(): CarromCoinData[] {
@@ -45,6 +46,7 @@ function createInitialCoins(): CarromCoinData[] {
 
 function Coin3D({ coin }: { coin: CarromCoinData }) {
   const bodyRef = useRef<RapierRigidBody>(null);
+  const { spawnEffect } = useVFX();
   const [pocketPos, setPocketPos] = useState<[number, number, number] | null>(null);
 
   useEffect(() => {
@@ -141,9 +143,7 @@ function Coin3D({ coin }: { coin: CarromCoinData }) {
           const pos = bodyRef.current?.translation();
           const linvel = bodyRef.current?.linvel();
           if (pos) {
-            triggerVFX({
-              type: 'impact',
-              position: [pos.x, pos.y, pos.z],
+            spawnEffect('impact', new THREE.Vector3(pos.x, pos.y, pos.z), {
               intensity: Math.min(payload.totalForce * 5, 10),
               mass: CARROM_PHYSICS.COIN.MASS,
               velocity: linvel ? [linvel.x, linvel.y, linvel.z] : [0,0,0],

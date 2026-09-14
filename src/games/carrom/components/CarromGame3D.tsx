@@ -7,11 +7,8 @@ import { Striker3D } from './Striker3D';
 import { CoinManager } from './CoinManager';
 import { CarromControls } from './CarromControls';
 import { TurnManager } from './TurnManager';
-import { CarromVFXSystem } from './CarromVFXSystem';
 import { CarromAudioSystem } from './CarromAudioSystem';
 import { CarromCameraController } from './CarromCameraController';
-import { CarromPerformanceManager } from './CarromPerformanceManager';
-import { CarromPostProcessing } from './CarromPostProcessing';
 import { PocketNetSystem } from './PocketNetSystem';
 import { VictoryCinematic } from './VictoryCinematic';
 import { StrikerAimSystem } from './StrikerAimSystem';
@@ -26,11 +23,30 @@ import { CarromEnvironmentSystem } from '../environment/CarromEnvironmentSystem'
 import { CarromHeroStudio } from '../environment/CarromHeroStudio';
 import { CarromContactShadows } from '../rendering/CarromShadowSystem';
 import { CarromDebugOverlay } from '../debug/CarromDebugOverlay';
+import { QualityManager, PostFXManager, VFXManager, ParticleManager, useVFX } from '../../../engine/aaa';
+
+import * as THREE from 'three';
 
 function AILoop() {
   useFrame(() => {
     carromAI.update();
   });
+  return null;
+}
+
+function VictoryVFX() {
+  const turnState = useCarromStore(state => state.turnState);
+  const { spawnEffect } = useVFX();
+
+  useEffect(() => {
+    if (turnState === 'GAME_OVER') {
+      const vfxInterval = setInterval(() => {
+        spawnEffect('victory', new THREE.Vector3(0, 0, 0), { intensity: 10 });
+      }, 500);
+      return () => clearInterval(vfxInterval);
+    }
+  }, [turnState, spawnEffect]);
+  
   return null;
 }
 
@@ -53,46 +69,50 @@ export function CarromGame3D() {
             preserveDrawingBuffer: true
           }}
         >
-        <AILoop />
-        <CarromPerformanceManager />
-        <Suspense fallback={null}>
-          <CarromCameraController />
-          <OrbitControls 
-            enablePan={false} 
-            maxPolarAngle={Math.PI / 2.1} 
-            minDistance={0.5} 
-            maxDistance={2} 
-            enabled={turnState === 'IDLE'} // Disable when actively playing to let CameraController take over
-          />
-          
-          {/* Phase 1-2: HDR Environment + Hero Studio Lighting */}
-          <CarromHeroStudio />
-          <CarromEnvironmentSystem />
+        <QualityManager>
+          <VFXManager>
+            <AILoop />
+            <VictoryVFX />
+            <Suspense fallback={null}>
+              <CarromCameraController />
+              <OrbitControls 
+                enablePan={false} 
+                maxPolarAngle={Math.PI / 2.1} 
+                minDistance={0.5} 
+                maxDistance={2} 
+                enabled={turnState === 'IDLE'} // Disable when actively playing to let CameraController take over
+              />
+              
+              {/* Phase 1-2: HDR Environment + Hero Studio Lighting */}
+              <CarromHeroStudio />
+              <CarromEnvironmentSystem />
 
-          {/* Phase 13-15: Contact Shadows */}
-          <CarromContactShadows />
+              {/* Phase 13-15: Contact Shadows */}
+              <CarromContactShadows />
 
-          {/* Physics Engine (Rapier) */}
-          <Physics timeStep={CARROM_PHYSICS.PHYSICS.TIME_STEP} colliders={false}>
-            <Board3D />
-            <CoinManager />
-            <Striker3D />
-            <CarromControls />
-            <TurnManager />
-            <CarromVFXSystem />
-            <CarromAudioSystem />
-            {/* Phase 21-23: Advanced Aim System */}
-            <StrikerAimSystem />
-            <PocketNetSystem />
-            <CarromWaterSystem />
-          </Physics>
+              {/* Physics Engine (Rapier) */}
+              <Physics timeStep={CARROM_PHYSICS.PHYSICS.TIME_STEP} colliders={false}>
+                <Board3D />
+                <CoinManager />
+                <Striker3D />
+                <CarromControls />
+                <TurnManager />
+                <ParticleManager />
+                <CarromAudioSystem />
+                {/* Phase 21-23: Advanced Aim System */}
+                <StrikerAimSystem />
+                <PocketNetSystem />
+                <CarromWaterSystem />
+              </Physics>
 
-          {/* Phase 36-38: Post-Processing with Color Grading */}
-          <CarromPostProcessing />
+              {/* Phase 36-38: Post-Processing with Color Grading */}
+              <PostFXManager />
 
-          {/* Phase 48-49: Debug Overlay (F9 toggle) */}
-          <CarromDebugOverlay />
-        </Suspense>
+              {/* Phase 48-49: Debug Overlay (F9 toggle) */}
+              <CarromDebugOverlay />
+            </Suspense>
+          </VFXManager>
+        </QualityManager>
       </Canvas>
       
       {/* Phase 31: Victory Cinematic Overlay */}

@@ -1,15 +1,19 @@
 import React, { useMemo } from 'react';
 import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier';
-import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
+import { useTexture, RoundedBox } from '@react-three/drei';
+import * as THREE from 'three';
+import { useVFX } from '../../../engine/aaa';
 import { useCarromStore } from '../state/CarromState';
-import { triggerVFX } from './CarromVFXSystem';
+import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
+import { useCarromQuality } from './CarromPerformanceManager';
 import { getWoodTexture } from '../materials/ProceduralWood';
 import { CarromMaterialProfile } from '../materials/CarromMaterialProfile';
-import { RoundedBox } from '@react-three/drei';
-import * as THREE from 'three';
 
 export function Board3D() {
   const pocketCoin = useCarromStore(state => state.pocketCoin);
+  const { spawnEffect } = useVFX();
+  
+  const quality = useCarromQuality();
   const woodTex = getWoodTexture();
   const surfaceMaterial = useMemo(() => CarromMaterialProfile.getBoardSurfaceMaterial(), []);
   const edgeMaterial = useMemo(() => CarromMaterialProfile.getBoardEdgeMaterial(woodTex), [woodTex]);
@@ -102,9 +106,7 @@ export function Board3D() {
           onIntersectionEnter={({ other }) => {
             if (other.rigidBodyObject?.userData?.isCoin) {
               pocketCoin(other.rigidBodyObject.userData.id);
-              triggerVFX({
-                type: 'pocket',
-                position: pos,
+              spawnEffect('pocket', new THREE.Vector3(pos[0], pos[1], pos[2]), {
                 intensity: 1.0,
               });
             }

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useCarromStore } from '../state/CarromState';
-import { triggerVFX } from './CarromVFXSystem';
 
 export function VictoryCinematic() {
   const turnState = useCarromStore(state => state.turnState);
@@ -12,22 +11,11 @@ export function VictoryCinematic() {
     if (turnState === 'GAME_OVER') {
       setCameraProfile('VICTORY');
       setColorGradingProfile('WARM_WOOD');
-      
-      // Trigger victory VFX (gold particle shower)
-      const vfxInterval = setInterval(() => {
-        triggerVFX({
-          type: 'victory',
-          position: [0, 0, 0],
-          intensity: 10
-        });
-      }, 500);
-
       const uiTimeout = setTimeout(() => {
         setShowUI(true);
       }, 1000);
 
       return () => {
-        clearInterval(vfxInterval);
         clearTimeout(uiTimeout);
       };
     } else {

@@ -1,12 +1,47 @@
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Physics, RapierRigidBody } from '@react-three/rapier';
+import { Physics, RapierRigidBody, useRapier } from '@react-three/rapier';
 import { TableMesh, TABLE_LENGTH } from './TableMesh';
 import { BallMesh, BALL_RADIUS } from './BallMesh';
 import { CueStick } from './CueStick';
 import { usePoolRules } from './RulesEngine';
 import * as THREE from 'three';
 import { Line, Environment, ContactShadows } from '@react-three/drei';
+
+function TurnResolver({ firstHit, pocketedThisTurn, railHit }: { 
+  firstHit: React.MutableRefObject<number | null>, 
+  pocketedThisTurn: React.MutableRefObject<number[]>, 
+  railHit: React.MutableRefObject<boolean> 
+}) {
+  const { world } = useRapier();
+  const turnState = usePoolRules(s => s.turnState);
+  const resolveTurn = usePoolRules(s => s.resolveTurn);
+
+  useFrame(() => {
+    if (turnState === 'ROLLING') {
+      let allStopped = true;
+      world.bodies.forEach((body) => {
+        if (body.isDynamic()) {
+          const linvel = body.linvel();
+          const angvel = body.angvel();
+          const speed = Math.abs(linvel.x) + Math.abs(linvel.y) + Math.abs(linvel.z);
+          const spin = Math.abs(angvel.x) + Math.abs(angvel.y) + Math.abs(angvel.z);
+          if (speed > 0.05 || spin > 0.05) {
+            allStopped = false;
+          }
+        }
+      });
+      if (allStopped) {
+        resolveTurn(firstHit.current, [...pocketedThisTurn.current], railHit.current);
+        firstHit.current = null;
+        pocketedThisTurn.current = [];
+        railHit.current = false;
+      }
+    }
+  });
+
+  return null;
+}
 
 interface Scene3DProps {
   cueAngle: number;
@@ -18,6 +53,9 @@ export function Scene3D({ cueAngle, power }: Scene3DProps) {
   const turnState = usePoolRules(s => s.turnState);
   
   const cueBallRef = useRef<RapierRigidBody>(null);
+  const firstHit = useRef<number | null>(null);
+  const pocketedThisTurn = useRef<number[]>([]);
+  const railHit = useRef<boolean>(false);
   
   // Create the initial rack
   const initialBalls = useMemo(() => {
@@ -46,6 +84,9 @@ export function Scene3D({ cueAngle, power }: Scene3DProps) {
 
   const [cueBallPos, setCueBallPos] = useState<[number, number, number]>([0, BALL_RADIUS, -TABLE_LENGTH / 4]);
 
+  const camTargetPos = useRef(new THREE.Vector3());
+  const camCurrentPos = useRef(new THREE.Vector3());
+
   useFrame(({ clock }) => {
     if (cueBallRef.current) {
       const pos = cueBallRef.current.translation();
@@ -67,14 +108,15 @@ export function Scene3D({ cueAngle, power }: Scene3DProps) {
         const targetX = pos.x - Math.sin(cueAngle) * camDistance + breathX;
         const targetZ = pos.z - Math.cos(cueAngle) * camDistance;
         
-        const targetCamPos = new THREE.Vector3(targetX, camHeight + breathY, targetZ);
-        camera.position.lerp(targetCamPos, 0.08);
+        camTargetPos.current.set(targetX, camHeight + breathY, targetZ);
+        camera.position.lerp(camTargetPos.current, 0.08);
         camera.lookAt(pos.x, pos.y, pos.z);
       } else {
         // Rolling camera: dynamic overhead/tracking, slightly offset
         const breathX = Math.sin(t * 1.0) * 0.1;
         const breathY = Math.cos(t * 0.8) * 0.1;
-        camera.position.lerp(new THREE.Vector3(pos.x + breathX, 7 + breathY, pos.z + 5), 0.04);
+        camTargetPos.current.set(pos.x + breathX, 7 + breathY, pos.z + 5);
+        camera.position.lerp(camTargetPos.current, 0.04);
         camera.lookAt(pos.x, 0, pos.z);
       }
     }
@@ -110,16 +152,7 @@ export function Scene3D({ cueAngle, power }: Scene3DProps) {
     return () => window.removeEventListener('pool-strike', handleStrike);
   }, [turnState]);
 
-  // Check if balls stopped
-  useEffect(() => {
-    if (turnState === 'ROLLING') {
-      const t = setTimeout(() => {
-        usePoolRules.getState().resolveTurn(null, [], false);
-      }, 6000);
-      return () => clearTimeout(t);
-    }
-  }, [turnState]);
-
+  // turn resolution is now handled by TurnResolver inside Physics
   return (
     <>
       <Environment preset="warehouse" background blur={0.8} />
@@ -149,11 +182,36 @@ export function Scene3D({ cueAngle, power }: Scene3DProps) {
       />
       
       <Physics gravity={[0, -9.81, 0]}>
+        <TurnResolver firstHit={firstHit} pocketedThisTurn={pocketedThisTurn} railHit={railHit} />
         <TableMesh />
         
-        <BallMesh ref={cueBallRef} id={0} position={cueBallPos} isCue />
+        <BallMesh 
+          ref={cueBallRef} 
+          id={0} 
+          position={cueBallPos} 
+          isCue 
+          onPocketed={(id) => pocketedThisTurn.current.push(id)}
+          onCollision={(otherId) => {
+            if (firstHit.current === null && typeof otherId === 'number') {
+              firstHit.current = otherId;
+            }
+            if (firstHit.current !== null && otherId === 'rail') {
+              railHit.current = true;
+            }
+          }}
+        />
         {initialBalls.map(b => (
-          <BallMesh key={b.id} id={b.id} position={b.position} />
+          <BallMesh 
+            key={b.id} 
+            id={b.id} 
+            position={b.position} 
+            onPocketed={(id) => pocketedThisTurn.current.push(id)}
+            onCollision={(otherId) => {
+              if (firstHit.current !== null && otherId === 'rail') {
+                railHit.current = true;
+              }
+            }}
+          />
         ))}
       </Physics>
 

@@ -44,7 +44,7 @@ export function TableMesh() {
       {/* Cushions and Rails */}
       <group position={[0, 0.2, 0]}>
         {/* Top Rail */}
-        <RigidBody type="fixed" restitution={0.85} friction={0.2}>
+        <RigidBody type="fixed" restitution={0.85} friction={0.2} userData={{ isRail: true }}>
           <mesh position={[0, 0, -TABLE_LENGTH / 2 - 0.25]} receiveShadow castShadow>
              <boxGeometry args={[TABLE_WIDTH + 1.0, CUSHION_HEIGHT, 0.5]} />
              <meshPhysicalMaterial color="#3b2b22" roughness={0.2} metalness={0.1} clearcoat={0.8} clearcoatRoughness={0.15} envMapIntensity={1.5} />
@@ -53,7 +53,7 @@ export function TableMesh() {
         </RigidBody>
 
         {/* Bottom Rail */}
-        <RigidBody type="fixed" restitution={0.85} friction={0.2}>
+        <RigidBody type="fixed" restitution={0.85} friction={0.2} userData={{ isRail: true }}>
           <mesh position={[0, 0, TABLE_LENGTH / 2 + 0.25]} receiveShadow castShadow>
              <boxGeometry args={[TABLE_WIDTH + 1.0, CUSHION_HEIGHT, 0.5]} />
              <meshPhysicalMaterial color="#3b2b22" roughness={0.2} metalness={0.1} clearcoat={0.8} clearcoatRoughness={0.15} envMapIntensity={1.5} />
@@ -62,7 +62,7 @@ export function TableMesh() {
         </RigidBody>
 
         {/* Left Rail */}
-        <RigidBody type="fixed" restitution={0.85} friction={0.2}>
+        <RigidBody type="fixed" restitution={0.85} friction={0.2} userData={{ isRail: true }}>
           <mesh position={[-TABLE_WIDTH / 2 - 0.25, 0, 0]} receiveShadow castShadow>
              <boxGeometry args={[0.5, CUSHION_HEIGHT, TABLE_LENGTH]} />
              <meshPhysicalMaterial color="#3b2b22" roughness={0.2} metalness={0.1} clearcoat={0.8} clearcoatRoughness={0.15} envMapIntensity={1.5} />
@@ -71,7 +71,7 @@ export function TableMesh() {
         </RigidBody>
 
         {/* Right Rail */}
-        <RigidBody type="fixed" restitution={0.85} friction={0.2}>
+        <RigidBody type="fixed" restitution={0.85} friction={0.2} userData={{ isRail: true }}>
           <mesh position={[TABLE_WIDTH / 2 + 0.25, 0, 0]} receiveShadow castShadow>
              <boxGeometry args={[0.5, CUSHION_HEIGHT, TABLE_LENGTH]} />
              <meshPhysicalMaterial color="#3b2b22" roughness={0.2} metalness={0.1} clearcoat={0.8} clearcoatRoughness={0.15} envMapIntensity={1.5} />

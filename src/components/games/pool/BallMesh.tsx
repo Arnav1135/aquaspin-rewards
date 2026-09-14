@@ -9,7 +9,7 @@ interface PoolBallProps {
   position: [number, number, number];
   isCue?: boolean;
   onPocketed?: (id: number) => void;
-  onCollision?: (otherId: number) => void;
+  onCollision?: (otherId: number | string) => void;
 }
 
 const BALL_COLORS = [
@@ -31,21 +31,20 @@ const BALL_COLORS = [
   '#8b4513', // 15: Stripe Maroon
 ];
 
+const BALL_MATERIALS = BALL_COLORS.map(color => {
+  return new THREE.MeshPhysicalMaterial({
+    color: color,
+    roughness: 0.05, // Highly polished
+    metalness: 0.0,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.05,
+    envMapIntensity: 2.5, // HDRI reflections boost
+    ior: 1.5, // Polymer/phenolic resin index of refraction
+  });
+});
+
 export const BallMesh = React.forwardRef<RapierRigidBody, PoolBallProps>(({ id, position, isCue, onPocketed, onCollision }, ref) => {
-  const baseColor = BALL_COLORS[id];
-  
-  // Create a realistic PBR material for the ball
-  const material = useMemo(() => {
-    return new THREE.MeshPhysicalMaterial({
-      color: baseColor,
-      roughness: 0.05, // Highly polished
-      metalness: 0.0,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.05,
-      envMapIntensity: 2.5, // HDRI reflections boost
-      ior: 1.5, // Polymer/phenolic resin index of refraction
-    });
-  }, [baseColor]);
+  const material = BALL_MATERIALS[id];
 
   // Striped balls need a white base and a colored stripe. 
   // For an educational build, we can use a canvas texture to generate the stripe and number,
@@ -70,9 +69,13 @@ export const BallMesh = React.forwardRef<RapierRigidBody, PoolBallProps>(({ id, 
         }
       }}
       onCollisionEnter={({ other }) => {
-        const otherId = other.rigidBodyObject?.userData?.id;
-        if (typeof otherId === 'number') {
-          onCollision?.(otherId);
+        const userData = other.rigidBodyObject?.userData;
+        if (userData) {
+          if (typeof userData.id === 'number') {
+            onCollision?.(userData.id);
+          } else if (userData.isRail) {
+            onCollision?.('rail');
+          }
         }
       }}
     >

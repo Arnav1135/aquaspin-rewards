@@ -50,7 +50,6 @@ export class Chess3DScene {
   private isAnimating = false;
   private animFrameId: number | null = null;
   private isTabVisible = true;
-
   // FPS calculation
   private lastFrameTime = performance.now();
   private frameCount = 0;

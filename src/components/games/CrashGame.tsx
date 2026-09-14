@@ -12,8 +12,9 @@ import toast from 'react-hot-toast';
 import { MockBackend } from '@/lib/api';
 import { OpportunityEngine } from '@/lib/opportunityEngine';
 
-import { GameEngine3D } from '@/engine/GameEngine3D';
-import { RigidBody } from '@react-three/rapier';
+import { Canvas } from '@react-three/fiber';
+import { QualityManager, PostFXManager, VFXManager, ParticleManager, useVFX } from '@/engine/aaa';
+import { RigidBody, Physics } from '@react-three/rapier';
 import { Html, Line, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -969,39 +970,44 @@ export function CrashGame({ onClose }: CrashGameProps) {
         )}
 
         <div className="absolute inset-0 z-0">
-           <GameEngine3D 
-              enablePhysics={true} 
-              cameraPosition={[0, 0, 15]}
-              enablePostProcessing={true}
-           >
-              <SpaceEnvironment crashed={gameState === 'crashed'} speed={15} />
-              
-              <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
-              <Rocket3D 
-                multiplier={multiplier} 
-                crashed={gameState === 'crashed'} 
-                elapsed={elapsedSeconds} 
-                onPathUpdate={handlePathUpdate}
-                gameState={gameState}
-              />
-              
-              <Html center position={[0, 0, 0]} zIndexRange={[100, 0]} className="pointer-events-none">
-                <AnimatePresence>
-                  {gameState === 'crashed' && (
-                    <motion.div 
-                      initial={{ scale: 0.9, opacity: 0 }} 
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="flex items-center justify-center w-[400px]"
-                    >
-                      <div className="text-center bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-red-500/30 mt-[200px]">
-                        <p className="text-4xl font-black text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]">💥 CORE RUPTURED</p>
-                        <p className="text-sm text-red-300 font-mono mt-1">Telemetry terminated at {crashPointRef.current}x</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Html>
-           </GameEngine3D>
+           <Canvas camera={{ position: [0, 0, 15] }}>
+             <QualityManager>
+               <VFXManager>
+                 <Physics>
+                   <SpaceEnvironment crashed={gameState === 'crashed'} speed={15} />
+                   
+                   <RocketFlightPath points={flightPath} crashed={gameState === 'crashed'} />
+                   <Rocket3D 
+                     multiplier={multiplier} 
+                     crashed={gameState === 'crashed'} 
+                     elapsed={elapsedSeconds} 
+                     onPathUpdate={handlePathUpdate}
+                     gameState={gameState}
+                   />
+                   
+                   <Html center position={[0, 0, 0]} zIndexRange={[100, 0]} className="pointer-events-none">
+                     <AnimatePresence>
+                       {gameState === 'crashed' && (
+                         <motion.div 
+                           initial={{ scale: 0.9, opacity: 0 }} 
+                           animate={{ scale: 1, opacity: 1 }}
+                           className="flex items-center justify-center w-[400px]"
+                         >
+                           <div className="text-center bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-red-500/30 mt-[200px]">
+                             <p className="text-4xl font-black text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]">💥 CORE RUPTURED</p>
+                             <p className="text-sm text-red-300 font-mono mt-1">Telemetry terminated at {crashPointRef.current}x</p>
+                           </div>
+                         </motion.div>
+                       )}
+                     </AnimatePresence>
+                   </Html>
+                   
+                   <ParticleManager />
+                 </Physics>
+                 <PostFXManager />
+               </VFXManager>
+             </QualityManager>
+           </Canvas>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 space-y-1 min-h-[90px] border-t border-slate-900/60 bg-slate-950/80 backdrop-blur-sm z-30">

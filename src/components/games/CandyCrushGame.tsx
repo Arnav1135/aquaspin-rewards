@@ -9,8 +9,9 @@ import { Orchestrator, GameEvent, CandyColor } from './candycrush/Orchestrator';
 import { useGameStore, UIEngine } from './candycrush/UIEngine';
 import { AnimationEngine } from './candycrush/AnimationEngine';
 import { SoundEngine } from './candycrush/SoundEngine';
-import { AquaSpinEngine } from '../../engine/3d';
-
+import { LightingSystem } from '../../engine/3d';
+import { QualityManager, PostFXManager, VFXManager, ParticleManager, useVFX } from '../../engine/aaa';
+import { Canvas } from '@react-three/fiber';
 // Ensure engines are initialized
 void UIEngine;
 void AnimationEngine;
@@ -257,63 +258,62 @@ export default function CandyCrushGame({
         </div>
         
         <div className="flex-1 min-w-0 w-full w-full max-w-md relative">
-          <AquaSpinEngine 
-            orthographic 
-            zoom={45} 
-            enablePostProcessing 
-            quality="high" 
-            bloomIntensity={1.2} 
-            environmentPreset="city"
-            cameraMode="default"
-          >
-            {/* The AquaSpinEngine LightingSystem handles environment and main directional lights, but we can keep local point lights for the board */}
-            <pointLight position={[-5, -5, 5]} intensity={1} />
-            
-            <group position={[-3.5, 3.5, 0]}>
-              {board.map((row, r) => 
-                row.map((candy, c) => {
-                  if (!candy) return null;
-                  const isSelected = selected?.r === r && selected?.c === c;
-                  return (
-                    <group key={candy.id} position={[c, -r, 0]}>
-                      <mesh position={[0, 0, -0.5]}>
-                        <boxGeometry args={[0.95, 0.95, 0.1]} />
-                        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color={isSelected ? "#ffffff" : "#f4eaff"} roughness={0.8} />
-                      </mesh>
-                      <CandyMesh 
-                        candy={candy} 
-                        position={[0, 0, 0]} 
-                        onClick={() => handleCandyClick(r, c)} 
-                      />
-                    </group>
-                  );
-                })
-              )}
-              
-              {/* Transient Visual Effects */}
-              {activeEffects.map(fx => (
-                <Html key={fx.id} position={[fx.c, -fx.r, 0]} center className="pointer-events-none">
-                  {fx.type === 'pop' ? (
-                    <motion.div
-                      initial={{ scale: 0, opacity: 1 }}
-                      animate={{ scale: 2.5, opacity: 0 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
-                      className="w-16 h-16 rounded-full border-4 border-white shadow-[0_0_15px_rgba(255,255,255,0.8)]"
-                    />
-                  ) : (
-                    <motion.div
-                      initial={{ y: 0, opacity: 1, scale: 0.5 }}
-                      animate={{ y: -40, opacity: 0, scale: 1.2 }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="text-2xl font-black text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-                    >
-                      {fx.text}
-                    </motion.div>
+          <Canvas orthographic camera={{ zoom: 45, position: [0,0,10] }}>
+            <QualityManager>
+              <VFXManager>
+                <LightingSystem preset="city" shadowMapSize={2048} quality="high" />
+                <pointLight position={[-5, -5, 5]} intensity={1} />
+                
+                <group position={[-3.5, 3.5, 0]}>
+                  {board.map((row, r) => 
+                    row.map((candy, c) => {
+                      if (!candy) return null;
+                      const isSelected = selected?.r === r && selected?.c === c;
+                      return (
+                        <group key={candy.id} position={[c, -r, 0]}>
+                          <mesh position={[0, 0, -0.5]}>
+                            <boxGeometry args={[0.95, 0.95, 0.1]} />
+                            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color={isSelected ? "#ffffff" : "#f4eaff"} roughness={0.8} />
+                          </mesh>
+                          <CandyMesh 
+                            candy={candy} 
+                            position={[0, 0, 0]} 
+                            onClick={() => handleCandyClick(r, c)} 
+                          />
+                        </group>
+                      );
+                    })
                   )}
-                </Html>
-              ))}
-            </group>
-          </AquaSpinEngine>
+                  
+                  {/* Transient Visual Effects */}
+                  {activeEffects.map(fx => (
+                    <Html key={fx.id} position={[fx.c, -fx.r, 0]} center className="pointer-events-none">
+                      {fx.type === 'pop' ? (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 1 }}
+                          animate={{ scale: 2.5, opacity: 0 }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="w-16 h-16 rounded-full border-4 border-white shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+                        />
+                      ) : (
+                        <motion.div
+                          initial={{ y: 0, opacity: 1, scale: 0.5 }}
+                          animate={{ y: -40, opacity: 0, scale: 1.2 }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="text-2xl font-black text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                        >
+                          {fx.text}
+                        </motion.div>
+                      )}
+                    </Html>
+                  ))}
+                </group>
+
+                <ParticleManager />
+                <PostFXManager />
+              </VFXManager>
+            </QualityManager>
+          </Canvas>
         </div>
       </div>
     </GameFrame>

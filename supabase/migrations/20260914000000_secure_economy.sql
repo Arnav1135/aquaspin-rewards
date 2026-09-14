@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION update_user_tokens(p_user_id UUID, p_amount_change IN
 RETURNS INT
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS \$\$
+AS $$
 DECLARE
     new_balance INT;
 BEGIN
@@ -17,7 +17,7 @@ BEGIN
     
     RETURN new_balance;
 END;
-\$\$;
+$$;
 
 -- 2. Secure Game Result Recorder
 CREATE OR REPLACE FUNCTION record_game_result(
@@ -29,7 +29,7 @@ CREATE OR REPLACE FUNCTION record_game_result(
 RETURNS INT
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS \$\$
+AS $$
 DECLARE
     new_balance INT;
     profit INT;
@@ -59,4 +59,4 @@ BEGIN
 
     RETURN new_balance;
 END;
-\$\$;
+$$;

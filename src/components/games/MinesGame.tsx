@@ -37,6 +37,53 @@ function getMinesMultiplier(mines: number, clicks: number): number {
 
 // --- 3D Components ---
 
+const tileGeo = new THREE.BoxGeometry(1.3, 0.4, 1.3);
+const rimGeo = new THREE.BoxGeometry(1.35, 0.35, 1.35);
+const bombGeo = new THREE.SphereGeometry(0.5, 32, 32);
+const gemGeo = new THREE.OctahedronGeometry(0.4, 0);
+const baseGeo = new THREE.BoxGeometry(8, 0.4, 8);
+
+const matUnclicked = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#0f1a24', metalness: 0.8, roughness: 0.2, emissive: '#000000', emissiveIntensity: 0.2
+});
+const matUnclickedHovered = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#1a3a4a', metalness: 0.8, roughness: 0.2, emissive: '#00f0ff', emissiveIntensity: 0.2
+});
+const matClickedMine = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#1a0505', metalness: 0.8, roughness: 0.2, emissive: '#000000', emissiveIntensity: 0.2
+});
+const matClickedSafe = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#051a1a', metalness: 0.8, roughness: 0.2, emissive: '#000000', emissiveIntensity: 0.2
+});
+const matRim = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#00f0ff', transparent: true, opacity: 0.1, wireframe: true
+});
+const matBomb = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#550000', metalness: 0.5, roughness: 0.7
+});
+const matBombExploding = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#ff0000', metalness: 0.5, roughness: 0.7
+});
+const matGem = new THREE.MeshPhysicalMaterial({
+  color: '#00ffff', metalness: 0.1, roughness: 0.1, transmission: 0.9, thickness: 0.5,
+  emissive: '#0055ff', emissiveIntensity: 0.5
+});
+const matBasePlatform = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#0a0a0a', metalness: 0.9, roughness: 0.1
+});
+const matDummyBase = new THREE.MeshPhysicalMaterial({
+  clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0,
+  color: '#0a1a24', metalness: 0.8, roughness: 0.2
+});
+
 function MineTile3D({ 
   tile, 
   isPlaying, 
@@ -72,10 +119,9 @@ function MineTile3D({
     if (tile.clicked && tile.isMine && bombRef.current) {
       if (tile.exploding) {
         bombRef.current.scale.setScalar(Math.sin(state.clock.elapsedTime * 20) * 0.2 + 1.2);
-        bombRef.current.material.color.setHex(Math.random() > 0.5 ? 0xff0000 : 0xaa0000);
+        matBombExploding.color.setHex(Math.random() > 0.5 ? 0xff0000 : 0xaa0000);
       } else {
         bombRef.current.scale.setScalar(1);
-        bombRef.current.material.color.setHex(0x550000);
       }
     }
   });
@@ -94,53 +140,30 @@ function MineTile3D({
         receiveShadow
         castShadow
         position={[0, 0, 0]}
-      >
-        <boxGeometry args={[1.3, 0.4, 1.3]} />
-        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} 
-          color={
-            tile.clicked 
-              ? (tile.isMine ? '#1a0505' : '#051a1a') // Darken when clicked
-              : (hovered && isPlaying && !gameOver ? '#1a3a4a' : '#0f1a24') // Base unclicked color
-          } 
-          metalness={0.8} 
-          roughness={0.2}
-          emissive={hovered && !tile.clicked && isPlaying && !gameOver ? new THREE.Color('#00f0ff') : new THREE.Color('#000000')}
-          emissiveIntensity={0.2}
-        />
-      </mesh>
+        geometry={tileGeo}
+        material={
+          tile.clicked 
+            ? (tile.isMine ? matClickedMine : matClickedSafe)
+            : (hovered && isPlaying && !gameOver ? matUnclickedHovered : matUnclicked)
+        }
+      />
       
       {/* Tile Border/Rim */}
-      <mesh position={[0, 0.05, 0]}>
-        <boxGeometry args={[1.35, 0.35, 1.35]} />
-        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#00f0ff" transparent opacity={0.1} wireframe={true} />
-      </mesh>
+      <mesh position={[0, 0.05, 0]} geometry={rimGeo} material={matRim} />
 
       {/* Revealed Contents */}
       {tile.clicked && (
         <group position={[0, 0.6, 0]}>
           {tile.isMine ? (
             // Bomb Object
-            <mesh ref={bombRef} castShadow>
-              <sphereGeometry args={[0.5, 32, 32]} />
-              <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#550000" metalness={0.5} roughness={0.7} />
-              
+            <mesh ref={bombRef} castShadow geometry={bombGeo} material={tile.exploding ? matBombExploding : matBomb}>
               {tile.exploding && (
                 <pointLight color="#ff0000" intensity={5} distance={10} />
               )}
             </mesh>
           ) : (
             // Gem Object
-            <mesh ref={gemRef} castShadow>
-              <octahedronGeometry args={[0.4, 0]} />
-              <meshPhysicalMaterial 
-                color="#00ffff"
-                metalness={0.1}
-                roughness={0.1}
-                transmission={0.9}
-                thickness={0.5}
-                emissive="#0055ff"
-                emissiveIntensity={0.5}
-              />
+            <mesh ref={gemRef} castShadow geometry={gemGeo} material={matGem}>
               <pointLight color="#00ffff" intensity={2} distance={3} />
             </mesh>
           )}
@@ -478,10 +501,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
             {/* Grid Container tilted slightly to face camera better */}
             <group rotation={[-0.2, 0, 0]}>
               {/* Base Platform underneath the tiles */}
-              <mesh position={[0, -0.4, 0]} receiveShadow>
-                 <boxGeometry args={[8, 0.4, 8]} />
-                 <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#0a0a0a" metalness={0.9} roughness={0.1} />
-              </mesh>
+              <mesh position={[0, -0.4, 0]} receiveShadow geometry={baseGeo} material={matBasePlatform} />
               
               {/* Grid Tiles */}
               {tiles.length === 0 ? (
@@ -493,14 +513,8 @@ export function MinesGame({ onClose }: MinesGameProps) {
                   const z = (row - 2) * 1.5;
                   return (
                     <group key={i} position={[x, 0, z]}>
-                      <mesh position={[0, 0, 0]} receiveShadow>
-                        <boxGeometry args={[1.3, 0.4, 1.3]} />
-                        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#0a1a24" metalness={0.8} roughness={0.2} />
-                      </mesh>
-                      <mesh position={[0, 0.05, 0]}>
-                        <boxGeometry args={[1.35, 0.35, 1.35]} />
-                        <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#00f0ff" transparent opacity={0.1} wireframe={true} />
-                      </mesh>
+                      <mesh position={[0, 0, 0]} receiveShadow geometry={tileGeo} material={matDummyBase} />
+                      <mesh position={[0, 0.05, 0]} geometry={rimGeo} material={matRim} />
                     </group>
                   );
                 })

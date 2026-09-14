@@ -3,3 +3,7 @@ export * from './PostFXManager';
 export * from './MaterialManager';
 export * from './VFXManager';
 export * from './ParticleManager';
+export * from './GeometryManager';
+export * from './TemporalFXManager';
+export * from './ProgressiveLoadingManager';
+export * from './PredictiveRenderManager';

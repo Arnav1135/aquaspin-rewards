@@ -1,77 +1,88 @@
-import React, { useRef, useMemo, useLayoutEffect } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useQuality } from './QualityManager';
 
-interface ParticleData {
-  position: THREE.Vector3;
-  velocity: THREE.Vector3;
-  life: number;
-  maxLife: number;
-  color: THREE.Color;
-  size: number;
-}
-
 export const ParticleManager: React.FC = () => {
   const { settings } = useQuality();
   const maxParticles = settings.maxParticles;
-
+  
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const particles = useRef<ParticleData[]>([]);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
 
-  useLayoutEffect(() => {
-    // Initialize particles
-    particles.current = Array.from({ length: maxParticles }).map(() => ({
-      position: new THREE.Vector3(
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.5) * 10
-      ),
-      velocity: new THREE.Vector3(
-        (Math.random() - 0.5) * 2,
-        (Math.random() - 0.5) * 2,
-        (Math.random() - 0.5) * 2
-      ),
-      life: Math.random(),
-      maxLife: 1 + Math.random(),
-      color: new THREE.Color().setHSL(Math.random(), 1, 0.5),
-      size: Math.random() * 0.2 + 0.1
-    }));
+  const { geometry, shaderArgs } = useMemo(() => {
+    const geo = new THREE.PlaneGeometry(0.1, 0.1);
+    
+    const positions = new Float32Array(maxParticles * 3);
+    const velocities = new Float32Array(maxParticles * 3);
+    const lifespans = new Float32Array(maxParticles); // [life, maxLife, delay]
+
+    for (let i = 0; i < maxParticles; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 10;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+
+      velocities[i * 3 + 0] = (Math.random() - 0.5) * 2;
+      velocities[i * 3 + 1] = (Math.random() - 0.5) * 2;
+      velocities[i * 3 + 2] = (Math.random() - 0.5) * 2;
+
+      lifespans[i] = Math.random() * 2.0;
+    }
+
+    geo.setAttribute('offset', new THREE.InstancedBufferAttribute(positions, 3));
+    geo.setAttribute('velocity', new THREE.InstancedBufferAttribute(velocities, 3));
+    geo.setAttribute('lifespan', new THREE.InstancedBufferAttribute(lifespans, 1));
+
+    const uniforms = {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color('#4488ff') }
+    };
+
+    const vertexShader = `
+      uniform float uTime;
+      attribute vec3 offset;
+      attribute vec3 velocity;
+      attribute float lifespan;
+      
+      varying float vLife;
+
+      void main() {
+        float time = mod(uTime, lifespan);
+        vec3 pos = offset + velocity * time;
+        vLife = 1.0 - (time / lifespan);
+        
+        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+        mvPosition.xyz += position * vLife; // Scale with life
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `;
+
+    const fragmentShader = `
+      uniform vec3 uColor;
+      varying float vLife;
+      void main() {
+        gl_FragColor = vec4(uColor, vLife);
+      }
+    `;
+
+    return { geometry: geo, shaderArgs: { uniforms, vertexShader, fragmentShader } };
   }, [maxParticles]);
 
-  useFrame((state, delta) => {
-    if (!meshRef.current) return;
-    const mesh = meshRef.current;
-
-    particles.current.forEach((p, i) => {
-      p.life -= delta;
-      if (p.life <= 0) {
-        p.life = p.maxLife;
-        p.position.set(
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10
-        );
-      }
-      p.position.addScaledVector(p.velocity, delta);
-
-      dummy.position.copy(p.position);
-      const scale = p.size * (p.life / p.maxLife);
-      dummy.scale.set(scale, scale, scale);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-      mesh.setColorAt(i, p.color);
-    });
-
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  useFrame((state) => {
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+    }
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, maxParticles]} frustumCulled={false}>
-      <sphereGeometry args={[1, 8, 8]} />
-      <meshBasicMaterial toneMapped={false} transparent opacity={0.8} />
+    <instancedMesh ref={meshRef} args={[geometry, undefined, maxParticles]} frustumCulled={false}>
+      <shaderMaterial 
+        ref={materialRef} 
+        transparent 
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        {...shaderArgs} 
+      />
     </instancedMesh>
   );
 };

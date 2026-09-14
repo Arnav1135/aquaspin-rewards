@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sparkles, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { carromQualityEvents, QualityLevel } from './CarromPerformanceManager';
 
 interface Particle {
   position: THREE.Vector3;
@@ -31,19 +32,9 @@ export const triggerVFX = (event: VFXEvent) => {
 const MAX_PARTICLES = 1000;
 const dummy = new THREE.Object3D();
 
-/**
- * Carrom VFX System (Phase 43)
- * - GPU-friendly: uses InstancedMesh for batch rendering
- * - BufferGeometry shared across all instances
- * - Attribute updates via setMatrixAt/setColorAt
- * - No unbounded allocation (circular buffer index)
- */
-
-import { carromQualityEvents, QualityLevel } from './CarromPerformanceManager';
-
 export function CarromVFXSystem() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const qualityRef = useRef<QualityLevel>('HIGH');
+  const qualityRef = useRef<QualityLevel>('ULTRA');
   
   useEffect(() => {
     const handleQuality = (e: Event) => {
@@ -81,20 +72,28 @@ export function CarromVFXSystem() {
       if (type === 'impact') {
         count = Math.min(Math.floor(intensity * mass * 5), 50);
       } else if (type === 'pocket') {
-        count = 40; // Downward cone, gold sparkle
+        count = 40; 
         baseColor = new THREE.Color('#FFD700');
-        triggerVFX({ type: 'pocket_shadow', position, intensity }); // Emit shadow
+        triggerVFX({ type: 'pocket_shadow', position, intensity }); 
       } else if (type === 'dust') {
-        count = Math.floor(Math.random() * 6) + 5; // 5-10
-        baseColor = new THREE.Color('#8b5a2b'); // brownish
+        count = Math.floor(Math.random() * 6) + 5; 
+        baseColor = new THREE.Color('#8b5a2b'); 
       } else if (type === 'queen_capture') {
-        count = 60; // premium alternating
+        count = 60; 
       } else if (type === 'victory') {
-        count = 100; // Gold shower
+        count = 100; 
         baseColor = new THREE.Color('#FFD700');
       } else {
         count = 30;
       }
+      
+      // Adaptive Quality Multiplier
+      let multiplier = 1.0;
+      if (qualityRef.current === 'HIGH') multiplier = 0.75;
+      else if (qualityRef.current === 'MEDIUM') multiplier = 0.5;
+      else if (qualityRef.current === 'LOW') multiplier = 0.25;
+      
+      count = Math.floor(count * multiplier);
 
       for (let i = 0; i < count; i++) {
         const pIdx = particleIndex.current % MAX_PARTICLES;
@@ -205,4 +204,4 @@ export function CarromVFXSystem() {
 const renderMicroDust = (impulse: number) => {
     if (impulse < 5) return null;
     return <Sparkles count={impulse * 2} scale={0.5} size={1} speed={0.4} color="#dddddd" />;
-  };
+};

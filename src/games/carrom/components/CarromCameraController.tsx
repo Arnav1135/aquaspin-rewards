@@ -6,9 +6,9 @@ import { useCarromStore } from '../state/CarromState';
 import { carromVfxEvents, VFXEvent } from './CarromVFXSystem';
 
 const CAMERA_PROFILES: Record<string, any> = {
-  NORMAL: { position: [0, 1.0, 0.05], target: [0, 0, 0], fov: 45 },
+  NORMAL: { position: [0, 1.2, 0.05], target: [0, 0, 0], fov: 40 },
   AIM: { position: 'dynamic', target: 'striker', fov: 35 },
-  SHOT: { position: [0, 0.8, 0.6], target: [0, 0, 0], fov: 40 },
+  SHOT: { position: [0, 0.8, 0.7], target: [0, 0, 0], fov: 42 },
   IMPACT: { position: 'dynamic', target: 'impact_point', fov: 38, shake: true },
   POCKET: { position: 'dynamic', target: 'pocket', fov: 35 },
   QUEEN: { position: [0, 0.5, 0.3], target: [0, 0, 0], fov: 30 },
@@ -55,7 +55,13 @@ export function CarromCameraController() {
     
     const profile = CAMERA_PROFILES[profileName] || CAMERA_PROFILES.NORMAL;
     
-    const targetFov = profile.fov;
+    // Adjust FOV based on aspect ratio to fit board on mobile portrait
+    const aspect = state.size.width / state.size.height;
+    let targetFov = profile.fov;
+    if (aspect < 1) {
+       // Expand FOV for portrait mode
+       targetFov = Math.min(targetFov * (1 / aspect) * 0.8, 80);
+    }
 
     if (profileName === 'AIM') {
       const camDist = 0.5;

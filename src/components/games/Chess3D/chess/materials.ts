@@ -11,6 +11,7 @@ import { createWoodNormalMap, createRoughnessMap, createMicroSurfaceTexture } fr
 // Cached procedural textures
 let normalMapCache: THREE.CanvasTexture | null = null;
 let microSurfaceCache: THREE.CanvasTexture | null = null;
+const pieceMaterialCache: Record<string, THREE.MeshPhysicalMaterial> = {};
 
 function getNormalMap(): THREE.CanvasTexture {
   if (!normalMapCache) {
@@ -27,12 +28,16 @@ function getMicroSurfaceMap(): THREE.CanvasTexture {
 }
 
 export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): THREE.MeshPhysicalMaterial {
+  const cacheKey = `${color}-${theme}`;
+  if (pieceMaterialCache[cacheKey]) return pieceMaterialCache[cacheKey];
+
   const normalMap = getNormalMap();
+  let mat: THREE.MeshPhysicalMaterial;
 
   if (theme === 'wood-bronze') {
     if (color === 'w') {
       // White pieces: Polished Warm Boxwood / Hand-Rubbed Satin Sheen
-      return new THREE.MeshPhysicalMaterial({
+      mat = new THREE.MeshPhysicalMaterial({
         color: 0xf4e6c3,
         roughness: 0.15,
         roughnessMap: getMicroSurfaceMap(),
@@ -47,7 +52,7 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
       });
     } else {
       // Black pieces: Ebonized Dark Walnut / Weighted Polish
-      return new THREE.MeshPhysicalMaterial({
+      mat = new THREE.MeshPhysicalMaterial({
         color: 0x1c1714,
         roughness: 0.15,
         roughnessMap: getMicroSurfaceMap(),
@@ -63,7 +68,7 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
     // Marble & Onyx Theme
     if (color === 'w') {
       // White Marble / Translucent Ivory (Mirror Polish)
-      return new THREE.MeshPhysicalMaterial({
+      mat = new THREE.MeshPhysicalMaterial({
         color: 0xfbf9f5,
         roughness: 0.15,
         roughnessMap: getMicroSurfaceMap(),
@@ -79,7 +84,7 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
       });
     } else {
       // Black Obsidian Onyx (High Gloss Polish)
-      return new THREE.MeshPhysicalMaterial({
+      mat = new THREE.MeshPhysicalMaterial({
         color: 0x0c0e12,
         roughness: 0.15,
         roughnessMap: getMicroSurfaceMap(),
@@ -95,6 +100,9 @@ export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): TH
       });
     }
   }
+
+  pieceMaterialCache[cacheKey] = mat;
+  return mat;
 }
 
 /**

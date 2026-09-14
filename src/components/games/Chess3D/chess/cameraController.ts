@@ -23,6 +23,9 @@ export const CAMERA_MAX_DIST = 22.0;
  * turn board-flipping, and raycasted piece opacity fading.
  */
 export class CameraController {
+  private _tmpVec = new THREE.Vector3();
+  private _tmpVec2 = new THREE.Vector3();
+  private _tmpSpherical = new THREE.Spherical();
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
   private container: HTMLElement;
@@ -99,11 +102,11 @@ export class CameraController {
   // Enforce polar angle and distance bounds continuously on camera
   private clampCameraToBounds() {
     const target = this.controls.target;
-    const relPos = this.camera.position.clone().sub(target);
+    const relPos = this._tmpVec.copy(this.camera.position).sub(target);
     if (relPos.lengthSq() < 0.001) {
       relPos.set(0, 6, 10);
     }
-    const spherical = new THREE.Spherical().setFromVector3(relPos);
+    const spherical = this._tmpSpherical.setFromVector3(relPos);
 
     if (isNaN(spherical.phi) || isNaN(spherical.theta) || isNaN(spherical.radius)) {
       spherical.set(12, Math.PI / 4, 0);
@@ -112,7 +115,7 @@ export class CameraController {
     spherical.phi = THREE.MathUtils.clamp(spherical.phi, CAMERA_MIN_POLAR, CAMERA_MAX_POLAR);
     spherical.radius = THREE.MathUtils.clamp(spherical.radius, CAMERA_MIN_DIST, CAMERA_MAX_DIST);
 
-    const clampedRelPos = new THREE.Vector3().setFromSpherical(spherical);
+    const clampedRelPos = this._tmpVec2.setFromSpherical(spherical);
     this.camera.position.copy(clampedRelPos.add(target));
   }
 
@@ -171,7 +174,7 @@ export class CameraController {
     const baseTheta = color === 'w' ? 0 : Math.PI;
     const finalTheta = baseTheta + deltaTheta;
 
-    const spherical = new THREE.Spherical(radius, phi, finalTheta);
+    const spherical = this._tmpSpherical.set(radius, phi, finalTheta);
     return new THREE.Vector3().setFromSpherical(spherical).add(this.controls.target);
   }
 
@@ -210,10 +213,10 @@ export class CameraController {
     this.updateAzimuthConstraints();
 
     const targetPos = this.getPresetPosition(preset, this.currentOrientationColor, isPortrait);
-    const targetRelPos = targetPos.clone().sub(this.controls.target);
+    const targetRelPos = this._tmpVec.copy(targetPos).sub(this.controls.target);
     const targetSph = new THREE.Spherical().setFromVector3(targetRelPos);
 
-    const currentRelPos = this.camera.position.clone().sub(this.controls.target);
+    const currentRelPos = this._tmpVec.copy(this.camera.position).sub(this.controls.target);
     const currentSph = new THREE.Spherical().setFromVector3(currentRelPos);
 
     let deltaTheta = targetSph.theta - currentSph.theta;
@@ -232,9 +235,9 @@ export class CameraController {
 
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, animState.phi, animState.theta);
+        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
         if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const pos = new THREE.Vector3().setFromSpherical(sph).add(this.controls.target);
+        const pos = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
         this.camera.position.copy(pos);
         this.camera.lookAt(this.controls.target);
         this.controls.update();
@@ -271,10 +274,10 @@ export class CameraController {
     this.updateAzimuthConstraints();
 
     const targetPos = this.getPresetPosition('standard', targetColor, isPortrait);
-    const targetRelPos = targetPos.clone().sub(this.controls.target);
+    const targetRelPos = this._tmpVec.copy(targetPos).sub(this.controls.target);
     const targetSph = new THREE.Spherical().setFromVector3(targetRelPos);
 
-    const currentRelPos = this.camera.position.clone().sub(this.controls.target);
+    const currentRelPos = this._tmpVec.copy(this.camera.position).sub(this.controls.target);
     const currentSph = new THREE.Spherical().setFromVector3(currentRelPos);
 
     let deltaTheta = targetSph.theta - currentSph.theta;
@@ -296,9 +299,9 @@ export class CameraController {
 
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, animState.phi, animState.theta);
+        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
         if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const pos = new THREE.Vector3().setFromSpherical(sph).add(this.controls.target);
+        const pos = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
         this.camera.position.copy(pos);
         this.camera.lookAt(this.controls.target);
         this.controls.update();
@@ -332,11 +335,11 @@ export class CameraController {
     const targetPos = this.getPresetPosition(this.currentPreset, color, isPortrait);
 
     // Compute target-relative spherical coordinates relative to board's center target
-    const targetRelPos = targetPos.clone().sub(this.controls.target);
+    const targetRelPos = this._tmpVec.copy(targetPos).sub(this.controls.target);
     const targetSph = new THREE.Spherical().setFromVector3(targetRelPos);
 
     // Compute current camera position spherical coordinates
-    const currentRelPos = this.camera.position.clone().sub(this.controls.target);
+    const currentRelPos = this._tmpVec.copy(this.camera.position).sub(this.controls.target);
     const currentSph = new THREE.Spherical().setFromVector3(currentRelPos);
 
     // Calculate shortest angular arc delta for theta rotation around board center
@@ -360,9 +363,9 @@ export class CameraController {
     // GSAP Timeline sequencing camera rotation and distance reset
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, animState.phi, animState.theta);
+        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
         if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const pos = new THREE.Vector3().setFromSpherical(sph).add(this.controls.target);
+        const pos = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
         this.camera.position.copy(pos);
         this.camera.lookAt(this.controls.target);
         this.controls.update();
@@ -393,10 +396,10 @@ export class CameraController {
 
     if (this.camera.position.distanceTo(targetPos) < 0.15) return;
 
-    const targetRelPos = targetPos.clone().sub(this.controls.target);
+    const targetRelPos = this._tmpVec.copy(targetPos).sub(this.controls.target);
     const targetSph = new THREE.Spherical().setFromVector3(targetRelPos);
 
-    const currentRelPos = this.camera.position.clone().sub(this.controls.target);
+    const currentRelPos = this._tmpVec.copy(this.camera.position).sub(this.controls.target);
     const currentSph = new THREE.Spherical().setFromVector3(currentRelPos);
 
     let deltaTheta = targetSph.theta - currentSph.theta;
@@ -415,9 +418,9 @@ export class CameraController {
 
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, animState.phi, animState.theta);
+        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
         if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const pos = new THREE.Vector3().setFromSpherical(sph).add(this.controls.target);
+        const pos = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
         this.camera.position.copy(pos);
         this.camera.lookAt(this.controls.target);
         this.controls.update();
@@ -444,7 +447,7 @@ export class CameraController {
   // Rotate camera incrementally by angle radians (e.g. 45° left or right)
   public rotateByAngle(angleDeltaRadians: number) {
     const target = this.controls.target;
-    const relPos = this.camera.position.clone().sub(target);
+    const relPos = this._tmpVec.copy(this.camera.position).sub(target);
     const currentSph = new THREE.Spherical().setFromVector3(relPos);
     const finalTheta = currentSph.theta + angleDeltaRadians;
 
@@ -459,9 +462,9 @@ export class CameraController {
 
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, animState.phi, animState.theta);
+        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
         if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const pos = new THREE.Vector3().setFromSpherical(sph).add(target);
+        const pos = this._tmpVec.setFromSpherical(sph).add(target);
         this.camera.position.copy(pos);
         this.camera.lookAt(target);
         this.controls.update();
@@ -486,7 +489,7 @@ export class CameraController {
   public playIntroSweep() {
     const isPortrait = this.container.clientWidth / (this.container.clientHeight || 1) < 1.0;
     const targetPos = this.getPresetPosition('standard', this.currentOrientationColor, isPortrait);
-    const targetRelPos = targetPos.clone().sub(this.controls.target);
+    const targetRelPos = this._tmpVec.copy(targetPos).sub(this.controls.target);
     const targetSph = new THREE.Spherical().setFromVector3(targetRelPos);
 
     const startSph = new THREE.Spherical(16.0, 1.1, targetSph.theta - Math.PI / 4);
@@ -507,9 +510,9 @@ export class CameraController {
 
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, animState.phi, animState.theta);
+        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
         if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const p = new THREE.Vector3().setFromSpherical(sph).add(this.controls.target);
+        const p = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
         this.camera.position.copy(p);
         this.camera.lookAt(this.controls.target);
         this.controls.update();
@@ -537,7 +540,7 @@ export class CameraController {
   public animateCheckPulse() {
     if (this.isTweening) return;
 
-    const currentRelPos = this.camera.position.clone().sub(this.controls.target);
+    const currentRelPos = this._tmpVec.copy(this.camera.position).sub(this.controls.target);
     const currentSph = new THREE.Spherical().setFromVector3(currentRelPos);
 
     const zoomRadius = Math.max(CAMERA_MIN_DIST, currentSph.radius * 0.92);
@@ -551,9 +554,9 @@ export class CameraController {
 
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, currentSph.phi, currentSph.theta);
+        const sph = this._tmpSpherical.set(animState.radius, currentSph.phi, currentSph.theta);
         if (isNaN(sph.radius)) return;
-        const p = new THREE.Vector3().setFromSpherical(sph).add(this.controls.target);
+        const p = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
         this.camera.position.copy(p);
         this.camera.lookAt(this.controls.target);
         this.controls.update();
@@ -582,10 +585,10 @@ export class CameraController {
   public animateVictoryView() {
     const isPortrait = this.container.clientWidth / (this.container.clientHeight || 1) < 1.0;
     const targetPos = new THREE.Vector3(0, 6.5, isPortrait ? 10.0 : 8.5);
-    const targetRelPos = targetPos.clone().sub(this.controls.target);
+    const targetRelPos = this._tmpVec.copy(targetPos).sub(this.controls.target);
     const targetSph = new THREE.Spherical().setFromVector3(targetRelPos);
 
-    const currentRelPos = this.camera.position.clone().sub(this.controls.target);
+    const currentRelPos = this._tmpVec.copy(this.camera.position).sub(this.controls.target);
     const currentSph = new THREE.Spherical().setFromVector3(currentRelPos);
 
     if (this.activeTween) this.activeTween.kill();
@@ -599,9 +602,9 @@ export class CameraController {
 
     const tl = gsap.timeline({
       onUpdate: () => {
-        const sph = new THREE.Spherical(animState.radius, animState.phi, animState.theta);
+        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
         if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const p = new THREE.Vector3().setFromSpherical(sph).add(this.controls.target);
+        const p = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
         this.camera.position.copy(p);
         this.camera.lookAt(this.controls.target);
         this.controls.update();
@@ -657,12 +660,12 @@ export class CameraController {
       const breatheY = Math.cos(time * 0.4) * 0.003;
       
       const target = this.controls.target;
-      const relPos = this.camera.position.clone().sub(target);
-      const spherical = new THREE.Spherical().setFromVector3(relPos);
+      const relPos = this._tmpVec.copy(this.camera.position).sub(target);
+      const spherical = this._tmpSpherical.setFromVector3(relPos);
       spherical.theta += breatheX * 0.02; // Very subtle
       spherical.phi += breatheY * 0.02;
       
-      const p = new THREE.Vector3().setFromSpherical(spherical).add(target);
+      const p = this._tmpVec2.setFromSpherical(spherical).add(target);
       this.camera.position.copy(p);
       this.camera.lookAt(target);
     }

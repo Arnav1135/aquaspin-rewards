@@ -3,6 +3,7 @@ import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
 
 export class CarromAI {
   private isCalculating = false;
+  private timeoutIds: ReturnType<typeof setTimeout>[] = [];
 
   public update() {
     const state = useCarromStore.getState();
@@ -15,17 +16,25 @@ export class CarromAI {
     if (!this.isCalculating) {
       this.isCalculating = true;
       // Simulate "thinking" time
-      setTimeout(() => {
+      this.timeoutIds.push(setTimeout(() => {
         this.calculateAndShoot();
-      }, 1500);
+      }, 1500));
     }
   }
 
   private calculateAndShoot() {
     const state = useCarromStore.getState();
+    if (state.turnState !== 'AIMING') {
+      this.isCalculating = false;
+      return;
+    }
+
     const coins = Object.values(state.coins).filter(c => !c.isPocketed);
     
-    if (coins.length === 0) return;
+    if (coins.length === 0) {
+      this.isCalculating = false;
+      return;
+    }
 
     // Simple AI: pick a random coin and shoot towards it
     // More advanced AI would:
@@ -48,11 +57,20 @@ export class CarromAI {
     state.setPower(power);
     
     // Wait a brief moment to show aim, then shoot
-    setTimeout(() => {
-      useCarromStore.getState().recordReplay();
-      useCarromStore.getState().setTurnState('SHOOTING');
+    this.timeoutIds.push(setTimeout(() => {
+      const currentState = useCarromStore.getState();
+      if (currentState.turnState === 'AIMING') {
+        currentState.recordReplay();
+        currentState.setTurnState('SHOOTING');
+      }
       this.isCalculating = false;
-    }, 500);
+    }, 500));
+  }
+
+  public dispose() {
+    this.timeoutIds.forEach(id => clearTimeout(id));
+    this.timeoutIds = [];
+    this.isCalculating = false;
   }
 }
 

@@ -9,6 +9,7 @@ export function CarromAudioSystem() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const roomToneNodeRef = useRef<OscillatorNode | null>(null);
   const roomToneGainRef = useRef<GainNode | null>(null);
+  const timeoutIdsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     // Room tone setup
@@ -63,7 +64,7 @@ export function CarromAudioSystem() {
       } else if (type === 'rail_hit') {
         if (volume > 0.01) {
           playTone(250 + pitchMod, decay * 1.5, 'square', volume * 0.8);
-          setTimeout(() => playTone(120, decay, 'sine', volume * 0.6), 10);
+          timeoutIdsRef.current.push(setTimeout(() => playTone(120, decay, 'sine', volume * 0.6), 10));
         }
       } else if (type === 'shot') {
         playTone(600 + pitchMod, 0.1, 'square', Math.min(volume + 0.2, 1.0));
@@ -71,11 +72,11 @@ export function CarromAudioSystem() {
         playTone(300, 0.05, 'sine', 0.05);
       } else if (type === 'multi_collision') {
         playTone(500, 0.05, 'square', volume * 0.5);
-        setTimeout(() => playTone(450, 0.05, 'square', volume * 0.4), 30);
-        setTimeout(() => playTone(400, 0.05, 'square', volume * 0.3), 60);
+        timeoutIdsRef.current.push(setTimeout(() => playTone(450, 0.05, 'square', volume * 0.4), 30));
+        timeoutIdsRef.current.push(setTimeout(() => playTone(400, 0.05, 'square', volume * 0.3), 60));
       } else if (type === 'pocket') {
         playTone(800, 0.1, 'sine', 0.5);
-        setTimeout(() => playTone(1200, 0.2, 'sine', 0.5), 100);
+        timeoutIdsRef.current.push(setTimeout(() => playTone(1200, 0.2, 'sine', 0.5), 100));
       } else if (type === 'queen_capture') {
         // Chord
         playTone(523.25, 0.5, 'sine', 0.5); // C5
@@ -87,13 +88,17 @@ export function CarromAudioSystem() {
       } else if (type === 'victory') {
         // Ascending sequence
         playTone(440, 0.2, 'square', 0.5);
-        setTimeout(() => playTone(554.37, 0.2, 'square', 0.5), 200);
-        setTimeout(() => playTone(659.25, 0.4, 'square', 0.5), 400);
+        timeoutIdsRef.current.push(setTimeout(() => playTone(554.37, 0.2, 'square', 0.5), 200));
+        timeoutIdsRef.current.push(setTimeout(() => playTone(659.25, 0.4, 'square', 0.5), 400));
       }
     }) as EventListener;
 
     carromVfxEvents.addEventListener('vfx', handleEvent);
-    return () => carromVfxEvents.removeEventListener('vfx', handleEvent);
+    return () => {
+      carromVfxEvents.removeEventListener('vfx', handleEvent);
+      timeoutIdsRef.current.forEach(clearTimeout);
+      timeoutIdsRef.current = [];
+    };
   }, []);
 
   return null;
@@ -102,6 +107,8 @@ export function CarromAudioSystem() {
 export const playPhysicalImpact = (impulse: number, material: string) => {
     const volume = Math.min(impulse / 10, 1.0);
     const pitch = material === 'striker' ? 1.2 : 1.0;
-    // Play layered audio based on physics
+    if (volume > 0.01) {
+      playTone(400 * pitch, 0.1, 'square', volume);
+    }
     console.log('Audio Impact:', { volume, pitch });
 };

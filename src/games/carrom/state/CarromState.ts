@@ -74,14 +74,18 @@ export const useCarromStore = create<CarromStore>((set) => ({
   setCameraProfile: (profile) => set({ cameraProfile: profile }),
   setColorGradingProfile: (profile) => set({ colorGradingProfile: profile }),
   
-  recordReplay: () => set((state) => ({
-    replays: [...state.replays, {
+  recordReplay: () => set((state) => {
+    const newReplays = [...state.replays, {
       strikerPos: [...state.strikerPosition],
       aimAngle: state.aimAngle,
       power: state.power,
       timestamp: Date.now()
-    }]
-  })),
+    }];
+    if (newReplays.length > 100) {
+      newReplays.shift();
+    }
+    return { replays: newReplays };
+  }),
 
   pocketCoin: (id) => set((state) => ({
     coins: {

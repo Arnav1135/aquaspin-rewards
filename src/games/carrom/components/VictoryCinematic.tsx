@@ -19,6 +19,8 @@ export function VictoryCinematic() {
         clearTimeout(uiTimeout);
       };
     } else {
+      setCameraProfile('NORMAL');
+      setColorGradingProfile('CLASSIC');
       setShowUI(false);
     }
   }, [turnState, setCameraProfile, setColorGradingProfile]);

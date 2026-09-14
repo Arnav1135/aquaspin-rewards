@@ -98,6 +98,8 @@ export function CarromWaterSystem() {
         if(ripples.current[i].w > 0) {
             if(ripples.current[i].z === 0) {
                ripples.current[i].z = state.clock.elapsedTime;
+            } else if (state.clock.elapsedTime - ripples.current[i].z > 3.0) {
+               ripples.current[i].w = 0;
             }
         }
       }

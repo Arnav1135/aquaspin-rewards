@@ -13,6 +13,12 @@ export function StrikerAimSystem() {
 
   const lineRef = useRef<any>();
   const dotRef = useRef<THREE.Mesh>(null);
+  
+  const p1Ref = useRef(new THREE.Vector3());
+  const p2Ref = useRef(new THREE.Vector3());
+  const colorRef = useRef(new THREE.Color());
+  const colorCyan = useRef(new THREE.Color(0x00ffff));
+  const colorOrange = useRef(new THREE.Color(0xff4400));
 
   useFrame(() => {
     if (turnState !== 'AIMING' && turnState !== 'SHOOTING') return;
@@ -20,20 +26,15 @@ export function StrikerAimSystem() {
     if (aimMode === 'CLASSIC' || aimMode === 'ASSISTED') {
       const length = 0.5 * power;
       const endX = strikerPosition[0] + Math.cos(aimAngle) * length;
-      const endZ = strikerPosition[2] - Math.sin(aimAngle) * length;
+      const endZ = strikerPosition[2] + Math.sin(aimAngle) * length;
 
       if (lineRef.current) {
-        lineRef.current.setPoints([
-          new THREE.Vector3(strikerPosition[0], 0.01, strikerPosition[2]),
-          new THREE.Vector3(endX, 0.01, endZ)
-        ]);
+        p1Ref.current.set(strikerPosition[0], 0.01, strikerPosition[2]);
+        p2Ref.current.set(endX, 0.01, endZ);
+        lineRef.current.setPoints([p1Ref.current, p2Ref.current]);
         
-        const color = new THREE.Color().lerpColors(
-          new THREE.Color(0x00ffff),
-          new THREE.Color(0xff4400),
-          power
-        );
-        lineRef.current.material.color = color;
+        colorRef.current.lerpColors(colorCyan.current, colorOrange.current, power);
+        lineRef.current.material.color.copy(colorRef.current);
         lineRef.current.material.opacity = 0.3 + (power * 0.7);
       }
 
@@ -67,8 +68,3 @@ export function StrikerAimSystem() {
     </group>
   );
 }
-
-export const calculateBankPrediction = (start: any, dir: any) => {
-    // Multi-segment raycast simulation for trajectory lines
-    return [start, { x: start.x + dir.x * 5, y: start.y, z: start.z + dir.z * 5 }];
-};

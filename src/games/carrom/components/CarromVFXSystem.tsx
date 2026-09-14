@@ -200,8 +200,3 @@ export function CarromVFXSystem() {
     </instancedMesh>
   );
 }
-
-const renderMicroDust = (impulse: number) => {
-    if (impulse < 5) return null;
-    return <Sparkles count={impulse * 2} scale={0.5} size={1} speed={0.4} color="#dddddd" />;
-};

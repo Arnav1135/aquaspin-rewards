@@ -13,87 +13,87 @@ const PUCK_R = 0.5;
 const PADDLE_R = 0.8;
 const GOAL_W = 3.5;
 
+// --- GLOBAL CACHED GEOMETRIES AND MATERIALS ---
+const tablePlaneGeo = new THREE.PlaneGeometry(TABLE_W, TABLE_H);
+const tableSurfaceMat = new THREE.MeshPhysicalMaterial({
+  color: "#051224", metalness: 0.7, roughness: 0.1, emissive: "#020a14", 
+  emissiveIntensity: 0.5, clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 2.0
+});
+
+const centerLineGeo = new THREE.PlaneGeometry(TABLE_W, 0.05);
+const centerLineMat = new THREE.MeshBasicMaterial({ color: "#00ffcc", transparent: true, opacity: 0.4 });
+
+const centerRingGeo = new THREE.RingGeometry(1.5, 1.55, 64);
+
+const wallHGeo = new THREE.BoxGeometry(0.5, 0.6, TABLE_H);
+const wallHMat = new THREE.MeshStandardMaterial({ color: "#00aaff", emissive: "#004488", emissiveIntensity: 2, metalness: 0.8, roughness: 0.2 });
+
+const wallWGeo = new THREE.BoxGeometry((TABLE_W - GOAL_W) / 2, 0.6, 0.5);
+const wallWTopMat = new THREE.MeshStandardMaterial({ color: "#ff0055", emissive: "#880022", emissiveIntensity: 2, metalness: 0.8, roughness: 0.2 });
+const wallWBotMat = new THREE.MeshStandardMaterial({ color: "#00ffcc", emissive: "#008866", emissiveIntensity: 2, metalness: 0.8, roughness: 0.2 });
+
+const paddleBaseGeo = new THREE.CylinderGeometry(PADDLE_R, PADDLE_R * 1.1, 0.6, 64);
+const paddleTopGeo = new THREE.SphereGeometry(PADDLE_R * 0.6, 32, 32);
+const paddleTopMat = new THREE.MeshPhysicalMaterial({ color: "#ffffff", metalness: 0.95, roughness: 0.05, clearcoat: 1.0, envMapIntensity: 3.0 });
+
+const paddleBaseMatPlayer = new THREE.MeshPhysicalMaterial({ color: "#00ffcc", emissive: "#00ffcc", emissiveIntensity: 0.8, metalness: 0.9, roughness: 0.05, clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.5 });
+const paddleBaseMatAI = new THREE.MeshPhysicalMaterial({ color: "#ff0055", emissive: "#ff0055", emissiveIntensity: 0.8, metalness: 0.9, roughness: 0.05, clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.5 });
+const paddleMats: Record<string, THREE.MeshPhysicalMaterial> = {
+  "#00ffcc": paddleBaseMatPlayer,
+  "#ff0055": paddleBaseMatAI
+};
+
+const puckGeo = new THREE.CylinderGeometry(PUCK_R, PUCK_R, 0.2, 64);
+const puckMat = new THREE.MeshPhysicalMaterial({ color: "#ffffff", emissive: "#ffffff", emissiveIntensity: 2.5, metalness: 0.8, roughness: 0.05, clearcoat: 1.0, transmission: 0.8, thickness: 0.5, ior: 1.5 });
+
+const pointerPlaneGeo = new THREE.PlaneGeometry(TABLE_W, TABLE_H/2);
+const tableBaseMat = new THREE.MeshStandardMaterial({ color: "#0a0a0f", metalness: 0.9, roughness: 0.1 });
+// ----------------------------------------------
+
 function AirHockeyTable() {
   return (
     <group position={[0, -0.2, 0]}>
       {/* Base */}
-      <RoundedBox args={[TABLE_W + 1, 0.4, TABLE_H + 1]} radius={0.2} smoothness={4} position={[0, -0.2, 0]}>
-        <meshStandardMaterial color="#0a0a0f" metalness={0.9} roughness={0.1} />
-      </RoundedBox>
+      <RoundedBox args={[TABLE_W + 1, 0.4, TABLE_H + 1]} radius={0.2} smoothness={4} position={[0, -0.2, 0]} material={tableBaseMat} />
       
       {/* Surface */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-        <planeGeometry args={[TABLE_W, TABLE_H]} />
-        <meshPhysicalMaterial 
-          color="#051224" 
-          metalness={0.7} 
-          roughness={0.1} 
-          emissive="#020a14" 
-          emissiveIntensity={0.5} 
-          clearcoat={1.0} 
-          clearcoatRoughness={0.05} 
-          envMapIntensity={2.0} 
-        />
-      </mesh>
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} geometry={tablePlaneGeo} material={tableSurfaceMat} />
 
       {/* Center Line and Circle */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <planeGeometry args={[TABLE_W, 0.05]} />
-        <meshBasicMaterial color="#00ffcc" transparent opacity={0.4} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[1.5, 1.55, 64]} />
-        <meshBasicMaterial color="#00ffcc" transparent opacity={0.4} />
-      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} geometry={centerLineGeo} material={centerLineMat} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} geometry={centerRingGeo} material={centerLineMat} />
 
       {/* Physics Walls */}
       {/* Left */}
       <RigidBody type="fixed" restitution={0.8} friction={0}>
-        <mesh position={[-TABLE_W / 2 - 0.25, 0.3, 0]} receiveShadow castShadow>
-          <boxGeometry args={[0.5, 0.6, TABLE_H]} />
-          <meshStandardMaterial color="#00aaff" emissive="#004488" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[-TABLE_W / 2 - 0.25, 0.3, 0]} receiveShadow castShadow geometry={wallHGeo} material={wallHMat} />
       </RigidBody>
       {/* Right */}
       <RigidBody type="fixed" restitution={0.8} friction={0}>
-        <mesh position={[TABLE_W / 2 + 0.25, 0.3, 0]} receiveShadow castShadow>
-          <boxGeometry args={[0.5, 0.6, TABLE_H]} />
-          <meshStandardMaterial color="#00aaff" emissive="#004488" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[TABLE_W / 2 + 0.25, 0.3, 0]} receiveShadow castShadow geometry={wallHGeo} material={wallHMat} />
       </RigidBody>
       {/* Top Left */}
       <RigidBody type="fixed" restitution={0.8} friction={0}>
-        <mesh position={[-(TABLE_W + GOAL_W) / 4, 0.3, -TABLE_H / 2 - 0.25]} receiveShadow castShadow>
-          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
-          <meshStandardMaterial color="#ff0055" emissive="#880022" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[-(TABLE_W + GOAL_W) / 4, 0.3, -TABLE_H / 2 - 0.25]} receiveShadow castShadow geometry={wallWGeo} material={wallWTopMat} />
       </RigidBody>
       {/* Top Right */}
       <RigidBody type="fixed" restitution={0.8} friction={0}>
-        <mesh position={[(TABLE_W + GOAL_W) / 4, 0.3, -TABLE_H / 2 - 0.25]} receiveShadow castShadow>
-          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
-          <meshStandardMaterial color="#ff0055" emissive="#880022" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[(TABLE_W + GOAL_W) / 4, 0.3, -TABLE_H / 2 - 0.25]} receiveShadow castShadow geometry={wallWGeo} material={wallWTopMat} />
       </RigidBody>
       {/* Bottom Left */}
       <RigidBody type="fixed" restitution={0.8} friction={0}>
-        <mesh position={[-(TABLE_W + GOAL_W) / 4, 0.3, TABLE_H / 2 + 0.25]} receiveShadow castShadow>
-          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
-          <meshStandardMaterial color="#00ffcc" emissive="#008866" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[-(TABLE_W + GOAL_W) / 4, 0.3, TABLE_H / 2 + 0.25]} receiveShadow castShadow geometry={wallWGeo} material={wallWBotMat} />
       </RigidBody>
       {/* Bottom Right */}
       <RigidBody type="fixed" restitution={0.8} friction={0}>
-        <mesh position={[(TABLE_W + GOAL_W) / 4, 0.3, TABLE_H / 2 + 0.25]} receiveShadow castShadow>
-          <boxGeometry args={[(TABLE_W - GOAL_W) / 2, 0.6, 0.5]} />
-          <meshStandardMaterial color="#00ffcc" emissive="#008866" emissiveIntensity={2} metalness={0.8} roughness={0.2} />
-        </mesh>
+        <mesh position={[(TABLE_W + GOAL_W) / 4, 0.3, TABLE_H / 2 + 0.25]} receiveShadow castShadow geometry={wallWGeo} material={wallWBotMat} />
       </RigidBody>
     </group>
   );
 }
 
 function Paddle({ position, color, isPlayer, rigidBodyRef }: { position: [number, number, number], color: string, isPlayer: boolean, rigidBodyRef?: React.MutableRefObject<RapierRigidBody | null> }) {
+  const mat = paddleMats[color] || paddleMats["#00ffcc"];
   return (
     <RigidBody 
       ref={rigidBodyRef} 
@@ -104,29 +104,8 @@ function Paddle({ position, color, isPlayer, rigidBodyRef }: { position: [number
       lockRotations
     >
       <group>
-        <mesh position={[0, 0.3, 0]} castShadow>
-          <cylinderGeometry args={[PADDLE_R, PADDLE_R * 1.1, 0.6, 64]} />
-          <meshPhysicalMaterial 
-            color={color} 
-            emissive={color} 
-            emissiveIntensity={0.8} 
-            metalness={0.9} 
-            roughness={0.05}
-            clearcoat={1.0}
-            clearcoatRoughness={0.1}
-            envMapIntensity={2.5}
-          />
-        </mesh>
-        <mesh position={[0, 0.65, 0]} castShadow>
-          <sphereGeometry args={[PADDLE_R * 0.6, 32, 32]} />
-          <meshPhysicalMaterial 
-            color="#ffffff" 
-            metalness={0.95} 
-            roughness={0.05} 
-            clearcoat={1.0}
-            envMapIntensity={3.0}
-          />
-        </mesh>
+        <mesh position={[0, 0.3, 0]} castShadow geometry={paddleBaseGeo} material={mat} />
+        <mesh position={[0, 0.65, 0]} castShadow geometry={paddleTopGeo} material={paddleTopMat} />
       </group>
     </RigidBody>
   );
@@ -168,19 +147,7 @@ function Puck({ onGoal }: { onGoal: (isPlayer: boolean) => void }) {
       lockRotations
       userData={{ isPuck: true }}
     >
-      <mesh castShadow receiveShadow position={[0, 0.1, 0]}>
-        <cylinderGeometry args={[PUCK_R, PUCK_R, 0.2, 64]} />
-        <meshPhysicalMaterial 
-          color="#ffffff" 
-          emissive="#ffffff" 
-          emissiveIntensity={2.5} 
-          metalness={0.8} 
-          roughness={0.05} 
-          clearcoat={1.0}
-          transmission={0.8}
-          thickness={0.5}
-          ior={1.5}
-        />
+      <mesh castShadow receiveShadow position={[0, 0.1, 0]} geometry={puckGeo} material={puckMat}>
         <pointLight color="#ffffff" intensity={3} distance={5} decay={2} />
       </mesh>
     </RigidBody>
@@ -239,9 +206,7 @@ export function AirHockey3DGame({ onClose }: { onClose: () => void }) {
       >
         
         {/* Invisible plane to catch pointer events for player movement */}
-        <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.5, TABLE_H/4]} onPointerMove={handlePointerMove} visible={false}>
-          <planeGeometry args={[TABLE_W, TABLE_H/2]} />
-        </mesh>
+        <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.5, TABLE_H/4]} onPointerMove={handlePointerMove} visible={false} geometry={pointerPlaneGeo} />
 
         <AirHockeyTable />
         

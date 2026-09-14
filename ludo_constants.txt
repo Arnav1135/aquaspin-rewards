@@ -1,0 +1,21 @@
+// --- Hoisted Geometries and Materials for AAA GPU Batching ---
+const geoDiceBox = new THREE.BoxGeometry(2.0, 0.04, 2.0);
+const geoBorderH = new THREE.BoxGeometry(2.08, 0.2, 0.08);
+const geoBorderV = new THREE.BoxGeometry(0.08, 0.2, 2.08);
+const geoDice = new THREE.BoxGeometry(0.24, 0.24, 0.24);
+const geoOuterRim = new THREE.BoxGeometry(7.7, 0.1, 7.7);
+const geoBoardBase = new THREE.BoxGeometry(7.5, 0.01, 7.5);
+const geoHomeBox = new THREE.BoxGeometry(2.9, 0.005, 2.9);
+const geoTile = new THREE.BoxGeometry(0.46, 0.006, 0.46);
+const geoCenterBox = new THREE.BoxGeometry(1.4, 0.006, 1.4);
+const geoPawnBase = new THREE.CylinderGeometry(0.11, 0.16, 0.08, 16);
+const geoPawnSkirt = new THREE.CylinderGeometry(0.07, 0.11, 0.16, 16);
+const geoPawnHead = new THREE.SphereGeometry(0.1, 16, 16);
+
+// Note: Colors will be set via material.color.setHex() dynamically or we just keep the inline material for colored tokens if needed, but since there are only 4 colors, we can cache them!
+const PAWN_MATS = {
+  red: new THREE.MeshPhysicalMaterial({ color: 0xef4444, roughness: 0.2, metalness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0 }),
+  blue: new THREE.MeshPhysicalMaterial({ color: 0x3b82f6, roughness: 0.2, metalness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0 }),
+  green: new THREE.MeshPhysicalMaterial({ color: 0x22c55e, roughness: 0.2, metalness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0 }),
+  yellow: new THREE.MeshPhysicalMaterial({ color: 0xeab308, roughness: 0.2, metalness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0 })
+};

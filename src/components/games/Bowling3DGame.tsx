@@ -7,6 +7,31 @@ import { AquaSpinEngine } from '../../engine/3d';
 import { GameFrame } from './GameFrame';
 
 
+// --- GLOBAL CACHED GEOMETRIES AND MATERIALS ---
+const pinBaseGeo = new THREE.CylinderGeometry(0.08, 0.2, 0.8, 16);
+const pinBaseMat = new THREE.MeshPhysicalMaterial({ color: "#ffffff", metalness: 0.1, roughness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.05 });
+const pinTopGeo = new THREE.SphereGeometry(0.15, 16, 16);
+const pinTopMat = pinBaseMat;
+const pinRingGeo = new THREE.TorusGeometry(0.12, 0.03, 8, 16);
+const pinRingMat = new THREE.MeshPhysicalMaterial({ color: "#e94b4b", emissive: "#7d1111", emissiveIntensity: 0.5, clearcoat: 1.0 });
+
+const laneGeo = new THREE.PlaneGeometry(4, 20);
+const laneMat = new THREE.MeshPhysicalMaterial({ color: "#d39a5e", metalness: 0.1, roughness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.05 });
+
+const gutterGeo = new THREE.BoxGeometry(0.6, 0.2, 20);
+const gutterMat = new THREE.MeshPhysicalMaterial({ color: "#111", metalness: 0.5, roughness: 0.6 });
+
+const bumperGeo = new THREE.BoxGeometry(0.2, 0.6, 20);
+const bumperMat = new THREE.MeshPhysicalMaterial({ color: "#445", metalness: 0.5, roughness: 0.2, clearcoat: 0.5 });
+
+const backWallGeo = new THREE.BoxGeometry(6, 2, 1);
+const backWallMat = new THREE.MeshPhysicalMaterial({ color: "#112", metalness: 0.5, roughness: 0.5 });
+
+const ballGeo = new THREE.SphereGeometry(0.3, 32, 32);
+const ballMat = new THREE.MeshPhysicalMaterial({ color: "#17233a", metalness: 0.9, roughness: 0.05, emissive: "#0d1b38", emissiveIntensity: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.05 });
+// ----------------------------------------------
+
+
 function Pin({ position, index }: { position: [number, number, number], index: number }) {
   return (
     <RigidBody 
@@ -19,18 +44,9 @@ function Pin({ position, index }: { position: [number, number, number], index: n
       angularDamping={0.1}
     >
       <group>
-        <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
-          <cylinderGeometry args={[0.08, 0.2, 0.8, 16]} />
-          <meshPhysicalMaterial color="#ffffff" metalness={0.1} roughness={0.1} clearcoat={1.0} clearcoatRoughness={0.05} />
-        </mesh>
-        <mesh position={[0, 0.8, 0]} castShadow receiveShadow>
-          <sphereGeometry args={[0.15, 16, 16]} />
-          <meshPhysicalMaterial color="#ffffff" metalness={0.1} roughness={0.1} clearcoat={1.0} clearcoatRoughness={0.05} />
-        </mesh>
-        <mesh position={[0, 0.65, 0]}>
-          <torusGeometry args={[0.12, 0.03, 8, 16]} />
-          <meshPhysicalMaterial color="#e94b4b" emissive="#7d1111" emissiveIntensity={0.5} clearcoat={1.0} />
-        </mesh>
+        <mesh position={[0, 0.4, 0]} castShadow receiveShadow geometry={pinBaseGeo} material={pinBaseMat} />
+        <mesh position={[0, 0.8, 0]} castShadow receiveShadow geometry={pinTopGeo} material={pinTopMat} />
+        <mesh position={[0, 0.65, 0]} geometry={pinRingGeo} material={pinRingMat} />
       </group>
     </RigidBody>
   );
@@ -41,42 +57,24 @@ function BowlingLane() {
     <group>
       {/* Lane Surface */}
       <RigidBody type="fixed" restitution={0.1} friction={0.05}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -5]} receiveShadow>
-          <planeGeometry args={[4, 20]} />
-          <meshPhysicalMaterial color="#d39a5e" metalness={0.1} roughness={0.1} clearcoat={1.0} clearcoatRoughness={0.05} />
-        </mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, -5]} receiveShadow geometry={laneGeo} material={laneMat} />
       </RigidBody>
       
       {/* Gutters */}
       <RigidBody type="fixed" restitution={0} friction={0.5}>
-        <mesh position={[-2.3, -0.1, -5]} receiveShadow>
-          <boxGeometry args={[0.6, 0.2, 20]} />
-          <meshPhysicalMaterial color="#111" metalness={0.5} roughness={0.6} />
-        </mesh>
-        <mesh position={[2.3, -0.1, -5]} receiveShadow>
-          <boxGeometry args={[0.6, 0.2, 20]} />
-          <meshPhysicalMaterial color="#111" metalness={0.5} roughness={0.6} />
-        </mesh>
+        <mesh position={[-2.3, -0.1, -5]} receiveShadow geometry={gutterGeo} material={gutterMat} />
+        <mesh position={[2.3, -0.1, -5]} receiveShadow geometry={gutterGeo} material={gutterMat} />
       </RigidBody>
 
       {/* Bumpers/Walls */}
       <RigidBody type="fixed" restitution={0.5} friction={0}>
-        <mesh position={[-2.7, 0.2, -5]}>
-          <boxGeometry args={[0.2, 0.6, 20]} />
-          <meshPhysicalMaterial color="#445" metalness={0.5} roughness={0.2} clearcoat={0.5} />
-        </mesh>
-        <mesh position={[2.7, 0.2, -5]}>
-          <boxGeometry args={[0.2, 0.6, 20]} />
-          <meshPhysicalMaterial color="#445" metalness={0.5} roughness={0.2} clearcoat={0.5} />
-        </mesh>
+        <mesh position={[-2.7, 0.2, -5]} geometry={bumperGeo} material={bumperMat} />
+        <mesh position={[2.7, 0.2, -5]} geometry={bumperGeo} material={bumperMat} />
       </RigidBody>
       
       {/* Back Wall */}
       <RigidBody type="fixed" restitution={0.2} friction={0.5}>
-        <mesh position={[0, 1, -15.5]}>
-          <boxGeometry args={[6, 2, 1]} />
-          <meshPhysicalMaterial color="#112" metalness={0.5} roughness={0.5} />
-        </mesh>
+        <mesh position={[0, 1, -15.5]} geometry={backWallGeo} material={backWallMat} />
       </RigidBody>
     </group>
   );
@@ -113,10 +111,7 @@ function BowlingBall({ rolling, power, spin, onFinish }: { rolling: boolean, pow
       mass={6.0}
       type={rolling ? "dynamic" : "kinematicPosition"}
     >
-      <mesh castShadow receiveShadow>
-        <sphereGeometry args={[0.3, 32, 32]} />
-        <meshPhysicalMaterial color="#17233a" metalness={0.9} roughness={0.05} emissive="#0d1b38" emissiveIntensity={0.2} clearcoat={1.0} clearcoatRoughness={0.05} />
-      </mesh>
+      <mesh castShadow receiveShadow geometry={ballGeo} material={ballMat} />
     </RigidBody>
   );
 }

@@ -22,6 +22,14 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { ContactShadows, PresentationControls, Float } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
+const GEO_CYLINDER = new THREE.CylinderGeometry(2.8, 2.8, 0.4, 64);
+const GEO_CIRCLE = new THREE.CircleGeometry(2.8, 64);
+const GEO_TORUS = new THREE.TorusGeometry(2.8, 0.08, 16, 100);
+const GEO_CONE = new THREE.ConeGeometry(0.3, 0.6, 4);
+
+const MAT_BASE = new THREE.MeshStandardMaterial({ color: '#ffffff', metalness: 0.2, roughness: 0.8 });
+// wheel face material is handled below
+
 
 const SPIN_COST = 10;
 

@@ -1,10 +1,15 @@
+import { Canvas } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
+import { QualityManager } from '@/engine/aaa/QualityManager';
+import { PostFXManager } from '@/engine/aaa/PostFXManager';
+import { VFXManager } from '@/engine/aaa/VFXManager';
+import { ParticleManager } from '@/engine/aaa/ParticleManager';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
-import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody } from '@react-three/rapier';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -273,11 +278,11 @@ export function ChickenJumpGame({ onClose }: Props) {
         onClick={jump}
         onTouchStart={e => { e.preventDefault(); jump(); }}
       >
-        <GameEngine3D 
-          enablePhysics={disp.phase === 'dead'} 
-          cameraPosition={[0, 2, 14]} 
-          enablePostProcessing={true}
-        >
+        <Canvas camera={{ position: [0, 2, 14] }}>
+<QualityManager>
+<VFXManager>
+<PostFXManager />
+<ParticleManager />
           <ambientLight intensity={0.6} />
           <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
           
@@ -302,7 +307,9 @@ export function ChickenJumpGame({ onClose }: Props) {
             </Html>
           )}
 
-        </GameEngine3D>
+        </VFXManager>
+</QualityManager>
+</Canvas>
       </div>
 
       <div className="absolute top-4 left-6 bg-slate-900/80 backdrop-blur px-4 py-2 rounded-xl border border-slate-700 pointer-events-none">

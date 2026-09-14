@@ -1,10 +1,14 @@
+
+import { QualityManager } from '@/engine/aaa/QualityManager';
+import { PostFXManager } from '@/engine/aaa/PostFXManager';
+import { VFXManager } from '@/engine/aaa/VFXManager';
+import { ParticleManager } from '@/engine/aaa/ParticleManager';
 import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
 import { Environment, PerspectiveCamera, Box, Cylinder, Trail } from '@react-three/drei';
 import * as THREE from 'three';
 import { Button } from '@/components/ui/Button';
-import { GameEngine3D } from '@/engine/GameEngine3D';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
@@ -275,13 +279,12 @@ export function ArcheryGame({ onClose }: Props) {
           <Button variant="ghost" className="absolute bottom-8 left-8 z-50 text-slate-400" onClick={onClose}>Quit</Button>
           
           <div className="absolute inset-0 z-0 pointer-events-none">
-            <GameEngine3D 
-               enablePhysics={true} 
-               environmentPreset="forest"
-               enablePostProcessing={true}
-               cameraPosition={[0, 1.8, 0]}
-               cameraFov={60}
-            >
+            <Canvas camera={{ position: [0, 1.8, 0] }}>
+<QualityManager>
+<VFXManager>
+<PostFXManager />
+<ParticleManager />
+<Physics>
                <BowCamera isAiming={isAiming} swayX={swayX} swayY={swayY} firePower={power} />
                
                <RigidBody type="fixed" name="ground">
@@ -295,7 +298,10 @@ export function ArcheryGame({ onClose }: Props) {
                {arrows.map(a => (
                  <Arrow key={a.id} position={a.position} rotation={a.rotation} velocity={a.velocity} onHit={handleHit} />
                ))}
-            </GameEngine3D>
+            </Physics>
+</VFXManager>
+</QualityManager>
+</Canvas>
           </div>
         </div>
       )}

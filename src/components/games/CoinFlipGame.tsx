@@ -1,3 +1,9 @@
+import { Canvas } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
+import { QualityManager } from '@/engine/aaa/QualityManager';
+import { PostFXManager } from '@/engine/aaa/PostFXManager';
+import { VFXManager } from '@/engine/aaa/VFXManager';
+import { ParticleManager } from '@/engine/aaa/ParticleManager';
 // src/components/games/CoinFlipGame.tsx
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,7 +16,6 @@ import { BetControl } from '@/components/ui/BetControl';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
-import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -469,9 +474,17 @@ export function CoinFlipGame({ onClose }: CoinFlipGameProps) {
             }}
           >
             <div className="absolute inset-0 z-0">
-              <GameEngine3D cameraPosition={[0, 3, 6]} enablePhysics={true} enablePostProcessing={true}>
+              <Canvas camera={{ position: [0, 3, 6] }}>
+<QualityManager>
+<VFXManager>
+<PostFXManager />
+<ParticleManager />
+<Physics>
                 <Coin3D flipping={flipping} result={result || selectedSide || 'heads'} selectedSide={selectedSide} />
-              </GameEngine3D>
+              </Physics>
+</VFXManager>
+</QualityManager>
+</Canvas>
             </div>
 
             {/* Result display overlay */}

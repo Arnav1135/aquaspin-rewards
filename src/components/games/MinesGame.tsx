@@ -1,3 +1,9 @@
+import { Canvas } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
+import { QualityManager } from '@/engine/aaa/QualityManager';
+import { PostFXManager } from '@/engine/aaa/PostFXManager';
+import { VFXManager } from '@/engine/aaa/VFXManager';
+import { ParticleManager } from '@/engine/aaa/ParticleManager';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, AlertTriangle, Trophy, HelpCircle } from 'lucide-react';
@@ -10,7 +16,6 @@ import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
-import { GameEngine3D } from '@/engine/GameEngine3D';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -465,11 +470,11 @@ export function MinesGame({ onClose }: MinesGameProps) {
         </div>
 
         <div className="absolute inset-0 z-0 cursor-crosshair">
-          <GameEngine3D 
-            enablePhysics={false} 
-            cameraPosition={[0, 8, 8]}
-            enablePostProcessing={true}
-          >
+          <Canvas camera={{ position: [0, 8, 8] }}>
+<QualityManager>
+<VFXManager>
+<PostFXManager />
+<ParticleManager />
             {/* Grid Container tilted slightly to face camera better */}
             <group rotation={[-0.2, 0, 0]}>
               {/* Base Platform underneath the tiles */}
@@ -560,7 +565,9 @@ export function MinesGame({ onClose }: MinesGameProps) {
                 </AnimatePresence>
               </div>
             </Html>
-          </GameEngine3D>
+          </VFXManager>
+</QualityManager>
+</Canvas>
         </div>
       </Card>
     </div>

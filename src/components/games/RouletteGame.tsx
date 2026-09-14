@@ -1,3 +1,9 @@
+import { Canvas } from '@react-three/fiber';
+import { Physics } from '@react-three/rapier';
+import { QualityManager } from '@/engine/aaa/QualityManager';
+import { PostFXManager } from '@/engine/aaa/PostFXManager';
+import { VFXManager } from '@/engine/aaa/VFXManager';
+import { ParticleManager } from '@/engine/aaa/ParticleManager';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/features/authStore';
@@ -9,7 +15,6 @@ import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
-import { GameEngine3D } from '@/engine/GameEngine3D';
 import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -467,7 +472,11 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
         
         {/* 3D Canvas Viewport */}
         <div className="relative flex-1 bg-navy-950 overflow-hidden cursor-move">
-          <GameEngine3D enablePhysics={false} enablePostProcessing={true} enableSSR={true} cameraPosition={[0, 8, 5]}>
+          <Canvas camera={{ position: [0, 8, 5] }}>
+<QualityManager>
+<VFXManager>
+<PostFXManager />
+<ParticleManager />
             <CameraController gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
             <group>
                <RouletteBowl />
@@ -476,7 +485,9 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
                </group>
                <BallKinematic gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
             </group>
-          </GameEngine3D>
+          </VFXManager>
+</QualityManager>
+</Canvas>
           
           {/* Betting Overlay */}
           <AnimatePresence>

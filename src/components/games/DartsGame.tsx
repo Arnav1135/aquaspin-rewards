@@ -1,10 +1,14 @@
+
+import { QualityManager } from '@/engine/aaa/QualityManager';
+import { PostFXManager } from '@/engine/aaa/PostFXManager';
+import { VFXManager } from '@/engine/aaa/VFXManager';
+import { ParticleManager } from '@/engine/aaa/ParticleManager';
 import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
 import { Box, Cylinder, Trail, Center } from '@react-three/drei';
 import * as THREE from 'three';
 import { Button } from '@/components/ui/Button';
-import { GameEngine3D } from '@/engine/GameEngine3D';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 import { useDrag } from '@use-gesture/react';
@@ -267,12 +271,12 @@ export function DartsGame({ onClose }: Props) {
           <Button variant="ghost" className="absolute bottom-8 left-8 z-50 text-slate-400" onClick={onClose}>Quit</Button>
           
           <div className="absolute inset-0 z-0 pointer-events-none">
-            <GameEngine3D 
-               enablePhysics={true} 
-               environmentPreset="warehouse"
-               enablePostProcessing={true}
-               cameraPosition={[0, 1.5, 0]}
-            >
+            <Canvas camera={{ position: [0, 1.5, 0] }}>
+<QualityManager>
+<VFXManager>
+<PostFXManager />
+<ParticleManager />
+<Physics>
                <DartsCamera flyingDart={flyingDartPos} />
                
                <RigidBody type="fixed" name="floor">
@@ -286,7 +290,10 @@ export function DartsGame({ onClose }: Props) {
                {darts.map(d => (
                  <Dart key={d.id} position={d.position} rotation={d.rotation} velocity={d.velocity} onHit={handleHit} />
                ))}
-            </GameEngine3D>
+            </Physics>
+</VFXManager>
+</QualityManager>
+</Canvas>
           </div>
         </div>
       )}

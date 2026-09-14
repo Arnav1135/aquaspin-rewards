@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { X, Coins, Play, Square } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
@@ -5,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { GameEngine3D } from '@/engine/GameEngine3D';
 import { RigidBody, Physics, RapierRigidBody, InstancedRigidBodies, BallCollider, CuboidCollider, interactionGroups } from '@react-three/rapier';
 import { generateOutcome } from './plinko/outcomeEngine';
 import * as THREE from 'three';

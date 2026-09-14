@@ -95,21 +95,13 @@ serve(async (req: Request) => {
 
     // ── Award tokens if applicable ─────────────────────────────────────────────
     if (tokensToAward > 0) {
-      const { data: userData } = await supabaseAdmin
-        .from('users')
-        .select('tokens, total_earned')
-        .eq('id', user.id)
-        .single();
-
-      if (userData) {
-        await supabaseAdmin
-          .from('users')
-          .update({
-            tokens: userData.tokens + tokensToAward,
-            total_earned: userData.total_earned + tokensToAward,
-          })
-          .eq('id', user.id);
-      }
+      // Use the newly deployed RPC to atomically handle token math
+      await supabaseAdmin.rpc('record_game_result', {
+        p_user_id: user.id,
+        p_bet_amount: 0,
+        p_earned_amount: tokensToAward,
+        p_xp_earned: 0
+      });
     }
 
     return new Response(JSON.stringify({

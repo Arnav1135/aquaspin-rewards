@@ -14,6 +14,7 @@ import { useUIStore } from '@/features/uiStore';
 import { PerspectiveProvider } from '@/engine/core/PerspectiveProvider';
 import { AmbientBackground } from '@/components/layout/AmbientBackground';
 import { ViewTransitionWrapper } from '@/components/layout/ViewTransitionWrapper';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -162,7 +163,9 @@ export default function App() {
         <AmbientBackground />
         <PerspectiveProvider>
           <ViewTransitionWrapper>
-            <AppRoutes />
+            <ErrorBoundary name="RootApp">
+              <AppRoutes />
+            </ErrorBoundary>
           </ViewTransitionWrapper>
         </PerspectiveProvider>
 

@@ -18,7 +18,7 @@ export class LiquidGraphics extends Container {
   private liquidMask: Graphics;
   public animatedVolume = 0;
   private currentColors: number[] = [];
-  private surfaceRipple = 0;
+  public surfaceRipple = 0;
 
   constructor(vesselDef: VesselDefinition, tubeWidth: number, tubeHeight: number, capacity: number) {
     super();

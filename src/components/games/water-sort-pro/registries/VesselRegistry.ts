@@ -45,12 +45,23 @@ VesselRegistry.register({
   capacityMultiplier: 1.0,
   drawGlass: (g, w, h, thickness, color, opacity) => {
     const r = w / 2;
+    // Back glass shadow for volume
     g.moveTo(0, 0);
     g.lineTo(0, h - r);
     g.arc(r, h - r, r, Math.PI, 0, true);
     g.lineTo(w, 0);
-    g.fill({ color, alpha: opacity * 0.3 });
+    g.fill({ color: 0x000000, alpha: opacity * 0.15 });
+    
+    // Main frosted glass body
+    g.moveTo(0, 0);
+    g.lineTo(0, h - r);
+    g.arc(r, h - r, r, Math.PI, 0, true);
+    g.lineTo(w, 0);
+    g.fill({ color, alpha: opacity * 0.4 });
+    
+    // Thick volumetric edge stroke
     g.stroke({ width: thickness, color, alpha: opacity, join: 'round', cap: 'round' });
+    g.stroke({ width: thickness * 0.5, color: 0xFFFFFF, alpha: opacity * 0.6, join: 'round', cap: 'round' }); // Inner brighter edge
   },
   drawMask: (g, w, h) => {
     const r = w / 2;
@@ -58,22 +69,39 @@ VesselRegistry.register({
   },
   drawHighlight: (g, w, h) => {
     const r = w / 2;
-    // Rim
-    g.ellipse(w / 2, 0, w / 2 + 3, 4);
-    g.fill({ color: 0xFFFFFF, alpha: 0.2 });
-    g.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9, join: 'round', cap: 'round' });
     
-    // Side reflections
-    g.rect(0, 5, 4, h - r);
-    g.fill({ color: 0xFFFFFF, alpha: 0.4 });
-    g.rect(w - 4, 5, 4, h - r);
+    // Top Rim 3D effect
+    g.ellipse(w / 2, 0, w / 2 + 2, 5);
+    g.fill({ color: 0xFFFFFF, alpha: 0.1 });
+    g.stroke({ width: 3, color: 0xFFFFFF, alpha: 0.95 });
+    g.stroke({ width: 1, color: 0xFFFFFF, alpha: 1.0 }); // Specular ping on rim
+
+    // Intense left specular highlight (Primary light source)
+    g.rect(thicknessOffset(w, 0.08), 5, w * 0.12, h - r * 1.5);
+    g.fill({ color: 0xFFFFFF, alpha: 0.7 });
+    
+    // Secondary softer left highlight
+    g.rect(thicknessOffset(w, 0.22), 5, w * 0.05, h - r * 1.5);
+    g.fill({ color: 0xFFFFFF, alpha: 0.2 });
+
+    // Right rim light (Bounce light)
+    g.rect(w - thicknessOffset(w, 0.15), 5, w * 0.08, h - r * 1.2);
     g.fill({ color: 0xFFFFFF, alpha: 0.4 });
 
-    // Inner curve
-    g.roundRect(w * 0.15, h * 0.02, w * 0.15, h * 0.85, w * 0.1);
-    g.fill({ color: 0xFFFFFF, alpha: 0.2 });
+    // Inner curve volumetric reflection
+    g.roundRect(w * 0.3, h * 0.05, w * 0.4, h * 0.8, w * 0.2);
+    g.fill({ color: 0xFFFFFF, alpha: 0.08 });
+    
+    // Bottom inner bright spec
+    g.ellipse(w / 2, h - r * 0.5, w * 0.25, r * 0.25);
+    g.fill({ color: 0xFFFFFF, alpha: 0.5 });
   }
 });
+
+// Helper for relative offset
+function thicknessOffset(w: number, ratio: number) {
+  return Math.max(2, w * ratio);
+}
 
 // Register Glass Bottle
 VesselRegistry.register({
@@ -90,23 +118,26 @@ VesselRegistry.register({
     const shoulderR = 15;
     const bottomR = 10;
     
-    g.moveTo(neckX, 0);
-    g.lineTo(neckX, neckH);
-    // Shoulder left
-    g.arc(neckX - shoulderR, neckH + shoulderR, shoulderR, 0, Math.PI/2, false);
-    g.lineTo(0, h - bottomR);
-    // Bottom left
-    g.arc(bottomR, h - bottomR, bottomR, Math.PI, Math.PI/2, true);
-    g.lineTo(w - bottomR, h);
-    // Bottom right
-    g.arc(w - bottomR, h - bottomR, bottomR, Math.PI/2, 0, true);
-    g.lineTo(w, neckH + shoulderR);
-    // Shoulder right
-    g.arc(neckX + neckW + shoulderR, neckH + shoulderR, shoulderR, Math.PI/2, Math.PI, false);
-    g.lineTo(neckX + neckW, 0);
+    const drawPath = () => {
+      g.moveTo(neckX, 0);
+      g.lineTo(neckX, neckH);
+      g.arc(neckX - shoulderR, neckH + shoulderR, shoulderR, 0, Math.PI/2, false);
+      g.lineTo(0, h - bottomR);
+      g.arc(bottomR, h - bottomR, bottomR, Math.PI, Math.PI/2, true);
+      g.lineTo(w - bottomR, h);
+      g.arc(w - bottomR, h - bottomR, bottomR, Math.PI/2, 0, true);
+      g.lineTo(w, neckH + shoulderR);
+      g.arc(neckX + neckW + shoulderR, neckH + shoulderR, shoulderR, Math.PI/2, Math.PI, false);
+      g.lineTo(neckX + neckW, 0);
+    };
 
-    g.fill({ color, alpha: opacity * 0.3 });
+    drawPath();
+    g.fill({ color: 0x000000, alpha: opacity * 0.15 }); // Depth
+
+    drawPath();
+    g.fill({ color, alpha: opacity * 0.4 });
     g.stroke({ width: thickness, color, alpha: opacity, join: 'round' });
+    g.stroke({ width: thickness * 0.4, color: 0xFFFFFF, alpha: opacity * 0.7, join: 'round' });
   },
   drawMask: (g, w, h) => {
     const neckW = w * 0.4 - 4;
@@ -129,14 +160,23 @@ VesselRegistry.register({
   },
   drawHighlight: (g, w, h) => {
     const neckW = w * 0.4;
-    // Rim
-    g.ellipse(w / 2, 0, neckW / 2 + 3, 3);
-    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
-    g.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9 });
     
-    // Side reflection
-    g.roundRect(w * 0.1, h * 0.35, w * 0.1, h * 0.5, w * 0.05);
-    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
+    // Rim
+    g.ellipse(w / 2, 0, neckW / 2 + 2, 4);
+    g.fill({ color: 0xFFFFFF, alpha: 0.4 });
+    g.stroke({ width: 3, color: 0xFFFFFF, alpha: 1.0 });
+    
+    // Left major specular
+    g.roundRect(w * 0.1, h * 0.4, w * 0.1, h * 0.5, w * 0.05);
+    g.fill({ color: 0xFFFFFF, alpha: 0.65 });
+    
+    // Right bounce light
+    g.roundRect(w * 0.85, h * 0.45, w * 0.05, h * 0.4, w * 0.02);
+    g.fill({ color: 0xFFFFFF, alpha: 0.35 });
+
+    // Neck reflection
+    g.roundRect(w * 0.35, 5, w * 0.08, h * 0.25, 2);
+    g.fill({ color: 0xFFFFFF, alpha: 0.6 });
   }
 });
 
@@ -155,15 +195,22 @@ VesselRegistry.register({
     const vaseW = w;
     const vaseX = 0;
     
-    g.moveTo(neckX, 0);
-    g.lineTo(neckX, neckH);
-    g.quadraticCurveTo(vaseX, h * 0.5, vaseX + w * 0.1, h - 10);
-    g.quadraticCurveTo(vaseX + w * 0.5, h, vaseX + w - w * 0.1, h - 10);
-    g.quadraticCurveTo(vaseX + w, h * 0.5, neckX + neckW, neckH);
-    g.lineTo(neckX + neckW, 0);
+    const drawPath = () => {
+      g.moveTo(neckX, 0);
+      g.lineTo(neckX, neckH);
+      g.quadraticCurveTo(vaseX, h * 0.5, vaseX + w * 0.1, h - 10);
+      g.quadraticCurveTo(vaseX + w * 0.5, h, vaseX + w - w * 0.1, h - 10);
+      g.quadraticCurveTo(vaseX + w, h * 0.5, neckX + neckW, neckH);
+      g.lineTo(neckX + neckW, 0);
+    };
 
-    g.fill({ color, alpha: opacity * 0.3 });
+    drawPath();
+    g.fill({ color: 0x000000, alpha: opacity * 0.2 });
+    
+    drawPath();
+    g.fill({ color, alpha: opacity * 0.4 });
     g.stroke({ width: thickness, color, alpha: opacity, join: 'round' });
+    g.stroke({ width: thickness * 0.5, color: 0xFFFFFF, alpha: opacity * 0.6, join: 'round' });
   },
   drawMask: (g, w, h) => {
     const neckW = w * 0.4 - 4;
@@ -183,13 +230,18 @@ VesselRegistry.register({
   drawHighlight: (g, w, h) => {
     const neckW = w * 0.4;
     // Rim
-    g.ellipse(w / 2, 0, neckW / 2 + 3, 3);
-    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
-    g.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.9 });
+    g.ellipse(w / 2, 0, neckW / 2 + 2, 4);
+    g.fill({ color: 0xFFFFFF, alpha: 0.4 });
+    g.stroke({ width: 3, color: 0xFFFFFF, alpha: 0.95 });
     
-    // Side reflection
-    g.roundRect(w * 0.15, h * 0.3, w * 0.1, h * 0.5, w * 0.05);
-    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
+    // Bulbous side reflection
+    g.moveTo(w * 0.15, h * 0.4);
+    g.quadraticCurveTo(w * 0.05, h * 0.65, w * 0.15, h * 0.9);
+    g.stroke({ width: 6, color: 0xFFFFFF, alpha: 0.6, cap: 'round' });
+    
+    // Soft center volume light
+    g.ellipse(w / 2, h * 0.6, w * 0.2, h * 0.25);
+    g.fill({ color: 0xFFFFFF, alpha: 0.15 });
   }
 });
 
@@ -202,18 +254,23 @@ VesselRegistry.register({
   logicalHeight: 160,
   capacityMultiplier: 2.0, // Double capacity
   drawGlass: (g, w, h, thickness, color, opacity) => {
-    // Heart shape math
-    g.moveTo(w / 2, h * 0.3);
-    g.bezierCurveTo(w / 2, h * 0.1, 0, 0, 0, h * 0.4);
-    g.bezierCurveTo(0, h * 0.6, w / 2, h * 0.85, w / 2, h);
-    g.bezierCurveTo(w / 2, h * 0.85, w, h * 0.6, w, h * 0.4);
-    g.bezierCurveTo(w, 0, w / 2, h * 0.1, w / 2, h * 0.3);
+    const drawPath = () => {
+      g.moveTo(w / 2, h * 0.3);
+      g.bezierCurveTo(w / 2, h * 0.1, 0, 0, 0, h * 0.4);
+      g.bezierCurveTo(0, h * 0.6, w / 2, h * 0.85, w / 2, h);
+      g.bezierCurveTo(w / 2, h * 0.85, w, h * 0.6, w, h * 0.4);
+      g.bezierCurveTo(w, 0, w / 2, h * 0.1, w / 2, h * 0.3);
+    };
 
-    g.fill({ color, alpha: opacity * 0.3 });
+    drawPath();
+    g.fill({ color: 0x000000, alpha: opacity * 0.25 });
+    
+    drawPath();
+    g.fill({ color, alpha: opacity * 0.5 });
     g.stroke({ width: thickness, color, alpha: opacity, join: 'round' });
+    g.stroke({ width: thickness * 0.6, color: 0xFFFFFF, alpha: opacity * 0.8, join: 'round' });
   },
   drawMask: (g, w, h) => {
-    // Inner heart shape
     g.moveTo(w / 2, h * 0.3 + 2);
     g.bezierCurveTo(w / 2, h * 0.1 + 2, 2, 2, 2, h * 0.4);
     g.bezierCurveTo(2, h * 0.6, w / 2, h * 0.85 - 2, w / 2, h - 2);
@@ -222,15 +279,24 @@ VesselRegistry.register({
     g.closePath();
   },
   drawHighlight: (g, w, h) => {
-    // Rim
-    g.ellipse(w * 0.25, h * 0.15, w * 0.15, h * 0.05);
-    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
-    g.ellipse(w * 0.75, h * 0.15, w * 0.15, h * 0.05);
-    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
+    // Left lobe rim
+    g.ellipse(w * 0.25, h * 0.18, w * 0.12, h * 0.05);
+    g.fill({ color: 0xFFFFFF, alpha: 0.5 });
+    g.stroke({ width: 3, color: 0xFFFFFF, alpha: 0.9 });
     
-    // Gloss
+    // Right lobe rim
+    g.ellipse(w * 0.75, h * 0.18, w * 0.12, h * 0.05);
+    g.fill({ color: 0xFFFFFF, alpha: 0.3 });
+    g.stroke({ width: 2, color: 0xFFFFFF, alpha: 0.6 });
+    
+    // AAA Curved Specular Gloss
     g.moveTo(w * 0.1, h * 0.4);
-    g.quadraticCurveTo(w * 0.1, h * 0.6, w * 0.4, h * 0.8);
-    g.stroke({ width: 4, color: 0xFFFFFF, alpha: 0.4, join: 'round' });
+    g.quadraticCurveTo(w * 0.1, h * 0.6, w * 0.35, h * 0.82);
+    g.stroke({ width: 8, color: 0xFFFFFF, alpha: 0.6, join: 'round', cap: 'round' });
+    
+    // Center glow
+    g.ellipse(w / 2, h * 0.45, w * 0.2, h * 0.15);
+    g.fill({ color: 0xFFFFFF, alpha: 0.15 });
   }
 });
+

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Star, Coins, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens } from '@/lib/secureEconomy';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TokenCounter } from '@/components/ui/TokenCounter';
@@ -113,9 +114,13 @@ export function Shop() {
         bonusTokens = Math.floor(Math.random() * 251) + 50; // 50–300
       }
 
-      const newBalance = profile.tokens - confirmItem.cost + bonusTokens;
-      await (supabase.from('users') as any).update({ tokens: newBalance }).eq('id', profile.id);
-      updateProfile({ tokens: newBalance });
+      const amountChange = -confirmItem.cost + bonusTokens;
+      const { data: newTokens } = await secureUpdateTokens(profile.id, amountChange);
+      if (newTokens !== null) {
+        updateProfile({ tokens: newTokens });
+      } else {
+        throw new Error('Transaction failed');
+      }
 
       setSuccessItem(confirmItem);
       toast.success(`${confirmItem.name} purchased! ${confirmItem.effect}`);

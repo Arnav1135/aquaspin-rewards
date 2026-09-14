@@ -649,6 +649,23 @@ export class CameraController {
 
     this.controls.update();
     this.clampCameraToBounds();
+
+    // Cinematic Camera Breathing (subtle organic movement)
+    if (!this.isUserInteracting && Date.now() - this.lastInteractionTime > 1500) {
+      const time = performance.now() * 0.001;
+      const breatheX = Math.sin(time * 0.5) * 0.003;
+      const breatheY = Math.cos(time * 0.4) * 0.003;
+      
+      const target = this.controls.target;
+      const relPos = this.camera.position.clone().sub(target);
+      const spherical = new THREE.Spherical().setFromVector3(relPos);
+      spherical.theta += breatheX * 0.02; // Very subtle
+      spherical.phi += breatheY * 0.02;
+      
+      const p = new THREE.Vector3().setFromSpherical(spherical).add(target);
+      this.camera.position.copy(p);
+      this.camera.lookAt(target);
+    }
   }
 
   // Anti-occlusion: Fades out piece meshes that physically block view lines to legal move tiles

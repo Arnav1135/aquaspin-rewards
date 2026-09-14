@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect } from 'postprocessing';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, SMAAEffect, SSAOEffect, NormalPass } from 'postprocessing';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TouchController, triggerHaptic } from './touch';
 import { Chess, Square } from 'chess.js';
@@ -129,6 +129,7 @@ export class Chess3DScene {
 
     // 5. Studio Lighting
     this.setupLighting();
+    this.initPostProcessing();
 
     // 6. Build 3D Board
     this.boardContainer = create3DBoard(this.theme);
@@ -148,6 +149,53 @@ export class Chess3DScene {
 
     // 9. Start Render Loop
     this.animate();
+  }
+
+  private initPostProcessing() {
+    if (this.qualityConfig.tier === 'low') return;
+
+    this.composer = new EffectComposer(this.renderer);
+    const renderPass = new RenderPass(this.scene, this.camera);
+    this.composer.addPass(renderPass);
+
+    const normalPass = new NormalPass(this.scene, this.camera);
+    this.composer.addPass(normalPass);
+
+    const effects = [];
+
+    if (this.qualityConfig.useSSAO) {
+      const ssaoEffect = new SSAOEffect(this.camera, normalPass.texture, {
+        intensity: 2.0,
+        radius: 0.1,
+        samples: 16,
+        rings: 4,
+        distanceThreshold: 1.0,
+        distanceFalloff: 0.1,
+        luminanceInfluence: 0.7,
+      });
+      effects.push(ssaoEffect);
+    }
+
+    const bloomEffect = new BloomEffect({
+      intensity: 0.8,
+      mipmapBlur: true,
+      luminanceThreshold: 0.85,
+      luminanceSmoothing: 0.1,
+    });
+    effects.push(bloomEffect);
+
+    const vignetteEffect = new VignetteEffect({
+      eskil: false,
+      offset: 0.3,
+      darkness: 0.5,
+    });
+    effects.push(vignetteEffect);
+
+    const smaaEffect = new SMAAEffect();
+    effects.push(smaaEffect);
+
+    const effectPass = new EffectPass(this.camera, ...effects);
+    this.composer.addPass(effectPass);
   }
 
   private setupLighting() {

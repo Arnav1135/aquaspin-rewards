@@ -62,9 +62,9 @@ export function CarromPostProcessing() {
   );
 
   const dof = isCinematic ? (
-    <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={4} height={480} />
+    <DepthOfField focusDistance={0.005} focalLength={0.02} bokehScale={2} height={480} />
   ) : (
-    <DepthOfField focusDistance={0} focalLength={0.05} bokehScale={1} height={480} />
+    <DepthOfField focusDistance={0.01} focalLength={0.05} bokehScale={1} height={480} />
   );
 
   if (quality === 'MEDIUM') {
@@ -85,7 +85,7 @@ export function CarromPostProcessing() {
       <SSAO 
         samples={quality === 'ULTRA' ? 16 : 9} 
         radius={0.05} 
-        intensity={15} 
+        intensity={2} 
         luminanceInfluence={0.5} 
         color={new THREE.Color("black") as any}
         worldDistanceThreshold={0.2}

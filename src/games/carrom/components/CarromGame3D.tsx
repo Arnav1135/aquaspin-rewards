@@ -1,7 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
-import { OrbitControls } from '@react-three/drei';
 import { Board3D } from './Board3D';
 import { Striker3D } from './Striker3D';
 import { CoinManager } from './CoinManager';
@@ -41,14 +40,32 @@ function VictoryVFX() {
 
   useEffect(() => {
     if (turnState === 'GAME_OVER') {
+      let count = 0;
       const vfxInterval = setInterval(() => {
         triggerVFX({ type: 'victory', position: [0, 0, 0], intensity: 10 });
+        count++;
+        if (count >= 20) {
+          clearInterval(vfxInterval);
+        }
       }, 500);
       return () => clearInterval(vfxInterval);
     }
   }, [turnState]);
   
   return null;
+}
+
+function CarromUIOverlay() {
+  const turnState = useCarromStore(state => state.turnState);
+  const power = useCarromStore(state => state.power);
+
+  return (
+    <div style={{ position: 'absolute', top: 20, left: 20, color: 'white', fontFamily: 'sans-serif', pointerEvents: 'none' }}>
+      <h2>Carrom 3D Pro</h2>
+      <p>Status: {turnState}</p>
+      <p>Power: {Math.round(power)}%</p>
+    </div>
+  );
 }
 
 export function CarromGame3D() {
@@ -65,9 +82,9 @@ export function CarromGame3D() {
           shadows
           dpr={[1, 2]} // Support for mobile high-DPR (System 57)
           gl={{
-            antialias: false,
+            antialias: true,
             powerPreference: 'high-performance',
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: false
           }}
         >
         <QualityManager>
@@ -76,13 +93,6 @@ export function CarromGame3D() {
             <VictoryVFX />
             <Suspense fallback={null}>
               <CarromCameraController />
-              <OrbitControls 
-                enablePan={false} 
-                maxPolarAngle={Math.PI / 2.1} 
-                minDistance={0.5} 
-                maxDistance={2} 
-                enabled={turnState === 'IDLE'} // Disable when actively playing to let CameraController take over
-              />
               
               {/* Phase 1-2: HDR Environment + Hero Studio Lighting */}
               <CarromHeroStudio />
@@ -123,11 +133,7 @@ export function CarromGame3D() {
       <VictoryCinematic />
 
       {/* UI Overlay */}
-      <div style={{ position: 'absolute', top: 20, left: 20, color: 'white', fontFamily: 'sans-serif', pointerEvents: 'none' }}>
-        <h2>Carrom 3D Pro</h2>
-        <p>Status: {turnState}</p>
-        <p>Power: {Math.round(useCarromStore(state => state.power))}%</p>
-      </div>
+      <CarromUIOverlay />
     </div>
     </CarromRenderGuard>
   );

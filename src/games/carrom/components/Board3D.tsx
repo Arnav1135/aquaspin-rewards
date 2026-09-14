@@ -9,8 +9,24 @@ import { useCarromQuality } from './CarromPerformanceManager';
 import { getWoodTexture } from '../materials/ProceduralWood';
 import { CarromMaterialProfile } from '../materials/CarromMaterialProfile';
 
+const bw = CARROM_PHYSICS.BOARD.WIDTH;
+const border = CARROM_PHYSICS.BOARD.BORDER_WIDTH;
+const halfBw = bw / 2;
+const halfBorder = border / 2;
+const edgeH = CARROM_PHYSICS.BOARD.THICKNESS + 0.02; // Edge sits above surface
+const surfaceH = CARROM_PHYSICS.BOARD.THICKNESS; 
+const pOffset = halfBw - 0.04;
+const POCKET_POSITIONS: [number, number, number][] = [
+  [-pOffset, 0, -pOffset],
+  [pOffset, 0, -pOffset],
+  [-pOffset, 0, pOffset],
+  [pOffset, 0, pOffset],
+];
+
 export function Board3D() {
   const pocketCoin = useCarromStore(state => state.pocketCoin);
+  const addPocketedThisTurn = useCarromStore(state => state.addPocketedThisTurn);
+  const setStrikerFouled = useCarromStore(state => state.setStrikerFouled);
   const { spawnEffect } = useVFX();
   
   const quality = useCarromQuality();
@@ -18,21 +34,6 @@ export function Board3D() {
   const surfaceMaterial = useMemo(() => CarromMaterialProfile.getBoardSurfaceMaterial(), []);
   const edgeMaterial = useMemo(() => CarromMaterialProfile.getBoardEdgeMaterial(woodTex), [woodTex]);
   
-  const bw = CARROM_PHYSICS.BOARD.WIDTH;
-  const border = CARROM_PHYSICS.BOARD.BORDER_WIDTH;
-  const halfBw = bw / 2;
-  const halfBorder = border / 2;
-  const edgeH = CARROM_PHYSICS.BOARD.THICKNESS + 0.02; // Edge sits above surface
-  const surfaceH = CARROM_PHYSICS.BOARD.THICKNESS; 
-  
-  const pOffset = halfBw - 0.04;
-  const pocketPositions: [number, number, number][] = [
-    [-pOffset, 0, -pOffset],
-    [pOffset, 0, -pOffset],
-    [-pOffset, 0, pOffset],
-    [pOffset, 0, pOffset],
-  ];
-
   const boardShape = useMemo(() => {
     const shape = new THREE.Shape();
     shape.moveTo(-halfBw, -halfBw);
@@ -43,14 +44,14 @@ export function Board3D() {
 
     const r = CARROM_PHYSICS.POCKET.RADIUS;
     
-    pocketPositions.forEach(([x, _, z]) => {
+    POCKET_POSITIONS.forEach(([x, _, z]) => {
       const hole = new THREE.Path();
       hole.absarc(x, -z, r, 0, Math.PI * 2, false); // -z because Shape uses X, Y(Z)
       shape.holes.push(hole);
     });
 
     return shape;
-  }, [halfBw, pocketPositions]);
+  }, []);
 
   return (
     <group>
@@ -100,7 +101,7 @@ export function Board3D() {
       </RigidBody>
 
       {/* Deep Pocket Catchers (Below the board) */}
-      {pocketPositions.map((pos, i) => (
+      {POCKET_POSITIONS.map((pos, i) => (
         <RigidBody 
           key={`pocket-${i}`} 
           type="fixed" 
@@ -108,13 +109,15 @@ export function Board3D() {
           sensor
           onIntersectionEnter={({ other }) => {
             if (other.rigidBodyObject?.userData?.isCoin) {
-              pocketCoin(other.rigidBodyObject.userData.id);
+              const coinId = other.rigidBodyObject.userData.id;
+              pocketCoin(coinId);
+              addPocketedThisTurn(coinId);
               spawnEffect('pocket', new THREE.Vector3(pos[0], pos[1], pos[2]), {
                 intensity: 1.5,
               });
             }
             if (other.rigidBodyObject?.userData?.isStriker) {
-              console.log("Foul! Striker Pocketed");
+              setStrikerFouled(true);
             }
           }}
         >

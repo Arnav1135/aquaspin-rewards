@@ -16,6 +16,9 @@ interface CarromStore {
   aimMode: 'CLASSIC' | 'ASSISTED' | 'EXPERT';
   cameraProfile: string;
   colorGradingProfile: string;
+  queenCovered: boolean;
+  pocketedThisTurn: string[];
+  strikerFouled: boolean;
   
   // Replay System
   replays: any[];
@@ -29,6 +32,10 @@ interface CarromStore {
   setColorGradingProfile: (profile: string) => void;
   recordReplay: () => void;
   pocketCoin: (id: string) => void;
+  addPocketedThisTurn: (id: string) => void;
+  clearPocketedThisTurn: () => void;
+  updateScore: (playerIndex: number, delta: number) => void;
+  setStrikerFouled: (val: boolean) => void;
   resetTurn: () => void;
   initGame: (initialCoins: CarromCoinData[]) => void;
   setEnvironmentProfile: (profile: string) => void;
@@ -54,6 +61,9 @@ export const useCarromStore = create<CarromStore>((set) => ({
   cameraProfile: 'NORMAL',
   colorGradingProfile: 'CLASSIC',
   replays: [],
+  queenCovered: false,
+  pocketedThisTurn: [],
+  strikerFouled: false,
 
   setTurnState: (state) => set({ turnState: state }),
   setStrikerPosition: (pos) => set({ strikerPosition: pos }),
@@ -79,11 +89,23 @@ export const useCarromStore = create<CarromStore>((set) => ({
       [id]: { ...state.coins[id], isPocketed: true }
     }
   })),
+  addPocketedThisTurn: (id) => set((state) => ({
+    pocketedThisTurn: [...state.pocketedThisTurn, id]
+  })),
+  clearPocketedThisTurn: () => set({ pocketedThisTurn: [] }),
+  updateScore: (playerIndex, delta) => set((state) => {
+    const newPlayers = [...state.players];
+    newPlayers[playerIndex] = { ...newPlayers[playerIndex], score: newPlayers[playerIndex].score + delta };
+    return { players: newPlayers };
+  }),
+  setStrikerFouled: (val) => set({ strikerFouled: val }),
   resetTurn: () => set((state) => ({
     turnState: 'PLACING_STRIKER',
     power: 0,
     strikerPosition: [0, 0.008, 0.28], // Reset to baseline for active player
-    currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length
+    currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,
+    pocketedThisTurn: [],
+    strikerFouled: false
   })),
   initGame: (initialCoins) => set(() => {
     const coinsObj: Record<string, CarromCoinData> = {};
@@ -92,6 +114,9 @@ export const useCarromStore = create<CarromStore>((set) => ({
       coins: coinsObj,
       turnState: 'PLACING_STRIKER',
       currentPlayerIndex: 0,
+      pocketedThisTurn: [],
+      strikerFouled: false,
+      queenCovered: false
     };
   }),
 }));

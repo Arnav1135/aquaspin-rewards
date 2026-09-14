@@ -55,13 +55,32 @@ export function CarromControls() {
   const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (turnState === 'AIMING' && dragStart) {
-      (e.target as Element).releasePointerCapture(e.pointerId);
-      useCarromStore.getState().recordReplay();
-      setTurnState('SHOOTING');
-      setDragStart(null);
+      try {
+        (e.target as Element).releasePointerCapture(e.pointerId);
+      } catch (err) {}
+      
+      const currentPower = useCarromStore.getState().power;
+      if (currentPower < 5) {
+        setPower(0);
+        setDragStart(null);
+        // Stay in aiming or go back to placing if desired
+      } else {
+        useCarromStore.getState().recordReplay();
+        setTurnState('SHOOTING');
+        setDragStart(null);
+      }
     } else if (turnState === 'PLACING_STRIKER') {
-      (e.target as Element).releasePointerCapture(e.pointerId);
+      try {
+        (e.target as Element).releasePointerCapture(e.pointerId);
+      } catch (err) {}
       setTurnState('AIMING');
+    }
+  };
+
+  const handlePointerCancel = (e: ThreeEvent<PointerEvent>) => {
+    if (turnState === 'AIMING') {
+      setPower(0);
+      setDragStart(null);
     }
   };
 
@@ -75,8 +94,8 @@ export function CarromControls() {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerOut={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerOut={handlePointerCancel}
+        onPointerCancel={handlePointerCancel}
         visible={false}
       >
         <planeGeometry args={[10, 10]} />

@@ -24,8 +24,11 @@ export function CarromCameraController() {
   
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   
-  const vec = new THREE.Vector3();
-  const target = new THREE.Vector3();
+  const vec = useRef(new THREE.Vector3());
+  const target = useRef(new THREE.Vector3());
+  const tempQuat = useRef(new THREE.Quaternion());
+  const tempMat = useRef(new THREE.Matrix4());
+  const upVec = useRef(new THREE.Vector3(0, 1, 0));
   
   const shakeRef = useRef(new THREE.Vector3());
   const shakeIntensity = useRef(0);
@@ -66,18 +69,18 @@ export function CarromCameraController() {
     if (profileName === 'AIM') {
       const camDist = 0.5;
       const camHeight = 0.4;
-      vec.set(
+      vec.current.set(
         strikerPosition[0] - Math.cos(aimAngle) * camDist,
         camHeight,
         strikerPosition[2] - Math.sin(aimAngle) * camDist
       );
-      target.set(strikerPosition[0], 0, strikerPosition[2]);
+      target.current.set(strikerPosition[0], 0, strikerPosition[2]);
     } else {
       if (Array.isArray(profile.position)) {
-        vec.fromArray(profile.position);
+        vec.current.fromArray(profile.position);
       }
       if (Array.isArray(profile.target)) {
-        target.fromArray(profile.target);
+        target.current.fromArray(profile.target);
       }
     }
 
@@ -88,24 +91,23 @@ export function CarromCameraController() {
         (Math.random() - 0.5) * shakeIntensity.current,
         (Math.random() - 0.5) * shakeIntensity.current
       );
-      vec.add(shakeRef.current);
+      vec.current.add(shakeRef.current);
       shakeIntensity.current *= 0.9;
       if (shakeIntensity.current < 0.0001) shakeIntensity.current = 0;
     } else if (profileName === 'AIM' || profileName === 'NORMAL') {
       // Cinematic Camera Breathing
-      vec.y += Math.sin(state.clock.elapsedTime * 2.0) * 0.005;
-      vec.x += Math.cos(state.clock.elapsedTime * 1.5) * 0.005;
+      vec.current.y += Math.sin(state.clock.elapsedTime * 2.0) * 0.005;
+      vec.current.x += Math.cos(state.clock.elapsedTime * 1.5) * 0.005;
     }
 
-    cameraRef.current.position.lerp(vec, 0.05); // Smooth transition
+    cameraRef.current.position.lerp(vec.current, 0.05); // Smooth transition
     cameraRef.current.fov = THREE.MathUtils.lerp(cameraRef.current.fov, targetFov, 0.05);
     cameraRef.current.updateProjectionMatrix();
     
     // Smooth lookat
-    const targetQuat = new THREE.Quaternion().setFromRotationMatrix(
-      new THREE.Matrix4().lookAt(cameraRef.current.position, target, new THREE.Vector3(0,1,0))
-    );
-    cameraRef.current.quaternion.slerp(targetQuat, 0.05);
+    tempMat.current.lookAt(cameraRef.current.position, target.current, upVec.current);
+    tempQuat.current.setFromRotationMatrix(tempMat.current);
+    cameraRef.current.quaternion.slerp(tempQuat.current, 0.05);
   });
 
   return <PerspectiveCamera ref={cameraRef} makeDefault fov={45} />;

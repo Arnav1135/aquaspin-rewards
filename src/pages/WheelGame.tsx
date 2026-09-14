@@ -387,7 +387,7 @@ export function WheelGame() {
           
           {/* ── 3D Canvas Container ── */}
           <div className="relative w-full h-[400px] md:h-[500px]">
-            <Canvas enablePostProcessing={true} environmentPreset="night">
+            <Canvas>
               <Wheel3D theme={theme} angleRef={currentAngleRef} spinning={isSpinning} />
               <ContactShadows position={[0, -3.5, 0]} opacity={0.5} scale={10} blur={2} far={4} color="#0A1428" />
             </Canvas>

@@ -1,3 +1,4 @@
+import { triggerVFX } from './CarromVFXSystem';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useSpring, a } from '@react-spring/three';
 import * as THREE from 'three';
@@ -5,8 +6,8 @@ import { RigidBody, CylinderCollider, RapierRigidBody } from '@react-three/rapie
 import { CARROM_PHYSICS } from '../physics/CarromPhysicsConstants';
 import { useCarromStore } from '../state/CarromState';
 import { CarromCoinData } from '../types/CarromTypes';
-import { useVFX } from '../../../engine/aaa';
 import { CarromMaterialProfile } from '../materials/CarromMaterialProfile';
+import { carromEventBus } from '../physics/CarromEventBus';
 
 function createInitialCoins(): CarromCoinData[] {
   const coins: CarromCoinData[] = [];
@@ -46,7 +47,6 @@ function createInitialCoins(): CarromCoinData[] {
 
 function Coin3D({ coin }: { coin: CarromCoinData }) {
   const bodyRef = useRef<RapierRigidBody>(null);
-  const { spawnEffect } = useVFX();
   const [pocketPos, setPocketPos] = useState<[number, number, number] | null>(null);
 
   useEffect(() => {
@@ -79,40 +79,42 @@ function Coin3D({ coin }: { coin: CarromCoinData }) {
 
   const CoinVisuals = (
     <a.group scale={scale} position-y={coin.isPocketed ? y : 0}>
-      {/* Main Cylinder */}
+      {/* High-res Main Cylinder */}
       <mesh castShadow receiveShadow material={[edgeMaterial, coinMaterial, coinMaterial]}>
-        <cylinderGeometry args={[r - 0.001, r - 0.001, h - 0.002, 32]} />
+        <cylinderGeometry args={[r - 0.001, r - 0.001, h - 0.002, 64]} />
       </mesh>
       
       {/* Micro-bevel Top */}
       <mesh castShadow receiveShadow material={coinMaterial} position={[0, h/2 - 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
-        <torusGeometry args={[r - 0.001, 0.001, 16, 32]} />
+        <torusGeometry args={[r - 0.001, 0.001, 32, 64]} />
       </mesh>
 
       {/* Micro-bevel Bottom */}
       <mesh castShadow receiveShadow material={coinMaterial} position={[0, -h/2 + 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
-        <torusGeometry args={[r - 0.001, 0.001, 16, 32]} />
+        <torusGeometry args={[r - 0.001, 0.001, 32, 64]} />
       </mesh>
       
-      {/* Tiny face detail circle with subtle emissive */}
+      {/* Deep carved center detail */}
       <mesh position={[0, h/2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[r * 0.5, r * 0.8, 32]} />
+        <ringGeometry args={[r * 0.4, r * 0.7, 64]} />
         <meshStandardMaterial 
-          color={coin.type === 'queen' ? '#f44336' : (coin.type === 'white' ? '#ffcc00' : '#444')} 
-          emissive={coin.type === 'queen' ? '#550000' : '#000000'} 
-          emissiveIntensity={0.5} 
+          color={coin.type === 'queen' ? '#990011' : (coin.type === 'white' ? '#ddaa00' : '#222')} 
+          roughness={0.8}
         />
       </mesh>
       
-      {/* Indicator mark to visualize spin */}
-      <mesh position={[r * 0.6, h/2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.005, 16]} />
+      {/* Indicator mark to visualize spin physically */}
+      <mesh position={[r * 0.6, h/2 + 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.003, 32]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
       
       <mesh position={[0, -h/2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[r * 0.5, r * 0.8, 32]} />
-        <meshStandardMaterial color={coin.type === 'queen' ? '#f44336' : (coin.type === 'white' ? '#ffcc00' : '#444')} />
+        <ringGeometry args={[r * 0.4, r * 0.7, 64]} />
+        <meshStandardMaterial 
+          color={coin.type === 'queen' ? '#990011' : (coin.type === 'white' ? '#ddaa00' : '#222')} 
+          roughness={0.8}
+        />
       </mesh>
     </a.group>
   );
@@ -137,14 +139,25 @@ function Coin3D({ coin }: { coin: CarromCoinData }) {
       linearDamping={CARROM_PHYSICS.COIN.LINEAR_DAMPING}
       angularDamping={CARROM_PHYSICS.COIN.ANGULAR_DAMPING}
       ccd={CARROM_PHYSICS.PHYSICS.CCD_ENABLED} 
+      enabledRotations={[false, true, false]}
       userData={{ id: coin.id, type: coin.type, isCoin: true }}
       onContactForce={(payload) => {
         if (payload.totalForce > 0.05) {
           const pos = bodyRef.current?.translation();
           const linvel = bodyRef.current?.linvel();
           if (pos) {
-            spawnEffect('impact', new THREE.Vector3(pos.x, pos.y, pos.z), {
-              intensity: Math.min(payload.totalForce * 5, 10),
+            carromEventBus.emit({
+              type: 'COLLISION',
+              force: payload.totalForce,
+              position: [pos.x, pos.y, pos.z],
+              velocity: linvel ? [linvel.x, linvel.y, linvel.z] : [0,0,0],
+              objectType: 'coin'
+            });
+
+            triggerVFX({
+              type: 'impact',
+              position: [pos.x, pos.y, pos.z],
+              intensity: Math.min(payload.totalForce * 10, 20),
               mass: CARROM_PHYSICS.COIN.MASS,
               velocity: linvel ? [linvel.x, linvel.y, linvel.z] : [0,0,0],
               color: coin.type === 'queen' ? '#E91E63' : (coin.type === 'white' ? '#fff' : '#444')

@@ -23,7 +23,9 @@ import { CarromEnvironmentSystem } from '../environment/CarromEnvironmentSystem'
 import { CarromHeroStudio } from '../environment/CarromHeroStudio';
 import { CarromContactShadows } from '../rendering/CarromShadowSystem';
 import { CarromDebugOverlay } from '../debug/CarromDebugOverlay';
-import { QualityManager, PostFXManager, VFXManager, ParticleManager, useVFX } from '../../../engine/aaa';
+import { CarromPostProcessing } from './CarromPostProcessing';
+import { CarromVFXSystem, triggerVFX } from './CarromVFXSystem';
+import { QualityManager, VFXManager, ParticleManager } from '../../../engine/aaa';
 
 import * as THREE from 'three';
 
@@ -36,16 +38,15 @@ function AILoop() {
 
 function VictoryVFX() {
   const turnState = useCarromStore(state => state.turnState);
-  const { spawnEffect } = useVFX();
 
   useEffect(() => {
     if (turnState === 'GAME_OVER') {
       const vfxInterval = setInterval(() => {
-        spawnEffect('victory', new THREE.Vector3(0, 0, 0), { intensity: 10 });
+        triggerVFX({ type: 'victory', position: [0, 0, 0], intensity: 10 });
       }, 500);
       return () => clearInterval(vfxInterval);
     }
-  }, [turnState, spawnEffect]);
+  }, [turnState]);
   
   return null;
 }
@@ -89,6 +90,9 @@ export function CarromGame3D() {
 
               {/* Phase 13-15: Contact Shadows */}
               <CarromContactShadows />
+              
+              {/* Specialized Carrom VFX */}
+              <CarromVFXSystem />
 
               {/* Physics Engine (Rapier) */}
               <Physics timeStep={CARROM_PHYSICS.PHYSICS.TIME_STEP} colliders={false}>
@@ -106,7 +110,7 @@ export function CarromGame3D() {
               </Physics>
 
               {/* Phase 36-38: Post-Processing with Color Grading */}
-              <PostFXManager />
+              <CarromPostProcessing />
 
               {/* Phase 48-49: Debug Overlay (F9 toggle) */}
               <CarromDebugOverlay />

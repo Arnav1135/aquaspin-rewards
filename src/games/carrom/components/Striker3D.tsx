@@ -20,16 +20,15 @@ export function Striker3D() {
   useEffect(() => {
     if (turnState === 'SHOOTING' && bodyRef.current) {
       const state = useCarromStore.getState();
-      const force = (state.power / 100) * 0.5; // Tune physical impulse
+      const force = (state.power / 100) * 0.7; // Tune physical impulse for realism
       
       const fx = Math.cos(state.aimAngle) * force;
       const fz = Math.sin(state.aimAngle) * force;
       
       bodyRef.current.applyImpulse({ x: fx, y: 0, z: fz }, true);
-      // Add slight top spin based on power (Phase 10 Striker Spin simple)
-      bodyRef.current.applyTorqueImpulse({ x: fz * 0.1, y: 0, z: -fx * 0.1 }, true);
+      // Realistic spin
+      bodyRef.current.applyTorqueImpulse({ x: fz * 0.05, y: 0, z: -fx * 0.05 }, true);
       
-      // Immediately transition to physics active
       state.setTurnState('PHYSICS_ACTIVE');
     } else if (turnState === 'PLACING_STRIKER' && bodyRef.current) {
       bodyRef.current.setTranslation({ x: position[0], y: position[1], z: position[2] }, true);
@@ -60,6 +59,7 @@ export function Striker3D() {
       linearDamping={CARROM_PHYSICS.STRIKER.LINEAR_DAMPING}
       angularDamping={CARROM_PHYSICS.STRIKER.ANGULAR_DAMPING}
       ccd={CARROM_PHYSICS.PHYSICS.CCD_ENABLED} 
+      enabledRotations={[false, true, false]} // Prevent striker from flipping completely in mid-air
       userData={{ isStriker: true }}
     >
       <CylinderCollider args={[h / 2, r]} />
@@ -74,28 +74,38 @@ export function Striker3D() {
         />
       )}
 
-      <Trail width={0.05} length={4} color="#00bcd4" attenuation={(t) => t * t}>
+      <Trail width={0.08} length={6} color="#00bcd4" attenuation={(t) => t * t}>
         <group>
+          {/* Main Cylinder with High Res */}
           <mesh castShadow receiveShadow material={strikerMaterial}>
-            <cylinderGeometry args={[r - 0.001, r - 0.001, h - 0.002, 64]} />
+            <cylinderGeometry args={[r - 0.001, r - 0.001, h - 0.002, 128]} />
           </mesh>
           {/* Micro-bevel Top */}
           <mesh castShadow receiveShadow material={strikerMaterial} position={[0, h/2 - 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
-            <torusGeometry args={[r - 0.001, 0.001, 16, 64]} />
+            <torusGeometry args={[r - 0.001, 0.001, 32, 128]} />
           </mesh>
           {/* Micro-bevel Bottom */}
           <mesh castShadow receiveShadow material={strikerMaterial} position={[0, -h/2 + 0.001, 0]} rotation={[Math.PI/2, 0, 0]}>
-            <torusGeometry args={[r - 0.001, 0.001, 16, 64]} />
+            <torusGeometry args={[r - 0.001, 0.001, 32, 128]} />
           </mesh>
           
-          {/* Center detail */}
+          {/* Intricate Center design standard to ICF strikers */}
           <mesh position={[0, h/2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[r * 0.4, 32]} />
-            <meshStandardMaterial color="#333" emissive="#111" />
+            <ringGeometry args={[r * 0.3, r * 0.4, 64]} />
+            <meshStandardMaterial color="#222" emissive="#111" />
           </mesh>
-          {/* Indicator mark */}
-          <mesh position={[r * 0.7, h/2 + 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.003, 16]} />
+          <mesh position={[0, h/2 + 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[r * 0.25, 32]} />
+            <meshStandardMaterial color="#111" />
+          </mesh>
+          
+          {/* Spin and alignment indicator marks */}
+          <mesh position={[r * 0.7, h/2 + 0.0002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.002, 16]} />
+            <meshBasicMaterial color="#00bcd4" />
+          </mesh>
+          <mesh position={[-r * 0.7, h/2 + 0.0002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.002, 16]} />
             <meshBasicMaterial color="#00bcd4" />
           </mesh>
         </group>

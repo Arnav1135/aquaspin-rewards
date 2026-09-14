@@ -5,6 +5,7 @@ import { AlertCircle, Sparkles, Navigation, Gauge } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -174,7 +175,7 @@ export function LimboGame({ onClose }: any) {
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { 
-        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id);
+        await secureUpdateTokens(profile.id, -actualBetAmount);
       } catch (e) {
         console.error('Failed to update user balance:', e);
       }
@@ -258,8 +259,8 @@ export function LimboGame({ onClose }: any) {
 
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (isWin ? Math.floor(betAmount * (targetMultiplier - 1)) : 0), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
-        await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: isWin ? 1 : 0 });
+        await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: isWin ? Math.floor(betAmount * targetMultiplier) : 0, xpEarned: Math.floor(betAmount * 0.1) });
+        // stats handled by RPC
       } catch (e) {
         console.error('Failed to update user after roll:', e);
       }

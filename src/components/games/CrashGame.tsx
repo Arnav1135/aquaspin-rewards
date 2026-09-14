@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -685,7 +686,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
         const nb = balance - actualBetAmount;
         if (profile && !profile.id.startsWith('guest')) {
           try { 
-            (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id).then();
+            secureUpdateTokens(profile.id, -actualBetAmount).then();
           } catch (e) {
             console.error('Failed to update user balance:', e);
           }
@@ -746,8 +747,8 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (earned - betAmount), xp: profile.xp + Math.floor(betAmount * 0.15) }).eq('id', profile.id);
-        await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 1 });
+        await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: earned, xpEarned: Math.floor(betAmount * 0.15) });
+        // stats handled by RPC
       } catch (e) {
         console.error('Failed to update user after cashout:', e);
       }

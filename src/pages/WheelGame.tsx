@@ -21,7 +21,7 @@ import toast from 'react-hot-toast';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { ContactShadows, PresentationControls, Float } from '@react-three/drei';
-import { GameEngine3D } from '@/engine/GameEngine3D';
+import { Canvas } from '@react-three/fiber';
 
 const SPIN_COST = 10;
 
@@ -387,10 +387,10 @@ export function WheelGame() {
           
           {/* ── 3D Canvas Container ── */}
           <div className="relative w-full h-[400px] md:h-[500px]">
-            <GameEngine3D enablePostProcessing={true} environmentPreset="night">
+            <Canvas enablePostProcessing={true} environmentPreset="night">
               <Wheel3D theme={theme} angleRef={currentAngleRef} spinning={isSpinning} />
               <ContactShadows position={[0, -3.5, 0]} opacity={0.5} scale={10} blur={2} far={4} color="#0A1428" />
-            </GameEngine3D>
+            </Canvas>
           </div>
 
           {/* ── Spin result announcement ── */}

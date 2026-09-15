@@ -120,7 +120,7 @@ export function MemoryGame({ onClose }: MemoryGameProps) {
   }, [cards, flipped, locked, moves, startTime, totalPairs, profile, updateProfile]);
 
   return (
-    <div className="flex flex-col items-center p-6 gap-4 min-h-[calc(100vh-64px)]">
+    <div className="flex flex-col items-center p-6 gap-4 min-h-[calc(100dvh-64px)]">
 
       {phase === 'ready' && (
         <motion.div

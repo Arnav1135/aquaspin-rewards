@@ -166,6 +166,7 @@ const Bowling3DGame = lazy(() =>
 import { AGEA, GameGenre, VisualStyle } from "@/engine/AIGameEngineArchitect";
 import { AIGameEnginePanel } from "@/components/AIGameEnginePanel";
 import { useAuthStore } from "@/features/authStore";
+import { clearGameTimers } from "@/lib/gameTimers";
 import { GameSkeleton } from "@/components/ui/GameSkeleton";
 import { GameCard } from "@/components/ui/GameCard";
 
@@ -212,6 +213,7 @@ export function MiniGames() {
     document.body.style.overflow = activeGame ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
+      clearGameTimers();
     };
   }, [activeGame]);
   useEffect(() => {
@@ -246,6 +248,7 @@ export function MiniGames() {
   };
   const close = () => {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    clearGameTimers();
     setActiveGame(null);
   };
   const filtered = GAMES.filter(

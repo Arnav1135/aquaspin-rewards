@@ -102,7 +102,7 @@ export function QuizGame({ onClose }: QuizGameProps) {
   };
 
   return (
-    <div className="flex flex-col items-center p-6 gap-6 min-h-[calc(100vh-140px)]">
+    <div className="flex flex-col items-center p-6 gap-6 min-h-[calc(100dvh-140px)]">
 
       {phase === 'ready' && (
         <motion.div className="text-center space-y-6 mt-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

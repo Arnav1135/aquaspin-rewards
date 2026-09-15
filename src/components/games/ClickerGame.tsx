@@ -112,7 +112,7 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
   const cps = timeLeft < GAME_DURATION ? (clicks / (GAME_DURATION - timeLeft)).toFixed(1) : '0';
 
   return (
-    <div className="flex flex-col items-center p-6 gap-6 min-h-[calc(100vh-64px)]">
+    <div className="flex flex-col items-center p-6 gap-6 min-h-[calc(100dvh-64px)]">
 
       {phase === 'ready' && (
         <motion.div

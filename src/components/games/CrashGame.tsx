@@ -785,7 +785,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   return (
     <div 
-      className={`flex flex-col-reverse xl:flex-row gap-6 p-2 sm:p-4 max-w-7xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
+      className={`flex flex-col-reverse xl:flex-row gap-6 p-2 sm:p-4 max-w-7xl mx-auto w-full min-h-[calc(100dvh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
         tinnitusActive ? 'filter saturate-30 contrast-125' : ''
       }`}
       style={{ transform: getScreenTremor(), background: 'linear-gradient(135deg, #0f1f3d 0%, #0a1628 50%, #0d1a30 100%)' }}

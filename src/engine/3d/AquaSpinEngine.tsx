@@ -53,6 +53,7 @@ export function AquaSpinEngine({
         }}
       >
         <Suspense fallback={null}>
+          <WebGLCleanup />
           <PerformanceMonitor onDecline={() => {}} />
           
           <LightingSystem preset={environmentPreset} shadowMapSize={shadowMapSize} quality={quality} />

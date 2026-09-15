@@ -364,7 +364,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
 
   return (
     <div 
-      className={`relative flex flex-col-reverse lg:flex-row gap-6 p-4 max-w-7xl mx-auto w-full min-h-[calc(100vh-120px)] items-stretch overflow-hidden text-text-primary transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
+      className={`relative flex flex-col-reverse lg:flex-row gap-6 p-4 max-w-7xl mx-auto w-full min-h-[calc(100dvh-120px)] items-stretch overflow-hidden text-text-primary transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
         vinnitusActive ? 'filter saturate-50 contrast-125' : ''
       }`}
       style={{

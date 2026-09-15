@@ -356,7 +356,7 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
   );
 
   return (
-    <div className="flex flex-col-reverse lg:flex-row gap-6 p-4 w-full h-full min-h-[calc(100vh-100px)] items-stretch rounded-2xl shadow-2xl relative overflow-hidden" 
+    <div className="flex flex-col-reverse lg:flex-row gap-6 p-4 w-full h-full min-h-[calc(100dvh-100px)] items-stretch rounded-2xl shadow-2xl relative overflow-hidden" 
          style={{ background: 'radial-gradient(circle at center, #0f5132 0%, #062b19 100%)' }}>
       
       {/* Background Decor */}

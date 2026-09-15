@@ -136,7 +136,7 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
   const progress = ((GAME_DURATION - timeLeft) / GAME_DURATION) * 100;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
+    <div className="flex flex-col h-[calc(100dvh-64px)]">
 
       {phase === 'ready' && (
         <div className="flex flex-col items-center justify-center flex-1 p-6 text-center space-y-6">

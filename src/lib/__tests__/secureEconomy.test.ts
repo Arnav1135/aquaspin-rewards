@@ -1,44 +1,90 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { secureUpdateTokens, secureRecordGameResult } from '../secureEconomy';
+import { secureRecordGameResult, secureUpdateTokens } from '../secureEconomy';
 import { supabase } from '../supabase';
+
+// Mock supabase
+vi.mock('../supabase', () => ({
+  supabase: {
+    rpc: vi.fn(),
+  },
+}));
 
 describe('secureEconomy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('secureUpdateTokens calls the RPC successfully', async () => {
-    (supabase.rpc as any).mockResolvedValueOnce({ data: 2000, error: null });
+  describe('secureRecordGameResult', () => {
+    it('should successfully record game result', async () => {
+      vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: { success: true }, error: null });
 
-    const result = await secureUpdateTokens('test-user-id', 500);
+      const payload = {
+        userId: 'user-1',
+        betAmount: 10,
+        earnedAmount: 20,
+        xpEarned: 5,
+      };
 
-    expect(supabase.rpc).toHaveBeenCalledWith('update_user_tokens', {
-      p_user_id: 'test-user-id',
-      p_amount_change: 500
+      const result = await secureRecordGameResult(payload);
+
+      expect(supabase.rpc).toHaveBeenCalledWith('record_game_result', {
+        p_user_id: 'user-1',
+        p_bet_amount: 10,
+        p_earned_amount: 20,
+        p_xp_earned: 5,
+      });
+      expect(result).toEqual({ data: { success: true }, error: null });
     });
-    expect(result.data).toBe(2000);
-    expect(result.error).toBeNull();
+
+    it('should handle missing xpEarned by defaulting to 0', async () => {
+      vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: { success: true }, error: null });
+
+      const payload = {
+        userId: 'user-1',
+        betAmount: 10,
+        earnedAmount: 20,
+      };
+
+      const result = await secureRecordGameResult(payload);
+
+      expect(supabase.rpc).toHaveBeenCalledWith('record_game_result', {
+        p_user_id: 'user-1',
+        p_bet_amount: 10,
+        p_earned_amount: 20,
+        p_xp_earned: 0,
+      });
+    });
+
+    it('should throw an error if RPC fails', async () => {
+      vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: null, error: new Error('RPC Error') });
+
+      const payload = {
+        userId: 'user-1',
+        betAmount: 10,
+        earnedAmount: 20,
+      };
+
+      await expect(secureRecordGameResult(payload)).rejects.toThrow('Transaction failed due to security policies.');
+    });
   });
 
-  it('secureRecordGameResult calls the record_game_result RPC', async () => {
-    (supabase.rpc as any).mockResolvedValueOnce({ data: 2500, error: null });
+  describe('secureUpdateTokens', () => {
+    it('should successfully update tokens', async () => {
+      vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: { success: true }, error: null });
 
-    const payload = {
-      userId: 'test-user-id',
-      betAmount: 100,
-      earnedAmount: 200,
-      xpEarned: 10
-    };
+      const result = await secureUpdateTokens('user-1', 50);
 
-    const result = await secureRecordGameResult(payload);
-
-    expect(supabase.rpc).toHaveBeenCalledWith('record_game_result', {
-      p_user_id: payload.userId,
-      p_bet_amount: payload.betAmount,
-      p_earned_amount: payload.earnedAmount,
-      p_xp_earned: payload.xpEarned
+      expect(supabase.rpc).toHaveBeenCalledWith('update_user_tokens', {
+        p_user_id: 'user-1',
+        p_amount_change: 50,
+      });
+      expect(result).toEqual({ data: { success: true }, error: null });
     });
-    
-    expect(result.data).toBe(2500);
+
+    it('should throw an error if RPC fails', async () => {
+      vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: null, error: new Error('RPC Error') });
+
+      await expect(secureUpdateTokens('user-1', -10)).rejects.toThrow('Transaction failed due to security policies.');
+    });
   });
 });

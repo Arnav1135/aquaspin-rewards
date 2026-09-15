@@ -23,6 +23,8 @@ export interface Database {
           is_banned: boolean;
           created_at: string;
           last_login: string;
+          login_streak: number;
+          last_login_date: string | null;
           free_trials: number;
           has_deposited: boolean;
         };

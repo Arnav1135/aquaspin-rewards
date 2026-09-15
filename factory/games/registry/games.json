@@ -1,5 +1,15 @@
 [
   {
+    "key": "blackjack",
+    "title": "Blackjack",
+    "emoji": "🃏",
+    "category": "Casino",
+    "reward": "Up to 2.5x",
+    "difficulty": "Medium",
+    "color": "#10B981",
+    "desc": "Classic Blackjack. Beat the dealer's hand without going over 21."
+  },
+  {
     "key": "carrom",
     "title": "Carrom 3D",
     "emoji": "🎯",

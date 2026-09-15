@@ -18,7 +18,7 @@ const features = [
   {
     icon: Zap,
     title: 'Mini Games',
-    description: '16 premium games (Mines, Chess, Flappy, Pool, Solitaire, and more) — earn tokens instantly.',
+    description: '17 premium games (Blackjack, Mines, Chess, Flappy, Pool, Solitaire, and more) — earn tokens instantly.',
     color: '#66bdf2',
   },
   {

@@ -129,6 +129,11 @@ const RouletteGame = lazy(() =>
     default: m.RouletteGame,
   })),
 );
+const BlackjackGame = lazy(() =>
+  import("@/components/games/BlackjackGame").then((m) => ({
+    default: m.BlackjackGame,
+  })),
+);
 const CrashGame = lazy(() =>
   import("@/components/games/CrashGame").then((m) => ({
     default: m.CrashGame,
@@ -270,6 +275,8 @@ export function MiniGames() {
         return <DragonTigerGame {...p} />;
       case "roulette":
         return <RouletteGame {...p} />;
+      case "blackjack":
+        return <BlackjackGame {...p} />;
       case "crash":
         return <CrashGame {...p} />;
       case "plinko":

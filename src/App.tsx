@@ -79,6 +79,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+import { DailyRewardModal } from '@/components/DailyRewardModal';
+
 // ── Layout wrapper for authenticated pages ──────────────────────────────────
 function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -94,6 +96,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       <Sidebar />
+      <DailyRewardModal />
       <main className="relative z-0">{children}</main>
       <BottomNav />
     </>

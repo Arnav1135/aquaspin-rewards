@@ -31,7 +31,7 @@ export function Dashboard() {
     staleTime: 30_000,
   });
 
-  const featuredGame = GAMES.find(g => g.key === 'carrom') || GAMES[0];
+  const featuredGame = GAMES.find(g => g.key === 'blackjack') || GAMES[0];
   const continueGame = GAMES.find(g => g.key === 'crash') || GAMES[1];
 
   const handleGameClick = (key: string) => {

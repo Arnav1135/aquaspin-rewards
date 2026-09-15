@@ -225,7 +225,7 @@ export function CoinFlipScene({ onClose }: CoinFlipSceneProps) {
   rollingRef.current = isFlipping;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100vh-120px)] items-stretch">
+    <div className="flex flex-col lg:flex-row gap-6 p-4 max-w-5xl mx-auto min-h-[calc(100dvh-120px)] items-stretch">
       {/* Sidebar controls */}
       <CoinFlipControls
         betAmount={betAmount}

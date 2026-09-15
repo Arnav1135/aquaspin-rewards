@@ -85,7 +85,7 @@ export function Landing() {
       style={{ background: 'linear-gradient(160deg, #e1eff8 0%, #cfe5f5 100%)' }}
     >
       {/* ── Hero Section ── */}
-      <section className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-4 py-16">
+      <section className="relative min-h-[calc(100dvh-64px)] flex flex-col items-center justify-center px-4 py-16">
         {/* Soft layout background shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[#66bdf2]/8 blur-[100px] animate-float" />

@@ -2,6 +2,7 @@
 // 3D Canvas-based spinning wheel powered by Three.js (React Three Fiber)
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { GameShell } from '@/components/games/GameShell';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Coins, Volume2, VolumeX, Palette, Play, Zap, Clock } from 'lucide-react';
@@ -375,8 +376,9 @@ export function WheelGame() {
   };
 
   return (
-    <div className="min-h-screen bg-navy-900 pt-20 pb-24 px-4 overflow-hidden relative">
-      <div className="max-w-2xl mx-auto space-y-6 relative z-10">
+    <GameShell onClose={() => window.history.back()}>
+      <div className="min-h-screen bg-navy-900 pt-20 pb-24 px-4 overflow-hidden relative">
+        <div className="max-w-2xl mx-auto space-y-6 relative z-10">
 
         <div className="text-center">
           <h1 className="font-display text-3xl font-bold text-gradient-cyan mb-2">3D Wheel of Fortune</h1>
@@ -489,6 +491,7 @@ export function WheelGame() {
 
       <RewardedAd isOpen={rewardedAdOpen} onClose={() => setRewardedAdOpen(false)} onRewardEarned={handleAdRewardEarned} triggerReason="free spin" />
       <InterstitialAd isOpen={interstitialOpen} onClose={handleInterstitialClose} delay={3} />
-    </div>
+      </div>
+    </GameShell>
   );
 }

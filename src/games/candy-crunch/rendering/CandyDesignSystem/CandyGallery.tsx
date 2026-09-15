@@ -58,7 +58,7 @@ export const CandyGallery: React.FC = () => {
   const [animate, setAnimate] = useState(true);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#1e293b', color: 'white' }}>
+    <div style={{ width: '100vw', height: '100dvh', display: 'flex', flexDirection: 'column', backgroundColor: '#1e293b', color: 'white' }}>
       <div style={{ padding: '20px', display: 'flex', gap: '20px', background: '#0f172a', alignItems: 'center' }}>
         <h1 style={{ margin: 0, fontSize: '18px', marginRight: '20px' }}>CandyGallery 2.0 (Comparison Mode)</h1>
         

@@ -211,7 +211,7 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
           </>
         ) : activeTab === 'logs' ? (
           /* Logs Panel */
-          <div className="bg-[#111422] border border-slate-800 rounded-2xl p-3 flex-1 flex flex-col h-[calc(100vh-160px)]">
+          <div className="bg-[#111422] border border-slate-800 rounded-2xl p-3 flex-1 flex flex-col h-[calc(100dvh-160px)]">
             <div className="flex items-center gap-2 border-b border-slate-800 pb-2 mb-2">
               <Terminal size={14} className="text-cyan-400" />
               <span className="text-3xs font-bold text-slate-400 uppercase">Live Architect Logs</span>
@@ -230,7 +230,7 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
           </div>
         ) : (
           /* Reliability Panel */
-          <div className="bg-[#111422] border border-slate-800 rounded-2xl p-3 flex-1 flex flex-col h-[calc(100vh-160px)]">
+          <div className="bg-[#111422] border border-slate-800 rounded-2xl p-3 flex-1 flex flex-col h-[calc(100dvh-160px)]">
             <div className="flex items-center gap-2 border-b border-slate-800 pb-2 mb-2">
               <Activity size={14} className="text-emerald-400" />
               <span className="text-3xs font-bold text-slate-400 uppercase">Reliability & Diagnostics</span>

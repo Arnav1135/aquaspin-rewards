@@ -168,6 +168,7 @@ import { AIGameEnginePanel } from "@/components/AIGameEnginePanel";
 import { useAuthStore } from "@/features/authStore";
 import { clearGameTimers } from "@/lib/gameTimers";
 import { GameSkeleton } from "@/components/ui/GameSkeleton";
+import { GameShell } from "@/components/games/GameShell";
 import { GameCard } from "@/components/ui/GameCard";
 
 type Category =
@@ -428,47 +429,16 @@ export function MiniGames() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3 flex-shrink-0 bg-white/60 backdrop-blur-2xl border-b border-white/60 z-[9999] sticky top-0">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{activeMeta?.emoji}</span>
-                <div>
-                  <p className="font-black text-[#7682B9]">
-                    {activeMeta?.title}
-                  </p>
-                  <p className="text-xs font-semibold text-[#5AB8EA]">
-                    {activeMeta?.category} · {activeMeta?.difficulty}
-                  </p>
-                </div>
+            <GameShell onClose={() => {
+              close();
+              AGEA.exitGameExperience();
+            }}>
+              <div className="flex-1 overflow-hidden p-0 sm:p-4 flex items-center justify-center h-full w-full">
+                <Suspense fallback={<GameSkeleton />}>
+                  {renderGame(activeGame)}
+                </Suspense>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleFullscreen}
-                  aria-label="Toggle fullscreen"
-                  className="w-9 h-9 rounded-full bg-[#E5F2F9] text-[#5AB8EA] flex items-center justify-center shadow-md hover:scale-105 transition-transform"
-                >
-                  {isFullscreen ? (
-                    <Minimize2 size={17} />
-                  ) : (
-                    <Maximize2 size={17} />
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    close();
-                    AGEA.exitGameExperience();
-                  }}
-                  aria-label="Exit Game"
-                  className="px-4 h-9 rounded-full bg-red-500 text-white font-bold text-sm flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
-                >
-                  EXIT
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-hidden p-0 sm:p-4 flex items-center justify-center">
-              <Suspense fallback={<GameSkeleton />}>
-                {renderGame(activeGame)}
-              </Suspense>
-            </div>
+            </GameShell>
           </motion.div>
         )}
       </AnimatePresence>

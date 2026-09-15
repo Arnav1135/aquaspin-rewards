@@ -1,5 +1,15 @@
 [
   {
+    "key": "slots",
+    "title": "Lucky Slots",
+    "emoji": "??",
+    "category": "Casino",
+    "reward": "Up to 50x",
+    "difficulty": "Easy",
+    "color": "#EAB308",
+    "desc": "Classic Vegas-style slot machine. Match 3 symbols to win big!"
+  },
+  {
     "key": "baccarat",
     "title": "Baccarat",
     "emoji": "??",

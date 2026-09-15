@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 const BaccaratGame = lazy(() => import('@/components/games/BaccaratGame').then((m) => ({ default: m.default })));
+const SlotsGame = lazy(() => import('@/components/games/SlotsGame').then((m) => ({ default: m.default })));
 const ClickerGame = lazy(() =>
   import("@/components/games/ClickerGame").then((m) => ({
     default: m.ClickerGame,

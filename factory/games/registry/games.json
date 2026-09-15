@@ -1,5 +1,15 @@
 [
   {
+    "key": "baccarat",
+    "title": "Baccarat",
+    "emoji": "??",
+    "category": "Casino",
+    "reward": "Up to 9x",
+    "difficulty": "Medium",
+    "color": "#8B5CF6",
+    "desc": "Classic Casino Baccarat. Bet on Player, Banker, or Tie!"
+  },
+  {
     "key": "blackjack",
     "title": "Blackjack",
     "emoji": "🃏",

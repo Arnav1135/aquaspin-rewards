@@ -85,7 +85,7 @@ serve(async (req) => {
     const newXP = (userData.xp || 0) + rewardXP;
     const newLevel = Math.min(Math.floor(newXP / 500) + 1, 100);
 
-    const { error: updateError } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('users')
       .update({
         login_streak: newStreak,
@@ -95,9 +95,24 @@ serve(async (req) => {
         level: newLevel
       })
       .eq('id', user.id);
+      
+    if (userData.last_login_date === null) {
+      query = query.is('last_login_date', null);
+    } else {
+      query = query.eq('last_login_date', userData.last_login_date);
+    }
+      
+    const { data: updatedUsers, error: updateError } = await query.select();
 
     if (updateError) {
       throw updateError;
+    }
+    
+    if (!updatedUsers || updatedUsers.length === 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Conflict: Already claimed or updating' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 409,
+      });
     }
 
     await supabaseAdmin

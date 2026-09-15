@@ -94,9 +94,9 @@ serve(async (req: Request) => {
     // ── Fetch game stats for cooldown check ───────────────────────────────────
     const { data: statsData } = await supabaseAdmin
       .from('game_stats')
-      .select('last_spin_at, spins_today')
+      .select('last_spin_at, spins_today, spins_total')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     // Cooldown check (server-side, not bypassable)
     if (statsData?.last_spin_at) {
@@ -114,6 +114,43 @@ serve(async (req: Request) => {
       if (userData.tokens < SPIN_COST_TOKENS) {
         return new Response(JSON.stringify({ error: 'insufficient_tokens' }), {
           status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // ── Update game stats with optimistic locking to prevent race condition ──
+    const now = new Date().toISOString();
+    if (statsData) {
+      let statsQuery = supabaseAdmin.from('game_stats').update({
+        last_spin_at: now,
+        spins_total: (statsData.spins_total ?? 0) + 1,
+        spins_today: (statsData.spins_today ?? 0) + 1,
+        updated_at: now,
+      }).eq('user_id', user.id);
+      
+      if (statsData.last_spin_at) {
+        statsQuery = statsQuery.eq('last_spin_at', statsData.last_spin_at);
+      } else {
+        statsQuery = statsQuery.is('last_spin_at', null);
+      }
+      
+      const { data: updatedStats, error: statsError } = await statsQuery.select();
+      if (statsError || !updatedStats || updatedStats.length === 0) {
+        return new Response(JSON.stringify({ error: 'Conflict: Spin already in progress' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    } else {
+      const { error: insertError } = await supabaseAdmin.from('game_stats').insert({
+        user_id: user.id,
+        last_spin_at: now,
+        spins_total: 1,
+        spins_today: 1,
+        updated_at: now,
+      });
+      if (insertError) {
+        return new Response(JSON.stringify({ error: 'Conflict: Spin already in progress' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
     }
@@ -149,15 +186,6 @@ serve(async (req: Request) => {
       reward: rewardTokens,
       segment: selectedSegment.label,
       spin_type: spinType,
-    });
-
-    // ── Update game stats ─────────────────────────────────────────────────────
-    await supabaseAdmin.from('game_stats').upsert({
-      user_id: user.id,
-      last_spin_at: new Date().toISOString(),
-      spins_total: (statsData?.spins_today ?? 0) + 1,
-      spins_today: (statsData?.spins_today ?? 0) + 1,
-      updated_at: new Date().toISOString(),
     });
 
     return new Response(JSON.stringify({

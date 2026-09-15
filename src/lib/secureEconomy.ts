@@ -28,9 +28,8 @@ export async function secureRecordGameResult(payload: GameResultPayload) {
   });
 
   if (error) {
-    console.error('[SecureEconomy] RPC Failed. Fallback to local update (vulnerable):', error);
-    // Development fallback if RPC isn't deployed yet
-    return fallbackUpdate(payload);
+    console.error('[SecureEconomy] RPC Failed:', error);
+    throw new Error('Transaction failed due to security policies.');
   }
 
   return { data, error: null };
@@ -46,32 +45,9 @@ export async function secureUpdateTokens(userId: string, amountChange: number) {
   });
 
   if (error) {
-    console.error('[SecureEconomy] RPC Failed. Fallback to local update:', error);
-    // Fallback requires fetching current balance which is race-condition prone
-    const { data: user } = await supabase.from('users').select('tokens').eq('id', userId).single() as any;
-    if (user) {
-      await (supabase.from('users') as any).update({ tokens: user.tokens + amountChange }).eq('id', userId);
-      return { data: user.tokens + amountChange, error: null };
-    }
-    return { data: null, error };
+    console.error('[SecureEconomy] RPC Failed:', error);
+    throw new Error('Transaction failed due to security policies.');
   }
 
   return { data, error: null };
-}
-
-async function fallbackUpdate(payload: GameResultPayload) {
-  const { data: user } = await supabase.from('users').select('tokens, total_earned, xp').eq('id', payload.userId).single() as any;
-  if (!user) return { data: null, error: new Error('User not found') };
-
-  const newBalance = user.tokens - payload.betAmount + payload.earnedAmount;
-  const newEarned = (user.total_earned || 0) + (payload.earnedAmount > payload.betAmount ? payload.earnedAmount - payload.betAmount : 0);
-  const newXp = (user.xp || 0) + (payload.xpEarned || 0);
-
-  const { error } = await (supabase.from('users') as any).update({
-    tokens: newBalance,
-    total_earned: newEarned,
-    xp: newXp
-  }).eq('id', payload.userId);
-
-  return { data: newBalance, error };
 }

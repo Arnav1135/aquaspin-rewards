@@ -3,16 +3,27 @@ import { motion } from 'framer-motion';
 import { Trophy, Medal, Star, Zap, Target, Flame } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 
+interface Stats {
+  total_wins?: number;
+  total_earned?: number;
+  total_games_played?: number;
+}
+
+interface Profile {
+  level?: number;
+  login_streak?: number;
+}
+
 const ACHIEVEMENTS = [
-  { id: 'first_win', title: 'First Blood', description: 'Win your first game', icon: Trophy, color: 'text-yellow-400', bg: 'bg-yellow-400/20', req: (stats: any) => stats?.total_wins >= 1 },
-  { id: 'high_roller', title: 'High Roller', description: 'Earn over 10,000 tokens', icon: Medal, color: 'text-purple-400', bg: 'bg-purple-400/20', req: (stats: any) => stats?.total_earned >= 10000 },
-  { id: 'veteran', title: 'Veteran', description: 'Play 100 games', icon: Star, color: 'text-blue-400', bg: 'bg-blue-400/20', req: (stats: any) => stats?.total_games_played >= 100 },
-  { id: 'sharpshooter', title: 'Sharpshooter', description: 'Achieve a 50% win rate (min 20 games)', icon: Target, color: 'text-red-400', bg: 'bg-red-400/20', req: (stats: any) => stats?.total_games_played >= 20 && (stats?.total_wins / stats?.total_games_played) >= 0.5 },
-  { id: 'on_fire', title: 'On Fire', description: 'Reach Level 10', icon: Flame, color: 'text-orange-400', bg: 'bg-orange-400/20', req: (stats: any, profile: any) => profile?.level >= 10 },
-  { id: 'dedicated', title: 'Dedicated', description: 'Reach a 7-day login streak', icon: Zap, color: 'text-emerald-400', bg: 'bg-emerald-400/20', req: (stats: any, profile: any) => profile?.login_streak >= 7 },
+  { id: 'first_win', title: 'First Blood', description: 'Win your first game', icon: Trophy, color: 'text-yellow-400', bg: 'bg-yellow-400/20', req: (stats: Stats) => (stats?.total_wins ?? 0) >= 1 },
+  { id: 'high_roller', title: 'High Roller', description: 'Earn over 10,000 tokens', icon: Medal, color: 'text-purple-400', bg: 'bg-purple-400/20', req: (stats: Stats) => (stats?.total_earned ?? 0) >= 10000 },
+  { id: 'veteran', title: 'Veteran', description: 'Play 100 games', icon: Star, color: 'text-blue-400', bg: 'bg-blue-400/20', req: (stats: Stats) => (stats?.total_games_played ?? 0) >= 100 },
+  { id: 'sharpshooter', title: 'Sharpshooter', description: 'Achieve a 50% win rate (min 20 games)', icon: Target, color: 'text-red-400', bg: 'bg-red-400/20', req: (stats: Stats) => (stats?.total_games_played ?? 0) >= 20 && ((stats?.total_wins ?? 0) / (stats?.total_games_played ?? 1)) >= 0.5 },
+  { id: 'on_fire', title: 'On Fire', description: 'Reach Level 10', icon: Flame, color: 'text-orange-400', bg: 'bg-orange-400/20', req: (stats: Stats, profile: Profile) => (profile?.level ?? 0) >= 10 },
+  { id: 'dedicated', title: 'Dedicated', description: 'Reach a 7-day login streak', icon: Zap, color: 'text-emerald-400', bg: 'bg-emerald-400/20', req: (stats: Stats, profile: Profile) => (profile?.login_streak ?? 0) >= 7 },
 ];
 
-export function Achievements({ stats }: { stats?: any }) {
+export function Achievements({ stats }: { stats?: Stats }) {
   const { profile } = useAuthStore();
   
   const derivedStats = useMemo(() => {

@@ -304,7 +304,7 @@ export function setupGlobalErrorHandlers(): void {
 declare global {
   interface Window {
     __ERROR_ANALYTICS__?: {
-      track: (data: any) => void;
+      track: (data: unknown) => void;
     };
   }
 }

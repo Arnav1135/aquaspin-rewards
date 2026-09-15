@@ -195,7 +195,7 @@ export default function CandyCrushGame({
   useEffect(() => {
     const unsub = Orchestrator.subscribe("game_event", (e: GameEvent) => {
       if (e.type === "board_settled" || e.type === "cascade_step" || e.type === "swap_valid" || e.type === "swap_invalid") {
-        setBoard([...e.payload.board.map((row: any) => [...row])]);
+        setBoard([...e.payload.board.map((row: (Candy | null)[]) => [...row])]);
       }
       if (e.type === "board_settled") {
         setIsProcessing(false);
@@ -205,7 +205,7 @@ export default function CandyCrushGame({
         const newFx: {id: string, r: number, c: number, type: 'pop' | 'score', text?: string}[] = [];
         
         // Add pop effects for each candy
-        e.payload.matches.forEach((m: any) => {
+        e.payload.matches.forEach((m: { r: number, c: number }) => {
           newFx.push({ id: Math.random().toString(), r: m.r, c: m.c, type: 'pop' });
         });
         

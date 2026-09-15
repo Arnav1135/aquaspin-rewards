@@ -171,8 +171,7 @@ export function subscribeToUserTokens(userId: string, callback: (tokens: number)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` },
-       
-      (payload: any) => {
+      (payload: { new: { tokens: number } }) => {
         callback(payload.new.tokens);
       }
     )

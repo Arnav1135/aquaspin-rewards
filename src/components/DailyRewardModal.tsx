@@ -64,8 +64,8 @@ export function DailyRewardModal() {
       }
       
       setIsOpen(false);
-    } catch (err: any) {
-      toast.error(err.message || 'Error claiming daily reward');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error claiming daily reward');
     } finally {
       setLoading(false);
     }

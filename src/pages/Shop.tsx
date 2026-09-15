@@ -147,7 +147,7 @@ export function Shop() {
       } else {
         throw new Error('No checkout URL returned');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error('Failed to initiate checkout. Please try again.');
     } finally {

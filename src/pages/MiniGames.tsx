@@ -281,6 +281,9 @@ export function MiniGames() {
         return <BlackjackGame {...p} />;
       case "crash":
         return <CrashGame {...p} />;
+      case "videopoker":
+        return <VideoPoker {...p} />;
+
       case "plinko":
         return <PlinkoGame {...p} />;
       case "candycrush":
@@ -473,3 +476,4 @@ export function MiniGames() {
     </>
   );
 }
+

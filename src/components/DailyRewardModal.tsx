@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 
 export function DailyRewardModal() {
-  const { profile, setProfile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +36,7 @@ export function DailyRewardModal() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session');
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/daily-reward`, {
+      const response = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/daily-reward`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,8 +54,7 @@ export function DailyRewardModal() {
       
       // Update local profile state
       if (profile) {
-        setProfile({
-          ...profile,
+        updateProfile({
           tokens: data.newTokens,
           xp: data.newXP,
           level: data.newLevel,

@@ -210,7 +210,39 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
     }
   };
 
-  const handleStand = () => {
+  const handleDoubleDown = async () => {
+    if (betAmount * 2 > balanceRef.current + betAmount) {
+      toast.error('Insufficient balance to double down.');
+      return;
+    }
+    
+    // Deduct the extra bet amount
+    const pr = profileRef.current;
+    if (pr && !pr.id.startsWith('guest')) {
+      const success = await updateUserBalance(balanceRef.current - betAmount, false);
+      if (!success) {
+        toast.error('Failed to deduct extra bet.');
+        return;
+      }
+    }
+    
+    balanceRef.current -= betAmount;
+    setBetAmount(betAmount * 2);
+    updateProfile({ tokens: balanceRef.current });
+    
+    const newHand = [...playerHand, getRandomCard()];
+    setPlayerHand(newHand);
+    audio.play('cards', 'deal');
+    
+    if (calculateHandValue(newHand) > 21) {
+      handleGameOver(newHand, dealerHand, 'Bust! You lose.');
+    } else {
+      handleStand(newHand);
+    }
+  };
+
+  const handleStand = (customPlayerHand?: PlayingCard[]) => {
+    const finalPlayerHand = customPlayerHand || playerHand;
     setGameState('dealerTurn');
     let currentDealerHand = [...dealerHand];
     currentDealerHand[1].hidden = false;
@@ -224,7 +256,7 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
         setSafeTimeout(playDealer, 1000);
       } else {
         setDealerHand(currentDealerHand);
-        resolveGame(playerHand, currentDealerHand);
+        resolveGame(finalPlayerHand, currentDealerHand);
       }
     };
     
@@ -292,9 +324,16 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
               </Button>
             )}
             {gameState === 'playing' && (
-              <div className="flex gap-2">
-                <Button variant="ghost" className="flex-1" onClick={handleHit}>Hit</Button>
-                <Button variant="neon" className="flex-1" onClick={handleStand}>Stand</Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button variant="ghost" className="flex-1" onClick={handleHit}>Hit</Button>
+                  <Button variant="neon" className="flex-1" onClick={() => handleStand()}>Stand</Button>
+                </div>
+                {playerHand.length === 2 && (
+                  <Button variant="ghost" className="w-full" onClick={handleDoubleDown} disabled={betAmount * 2 > balance}>
+                    Double Down
+                  </Button>
+                )}
               </div>
             )}
             <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>

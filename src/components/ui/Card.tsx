@@ -52,13 +52,21 @@ export function Card({
   return (
     <Component
       onClick={onClick}
+      role={onClick ? 'button' : 'region'}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      } : undefined}
       style={style}
       className={cn(
         'p-5',
         variantBase[variant],
         hover && 'cursor-pointer transition-all duration-300',
         hover && glowMap[glow],
-        onClick && 'cursor-pointer',
+        onClick && 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-neon',
         className
       )}
       {...(animated
@@ -72,15 +80,15 @@ export function Card({
 
 export function CardHeader({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('section-header mb-4', className)}>
+    <header className={cn('section-header mb-4', className)}>
       {children}
-    </div>
+    </header>
   );
 }
 
 export function CardTitle({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <h3 className={cn('section-title', className)}>
+    <h3 className={cn('section-title m-0', className)}>
       {children}
     </h3>
   );

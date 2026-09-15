@@ -54,6 +54,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         disabled={disabled || loading}
+        aria-disabled={disabled || loading}
+        aria-busy={loading}
+        aria-label={props['aria-label'] || (typeof children === 'string' ? children : undefined)}
         whileHover={{ scale: 1.02, y: -1 }}
         whileTap={{ scale: 0.95, y: 2, boxShadow: '0px 0px 0px rgba(0,0,0,0)' }}
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
@@ -80,6 +83,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             viewBox="0 0 24 24"
             fill="none"
             style={{ color: 'currentColor' }}
+            aria-hidden="true"
           >
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
             <path

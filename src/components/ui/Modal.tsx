@@ -55,10 +55,14 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            aria-hidden="true"
           />
 
           {/* Modal panel */}
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? 'modal-title' : undefined}
             className={cn(
               'relative w-full glass-card rounded-2xl z-10 overflow-hidden',
               sizeClasses[size],
@@ -76,7 +80,7 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
             {(title || showClose) && (
               <div className="flex items-center justify-between p-5 border-b border-navy-700">
                 {title && (
-                  <h2 className="font-display text-lg font-semibold text-text-primary">{title}</h2>
+                  <h2 id="modal-title" className="font-display text-lg font-semibold text-text-primary">{title}</h2>
                 )}
                 {showClose && (
                   <button
@@ -84,7 +88,7 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
                     className="ml-auto p-2 rounded-lg text-muted hover:text-text-primary hover:bg-navy-700 transition-all duration-200"
                     aria-label="Close modal"
                   >
-                    <X size={18} />
+                    <X size={18} aria-hidden="true" />
                   </button>
                 )}
               </div>

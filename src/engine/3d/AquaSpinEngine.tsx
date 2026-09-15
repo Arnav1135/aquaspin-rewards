@@ -1,6 +1,17 @@
-import { ReactNode, useMemo, Suspense } from 'react';
+import { ReactNode, useMemo, Suspense, useEffect } from 'react';
 import * as THREE from 'three';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
+
+function WebGLCleanup() {
+  const { gl } = useThree();
+  useEffect(() => {
+    return () => {
+      gl.dispose();
+    };
+  }, [gl]);
+  return null;
+}
+
 import { EffectComposer, Bloom, Vignette, ToneMapping, SSR, SSAO, DepthOfField, ChromaticAberration, BrightnessContrast, HueSaturation } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import { PerformanceMonitor, Preload } from '@react-three/drei';

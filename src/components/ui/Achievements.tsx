@@ -19,8 +19,8 @@ const ACHIEVEMENTS = [
   { id: 'high_roller', title: 'High Roller', description: 'Earn over 10,000 tokens', icon: Medal, color: 'text-purple-400', bg: 'bg-purple-400/20', req: (stats: Stats) => (stats?.total_earned ?? 0) >= 10000 },
   { id: 'veteran', title: 'Veteran', description: 'Play 100 games', icon: Star, color: 'text-blue-400', bg: 'bg-blue-400/20', req: (stats: Stats) => (stats?.total_games_played ?? 0) >= 100 },
   { id: 'sharpshooter', title: 'Sharpshooter', description: 'Achieve a 50% win rate (min 20 games)', icon: Target, color: 'text-red-400', bg: 'bg-red-400/20', req: (stats: Stats) => (stats?.total_games_played ?? 0) >= 20 && ((stats?.total_wins ?? 0) / (stats?.total_games_played ?? 1)) >= 0.5 },
-  { id: 'on_fire', title: 'On Fire', description: 'Reach Level 10', icon: Flame, color: 'text-orange-400', bg: 'bg-orange-400/20', req: (stats: Stats, profile: Profile) => (profile?.level ?? 0) >= 10 },
-  { id: 'dedicated', title: 'Dedicated', description: 'Reach a 7-day login streak', icon: Zap, color: 'text-emerald-400', bg: 'bg-emerald-400/20', req: (stats: Stats, profile: Profile) => (profile?.login_streak ?? 0) >= 7 },
+  { id: 'on_fire', title: 'On Fire', description: 'Reach Level 10', icon: Flame, color: 'text-orange-400', bg: 'bg-orange-400/20', req: (stats: Stats, profile: Profile | null) => (profile?.level ?? 0) >= 10 },
+  { id: 'dedicated', title: 'Dedicated', description: 'Reach a 7-day login streak', icon: Zap, color: 'text-emerald-400', bg: 'bg-emerald-400/20', req: (stats: Stats, profile: Profile | null) => (profile?.login_streak ?? 0) >= 7 },
 ];
 
 export function Achievements({ stats }: { stats?: Stats }) {

@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
-  FileText, X, Coins, TrendingUp, Gamepad
+  FileText, X, Coins, TrendingUp, Gamepad, Users
 } from 'lucide-react';
 import { useUIStore } from '@/features/uiStore';
 import { useAuthStore } from '@/features/authStore';
@@ -14,6 +14,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 
 const navItems = [
   { to: '/dashboard',   icon: Home,        label: 'Dashboard'  },
+  { to: '/multiplayer', icon: Users,       label: 'Multiplayer', badge: 'BETA' },
   { to: '/wheel',       icon: Disc3,        label: 'Spin Wheel', badge: 'SPIN' },
   { to: '/games',       icon: Gamepad2,     label: 'Mini Games' },
   { to: '/leaderboard', icon: Trophy,       label: 'Leaderboard' },

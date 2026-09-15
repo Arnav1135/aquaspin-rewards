@@ -84,11 +84,33 @@ const SHOP_ITEMS: ShopItem[] = [
   },
 ];
 
+const TOKEN_BUNDLES = [
+  {
+    id: 'buy_tokens_5000',
+    name: '5000 Tokens',
+    description: 'A great starter pack to boost your balance.',
+    priceUSD: 5,
+    emoji: '💵',
+    color: '#00F0FF',
+    popular: false,
+  },
+  {
+    id: 'buy_tokens_15000',
+    name: '15000 Tokens',
+    description: 'Best value! Triple the tokens.',
+    priceUSD: 12,
+    emoji: '💎',
+    color: '#00FF87',
+    popular: true,
+  }
+];
+
 export function Shop() {
   const { profile, updateProfile, isGuest } = useAuthStore();
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [confirmItem, setConfirmItem] = useState<ShopItem | null>(null);
   const [successItem, setSuccessItem] = useState<ShopItem | null>(null);
+  const [buyingTokens, setBuyingTokens] = useState<string | null>(null);
 
   const handlePurchase = async (item: ShopItem) => {
     if (isGuest) {
@@ -100,6 +122,37 @@ export function Shop() {
       return;
     }
     setConfirmItem(item);
+  };
+
+  const handleBuyTokens = async (bundleId: string) => {
+    if (isGuest) {
+      toast.error('Sign up to buy tokens!');
+      return;
+    }
+    if (!profile) return;
+    
+    setBuyingTokens(bundleId);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-checkout', {
+        body: {
+          userId: profile.id,
+          bundleId,
+          returnUrl: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to initiate checkout. Please try again.');
+    } finally {
+      setBuyingTokens(null);
+    }
   };
 
   const confirmPurchase = async () => {
@@ -158,8 +211,49 @@ export function Shop() {
           </div>
         )}
 
+        {/* Buy Tokens Section */}
+        <div>
+          <h2 className="font-display text-xl font-semibold text-text-primary mb-4">Buy Tokens (Stripe)</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {TOKEN_BUNDLES.map((bundle, i) => (
+              <motion.div
+                key={bundle.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+              >
+                <Card className="relative h-full flex flex-col" hover>
+                  {bundle.popular && (
+                    <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gold-neon text-navy-900 text-2xs font-bold">
+                      BEST VALUE
+                    </div>
+                  )}
+
+                  <div className="text-3xl mb-3">{bundle.emoji}</div>
+                  <h3 className="font-semibold text-text-primary mb-1">{bundle.name}</h3>
+                  <p className="text-sm text-text-secondary flex-1 mb-4">{bundle.description}</p>
+
+                  <Button
+                    variant="gold"
+                    size="sm"
+                    fullWidth
+                    loading={buyingTokens === bundle.id}
+                    disabled={isGuest}
+                    onClick={() => handleBuyTokens(bundle.id)}
+                    id={`buy-tokens-${bundle.id}`}
+                  >
+                    Buy for ${bundle.priceUSD}
+                  </Button>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
         {/* Items grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <h2 className="font-display text-xl font-semibold text-text-primary mb-4 mt-6">Power-Ups & Boosters</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {SHOP_ITEMS.map((item, i) => {
             const canAfford = (profile?.tokens ?? 0) >= item.cost;
             return (
@@ -208,6 +302,7 @@ export function Shop() {
               </motion.div>
             );
           })}
+          </div>
         </div>
 
         <p className="text-center text-2xs text-muted">

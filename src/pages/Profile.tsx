@@ -16,6 +16,7 @@ import { StatusBadge } from '@/components/ui/Badge';
 import { LevelBadge } from '@/components/ui/ProgressBar';
 import { CashoutModal } from './CashoutModal';
 import { Achievements } from '@/components/ui/Achievements';
+import { DailyQuests } from '@/components/ui/DailyQuests';
 import { getAvatarColor, getInitials, formatTokens, copyToClipboard, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -213,6 +214,13 @@ export function Profile() {
         )}
 
         <Achievements stats={gameStats} />
+
+        {/* ── Daily Quests ── */}
+        <DailyQuests 
+          totalGamesPlayed={(gameStats as any)?.games_played || 0}
+          totalEarned={profile.total_earned || 0}
+          totalWins={(gameStats as any)?.games_won || 0}
+        />
 
         {/* -- Sign-in History -- */}
         {!isGuest && (

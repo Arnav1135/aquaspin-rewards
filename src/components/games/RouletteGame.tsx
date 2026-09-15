@@ -410,14 +410,28 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       }
     });
 
-    if (totalWin > 0 || halfRefund > 0) {
-      const earned = totalWin + halfRefund;
+    const totalBet = placedBets.reduce((sum, b) => sum + b.amount, 0);
+    const earned = totalWin + halfRefund;
+
+    if (profile && !profile.id.startsWith('guest')) {
+      try {
+        await secureRecordGameResult({
+          userId: profile.id,
+          betAmount: totalBet,
+          earnedAmount: earned,
+          xpEarned: Math.floor(totalBet * 0.1)
+        });
+      } catch (e) {
+        console.error('Failed to record game result:', e);
+      }
+    }
+
+    if (earned > 0) {
       toast.success(`Payout: ${earned} tokens! ${halfRefund > 0 ? '(La Partage Applied)' : ''}`);
       audio.play('roulette', 'result-chime', { win: true });
       vibrate([50, 50, 100]);
       
       if (profile) {
-        await (supabase.from('users') as any).update({ tokens: profile.tokens + earned }).eq('id', profile.id);
         (updateProfile as any)({ tokens: profile.tokens + earned });
       }
     } else {

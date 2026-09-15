@@ -52,10 +52,12 @@ for (const file of files) {
   );
 
   // Replace RouletteGame payout (no xp/stats)
+  // await (supabase.from('users') as any).update({ tokens: profile.tokens + earned }).eq('id', profile.id);
   content = content.replace(
     /await\s*\(supabase\.from\('users'\)\s*as\s*any\)\.update\(\{\s*tokens:\s*profile\.tokens\s*\+\s*earned\s*\}\)\.eq\('id',\s*profile\.id\);/g,
-    "await secureUpdateTokens(profile.id, earned);" // Using secureUpdateTokens for simple additions as per instructions?
+    "await secureUpdateTokens(profile.id, earned);"
   );
 
   fs.writeFileSync(file, content, 'utf8');
+  console.log('Processed', file);
 }

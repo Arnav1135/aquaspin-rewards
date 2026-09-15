@@ -246,7 +246,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
     const nb = balance - actualBetAmount;
     if (currentProfile && !currentProfile.id.startsWith('guest')) {
       try { 
-        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', currentProfile.id);
+        await secureUpdateTokens(currentProfile.id, -actualBetAmount);
       } catch (e) {
         console.error('Failed to update user balance:', e);
       }
@@ -353,11 +353,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
     const fb = balance + won;
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await (supabase.from('users') as any).update({
-          tokens: fb,
-          total_earned: profile.total_earned + profit,
-          xp: profile.xp + Math.floor(betAmount * 0.15),
-        }).eq('id', profile.id);
+        await secureRecordGameResult({ userId: profile.id, betAmount: betAmount, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.15) });
         await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 1 });
       } catch (e) {
         console.error('Failed to update user after cashout:', e);

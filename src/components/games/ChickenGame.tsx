@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, Shield, CloudSun } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -86,7 +87,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { 
-        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id);
+        await secureUpdateTokens(profile.id, -actualBetAmount);
       } catch (e) {
         console.error('Failed to update user balance:', e);
       }
@@ -177,7 +178,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     const fb = balance + won;
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (won - betAmount), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
+        await secureRecordGameResult({ userId: profile.id, betAmount: betAmount, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.1) });
         await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 1 });
       } catch (e) {
         console.error('Failed to update user after cashout:', e);

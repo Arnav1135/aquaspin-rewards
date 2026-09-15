@@ -133,14 +133,13 @@ serve(async (req: Request) => {
       ? rewardTokens - SPIN_COST_TOKENS  // Net gain/loss
       : rewardTokens;                     // Free/ad spin: pure gain
 
-    const { error: updateError } = await supabaseAdmin
-      .from('users')
-      .update({
-        tokens: userData.tokens + tokenDelta,
-        total_earned: (userData.tokens + tokenDelta),  // Track cumulative
-        xp: (userData.tokens + tokenDelta),
-      })
-      .eq('id', user.id);
+    const betAmount = spinType === 'paid' ? SPIN_COST_TOKENS : 0;
+    const { data: newBalance, error: updateError } = await supabaseAdmin.rpc('record_game_result', {
+      p_user_id: user.id,
+      p_bet_amount: betAmount,
+      p_earned_amount: rewardTokens,
+      p_xp_earned: 5,
+    });
 
     if (updateError) throw updateError;
 
@@ -167,7 +166,7 @@ serve(async (req: Request) => {
       segment: selectedSegment.label,
       segment_index: segmentIndex,
       spin_type: spinType,
-      new_balance: userData.tokens + tokenDelta,
+      new_balance: newBalance ?? (userData.tokens + tokenDelta),
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

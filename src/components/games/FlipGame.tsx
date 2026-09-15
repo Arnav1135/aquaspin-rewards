@@ -53,7 +53,7 @@ export function FlipGame({ onClose }: FlipGameProps) {
     const nb = balance - actualBetAmount;
     if (profile && !profile.id.startsWith('guest')) {
       try { 
-        await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id);
+        await secureUpdateTokens(profile.id, -actualBetAmount);
       } catch (e) {
         console.error('Failed to update user balance:', e);
       }
@@ -96,7 +96,7 @@ export function FlipGame({ onClose }: FlipGameProps) {
       const fb = nb + (won ? payout : 0);
       if (profile && !profile.id.startsWith('guest')) {
         try {
-          await (supabase.from('users') as any).update({ tokens: fb, total_earned: profile.total_earned + (won ? payout - betAmount : 0), xp: profile.xp + Math.floor(betAmount * 0.1) }).eq('id', profile.id);
+          await secureRecordGameResult({ userId: profile.id, betAmount: betAmount, earnedAmount: won ? payout : 0, xpEarned: Math.floor(betAmount * 0.1) });
           await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: won ? 1 : 0 });
         } catch (e) {
           console.error('Failed to update user after flip:', e);

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { Card } from '@/components/ui/Card';
 import { playTone, vibrate } from '@/lib/utils';
 import { CoinSide } from './types';
@@ -140,7 +141,7 @@ export function CoinFlipScene({ onClose }: CoinFlipSceneProps) {
     const newBalance = balance - actualBetAmount;
     if (currentProfile && !currentProfile.id.startsWith('guest')) {
       try {
-        await (supabase.from('users') as any).update({ tokens: newBalance }).eq('id', currentProfile.id);
+        await secureUpdateTokens(currentProfile.id, -actualBetAmount);
       } catch (err) {
         console.error('Failed to deduct tokens:', err);
       }
@@ -204,13 +205,7 @@ export function CoinFlipScene({ onClose }: CoinFlipSceneProps) {
           const finalBalance = newBalance + (hasWon ? payout : 0);
           if (currentProfile && !currentProfile.id.startsWith('guest')) {
             try {
-              await (supabase.from('users') as any)
-                .update({
-                  tokens: finalBalance,
-                  total_earned: currentProfile.total_earned + (hasWon ? payout - betAmount : 0),
-                  xp: currentProfile.xp + Math.floor(betAmount * 0.1),
-                })
-                .eq('id', currentProfile.id);
+              await secureRecordGameResult({ userId: currentProfile.id, betAmount: betAmount, earnedAmount: hasWon ? payout : 0, xpEarned: Math.floor(betAmount * 0.1) });
               await (supabase.from('game_stats') as any).upsert({
                 user_id: currentProfile.id,
                 games_played: 1,

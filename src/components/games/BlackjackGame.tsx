@@ -293,7 +293,7 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
             )}
             {gameState === 'playing' && (
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={handleHit}>Hit</Button>
+                <Button variant="ghost" className="flex-1" onClick={handleHit}>Hit</Button>
                 <Button variant="neon" className="flex-1" onClick={handleStand}>Stand</Button>
               </div>
             )}

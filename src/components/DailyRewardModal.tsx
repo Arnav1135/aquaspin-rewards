@@ -122,7 +122,7 @@ export function DailyRewardModal() {
                 fullWidth
                 size="lg"
                 onClick={claimReward}
-                isLoading={loading}
+                loading={loading}
                 className="mt-4"
               >
                 <Coins size={18} className="mr-2" />

@@ -141,6 +141,8 @@ export const useAuthStore = create<AuthState>()(
             is_banned: false,
             created_at: new Date().toISOString(),
             last_login: new Date().toISOString(),
+            login_streak: 0,
+            last_login_date: null,
             free_trials: 3,
             has_deposited: false,
           };

@@ -1,10 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CrashGame } from '@/components/games/CrashGame';
+import { GameShell } from '@/components/games/GameShell';
 
 export const CrashGamePage: React.FC = () => {
+    const navigate = useNavigate();
     return (
-        <div style={{ width: '100%', height: '100vh', overflow: 'hidden' }}>
-            <CrashGame onClose={() => {}} />
-        </div>
+        <GameShell onClose={() => navigate('/')}>
+            <CrashGame onClose={() => navigate('/')} />
+        </GameShell>
     );
 };

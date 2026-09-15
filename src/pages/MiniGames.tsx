@@ -425,7 +425,7 @@ export function MiniGames() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3 flex-shrink-0 bg-white/60 backdrop-blur-2xl border-b border-white/60 z-10">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 flex-shrink-0 bg-white/60 backdrop-blur-2xl border-b border-white/60 z-[9999] sticky top-0">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{activeMeta?.emoji}</span>
                 <div>
@@ -441,7 +441,7 @@ export function MiniGames() {
                 <button
                   onClick={toggleFullscreen}
                   aria-label="Toggle fullscreen"
-                  className="w-9 h-9 rounded-full bg-[#E5F2F9] text-[#5AB8EA] flex items-center justify-center"
+                  className="w-9 h-9 rounded-full bg-[#E5F2F9] text-[#5AB8EA] flex items-center justify-center shadow-md hover:scale-105 transition-transform"
                 >
                   {isFullscreen ? (
                     <Minimize2 size={17} />
@@ -450,11 +450,14 @@ export function MiniGames() {
                   )}
                 </button>
                 <button
-                  onClick={close}
-                  aria-label="Close game"
-                  className="w-9 h-9 rounded-full bg-red-50 text-red-500 flex items-center justify-center"
+                  onClick={() => {
+                    close();
+                    AGEA.exitGameExperience();
+                  }}
+                  aria-label="Exit Game"
+                  className="px-4 h-9 rounded-full bg-red-500 text-white font-bold text-sm flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
                 >
-                  <X size={17} />
+                  EXIT
                 </button>
               </div>
             </div>

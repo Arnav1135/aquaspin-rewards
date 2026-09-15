@@ -25,30 +25,6 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
     return () => unsubscribe();
   }, []);
 
-  const triggerSimulatedError = (message: string, severity: 'low' | 'medium' | 'high' = 'medium') => {
-    const instance = AGEA.registry.get(selectedGameId);
-    if (!instance) return;
-
-    AGEA.logEvent('RUNTIME_EXCEPTION', `[${instance.meta.title}] Exception: ${message}`);
-    instance.errorLog.unshift({
-      timestamp: new Date().toLocaleTimeString(),
-      message,
-      severity,
-      solved: false
-    });
-
-    // Auto-heal trigger
-    setTimeout(() => {
-      const err = instance.errorLog.find(e => e.message === message);
-      if (err) {
-        err.solved = true;
-        AGEA.logEvent('SELF_HEALING', `[${instance.meta.title}] Patched: wrapped context in recovery boundary.`);
-        setTick(t => t + 1);
-      }
-    }, 2000);
-
-    setTick(t => t + 1);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -207,29 +183,6 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
                   </div>
                 </div>
 
-                {/* Simulator Controls */}
-                <div className="bg-[#121626] border border-slate-800/80 rounded-xl p-3 space-y-2.5">
-                  <span className="text-3xs font-semibold text-slate-400 uppercase block">
-                    Trigger Simulated Exception (Self-Healing Check)
-                  </span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => triggerSimulatedError('WebGL Context Lost Exception', 'high')}
-                      className="bg-rose-950/20 hover:bg-rose-950/40 border border-rose-500/20 hover:border-rose-500/40 text-rose-300 text-3xs py-2 px-2.5 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      <ShieldAlert size={12} />
-                      WebGL Crash
-                    </button>
-                    <button
-                      onClick={() => triggerSimulatedError('Physics Solver NaN Constraint Exception', 'medium')}
-                      className="bg-rose-950/20 hover:bg-rose-950/40 border border-rose-500/20 hover:border-rose-500/40 text-rose-300 text-3xs py-2 px-2.5 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      <Zap size={12} />
-                      Physics Break
-                    </button>
-                  </div>
-                </div>
-
                 {/* Error Log */}
                 <div className="bg-[#121626] border border-slate-800/80 rounded-xl p-3 space-y-2">
                   <span className="text-3xs font-semibold text-slate-400 uppercase block border-b border-slate-800 pb-2">
@@ -246,7 +199,7 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
                             <span className="text-slate-500 font-mono">{err.timestamp}</span>
                           </div>
                           <span className={`font-bold font-mono ${err.solved ? 'text-emerald-400' : 'text-rose-400 animate-pulse'}`}>
-                            {err.solved ? 'HEALED' : 'HEALING...'}
+                            {err.solved ? 'RESOLVED' : 'UNRESOLVED'}
                           </span>
                         </div>
                       ))

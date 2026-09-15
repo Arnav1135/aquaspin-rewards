@@ -175,114 +175,89 @@ class AIGameEngineArchitect {
     return engineInstance;
   }
 
-  // 24/7 Autonomous execution loop simulation
+  // 24/7 Autonomous execution loop simulation replaced by real metrics
   private _startAutonomousLoops() {
-    // 1. Performance and Visual upgrade metrics loop
-    setInterval(() => {
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let lastFpsTime = lastTime;
+    let frameTimes: number[] = [];
+
+    const loop = (currentTime: number) => {
+      const deltaTime = currentTime - lastTime;
+      lastTime = currentTime;
+      frameCount++;
+      frameTimes.push(deltaTime);
+
+      if (currentTime - lastFpsTime >= 1000) {
+        const fps = frameCount;
+        let sumVariance = 0;
+        for (let i = 1; i < frameTimes.length; i++) {
+          sumVariance += Math.abs(frameTimes[i] - frameTimes[i - 1]);
+        }
+        const variance = frameTimes.length > 1 ? sumVariance / (frameTimes.length - 1) : 0;
+        
+        this.registry.forEach(instance => {
+          instance.metrics.fps = fps;
+          instance.metrics.frameTimeVar = Number(variance.toFixed(2));
+          // Latency can be an approximation based on delta
+          instance.metrics.latencyMS = Number(deltaTime.toFixed(1));
+        });
+
+        frameCount = 0;
+        lastFpsTime = currentTime;
+        frameTimes = [];
+        this.notify();
+      }
+      this._rafId = requestAnimationFrame(loop);
+    };
+    this._rafId = requestAnimationFrame(loop);
+
+    // Capture real runtime exceptions
+    window.addEventListener('error', (event) => {
       this.registry.forEach(instance => {
-        // Mock slight metrics changes
-        instance.metrics.fps = Math.round(instance.meta.targetFPS - 2 + Math.random() * 4);
-        instance.metrics.frameTimeVar = Number((1.5 + Math.random() * 2).toFixed(2));
-        instance.metrics.latencyMS = Math.round(6 + Math.random() * 4);
-
-        // Visual Upgrade trigger if FPS headroom detected
-        if (instance.metrics.fps >= instance.meta.targetFPS && !instance.upscalingEnabled && Math.random() < 0.1) {
-          instance.upscalingEnabled = true;
-          this.logEvent('VISUAL_UPGRADE', `Headroom found! Activated AI-upscaling (FSR/DLSS shim) on ${instance.meta.title}`);
-          playTone(880, 0.05, 'sine', 0.05);
-        }
-
-        // LOD control adjustment if latency spikes
-        if (instance.metrics.latencyMS > 15 && instance.lodScale > 0.6) {
-          instance.lodScale = Number((instance.lodScale - 0.1).toFixed(1));
-          this.logEvent('LOD_AUTO_TUNING', `Latency peak detected! Decreased render LOD scale to ${instance.lodScale} for performance safety.`);
-        } else if (instance.metrics.latencyMS <= 8 && instance.lodScale < 1.0) {
-          instance.lodScale = Number((instance.lodScale + 0.1).toFixed(1));
-        }
+        instance.errorLog.unshift({
+          timestamp: new Date().toLocaleTimeString(),
+          message: event.message,
+          severity: 'high',
+          solved: false
+        });
+        this.logEvent('RUNTIME_EXCEPTION', `[${instance.meta.title}] Exception: ${event.message}`);
       });
-    }, 4000);
+      this.notify();
+    });
+  }
 
-    // 2. Automated Error Detection & Healing loop
-    setInterval(() => {
-      this.registry.forEach(instance => {
-        if (Math.random() < 0.08) {
-          const mockErrors = [
-            { msg: 'WebGL Context Lost path detected', severity: 'high' as const },
-            { msg: 'Z-Buffer precision warning at screen boundaries', severity: 'low' as const },
-            { msg: 'Sound Spatialization occlusion sync lost', severity: 'medium' as const }
-          ];
-          const chosen = mockErrors[Math.floor(Math.random() * mockErrors.length)];
-          
-          instance.errorLog.unshift({
-            timestamp: new Date().toLocaleTimeString(),
-            message: chosen.msg,
-            severity: chosen.severity,
-            solved: false
-          });
+  private _rafId: number = 0;
 
-          this.logEvent('ERROR_DETECTED', `[${instance.meta.title}] Exception: ${chosen.msg}`);
+  public exitGameExperience() {
+    // Securely stop game loops
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = 0;
+    }
+    
+    // Remove audio
+    document.querySelectorAll('audio, video').forEach((media) => {
+      (media as HTMLMediaElement).pause();
+      (media as HTMLMediaElement).src = '';
+    });
 
-          // Self-Healing Trigger
-          setTimeout(() => {
-            const err = instance.errorLog[0];
-            if (err) {
-              err.solved = true;
-              this.logEvent('SELF_HEALING', `[${instance.meta.title}] Patched: wrapped context in recovery boundary.`);
-              this.notify();
-            }
-          }, 1500);
+    // Exit fullscreen
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
 
-          this.notify();
-        }
-      });
-    }, 12000);
+    // Clear body overrides
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
 
-    // 3. Feature Injection and Staged Rollout loops
-    setInterval(() => {
-      this.registry.forEach(instance => {
-        const featureKeys = Object.keys(instance.featureAdapterConfig);
-        const inactiveFeatures = featureKeys.filter(k => !instance.featureAdapterConfig[k]);
-
-        if (inactiveFeatures.length > 0 && Math.random() < 0.15) {
-          const injectKey = inactiveFeatures[Math.floor(Math.random() * inactiveFeatures.length)];
-          instance.featureAdapterConfig[injectKey] = true;
-          this.logEvent('FEATURE_INJECT', `Injecting staged adaptor for feature: [${injectKey}] on ${instance.meta.title}`);
-          
-          // Canary rollout progress simulation
-          instance.rolloutProgress = 0.05; // start 5%
-          const roll = setInterval(() => {
-            if (instance.rolloutProgress === 0.05) instance.rolloutProgress = 0.25;
-            else if (instance.rolloutProgress === 0.25) {
-              instance.rolloutProgress = 1.0;
-              this.logEvent('FEATURE_ROLLOUT_100', `Feature [${injectKey}] hit 100% rollout stability target for ${instance.meta.title}.`);
-              clearInterval(roll);
-            }
-            this.notify();
-          }, 3000);
-        }
-      });
-    }, 15000);
-
-    // 4. Component Improvement audit loop
-    setInterval(() => {
-      this.registry.forEach(instance => {
-        // Run audit on a random module
-        const modKeys = Object.keys(instance.modules);
-        const randKey = modKeys[Math.floor(Math.random() * modKeys.length)];
-        const mod = instance.modules[randKey];
-
-        if (mod.score.performance < 90 && mod.status === 'optimal') {
-          mod.status = 'requires_upgrade';
-          this.logEvent('AUDIT_UPGRADE_QUEUE', `Component ${mod.name} on ${instance.meta.title} flagged below threshold. Initiating auto-rebuild.`);
-          
-          setTimeout(() => {
-            const currentParts = mod.version.split('.').map(Number);
-            currentParts[2]++; // patch bump
-            instance.pushUpgrade(mod.name, currentParts.join('.'));
-          }, 2000);
-        }
-      });
-    }, 18000);
+    // Clear registry to reset engines
+    this.registry.clear();
+    
+    // Safety timeout to ensure DOM resolves
+    setTimeout(() => {
+      window.history.back();
+    }, 100);
   }
 }
 

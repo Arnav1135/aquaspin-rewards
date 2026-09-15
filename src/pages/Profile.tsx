@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { LevelBadge } from '@/components/ui/ProgressBar';
 import { CashoutModal } from './CashoutModal';
+import { Achievements } from '@/components/ui/Achievements';
 import { getAvatarColor, getInitials, formatTokens, copyToClipboard, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -211,7 +212,9 @@ export function Profile() {
           </Card>
         )}
 
-        {/* ── Sign-in History ── */}
+        <Achievements stats={gameStats} />
+
+        {/* -- Sign-in History -- */}
         {!isGuest && (
           <Card className="rounded-2xl">
             <CardHeader>

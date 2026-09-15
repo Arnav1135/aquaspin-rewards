@@ -85,7 +85,7 @@ const evaluateHand = (cards: PlayingCard[]): { name: string; multiplier: number 
 };
 
 const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
-  const user = useAuthStore(state => state.user);
+  const { profile } = useAuthStore();
   const [bet, setBet] = useState(10);
   const [gameState, setGameState] = useState<'betting' | 'playing' | 'gameover'>('betting');
   const [deck, setDeck] = useState<PlayingCard[]>([]);
@@ -96,15 +96,15 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const deal = useCallback(async () => {
-    if (!user) return;
-    if (bet <= 0 || bet > user.tokens) {
+    if (!profile) return;
+    if (bet <= 0 || bet > profile?.tokens) {
       toast.error('Invalid bet amount');
       return;
     }
 
     setIsProcessing(true);
     try {
-      const success = await secureUpdateTokens(user.id, -bet, 'VideoPoker_Bet');
+      const success = await secureUpdateTokens(profile?.id || "", -bet);
       if (!success) {
         toast.error('Insufficient funds');
         setIsProcessing(false);
@@ -123,7 +123,7 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
       toast.error('Error starting game');
     }
     setIsProcessing(false);
-  }, [user, bet]);
+  }, [profile, bet]);
 
   const toggleHold = (index: number) => {
     if (gameState !== 'playing') return;
@@ -133,7 +133,7 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
   };
 
   const draw = useCallback(async () => {
-    if (gameState !== 'playing' || !user) return;
+    if (gameState !== 'playing' || !profile) return;
     
     setIsProcessing(true);
     try {
@@ -156,10 +156,10 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
       setWinAmount(win);
       
       if (win > 0) {
-        await secureUpdateTokens(user.id, win, 'VideoPoker_Win');
+        await secureUpdateTokens(profile?.id || "", win);
       }
       
-      await secureRecordGameResult(user.id, 'VideoPoker', win, bet, win > 0 ? 'win' : 'loss');
+      await secureRecordGameResult({ userId: profile?.id || "", betAmount: bet, earnedAmount: winAmount });
       
       setGameState('gameover');
     } catch (e) {
@@ -167,7 +167,7 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
       toast.error('Error drawing cards');
     }
     setIsProcessing(false);
-  }, [gameState, user, hand, deck, held, bet]);
+  }, [gameState, profile, hand, deck, held, bet]);
 
   return (
     <div className="flex flex-col items-center p-4 h-full bg-slate-900 text-white overflow-y-auto">
@@ -227,8 +227,8 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
 
       {gameState === 'betting' || gameState === 'gameover' ? (
         <div className="flex flex-col items-center w-full max-w-sm">
-          <BetControl bet={bet} setBet={setBet} minBet={1} maxBet={1000} disabled={isProcessing} />
-          <Button onClick={deal} disabled={isProcessing || !user || bet > user.tokens} className="w-full mt-4" size="lg">
+          <BetControl betAmount={bet} setBetAmount={setBet} minBet={1} maxBet={1000} disabled={isProcessing} />
+          <Button onClick={deal} disabled={isProcessing || !profile || bet > profile?.tokens} className="w-full mt-4" size="lg">
             Deal
           </Button>
         </div>
@@ -248,3 +248,6 @@ export default function VideoPoker(props: VideoPokerProps) {
     </ErrorBoundary>
   );
 }
+
+
+

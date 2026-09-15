@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -90,10 +91,11 @@ export function MemoryGame({ onClose }: MemoryGameProps) {
               // Award tokens
               if (profile && !profile.id.startsWith('guest')) {
                  
-                (supabase.from('users') as any).update({
-                  tokens: profile.tokens + earned,
-                  total_earned: profile.total_earned + earned,
-                }).eq('id', profile.id);
+                secureRecordGameResult({
+                  userId: profile.id,
+                  betAmount: 0,
+                  earnedAmount: earned
+                });
                 updateProfile({ tokens: profile.tokens + earned });
               } else if (profile) {
                 updateProfile({ tokens: profile.tokens + earned });

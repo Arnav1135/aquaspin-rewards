@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, Trophy } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { playTone } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -70,10 +71,11 @@ export function QuizGame({ onClose }: QuizGameProps) {
         try {
           if (!profile.id.startsWith('guest')) {
              
-            await (supabase.from('users') as any).update({
-              tokens: profile.tokens + earned,
-              total_earned: profile.total_earned + earned,
-            }).eq('id', profile.id);
+            await secureRecordGameResult({
+              userId: profile.id,
+              betAmount: 0,
+              earnedAmount: earned
+            });
           }
           updateProfile({ tokens: profile.tokens + earned });
           toast.success(`Quiz complete! +${earned} tokens! 🎯`);

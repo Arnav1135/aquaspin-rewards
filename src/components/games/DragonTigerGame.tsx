@@ -138,11 +138,12 @@ export function DragonTigerGame({ onClose }: any) {
       const pr = profileRef.current;
       if (!pr || pr.id.startsWith('guest')) return true;
       try {
-        await (supabase.from('users') as any).update({
-          tokens: finalBalance,
-          total_earned: pr.total_earned + (won ? Math.max(0, earned - betAmount) : 0),
-          xp: pr.xp + Math.floor(betAmount * 0.1),
-        }).eq('id', pr.id);
+        await secureRecordGameResult({
+          userId: pr.id,
+          betAmount: betAmount,
+          earnedAmount: earned,
+          xpEarned: Math.floor(betAmount * 0.1)
+        });
 
         await (supabase.from('game_stats') as any).upsert({
           user_id: pr.id,

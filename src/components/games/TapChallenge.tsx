@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Zap } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
+import { secureRecordGameResult } from '@/lib/secureEconomy';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { vibrate } from '@/lib/utils';
@@ -58,10 +59,11 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
       try {
         if (!profile.id.startsWith('guest')) {
            
-          await (supabase.from('users') as any).update({
-            tokens: profile.tokens + earned,
-            total_earned: profile.total_earned + earned,
-          }).eq('id', profile.id);
+          await secureRecordGameResult({
+            userId: profile.id,
+            betAmount: 0,
+            earnedAmount: earned
+          });
         }
         updateProfile({ tokens: profile.tokens + earned });
         toast.success(`Tap master! +${earned} tokens! ✨`);

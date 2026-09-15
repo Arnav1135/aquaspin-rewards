@@ -163,24 +163,30 @@ export function CoinFlipGame({ onClose }: any) {
         if (!pr || pr.id.startsWith('guest')) return true;
 
         try {
-          const dbUpdates: any = { tokens: newBalance };
+          let updateError = null;
+
           if (freeTrialsUsed) {
             const currentTrials = pr.free_trials ?? 3;
-            dbUpdates.free_trials = Math.max(0, currentTrials - 1);
+            const { error } = await (supabase.from('users') as any)
+              .update({ free_trials: Math.max(0, currentTrials - 1) })
+              .eq('id', pr.id);
+            updateError = error;
           }
 
-          const { error } = await (supabase.from('users') as any)
-            .update(dbUpdates)
-            .eq('id', pr.id);
+          const tokensChange = newBalance - balanceRef.current;
+          if (!updateError && tokensChange !== 0) {
+            const { error } = await secureUpdateTokens(pr.id, tokensChange);
+            updateError = error;
+          }
 
-          if (error) {
+          if (updateError) {
             throw createAppError(
-              `Failed to update user balance: ${error.message}`,
+              `Failed to update user balance: ${updateError.message}`,
               ErrorCategory.DATABASE,
               ErrorSeverity.ERROR,
               {
                 userMessage: 'Failed to deduct tokens. Please try again.',
-                context: { originalError: error.message },
+                context: { originalError: updateError.message },
               }
             );
           }
@@ -216,13 +222,12 @@ export function CoinFlipGame({ onClose }: any) {
         if (!pr || pr.id.startsWith('guest')) return true;
 
         try {
-          const { error: updateError } = await (supabase.from('users') as any)
-            .update({
-              tokens: finalBalance,
-              total_earned: pr.total_earned + (won ? Math.max(0, earned - betAmount) : 0),
-              xp: pr.xp + Math.floor(betAmount * 0.1),
-            })
-            .eq('id', pr.id);
+          const { error: updateError } = await secureRecordGameResult({
+            userId: pr.id,
+            betAmount: betAmount,
+            earnedAmount: earned,
+            xpEarned: Math.floor(betAmount * 0.1)
+          });
 
           if (updateError) {
             logError(updateError, { context: 'coinflip_result_update' });

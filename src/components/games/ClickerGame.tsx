@@ -46,11 +46,12 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
     if (profile && !profile.id.startsWith('guest')) {
       try {
          
-        await (supabase.from('users') as any).update({
-          tokens: profile.tokens + earned,
-          total_earned: profile.total_earned + earned,
-          xp: profile.xp + Math.floor(earned / 2),
-        }).eq('id', profile.id);
+        await secureRecordGameResult({
+          userId: profile.id,
+          betAmount: 0,
+          earnedAmount: earned,
+          xpEarned: Math.floor(earned / 2)
+        });
 
          
         await (supabase.from('game_stats') as any).upsert({

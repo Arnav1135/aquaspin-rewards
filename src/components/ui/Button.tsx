@@ -4,7 +4,7 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { audio } from '@/lib/audioEngine';
+import { useAudio } from '@/hooks/useAudio';
 import { Tracking } from '@/lib/tracking';
 
 type Variant = 'primary' | 'sky' | 'neon' | 'gold' | 'ghost' | 'ghost-dark' | 'danger' | 'success';
@@ -42,6 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     { variant = 'primary', size = 'md', loading, icon, iconRight, fullWidth, className, children, disabled, onClick, onPointerDown, ...props },
     ref
   ) => {
+    const { playClick } = useAudio();
     return (
       <motion.button
         ref={ref}
@@ -58,7 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
         onPointerDown={(e) => {
           if (!disabled && !loading) {
-            audio.playClick(600, 0.05, 'sine'); // Synchronized sound
+            playClick(); // Synchronized sound
           }
           if (!disabled && onPointerDown) {
             onPointerDown(e);

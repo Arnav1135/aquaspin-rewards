@@ -18,7 +18,7 @@ interface ChatMessage {
 }
 
 export function GlobalChat() {
-  const { chatOpen, toggleChat } = useUIStore();
+  const { chatOpen, toggleChat, setPublicProfileId } = useUIStore();
   const { profile, isGuest } = useAuthStore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -112,7 +112,8 @@ export function GlobalChat() {
                   const username = msg.users?.username || "Player";
                   return (
                     <div key={msg.id} className={`flex gap-3 ${isMe ? "flex-row-reverse" : ""}`}>
-                      <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold shadow-lg
+                      <div onClick={() => setPublicProfileId(msg.user_id)}
+                        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold shadow-lg cursor-pointer hover:ring-2 hover:ring-[#66bdf2] transition-all
                         ${!msg.users?.avatar_url ? getAvatarColor(username) : ""}
                       `}>
                         {msg.users?.avatar_url ? (

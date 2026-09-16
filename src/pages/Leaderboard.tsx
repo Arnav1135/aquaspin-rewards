@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Zap, Flame, RefreshCw, Info, ChevronDown } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/authStore';
+import { useUIStore } from '@/features/uiStore';
 import { getLeaderboard, subscribeToLeaderboard } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
 import { Badge, RankBadge } from '@/components/ui/Badge';
@@ -14,6 +15,7 @@ import { getAvatarColor, getInitials, formatTokens } from '@/lib/utils';
 
 export function Leaderboard() {
   const { profile } = useAuthStore();
+  const { setPublicProfileId } = useUIStore();
   const queryClient = useQueryClient();
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   void lastUpdated; // suppress unused warning — shown in future feature
@@ -124,7 +126,8 @@ export function Leaderboard() {
                     </div>
 
                     <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-navy-900 text-xs flex-shrink-0"
+                      onClick={() => setPublicProfileId(entry.id)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-navy-900 text-xs flex-shrink-0 cursor-pointer hover:opacity-80"
                       style={{ backgroundColor: getAvatarColor(entry.id) }}
                     >
                       {getInitials(entry.username)}

@@ -20,6 +20,7 @@ import { Header } from '@/components/layout/Header';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { GlobalChat } from '@/components/chat/GlobalChat';
+import { PublicProfileModal } from '@/components/ui/PublicProfileModal';
 
 import { Landing } from '@/pages/Landing';
 import { Auth } from '@/pages/Auth';
@@ -101,6 +102,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <Header />
       <Sidebar />
         <GlobalChat />
+        <PublicProfileModal />
       <DailyRewardModal />
       <main className="relative z-0">{children}</main>
       <BottomNav />

@@ -21,6 +21,7 @@ interface UIState {
   // Navigation
   sidebarOpen: boolean;
   chatOpen: boolean;
+  publicProfileId: string | null;
 
   // Modals
   cashoutModalOpen: boolean;
@@ -41,6 +42,7 @@ interface UIState {
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   toggleChat: () => void;
+  setPublicProfileId: (id: string | null) => void;
   openCashoutModal: () => void;
   closeCashoutModal: () => void;
   openAdModal: (adType: 'rewarded' | 'interstitial') => void;
@@ -60,6 +62,7 @@ export const useUIStore = create<UIState>()(
         theme: 'dark',
         sidebarOpen: false,
         chatOpen: false,
+        publicProfileId: null,
         cashoutModalOpen: false,
         adModalOpen: false,
         settingsModalOpen: false,
@@ -87,6 +90,7 @@ export const useUIStore = create<UIState>()(
 
         setSidebarOpen: (open) => set({ sidebarOpen: open }),
         toggleChat: () => set((state) => ({ chatOpen: !state.chatOpen })),
+        setPublicProfileId: (id) => set({ publicProfileId: id }),
 
         openCashoutModal: () => set({ cashoutModalOpen: true }),
         closeCashoutModal: () => set({ cashoutModalOpen: false }),

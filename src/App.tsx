@@ -21,6 +21,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { GlobalChat } from '@/components/chat/GlobalChat';
 import { PublicProfileModal } from '@/components/ui/PublicProfileModal';
+import { LevelUpManager } from '@/components/ui/LevelUpManager';
 
 import { Landing } from '@/pages/Landing';
 import { Auth } from '@/pages/Auth';
@@ -103,6 +104,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
         <GlobalChat />
         <PublicProfileModal />
+        <LevelUpManager />
       <DailyRewardModal />
       <main className="relative z-0">{children}</main>
       <BottomNav />

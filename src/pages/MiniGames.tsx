@@ -263,9 +263,9 @@ export function MiniGames() {
     const p = { onClose: close };
     switch (key) {
       case 'slots':
-        return <SlotsGame {...p} />;
+        return <SlotsGame />;
       case 'baccarat':
-        return <BaccaratGame {...p} />;
+        return <BaccaratGame />;
       case "carrom":
         return <CarromApp />;
       case "airhockey3d":

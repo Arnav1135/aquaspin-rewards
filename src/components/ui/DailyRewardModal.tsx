@@ -17,7 +17,8 @@ export function DailyRewardModal() {
     
     // Check if we already claimed today
     const now = new Date();
-    const lastLogin = profile.last_login_date ? new Date(profile.last_login_date) : null;
+    const lastLoginRaw = profile.streak_last || profile.last_login || profile.last_login_date;
+    const lastLogin = lastLoginRaw ? new Date(lastLoginRaw) : null;
     
     if (!lastLogin || lastLogin.toDateString() !== now.toDateString()) {
       // Don't show immediately on very first render to allow intro animations
@@ -31,13 +32,14 @@ export function DailyRewardModal() {
     setClaiming(true);
     try {
       const now = new Date();
-      const lastLogin = profile.last_login_date ? new Date(profile.last_login_date) : null;
+      const lastLoginRaw = profile.streak_last || profile.last_login || profile.last_login_date;
+      const lastLogin = lastLoginRaw ? new Date(lastLoginRaw) : null;
       
       if (lastLogin && lastLogin.toDateString() === now.toDateString()) {
         throw new Error('Already claimed today');
       }
 
-      let newStreak = profile.login_streak || 0;
+      let newStreak = profile.streak || profile.login_streak || 0;
       const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
       
@@ -70,21 +72,15 @@ export function DailyRewardModal() {
         tokens: newTokens,
         xp: newXP,
         level: newLevel,
-        login_streak: newStreak,
-        last_login_date: now.toISOString()
+        streak: newStreak,
+        streak_last: now.toISOString().split('T')[0],
+        last_login: now.toISOString()
       };
 
       // Only hit the database if the user is fully registered
       if (!isGuest) {
         const { error } = await (supabase as any).from('users').update(updates).eq('id', profile.id);
         if (error) throw error;
-        
-        // Log the reward claim
-        await (supabase as any).from('daily_rewards').insert({
-          user_id: profile.id,
-          day_number: dayNumber,
-          tokens: rewardTokens
-        }); // ignore failures on this non-critical log
       }
 
       setRewardData({ newTokens, newXP, newLevel, newStreak, reward: rewardTokens });
@@ -95,7 +91,7 @@ export function DailyRewardModal() {
       if (err.message === 'Already claimed today') {
         setIsOpen(false);
       } else {
-        toast.error('Failed to claim daily reward.');
+        toast.error(`Failed to claim daily reward: ${err.message || 'Unknown database error'}`);
       }
     } finally {
       setClaiming(false);

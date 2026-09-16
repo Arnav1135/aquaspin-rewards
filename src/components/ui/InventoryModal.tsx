@@ -2,6 +2,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, PackageOpen, Zap, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { Button } from '@/components/ui/Button';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import toast from 'react-hot-toast';
 
 interface InventoryModalProps {
   isOpen: boolean;
@@ -11,6 +14,27 @@ interface InventoryModalProps {
 export function InventoryModal({ isOpen, onClose }: InventoryModalProps) {
   const { profile } = useAuthStore();
   const inventory = Array.isArray((profile as any)?.inventory) ? (profile as any).inventory : [];
+  const [activatingItem, setActivatingItem] = useState<any>(null);
+  const { updateProfile } = useAuthStore();
+
+  const handleActivate = async (item: any) => {
+    setActivatingItem(item);
+    
+    // Simulate animation delay
+    setTimeout(async () => {
+      try {
+        const newInventory = inventory.filter((i: any) => i.instanceId !== item.instanceId);
+        const { error } = await (supabase.from('users') as any).update({ inventory: newInventory }).eq('id', profile!.id);
+        if (error) throw error;
+        updateProfile({ inventory: newInventory as any });
+        toast.success(item.name + ' activated successfully!');
+      } catch (err) {
+        toast.error('Failed to activate item.');
+      } finally {
+        setActivatingItem(null);
+      }
+    }, 2500);
+  };
 
   return (
     <AnimatePresence>
@@ -42,6 +66,15 @@ export function InventoryModal({ isOpen, onClose }: InventoryModalProps) {
               </button>
             </div>
 
+            {activatingItem ? (
+              <div className="p-12 flex flex-col items-center justify-center space-y-6">
+                <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-24 h-24 rounded-full bg-cyan-900/40 flex items-center justify-center border-4 border-cyan-500 border-t-transparent">
+                  <Zap className="text-cyan-400 w-12 h-12" />
+                </motion.div>
+                <h3 className="text-xl font-bold text-white animate-pulse">Activating {activatingItem.name}...</h3>
+                <p className="text-cyan-200/60">Applying magical effects to your account</p>
+              </div>
+            ) : (
             <div className="p-4 max-h-[60vh] overflow-y-auto">
               {inventory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -65,7 +98,7 @@ export function InventoryModal({ isOpen, onClose }: InventoryModalProps) {
                           Acquired: {new Date(item.acquiredAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => alert('Item activation coming soon!')}>
+                      <Button variant="ghost" size="sm" onClick={() => handleActivate(item)} disabled={!!activatingItem}>
                         Use
                       </Button>
                     </div>
@@ -73,6 +106,7 @@ export function InventoryModal({ isOpen, onClose }: InventoryModalProps) {
                 </div>
               )}
             </div>
+            )}
           </motion.div>
         </motion.div>
       )}

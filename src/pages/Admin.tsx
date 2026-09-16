@@ -67,10 +67,10 @@ export default function Admin() {
                 // For safety, only allow injecting by precise ID in this simple prototype
                 if(uid.includes("@")) return alert("Please use User UUID, not email for now.");
                 
-                await supabase.rpc("update_user_tokens", { p_user_id: uid, p_amount_change: amt });
+                await (supabase as any).rpc("update_user_tokens", { p_user_id: uid, p_amount_change: amt });
                 
                 // Send notification
-                await supabase.from("notifications").insert({
+                await (supabase as any).from("notifications").insert({
                   user_id: uid,
                   message: `You have been granted ${amt} tokens by the System Admin!`,
                   type: `reward`

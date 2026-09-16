@@ -32,6 +32,7 @@ import { lazy, Suspense } from 'react';
 
 const CandyCrunchApp = lazy(() => import('@/games/candy-crunch/CandyCrunchApp'));
 const CarromApp = lazy(() => import('@/games/carrom/CarromApp'));
+const TicTacToeOnline = lazy(() => import('@/games/tictactoe-online/TicTacToeOnline'));
 
 function GameFallback() {
   return (
@@ -147,6 +148,7 @@ function AppRoutes() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/wheel" element={<ProtectedRoute><WheelGame /></ProtectedRoute>} />
           <Route path="/multiplayer" element={<ProtectedRoute><MultiplayerLobby /></ProtectedRoute>} />
+          <Route path="/multiplayer/tictactoe/:matchId" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><TicTacToeOnline /></Suspense></ProtectedRoute>} />
           <Route path="/crash" element={<ProtectedRoute><CrashGamePage /></ProtectedRoute>} />
           <Route path="/games" element={<ProtectedRoute><MiniGames /></ProtectedRoute>} />
           <Route path="/games/candy-crunch" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><CandyCrunchApp /></Suspense></ProtectedRoute>} />

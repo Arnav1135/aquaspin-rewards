@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/features/authStore';
 import { MatchmakingService, MatchState } from '@/features/multiplayer/MatchmakingService';
 import { Users, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function Lobby() {
   const { profile } = useAuthStore();
   const [isQueuing, setIsQueuing] = useState(false);
   const [match, setMatch] = useState<MatchState | null>(null);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const navigate = useNavigate();
   
   const matchmakingService = useRef(new MatchmakingService());
 
@@ -98,7 +100,7 @@ export function Lobby() {
           </div>
           <button
             className="w-full py-3 rounded-xl font-bold bg-[#66bdf2] text-[#16213e] hover:bg-white transition-colors"
-            onClick={() => setShowComingSoon(true)}
+            onClick={() => navigate(`/multiplayer/tictactoe/${match.matchId}`, { state: { match } })}
           >
             Enter Game
           </button>

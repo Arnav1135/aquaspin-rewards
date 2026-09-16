@@ -69,8 +69,7 @@ export default function TicTacToeOnline() {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [gameState.lastMoveTimestamp, gameState.winner,
-      lastMoveTimestamp: Date.now(), opponentLeft, isMyTurn, synced, gameState.board]);
+  }, [gameState.lastMoveTimestamp, gameState.winner, opponentLeft, isMyTurn, synced, gameState.board]);
 
 
   useEffect(() => {

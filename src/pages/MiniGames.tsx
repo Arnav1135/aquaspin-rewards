@@ -262,6 +262,10 @@ export function MiniGames() {
     if (!key) return null;
     const p = { onClose: close };
     switch (key) {
+      case 'slots':
+        return <SlotsGame {...p} />;
+      case 'baccarat':
+        return <BaccaratGame {...p} />;
       case "carrom":
         return <CarromApp />;
       case "airhockey3d":

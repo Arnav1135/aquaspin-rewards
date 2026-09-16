@@ -7,7 +7,8 @@
         "reward":  "Up to 50x",
         "difficulty":  "Easy",
         "color":  "#EAB308",
-        "desc":  "Classic Vegas-style slot machine. Match 3 symbols to win big!"
+        "desc":  "Classic Vegas-style slot machine. Match 3 symbols to win big!",
+        "thumbnail":  "/thumbnails/slots.jpg"
     },
     {
         "key":  "baccarat",
@@ -17,7 +18,8 @@
         "reward":  "Up to 9x",
         "difficulty":  "Medium",
         "color":  "#8B5CF6",
-        "desc":  "Classic Casino Baccarat. Bet on Player, Banker, or Tie!"
+        "desc":  "Classic Casino Baccarat. Bet on Player, Banker, or Tie!",
+        "thumbnail":  "/thumbnails/baccarat.jpg"
     },
     {
         "key":  "blackjack",
@@ -27,7 +29,8 @@
         "reward":  "Up to 2.5x",
         "difficulty":  "Medium",
         "color":  "#10B981",
-        "desc":  "Classic Blackjack. Beat the dealer\u0027s hand without going over 21."
+        "desc":  "Classic Blackjack. Beat the dealer\u0027s hand without going over 21.",
+        "thumbnail":  "/thumbnails/blackjack.jpg"
     },
     {
         "key":  "carrom",
@@ -138,7 +141,8 @@
         "reward":  "High Score",
         "difficulty":  "Medium",
         "color":  "#3ddcff",
-        "desc":  "Hyper-polished WebGL air hockey with glowing physics and responsive controls."
+        "desc":  "Hyper-polished WebGL air hockey with glowing physics and responsive controls.",
+        "thumbnail":  "/thumbnails/airhockey3d.jpg"
     },
     {
         "key":  "basketball3d",
@@ -148,7 +152,8 @@
         "reward":  "High Score",
         "difficulty":  "Medium",
         "color":  "#ff8a3d",
-        "desc":  "Time your power and sink shots in a cinematic 3D court."
+        "desc":  "Time your power and sink shots in a cinematic 3D court.",
+        "thumbnail":  "/thumbnails/basketball3d.jpg"
     },
     {
         "key":  "bowling3d",
@@ -158,7 +163,8 @@
         "reward":  "Strike Score",
         "difficulty":  "Medium",
         "color":  "#8b7cff",
-        "desc":  "Control power and spin, then watch the ball and pins collide in 3D."
+        "desc":  "Control power and spin, then watch the ball and pins collide in 3D.",
+        "thumbnail":  "/thumbnails/bowling3d.jpg"
     },
     {
         "key":  "flappy",

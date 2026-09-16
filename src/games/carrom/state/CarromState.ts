@@ -3,6 +3,7 @@ import { CarromCoinData, CarromPlayer, TurnState } from '../types/CarromTypes';
 
 interface CarromStore {
   turnState: TurnState;
+  isPaused: boolean;
   players: CarromPlayer[];
   currentPlayerIndex: number;
   coins: Record<string, CarromCoinData>;
@@ -25,6 +26,7 @@ interface CarromStore {
   
   // Actions
   setTurnState: (state: TurnState) => void;
+  setIsPaused: (val: boolean) => void;
   setStrikerPosition: (pos: [number, number, number]) => void;
   setAimAngle: (angle: number) => void;
   setPower: (power: number) => void;
@@ -66,6 +68,7 @@ export const useCarromStore = create<CarromStore>((set) => ({
   strikerFouled: false,
 
   setTurnState: (state) => set({ turnState: state }),
+  setIsPaused: (val) => set({ isPaused: val }),
   setStrikerPosition: (pos) => set({ strikerPosition: pos }),
   setAimAngle: (angle) => set({ aimAngle: angle }),
   setPower: (power) => set({ power }),
@@ -105,6 +108,7 @@ export const useCarromStore = create<CarromStore>((set) => ({
   setStrikerFouled: (val) => set({ strikerFouled: val }),
   resetTurn: () => set((state) => ({
     turnState: 'PLACING_STRIKER',
+  isPaused: false,
     power: 0,
     strikerPosition: [0, 0.008, 0.28], // Reset to baseline for active player
     currentPlayerIndex: (state.currentPlayerIndex + 1) % state.players.length,

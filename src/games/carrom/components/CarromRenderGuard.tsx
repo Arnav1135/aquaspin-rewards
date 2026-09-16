@@ -67,13 +67,13 @@ export class CarromRenderGuard extends Component<Props, State> {
     e.preventDefault();
     console.warn('[CarromRenderGuard] WebGL Context Lost! Pausing gameplay.');
     this.setState({ contextLost: true });
-    // TODO: Trigger game state pause via useCarromStore
+    useCarromStore.getState().setIsPaused(true);
   };
 
   handleContextRestored = () => {
     console.log('[CarromRenderGuard] WebGL Context Restored! Resuming.');
     this.setState({ contextLost: false, hasError: false });
-    // TODO: Trigger game state resume via useCarromStore
+    useCarromStore.getState().setIsPaused(false);
   };
 
   render() {

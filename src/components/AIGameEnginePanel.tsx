@@ -4,6 +4,7 @@ import { AGEA } from '@/engine/AIGameEngineArchitect';
 import { motion } from 'framer-motion';
 import { Terminal, Cpu, ShieldAlert, Zap, Layers, X, Activity } from 'lucide-react';
 import { reliabilityCore } from '@/lib/reliability/reliabilityCore';
+import { Button } from '@/components/ui/Button';
 
 interface Props {
   onClose: () => void;
@@ -54,7 +55,7 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200">
+        <button onClick={onClose} className="p-1.5 hover:bg-rose-950/50 rounded-lg text-slate-400 hover:text-rose-400 transition-colors">
           <X size={18} />
         </button>
       </div>
@@ -259,13 +260,16 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
 
       {/* Footer Close Button */}
       <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-        <button
+        <Button
+          variant="danger"
+          size="lg"
+          fullWidth
+          icon={<X size={18} />}
           onClick={onClose}
-          className="w-full py-3 px-4 flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors font-semibold shadow-lg shadow-black/20"
+          className="shadow-[0_0_20px_rgba(244,63,94,0.3)] hover:shadow-[0_0_30px_rgba(244,63,94,0.5)] border border-rose-500/50 uppercase tracking-widest text-xs font-bold"
         >
-          <X size={18} />
-          Close Engine Architect
-        </button>
+          Terminate Connection
+        </Button>
       </div>
     </motion.div>
   );

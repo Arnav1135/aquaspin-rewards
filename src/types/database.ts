@@ -132,26 +132,6 @@ export interface Database {
       };
     };
     Functions: {
-        update_user_tokens: {
-          Args: { p_user_id: string; p_amount: number };
-          Returns: number;
-        };
-        record_game_result: {
-          Args: {
-            p_user_id: string;
-            p_game_id: string;
-            p_bet_amount: number;
-            p_win_amount: number;
-            p_multiplier: number;
-            p_is_win: boolean;
-            p_status: string;
-          };
-          Returns: boolean;
-        };
-        update_streak: {
-          Args: { p_user_id: string };
-          Returns: void;
-        };
       update_streak: {
         Args: { p_user_id: string };
         Returns: number;

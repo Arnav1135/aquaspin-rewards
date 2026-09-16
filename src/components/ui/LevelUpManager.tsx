@@ -33,7 +33,8 @@ export function LevelUpManager() {
       setShowLevelUp(correctLevel);
       
       // Update DB and local state
-      supabase.from("users").update({ level: correctLevel } as any).eq("id", profile.id).then();
+      // @ts-ignore
+      supabase.from("users").update({ level: correctLevel }).eq("id", profile.id).then();
       updateProfile({ level: correctLevel });
       
       // Audio and Confetti

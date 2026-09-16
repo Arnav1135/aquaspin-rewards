@@ -15,7 +15,11 @@ export function LightingSystem({ preset, shadowMapSize, quality }: LightingSyste
   // Soft shadows for high quality
   return (
     <>
-      <ambientLight intensity={0.4} />
+      {/* Dynamic ambient color based on preset */}
+      <ambientLight intensity={preset === "night" ? 0.2 : (preset === "sunset" ? 0.5 : 0.4)} color={preset === "sunset" ? "#ffedd6" : (preset === "night" ? "#d6e4ff" : "#ffffff")} />
+      
+      {/* Hemisphere light for rich GI feel */}
+      <hemisphereLight color={preset === "sunset" ? "#ffb347" : "#ffffff"} groundColor={preset === "night" ? "#0a0a2a" : "#444444"} intensity={0.3} />
       
       {quality === 'high' && <SoftShadows size={15} samples={16} focus={0.5} />}
 
@@ -41,7 +45,7 @@ export function LightingSystem({ preset, shadowMapSize, quality }: LightingSyste
           position={[0, -0.05, 0]} 
           opacity={0.65} 
           scale={20} 
-          blur={2.5} 
+          blur={quality === "high" ? 4.0 : 2.5} 
           far={10} 
           resolution={quality === 'high' ? 512 : 256} 
           color="#000000"

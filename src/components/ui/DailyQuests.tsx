@@ -17,12 +17,12 @@ export function DailyQuests({ totalGamesPlayed, totalEarned, totalWins }: DailyQ
   const { profile, updateProfile } = useAuthStore();
   const [claimedQuests, setClaimedQuests] = useState<string[]>([]);
 
-  useEffect(() => {
+  useEffect(() => { //
     const saved = localStorage.getItem("aquaspin_claimed_quests");
     if (saved) {
       try {
         setClaimedQuests(JSON.parse(saved));
-      } catch (e) {}
+      } catch (e) { /* ignore error */ }
     }
   }, []);
 

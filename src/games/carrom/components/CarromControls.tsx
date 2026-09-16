@@ -57,7 +57,9 @@ export function CarromControls() {
     if (turnState === 'AIMING' && dragStart) {
       try {
         (e.target as Element).releasePointerCapture(e.pointerId);
-      } catch (err) {}
+      } catch (err) {
+        // ignore
+      }
       
       const currentPower = useCarromStore.getState().power;
       if (currentPower < 5) {
@@ -72,7 +74,7 @@ export function CarromControls() {
     } else if (turnState === 'PLACING_STRIKER') {
       try {
         (e.target as Element).releasePointerCapture(e.pointerId);
-      } catch (err) {}
+      } catch (err) { /* ignore error */ }
       setTurnState('AIMING');
     }
   };

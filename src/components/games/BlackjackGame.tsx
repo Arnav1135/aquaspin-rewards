@@ -110,8 +110,7 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
       async (newBalance: number, freeTrialsUsed?: boolean) => {
         const pr = profileRef.current;
         if (!pr || pr.id.startsWith('guest')) return true;
-        try {
-          let updateError = null;
+        let updateError = null;
           if (freeTrialsUsed) {
             const currentTrials = pr.free_trials ?? 3;
             const { error } = await (supabase.from('users') as any)
@@ -126,9 +125,6 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
           }
           if (updateError) throw updateError;
           return true;
-        } catch (err) {
-          throw err;
-        }
       },
       { category: ErrorCategory.DATABASE, fallbackReturn: false }
     ),
@@ -248,7 +244,7 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
     currentDealerHand[1].hidden = false;
     
     const playDealer = () => {
-      let dealerVal = calculateHandValue(currentDealerHand);
+      const dealerVal = calculateHandValue(currentDealerHand);
       if (dealerVal < 17) {
         currentDealerHand = [...currentDealerHand, getRandomCard()];
         setDealerHand(currentDealerHand);

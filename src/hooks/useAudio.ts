@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 
 const getAudioContext = () => {
   if (typeof window === 'undefined') return null;
-  // @ts-ignore
+  // @ts-expect-error - Missing audio context type
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!window._audioContext) {
     window._audioContext = new AudioContext();

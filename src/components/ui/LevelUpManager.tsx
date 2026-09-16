@@ -33,7 +33,7 @@ export function LevelUpManager() {
       setShowLevelUp(correctLevel);
       
       // Update DB and local state
-      // @ts-ignore
+      // @ts-expect-error - Expected strict mismatch
       supabase.from("users").update({ level: correctLevel }).eq("id", profile.id).then();
       updateProfile({ level: correctLevel });
       

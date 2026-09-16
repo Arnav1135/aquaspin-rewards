@@ -87,7 +87,7 @@ export default function BaccaratGame() {
 
   const resolveGame = (pCards: Card[], bCards: Card[]) => {
     let pScore = calculateScore(pCards);
-    let bScore = calculateScore(bCards);
+    const bScore = calculateScore(bCards);
 
     if (pScore >= 8 || bScore >= 8) {
       finishGame(pCards, bCards);
@@ -95,8 +95,8 @@ export default function BaccaratGame() {
     }
 
     let pThirdCard: Card | null = null;
-    let newPCards = [...pCards];
-    let newBCards = [...bCards];
+    const newPCards = [...pCards];
+    const newBCards = [...bCards];
 
     if (pScore <= 5) {
       pThirdCard = getRandomCard();

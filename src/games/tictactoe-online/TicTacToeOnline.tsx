@@ -8,6 +8,7 @@ import { GameShell } from "@/components/games/GameShell";
 import { Trophy, ArrowLeft, RotateCcw, AlertTriangle, Smile, Clock } from "lucide-react";
 import { audio } from "@/lib/audioEngine";
 import { supabase } from "@/lib/supabase";
+import { secureUpdateTokens, secureRecordGameResult } from "@/lib/secureEconomy";
 
 type Cell = "X" | "O" | null;
 
@@ -37,8 +38,11 @@ export default function TicTacToeOnline() {
   
   const match = location.state?.match as MatchState | undefined;
   
+  const MATCH_BET = 50; // tokens each player puts in; winner takes 90 (10 house edge)
+
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
   const [service, setService] = useState<MatchmakingService | null>(null);
+  const [betDeducted, setBetDeducted] = useState(false);
 
   const controls = useAnimation();
   const mouseX = useMotionValue(typeof window !== "undefined" ? window.innerWidth / 2 : 0);
@@ -105,6 +109,12 @@ export default function TicTacToeOnline() {
     return () => clearInterval(interval);
   }, [gameState.lastMoveTimestamp, gameState.winner, opponentLeft, isMyTurn, synced, gameState.board]);
 
+  // Deduct bet from THIS player as soon as the match syncs
+  useEffect(() => {
+    if (!synced || betDeducted || !profile || !match) return;
+    setBetDeducted(true);
+    secureUpdateTokens(profile.id, -MATCH_BET).catch(console.error);
+  }, [synced, betDeducted, profile, match]);
 
   useEffect(() => {
     if (!matchId || !profile || !match) {
@@ -184,12 +194,25 @@ export default function TicTacToeOnline() {
     if (winner && winner !== "DRAW") audio.play("tictactoe", "win");
     else if (winner === "DRAW") audio.play("tictactoe", "draw");
 
-    // Payout Logic (Only Host triggers economy to prevent double billing)
+    // Secure Payout Logic — only Host (Player X) triggers to prevent double billing
     if (winner && isPlayerX && match) {
       if (winner === "X" || winner === "O") {
         const winnerId = winner === "X" ? match.players[0].id : match.players[1].id;
-        // Mock economy injection for winner
-        await (supabase as any).rpc("update_user_tokens", { p_user_id: winnerId, p_amount_change: 50 });
+        const loserId  = winner === "X" ? match.players[1].id : match.players[0].id;
+        // Winner gets 90 tokens (2x bet minus 10-token house edge)
+        await secureRecordGameResult({
+          userId: winnerId,
+          betAmount: MATCH_BET,
+          earnedAmount: MATCH_BET * 2 - 10,
+          xpEarned: 25,
+        });
+        // Record loss for loser (bet already deducted client-side on their end)
+        await secureRecordGameResult({
+          userId: loserId,
+          betAmount: MATCH_BET,
+          earnedAmount: 0,
+          xpEarned: 5,
+        });
       }
     }
   };

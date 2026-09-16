@@ -46,6 +46,7 @@ interface CarromStore {
 
 export const useCarromStore = create<CarromStore>((set) => ({
   turnState: 'IDLE',
+  isPaused: false,
   players: [
     { id: 'p1', name: 'Player 1', color: 'white', score: 0 },
     { id: 'p2', name: 'Player 2', color: 'black', score: 0 },

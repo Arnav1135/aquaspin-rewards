@@ -76,15 +76,15 @@ export function DailyRewardModal() {
 
       // Only hit the database if the user is fully registered
       if (!isGuest) {
-        const { error } = await supabase.from('users').update(updates).eq('id', profile.id);
+        const { error } = await (supabase as any).from('users').update(updates).eq('id', profile.id);
         if (error) throw error;
         
         // Log the reward claim
-        await supabase.from('daily_rewards').insert({
+        await (supabase as any).from('daily_rewards').insert({
           user_id: profile.id,
           day_number: dayNumber,
           tokens: rewardTokens
-        }).catch(() => {}); // ignore failures on this non-critical log
+        }); // ignore failures on this non-critical log
       }
 
       setRewardData({ newTokens, newXP, newLevel, newStreak, reward: rewardTokens });

@@ -100,7 +100,7 @@ export default function TicTacToeOnline() {
     const winCheck = checkWin(newBoard);
     const isDraw = !winCheck && newBoard.every(c => c !== null);
     
-    let winner = winCheck?.winner || null;
+    let winner: Cell | "DRAW" | null = winCheck?.winner || null;
     if (isDraw) winner = "DRAW";
 
     const newState: GameState = {
@@ -115,7 +115,7 @@ export default function TicTacToeOnline() {
     service?.sendGameStateUpdate({ type: "MOVE", state: newState });
 
     // Payout Logic (Only Host triggers economy to prevent double billing)
-    if (winner && isPlayerX) {
+    if (winner && isPlayerX && match) {
       if (winner === "X" || winner === "O") {
         const winnerId = winner === "X" ? match.players[0].id : match.players[1].id;
         // Mock economy injection for winner
@@ -141,7 +141,7 @@ export default function TicTacToeOnline() {
   if (!match) return null;
 
   return (
-    <GameShell>
+    <GameShell onClose={() => navigate("/multiplayer")}>
       <div className="flex flex-col items-center justify-center min-h-screen text-white p-4">
         
         {/* Header */}

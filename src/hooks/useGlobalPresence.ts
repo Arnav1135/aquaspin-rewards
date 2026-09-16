@@ -40,7 +40,7 @@ export function useGlobalPresence() {
         const users: PresenceUser[] = [];
         for (const key in state) {
           if (state[key] && state[key][0]) {
-            users.push(state[key][0] as PresenceUser);
+            users.push(state[key][0] as unknown as PresenceUser);
           }
         }
         setOnlineUsers(users.sort((a, b) => b.level - a.level));

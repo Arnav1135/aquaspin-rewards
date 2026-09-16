@@ -145,6 +145,7 @@ export const useAuthStore = create<AuthState>()(
             last_login_date: null,
             free_trials: 3,
             has_deposited: false,
+              inventory: [],
           };
           set({ profile: guestProfile, isGuest: true, isOwner: false });
         },

@@ -27,6 +27,7 @@ export interface Database {
           last_login_date: string | null;
           free_trials: number;
           has_deposited: boolean;
+          inventory: Json;
         };
         Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['users']['Row']>;

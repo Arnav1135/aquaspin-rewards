@@ -8,6 +8,8 @@ import {
   Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
   FileText, X, Coins, TrendingUp, Gamepad, Users
 } from 'lucide-react';
+import { useState } from 'react';
+import { InventoryModal } from '@/components/ui/InventoryModal';
 import { useUIStore } from '@/features/uiStore';
 import { useAuthStore } from '@/features/authStore';
 import { getAvatarColor, getInitials, formatTokens } from '@/lib/utils';
@@ -21,6 +23,7 @@ const navItems = [
   { to: '/games',       icon: Gamepad2,     label: 'Mini Games' },
   { to: '/leaderboard', icon: Trophy,       label: 'Leaderboard' },
   { to: '/shop',        icon: ShoppingBag,  label: 'Shop' },
+  { to: '#inventory',   icon: ShoppingBag,  label: 'Inventory', isAction: true },
   { to: '/referral',    icon: Users,        label: 'Referrals' },
   { to: '/profile',     icon: User,         label: 'Profile' },
 ];
@@ -37,6 +40,7 @@ export function Sidebar() {
   const { setPublicProfileId } = useUIStore();
 
   const close = () => setSidebarOpen(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const xpProgress = profile ? ((profile.xp % 500) / 500) * 100 : 0;
 
   return (

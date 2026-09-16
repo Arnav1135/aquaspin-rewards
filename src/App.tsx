@@ -118,6 +118,17 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 // ── Auth Initializer (runs exactly once) ────────────────────────────────────
+function GlobalBroadcastInitializer() {
+  useEffect(() => {
+    const channel = supabase.channel('global_announcements');
+    channel.on('broadcast', { event: 'announcement' }, ({ payload }) => {
+      toast.success(payload.message, { icon: '?' });
+    }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+  return null;
+}
+
 function AuthInitializer() {
   const { initialize } = useAuthStore();
   useEffect(() => {
@@ -182,6 +193,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthInitializer />
+        <GlobalBroadcastInitializer />
         <ThemeInit />
         <AmbientBackground />
         <PerspectiveProvider>

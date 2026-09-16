@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
             const { data: profile } = await getUserProfile(session.user.id);
             if (profile && profile.email === 'vermaarnav113@gmail.com') {
               profile.tokens = 999999999;
-              (supabase.from('users') as any).update({ tokens: 999999999 }).eq('id', profile.id).then();
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
             }
             set({
               session,
@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
               const { data: profile } = await getUserProfile(session.user.id);
               if (profile && profile.email === 'vermaarnav113@gmail.com') {
                 profile.tokens = 999999999;
-                (supabase.from('users') as any).update({ tokens: 999999999 }).eq('id', profile.id).then();
+                supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
               }
               set({
                 session,
@@ -100,7 +100,7 @@ export const useAuthStore = create<AuthState>()(
             const { data: profile } = await getUserProfile(data.session.user.id);
             if (profile && profile.email === 'vermaarnav113@gmail.com') {
               profile.tokens = 999999999;
-              (supabase.from('users') as any).update({ tokens: 999999999 }).eq('id', profile.id).then();
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
             }
             set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
             // Record the sign-in (fire and forget — don't block login on this)
@@ -160,7 +160,7 @@ export const useAuthStore = create<AuthState>()(
           let referred_by = null;
           if (refCode && refCode.startsWith('AQUA-')) {
             const shortId = refCode.replace('AQUA-', '').toLowerCase();
-            const { data: referrers } = await (supabase.from('users') as any).select('id').ilike('id', `${shortId}%`).limit(1);
+            const { data: referrers } = await supabase.from('users').select('id').ilike('id', `${shortId}%`).limit(1);
             if (referrers && referrers.length > 0) {
               referred_by = referrers[0].id;
             }
@@ -180,7 +180,7 @@ export const useAuthStore = create<AuthState>()(
             const { data: profile } = await getUserProfile(data.session.user.id);
             if (profile && profile.email === 'vermaarnav113@gmail.com') {
               profile.tokens = 999999999;
-              (supabase.from('users') as any).update({ tokens: 999999999 }).eq('id', profile.id).then();
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
             }
             set({ session: data.session, supabaseUser: data.session.user, profile, isGuest: false, isOwner: profile?.email === 'vermaarnav113@gmail.com' });
             // Record the first sign-in for newly registered users
@@ -199,7 +199,7 @@ export const useAuthStore = create<AuthState>()(
           if (profile) {
             if (profile.email === 'vermaarnav113@gmail.com') {
               profile.tokens = 999999999;
-              (supabase.from('users') as any).update({ tokens: 999999999 }).eq('id', profile.id).then();
+              supabase.from('users').update({ tokens: 999999999 }).eq('id', profile.id).then();
             }
             set({ profile, isOwner: profile.email === 'vermaarnav113@gmail.com' });
           }

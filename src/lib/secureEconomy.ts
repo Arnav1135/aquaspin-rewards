@@ -20,7 +20,7 @@ export interface GameResultPayload {
  * Uses the 'record_game_result' RPC to prevent race conditions and client-side spoofing.
  */
 export async function secureRecordGameResult(payload: GameResultPayload) {
-  const { data, error } = await (supabase as any).rpc('record_game_result', {
+  const { data, error } = await supabase.rpc('record_game_result', {
     p_user_id: payload.userId,
     p_bet_amount: payload.betAmount,
     p_earned_amount: payload.earnedAmount,
@@ -34,9 +34,9 @@ export async function secureRecordGameResult(payload: GameResultPayload) {
 
   // Handle referral reward on first game/spin
   try {
-    const { data: user } = await (supabase.from('users') as any).select('referred_by').eq('id', payload.userId).single();
+    const { data: user } = await supabase.from('users').select('referred_by').eq('id', payload.userId).single();
     if (user && user.referred_by) {
-      const { data: stats } = await (supabase.from('game_stats') as any).select('spins_total, games_played').eq('user_id', payload.userId).single();
+      const { data: stats } = await supabase.from('game_stats').select('spins_total, games_played').eq('user_id', payload.userId).single();
       if (stats && (stats.spins_total + stats.games_played) === 1) {
         await secureUpdateTokens(user.referred_by, 500);
       }
@@ -52,7 +52,7 @@ export async function secureRecordGameResult(payload: GameResultPayload) {
  * Atomically adds or deducts tokens for general rewards/purchases.
  */
 export async function secureUpdateTokens(userId: string, amountChange: number) {
-  const { data, error } = await (supabase as any).rpc('update_user_tokens', {
+  const { data, error } = await supabase.rpc('update_user_tokens', {
     p_user_id: userId,
     p_amount_change: amountChange
   });

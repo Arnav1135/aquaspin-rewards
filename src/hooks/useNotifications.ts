@@ -19,7 +19,7 @@ export function useNotifications() {
     if (!profile?.id) return;
 
     const fetchNotifications = async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', profile.id)
@@ -63,7 +63,7 @@ export function useNotifications() {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
-    await (supabase as any)
+    await supabase
       .from('notifications')
       .update({ read: true })
       .eq('id', id)
@@ -74,7 +74,7 @@ export function useNotifications() {
     if (!profile?.id) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
-    await (supabase as any)
+    await supabase
       .from('notifications')
       .update({ read: true })
       .eq('user_id', profile.id)
@@ -90,7 +90,7 @@ export function useNotifications() {
       }
       return prev.filter((n) => n.id !== id);
     });
-    await (supabase as any)
+    await supabase
       .from('notifications')
       .delete()
       .eq('id', id)

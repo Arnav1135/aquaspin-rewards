@@ -2,12 +2,12 @@
 // Fintech-grade mobile slide-out sidebar — deep navy, off-white text
 
 import { Link, useLocation } from 'react-router-dom';
-import { Shield } from 'lucide-react';
+import { Shield , Map as MapIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Crown, Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
   FileText, X, Coins, TrendingUp, Gamepad, Users
-} from 'lucide-react';
+, Map as MapIcon } from 'lucide-react';
 import { useState } from 'react';
 import { InventoryModal } from '@/components/ui/InventoryModal';
 import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
@@ -19,6 +19,7 @@ import { useGlobalPresence } from '@/hooks/useGlobalPresence';
 
 const navItems = [
   { to: '/dashboard',   icon: Home,        label: 'Dashboard'  },
+  { to: '/map',         icon: MapIcon,     label: '3D Resort Map', badge: 'NEW' },
   { to: '/multiplayer', icon: Users,       label: 'Multiplayer', badge: 'BETA' },
   { to: '/wheel',       icon: Disc3,        label: 'Spin Wheel', badge: 'SPIN' },
   { to: '/games',       icon: Gamepad2,     label: 'Mini Games' },

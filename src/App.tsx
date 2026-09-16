@@ -54,6 +54,7 @@ import { Shop } from '@/pages/Shop';
 import { Referral } from '@/pages/Referral';
 import Admin from '@/pages/Admin';
 import { Legal } from '@/pages/Legal';
+import { CasinoMap } from '@/pages/CasinoMap';
 
 // ── TanStack Query client ───────────────────────────────────────────────────
 const queryClient = new QueryClient({
@@ -166,6 +167,7 @@ function AppRoutes() {
 
           {/* Protected */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/map" element={<ProtectedRoute><CasinoMap /></ProtectedRoute>} />
           <Route path="/wheel" element={<ProtectedRoute><WheelGame /></ProtectedRoute>} />
           <Route path="/multiplayer" element={<ProtectedRoute><MultiplayerLobby /></ProtectedRoute>} />
           <Route path="/multiplayer/tictactoe/:matchId" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><TicTacToeOnline /></Suspense></ProtectedRoute>} />

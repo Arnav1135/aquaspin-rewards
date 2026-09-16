@@ -34,8 +34,9 @@ export function useNotifications() {
 
     fetchNotifications();
 
+    const channelId = `notifications:${profile.id}:${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel('notifications_channel')
+      .channel(channelId)
       .on(
         'postgres_changes',
         {

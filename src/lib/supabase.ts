@@ -159,7 +159,7 @@ export async function getGameStats(userId: string) {
 /** Subscribe to realtime leaderboard changes */
 export function subscribeToLeaderboard(callback: () => void) {
   return supabase
-    .channel('leaderboard-changes')
+    .channel(`leaderboard-changes-${Math.random().toString(36).substring(7)}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, callback)
     .subscribe();
 }
@@ -167,7 +167,7 @@ export function subscribeToLeaderboard(callback: () => void) {
 /** Subscribe to realtime user token updates */
 export function subscribeToUserTokens(userId: string, callback: (tokens: number) => void) {
   return supabase
-    .channel(`user-tokens-${userId}`)
+    .channel(`user-tokens-${userId}-${Math.random().toString(36).substring(7)}`)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` },

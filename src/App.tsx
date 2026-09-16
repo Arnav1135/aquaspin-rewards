@@ -45,6 +45,7 @@ import { Leaderboard } from '@/pages/Leaderboard';
 import { Profile } from '@/pages/Profile';
 import { Shop } from '@/pages/Shop';
 import { Referral } from '@/pages/Referral';
+import Admin from '@/pages/Admin';
 import { Legal } from '@/pages/Legal';
 
 // ── TanStack Query client ───────────────────────────────────────────────────

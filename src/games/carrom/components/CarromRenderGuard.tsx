@@ -1,3 +1,4 @@
+import { useCarromStore } from "../state/CarromState";
 import React, { Component, ReactNode } from 'react';
 
 interface Props {

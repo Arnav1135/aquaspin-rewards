@@ -7,6 +7,7 @@ export function Lobby() {
   const { profile } = useAuthStore();
   const [isQueuing, setIsQueuing] = useState(false);
   const [match, setMatch] = useState<MatchState | null>(null);
+  const [showComingSoon, setShowComingSoon] = useState(false);
   
   const matchmakingService = useRef(new MatchmakingService());
 
@@ -97,13 +98,29 @@ export function Lobby() {
           </div>
           <button
             className="w-full py-3 rounded-xl font-bold bg-[#66bdf2] text-[#16213e] hover:bg-white transition-colors"
-            onClick={() => {
-              // Usually route to a game view, for now just reset
-              setMatch(null);
-            }}
+            onClick={() => setShowComingSoon(true)}
           >
             Enter Game
           </button>
+        </div>
+      )}
+          {showComingSoon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#16213e] border border-[#66bdf2]/30 rounded-2xl p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(102,189,242,0.1)]">
+            <div className="w-20 h-20 mx-auto rounded-full bg-[#66bdf2]/10 flex items-center justify-center mb-6">
+              <Loader2 className="text-[#66bdf2] animate-spin" size={40} />
+            </div>
+            <h3 className="text-2xl font-black text-white mb-2">PROVISIONING SERVERS</h3>
+            <p className="text-white/60 mb-6">
+              The AAA Multiplayer Infrastructure is currently in closed alpha. Real-time global matchmaking for Chess, Pool, and Carrom will unlock in the upcoming Q4 Expansion!
+            </p>
+            <button 
+              onClick={() => { setShowComingSoon(false); setMatch(null); }}
+              className="w-full py-3 rounded-xl font-bold bg-white/5 text-white hover:bg-white/10 transition-colors"
+            >
+              Return to Lobby
+            </button>
+          </div>
         </div>
       )}
     </div>

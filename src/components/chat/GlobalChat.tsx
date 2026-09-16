@@ -29,7 +29,7 @@ export function GlobalChat() {
 
     // Fetch initial messages
     const fetchMessages = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("global_chat")
         .select("*, users(username, avatar_url)")
         .order("created_at", { ascending: false })
@@ -50,7 +50,7 @@ export function GlobalChat() {
         async (payload) => {
           // Fetch the user details for the new message
           const { data: user } = await supabase.from("users").select("username, avatar_url").eq("id", payload.new.user_id).single();
-          const newMsg = { ...payload.new, users: user || { username: "Unknown", avatar_url: null } } as ChatMessage;
+          const newMsg = { ...(payload.new as any), users: user || { username: "Unknown", avatar_url: null } } as ChatMessage;
           setMessages((prev) => [...prev, newMsg]);
           setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
         }
@@ -69,7 +69,7 @@ export function GlobalChat() {
     const text = input.trim();
     setInput("");
     
-    await supabase.from("global_chat").insert({
+    await (supabase as any).from("global_chat").insert({
       user_id: profile.id,
       message: text
     });

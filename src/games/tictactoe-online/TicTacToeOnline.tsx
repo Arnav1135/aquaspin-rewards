@@ -51,7 +51,19 @@ export default function TicTacToeOnline() {
     mouseY.set(e.clientY);
   };
 
-  // Trigger Confetti
+  const [opponentLeft, setOpponentLeft] = useState(false);
+  const [synced, setSynced] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15);
+  const [floatingEmotes, setFloatingEmotes] = useState<{id: string, emoji: string, x: number}[]>([]);
+
+  // Identify players
+  // Player 1 in match.players array is X, Player 2 is O
+  const isPlayerX = match?.players[0]?.id === profile?.id;
+  const mySymbol: Cell = isPlayerX ? "X" : "O";
+  const opponent = match?.players.find(p => p.id !== profile?.id);
+  const isMyTurn = (gameState.xIsNext && mySymbol === "X") || (!gameState.xIsNext && mySymbol === "O");
+
+  // Trigger Confetti on win — must be AFTER mySymbol is declared
   useEffect(() => {
     if (gameState.winner === mySymbol) {
       audio.playChime(1500, 1.0, 0.8);
@@ -71,17 +83,6 @@ export default function TicTacToeOnline() {
       }, 250);
     }
   }, [gameState.winner, mySymbol]);
-  const [opponentLeft, setOpponentLeft] = useState(false);
-  const [synced, setSynced] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(15);
-  const [floatingEmotes, setFloatingEmotes] = useState<{id: string, emoji: string, x: number}[]>([]);
-
-  // Identify players
-  // Player 1 in match.players array is X, Player 2 is O
-  const isPlayerX = match?.players[0]?.id === profile?.id;
-  const mySymbol: Cell = isPlayerX ? "X" : "O";
-  const opponent = match?.players.find(p => p.id !== profile?.id);
-  const isMyTurn = (gameState.xIsNext && mySymbol === "X") || (!gameState.xIsNext && mySymbol === "O");
 
   // Timer Effect
   useEffect(() => {

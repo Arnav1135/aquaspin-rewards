@@ -4,7 +4,7 @@ import { Crown, Star, Shield, Zap, Gift, Coins, ChevronRight } from 'lucide-reac
 import { useAuthStore } from '@/features/authStore';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
-import { supabase } from '@/lib/supabase';
+import { secureUpdateTokens } from '@/lib/secureEconomy';
 
 const TIERS = [
   { name: 'Bronze', minLevel: 1, color: 'from-amber-700 to-amber-900', iconColor: 'text-amber-500', rakeback: '2%', perks: ['Basic Support', 'Standard Withdrawals'] },
@@ -45,12 +45,10 @@ export function VIP() {
     const baseRakeback = Math.floor(currentLevel * 50 * (1 + Math.random()));
     
     try {
-      const newTokens = profile.tokens + baseRakeback;
-      const { error } = await (supabase.from('users') as any).update({ tokens: newTokens }).eq('id', profile.id);
-      
-      if (error) throw error;
-      
-      updateProfile({ tokens: newTokens });
+      const { data: newTokens } = await secureUpdateTokens(profile.id, baseRakeback);
+      if (newTokens !== null) {
+        updateProfile({ tokens: newTokens });
+      }
       toast.success(`Claimed ${baseRakeback} tokens in Rakeback!`);
     } catch (err) {
       toast.error('Failed to claim Rakeback. Try again later.');

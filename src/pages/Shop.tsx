@@ -86,23 +86,35 @@ const SHOP_ITEMS: ShopItem[] = [
 
 const TOKEN_BUNDLES = [
   {
-    id: 'buy_tokens_5000',
-    name: '5000 Tokens',
+    id: 'starter',
+    name: 'Starter Pack',
+    tokens: 5000,
     description: 'A great starter pack to boost your balance.',
-    priceUSD: 5,
+    priceUSD: 4.99,
     emoji: '💵',
     color: '#00F0FF',
     popular: false,
   },
   {
-    id: 'buy_tokens_15000',
-    name: '15000 Tokens',
-    description: 'Best value! Triple the tokens.',
-    priceUSD: 12,
+    id: 'popular',
+    name: 'Popular Pack',
+    tokens: 12000,
+    description: 'Most popular choice — best token value for the price.',
+    priceUSD: 9.99,
     emoji: '💎',
     color: '#00FF87',
     popular: true,
-  }
+  },
+  {
+    id: 'pro',
+    name: 'Pro Pack',
+    tokens: 35000,
+    description: 'Go big! Maximum tokens for serious players.',
+    priceUSD: 24.99,
+    emoji: '🚀',
+    color: '#A855F7',
+    popular: false,
+  },
 ];
 
 export function Shop() {
@@ -134,16 +146,12 @@ export function Shop() {
     setBuyingTokens(bundleId);
     try {
       const { data, error } = await supabase.functions.invoke('stripe-checkout', {
-        body: {
-          userId: profile.id,
-          bundleId,
-          returnUrl: window.location.origin
-        }
+        body: { package: bundleId }
       });
       
       if (error) throw error;
       if (data?.url) {
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       } else {
         throw new Error('No checkout URL returned');
       }

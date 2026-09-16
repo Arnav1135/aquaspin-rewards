@@ -93,7 +93,7 @@ export function PublicProfileModal() {
                 <h2 className="text-2xl font-black text-white flex items-center justify-center gap-2">
                   {data.username}
                   {data.id === "180a5fb2-6ef0-482f-b4ec-011ddb6214ed" && (
-                    <Shield size={18} className="text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]" title="Admin" />
+                    <span title="Admin"><Shield size={18} className="text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)]" /></span>
                   )}
                 </h2>
                 <div className="text-sm text-white/50 mb-6 flex justify-center gap-4 mt-2">

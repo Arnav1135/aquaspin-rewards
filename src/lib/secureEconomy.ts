@@ -32,6 +32,19 @@ export async function secureRecordGameResult(payload: GameResultPayload) {
     throw new Error('Transaction failed due to security policies.');
   }
 
+  // Handle referral reward on first game/spin
+  try {
+    const { data: user } = await (supabase.from('users') as any).select('referred_by').eq('id', payload.userId).single();
+    if (user && user.referred_by) {
+      const { data: stats } = await (supabase.from('game_stats') as any).select('spins_total, games_played').eq('user_id', payload.userId).single();
+      if (stats && (stats.spins_total + stats.games_played) === 1) {
+        await secureUpdateTokens(user.referred_by, 500);
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to process referral reward:', err);
+  }
+
   return { data, error: null };
 }
 

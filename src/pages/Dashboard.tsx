@@ -13,6 +13,7 @@ import { getSpinHistory } from '@/lib/supabase';
 import { BannerAd } from '@/components/ads/BannerAd';
 import { RewardsSummary } from '@/components/ui/RewardsSummary';
 import { GameCard } from '@/components/ui/GameCard';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import gamesRegistry from "../../factory/games/registry/games.json";
 
 const GAMES = gamesRegistry as any[];
@@ -61,12 +62,15 @@ export function Dashboard() {
               <p className="text-white font-bold text-sm">{profile?.username || 'Player'}</p>
             </div>
           </div>
-          <button 
-            aria-label="Open Navigation Menu"
-            className="p-2 bg-white/10 rounded-full text-white backdrop-blur-sm border border-white/20 transition-colors"
-          >
-            <Menu size={20} aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button 
+              aria-label="Open Navigation Menu"
+              className="p-2 bg-white/10 rounded-full text-white backdrop-blur-sm border border-white/20 transition-colors"
+            >
+              <Menu size={20} aria-hidden="true" />
+            </button>
+          </div>
         </header>
 
         <section className="px-6 flex-1 flex flex-col z-10 pb-10 space-y-8" aria-label="Dashboard Content">

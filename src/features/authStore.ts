@@ -22,7 +22,7 @@ interface AuthState {
   loginWithGoogle: () => Promise<{ error?: string }>;
   loginAsGuest: () => void;
   logout: () => Promise<void>;
-  signup: (email: string, password: string, username: string) => Promise<{ error?: string }>;
+  signup: (email: string, password: string, username: string, refCode?: string) => Promise<{ error?: string }>;
   refreshProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
 }
@@ -156,12 +156,21 @@ export const useAuthStore = create<AuthState>()(
         },
 
         // ── Sign up ───────────────────────────────────────────────────────────────
-        signup: async (email, password, username) => {
+        signup: async (email, password, username, refCode) => {
+          let referred_by = null;
+          if (refCode && refCode.startsWith('AQUA-')) {
+            const shortId = refCode.replace('AQUA-', '').toLowerCase();
+            const { data: referrers } = await (supabase.from('users') as any).select('id').ilike('id', `${shortId}%`).limit(1);
+            if (referrers && referrers.length > 0) {
+              referred_by = referrers[0].id;
+            }
+          }
+
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-              data: { username },
+              data: { username, referred_by },
             },
           });
 

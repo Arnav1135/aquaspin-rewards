@@ -19,6 +19,7 @@ const navItems = [
   { to: '/games',       icon: Gamepad2,     label: 'Mini Games' },
   { to: '/leaderboard', icon: Trophy,       label: 'Leaderboard' },
   { to: '/shop',        icon: ShoppingBag,  label: 'Shop' },
+  { to: '/referral',    icon: Users,        label: 'Referrals' },
   { to: '/profile',     icon: User,         label: 'Profile' },
 ];
 

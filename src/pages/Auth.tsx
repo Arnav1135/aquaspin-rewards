@@ -50,7 +50,8 @@ export function Auth() {
           toast.error('Username must be at least 3 characters');
           return;
         }
-        const { error } = await signup(email, password, username);
+        const refCode = searchParams.get('ref') || undefined;
+        const { error } = await signup(email, password, username, refCode);
         if (error) { toast.error(error); return; }
         toast.success('Account created! You earned 500 bonus tokens! 🎁');
         navigate('/dashboard');

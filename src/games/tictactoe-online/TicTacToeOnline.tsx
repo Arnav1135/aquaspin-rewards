@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } from "framer-motion";
+import confetti from "canvas-confetti";
 import { useAuthStore } from "@/features/authStore";
 import { MatchmakingService, MatchState } from "@/features/multiplayer/MatchmakingService";
 import { GameShell } from "@/components/games/GameShell";
@@ -38,6 +39,38 @@ export default function TicTacToeOnline() {
   
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
   const [service, setService] = useState<MatchmakingService | null>(null);
+
+  const controls = useAnimation();
+  const mouseX = useMotionValue(typeof window !== "undefined" ? window.innerWidth / 2 : 0);
+  const mouseY = useMotionValue(typeof window !== "undefined" ? window.innerHeight / 2 : 0);
+  const rotateX = useTransform(mouseY, [0, typeof window !== "undefined" ? window.innerHeight : 800], [15, -15]);
+  const rotateY = useTransform(mouseX, [0, typeof window !== "undefined" ? window.innerWidth : 800], [-15, 15]);
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    mouseX.set(e.clientX);
+    mouseY.set(e.clientY);
+  };
+
+  // Trigger Confetti
+  useEffect(() => {
+    if (gameState.winner === mySymbol) {
+      audio.playChime(1500, 1.0, 0.8);
+      const duration = 3000;
+      const animationEnd = Date.now() + duration;
+      const interval: any = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        confetti({
+          particleCount: 20,
+          startVelocity: 30,
+          spread: 360,
+          origin: { x: Math.random(), y: Math.random() - 0.2 },
+          colors: ["#10b981", "#f59e0b", "#3b82f6"],
+          zIndex: 9999
+        });
+      }, 250);
+    }
+  }, [gameState.winner, mySymbol]);
   const [opponentLeft, setOpponentLeft] = useState(false);
   const [synced, setSynced] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15);
@@ -124,6 +157,7 @@ export default function TicTacToeOnline() {
 
   const handleCellClick = async (index: number) => {
     audio.play("tictactoe", "place");
+    controls.start({ x: [0, -5, 5, -5, 5, 0], y: [0, 5, -5, 5, -5, 0], transition: { duration: 0.2 } });
     if (gameState.winner || gameState.board[index] || !isMyTurn || opponentLeft) return;
 
     const newBoard = [...gameState.board];
@@ -186,7 +220,7 @@ export default function TicTacToeOnline() {
 
   return (
     <GameShell onClose={() => navigate("/multiplayer")}>
-      <div className="flex flex-col items-center justify-center min-h-screen text-white p-4">
+      <motion.div animate={controls} onPointerMove={handlePointerMove} className="flex flex-col items-center justify-center min-h-screen text-white p-4" style={{ perspective: 1000 }}>
         
         {/* Header */}
         <div className="mb-8 w-full max-w-md flex justify-between items-center bg-black/40 p-4 rounded-2xl border border-white/10 shadow-2xl backdrop-blur-md">
@@ -217,12 +251,16 @@ export default function TicTacToeOnline() {
         </div>
 
         {/* Board */}
-        <div className="grid grid-cols-3 gap-3 bg-white/5 p-4 rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <motion.div 
+          style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+          className="grid grid-cols-3 gap-3 bg-white/5 p-4 rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+        >
           {gameState.board.map((cell, i) => {
             const isWinCell = gameState.winLine?.includes(i);
             return (
               <motion.button
                 key={i}
+                style={{ translateZ: cell ? 30 : 0 }}
                 whileHover={{ scale: !cell && !gameState.winner && isMyTurn ? 1.05 : 1 }}
                 whileTap={{ scale: !cell && !gameState.winner && isMyTurn ? 0.95 : 1 }}
                 onClick={() => handleCellClick(i)}
@@ -242,7 +280,7 @@ export default function TicTacToeOnline() {
               </motion.button>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Game Over Actions */}
         <AnimatePresence>
@@ -272,7 +310,7 @@ export default function TicTacToeOnline() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     
         {/* Floating Emotes */}
         <AnimatePresence>

@@ -11,6 +11,7 @@ import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
 import { useGameStore } from '@/features/gameStore';
 import { TokenCounter } from '@/components/ui/TokenCounter';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 import { cn, getInitials, getAvatarColor } from '@/lib/utils';
 
 export function Header() {
@@ -111,6 +112,8 @@ export function Header() {
               <TokenCounter value={tokens} size="sm" showIcon={true} />
             </div>
           )}
+
+          <NotificationBell />
 
           {/* Theme toggle — 36px circle icon-btn */}
           <button

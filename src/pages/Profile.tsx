@@ -135,16 +135,16 @@ export function Profile() {
             </CardHeader>
             <div className="grid grid-cols-2 gap-3">
               {([
-                { label: 'Total Spins',  value: (gameStats as any).spins_total,   icon: '🎡' },
-                { label: 'Games Played', value: (gameStats as any).games_played,  icon: '🎮' },
-                { label: 'Games Won',    value: (gameStats as any).games_won,     icon: '🏆' },
+                { label: 'Total Spins',  value: gameStats.spins_total,   icon: '🎡' },
+                { label: 'Games Played', value: gameStats.games_played,  icon: '🎮' },
+                { label: 'Games Won',    value: gameStats.games_won,     icon: '🏆' },
                 { label: 'Win Rate',
-                  value: (gameStats as any).games_played > 0
-                    ? `${Math.round(((gameStats as any).games_won / (gameStats as any).games_played) * 100)}%`
+                  value: gameStats.games_played > 0
+                    ? `${Math.round((gameStats.games_won / gameStats.games_played) * 100)}%`
                     : 'N/A',
                   icon: '📊' },
-                { label: 'Best Clicker', value: (gameStats as any).clicker_best, icon: '👆' },
-                { label: 'Best Quiz',    value: (gameStats as any).quiz_best,    icon: '🧠' },
+                { label: 'Best Clicker', value: gameStats.clicker_best, icon: '👆' },
+                { label: 'Best Quiz',    value: gameStats.quiz_best,    icon: '🧠' },
               ] as { label: string; value: unknown; icon: string }[]).map((stat) => (
                 <div key={stat.label} className="flex items-center gap-2 p-3 rounded-xl bg-navy-800">
                   <span className="text-lg">{stat.icon}</span>
@@ -196,15 +196,15 @@ export function Profile() {
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <p className="font-semibold text-sm text-text-primary">
-                          {(tx as any).method === 'upi' ? '💳 UPI' : '💰 PayPal'}
+                          {tx.method === 'upi' ? '💳 UPI' : '💰 PayPal'}
                         </p>
-                        <StatusBadge status={(tx as any).status} />
+                        <StatusBadge status={tx.status} />
                       </div>
-                      <p className="text-2xs text-muted">{formatRelativeTime((tx as any).created_at)}</p>
+                      <p className="text-2xs text-muted">{formatRelativeTime(tx.created_at)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-mono font-bold text-sm text-gold-neon">${(tx as any).amount_usd}</p>
-                      <p className="text-2xs text-muted">{formatTokens((tx as any).amount_tokens)} tokens</p>
+                      <p className="font-mono font-bold text-sm text-gold-neon">${tx.amount_usd}</p>
+                      <p className="text-2xs text-muted">{formatTokens(tx.amount_tokens)} tokens</p>
                     </div>
                   </div>
                 ))}
@@ -217,9 +217,9 @@ export function Profile() {
 
         {/* ── Daily Quests ── */}
         <DailyQuests 
-          totalGamesPlayed={(gameStats as any)?.games_played || 0}
+          totalGamesPlayed={gameStats?.games_played || 0}
           totalEarned={profile.total_earned || 0}
-          totalWins={(gameStats as any)?.games_won || 0}
+          totalWins={gameStats?.games_won || 0}
         />
 
         {/* -- Sign-in History -- */}

@@ -1,3 +1,4 @@
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 // src/components/games/BlackjackGame.tsx
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -91,6 +92,7 @@ const PlayingCardUI = ({ card }: { card: PlayingCard }) => {
 };
 
 export function BlackjackGame({ onClose }: BlackjackGameProps) {
+  useAIGameEngine('blackjack', 'Blackjack', 'arcade', 'dom-css');
   const { setSafeTimeout } = useSafeTimeout();
   const { profile, updateProfile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(50);

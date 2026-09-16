@@ -1,3 +1,4 @@
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 import { useState, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -117,6 +118,7 @@ function BowlingBall({ rolling, power, spin, onFinish }: { rolling: boolean, pow
 }
 
 export function Bowling3DGame({ onClose }: { onClose: () => void }) {
+  useAIGameEngine('bowling3d', '3D Bowling', 'arcade', '3d-threejs');
   const [power, setPower] = useState(0.8);
   const [spin, setSpin] = useState(0);
   const [rolling, setRolling] = useState(false);

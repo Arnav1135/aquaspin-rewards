@@ -1,3 +1,4 @@
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 import { GameShell } from "@/components/games/GameShell";
 import { useNavigate } from "react-router-dom";
 import { AGEA } from "@/engine/AIGameEngineArchitect";

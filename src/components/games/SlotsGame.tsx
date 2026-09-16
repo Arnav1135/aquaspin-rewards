@@ -1,3 +1,4 @@
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Coins, Trophy, Sparkles } from 'lucide-react';
@@ -29,6 +30,7 @@ const getRandomSymbol = () => {
 };
 
 export default function SlotsGame() {
+  useAIGameEngine('slots', 'Lucky Slots', 'arcade', 'dom-css');
   const navigate = useNavigate();
   const { profile } = useAuthStore();
   

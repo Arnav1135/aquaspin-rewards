@@ -1,3 +1,4 @@
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 // src/components/games/SnakeGame.tsx
 // Neon Snake – Canvas 2D, speed progression, power-ups, secure economy
 import { useEffect, useRef, useState, useCallback } from 'react';

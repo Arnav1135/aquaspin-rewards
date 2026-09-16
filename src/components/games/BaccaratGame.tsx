@@ -1,3 +1,4 @@
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Info, ArrowLeft, Trophy } from 'lucide-react';
@@ -37,6 +38,7 @@ const getRandomCard = (): Card => ({
 });
 
 export default function BaccaratGame() {
+  useAIGameEngine('baccarat', 'Baccarat', 'arcade', 'dom-css');
   const navigate = useNavigate();
   const { profile } = useAuthStore();
   

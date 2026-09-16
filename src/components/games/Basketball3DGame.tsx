@@ -1,3 +1,4 @@
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 import { useState, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -121,6 +122,7 @@ function Basketball({ shooting, power, onResult, isScored }: { shooting: boolean
 }
 
 export function Basketball3DGame({ onClose }: { onClose: () => void }) {
+  useAIGameEngine('basketball3d', '3D Basketball', 'arcade', '3d-threejs');
   const [power, setPower] = useState(0.5);
   const [shooting, setShooting] = useState(false);
   const [score, setScore] = useState(0);

@@ -12,6 +12,7 @@ import { useUIStore } from '@/features/uiStore';
 import { useAuthStore } from '@/features/authStore';
 import { getAvatarColor, getInitials, formatTokens } from '@/lib/utils';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { useGlobalPresence } from '@/hooks/useGlobalPresence';
 
 const navItems = [
   { to: '/dashboard',   icon: Home,        label: 'Dashboard'  },
@@ -32,6 +33,8 @@ export function Sidebar() {
   const location = useLocation();
   const { sidebarOpen, setSidebarOpen, openCashoutModal } = useUIStore();
   const { profile } = useAuthStore();
+  const onlineUsers = useGlobalPresence();
+  const { setPublicProfileId } = useUIStore();
 
   const close = () => setSidebarOpen(false);
   const xpProgress = profile ? ((profile.xp % 500) / 500) * 100 : 0;

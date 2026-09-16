@@ -21,7 +21,7 @@ export function LobbyChat() {
   useEffect(() => {
     // Fetch last 50 messages
     const fetchMessages = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('lobby_chat')
         .select('*')
         .order('created_at', { ascending: false })
@@ -61,7 +61,7 @@ export function LobbyChat() {
     const text = inputText.trim();
     setInputText('');
 
-    await supabase.from('lobby_chat').insert({
+    await (supabase.from('lobby_chat') as any).insert({
       user_id: profile.id,
       username: profile.username || 'Anonymous',
       text

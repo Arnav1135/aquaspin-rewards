@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, Smartphone, Globe, CheckCircle, AlertCircle } from 'lucide-react';
+import { TrendingUp, Smartphone, Globe, CheckCircle, AlertCircle, Bitcoin } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { invokeEdgeFunction } from '@/lib/supabase';
 import { Modal } from '@/components/ui/Modal';
@@ -17,7 +17,7 @@ interface CashoutModalProps {
   onClose: () => void;
 }
 
-type Method = 'upi' | 'paypal';
+type Method = 'upi' | 'paypal' | 'crypto';
 type Phase = 'form' | 'confirm' | 'success' | 'error';
 
 const CASHOUT_OPTIONS = [1000, 2000, 5000, 10000];
@@ -163,7 +163,7 @@ export function CashoutModal({ isOpen, onClose }: CashoutModalProps) {
             {/* Address input */}
             <div>
               <label className="text-sm font-medium text-text-secondary block mb-2">
-                {method === 'upi' ? 'UPI ID (e.g., yourname@paytm)' : 'PayPal Email Address'}
+                {method === 'upi' ? 'UPI ID (e.g., yourname@paytm)' : method === 'paypal' ? 'PayPal Email Address' : 'Web3 Wallet Address (SOL/ETH)'}
               </label>
               <input
                 type={method === 'paypal' ? 'email' : 'text'}

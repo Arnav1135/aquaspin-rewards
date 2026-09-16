@@ -87,7 +87,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-import { DailyRewardModal } from '@/components/DailyRewardModal';
+import { DailyRewardModal } from '@/components/ui/DailyRewardModal';
 
 // ── Layout wrapper for authenticated pages ──────────────────────────────────
 function AppLayout({ children }: { children: React.ReactNode }) {

@@ -3,6 +3,7 @@ import { useAuthStore } from '@/features/authStore';
 import { MatchmakingService, MatchState } from '@/features/multiplayer/MatchmakingService';
 import { Users, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { LobbyChat } from './LobbyChat';
 
 export function Lobby() {
   const { profile } = useAuthStore();
@@ -106,7 +107,11 @@ export function Lobby() {
           </button>
         </div>
       )}
-          {showComingSoon && (
+      <div className="mt-12 w-full max-w-md">
+        <LobbyChat />
+      </div>
+
+      {showComingSoon && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="bg-[#16213e] border border-[#66bdf2]/30 rounded-2xl p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(102,189,242,0.1)]">
             <div className="w-20 h-20 mx-auto rounded-full bg-[#66bdf2]/10 flex items-center justify-center mb-6">

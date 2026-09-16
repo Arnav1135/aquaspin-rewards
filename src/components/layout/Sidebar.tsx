@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { InventoryModal } from '@/components/ui/InventoryModal';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { useUIStore } from '@/features/uiStore';
 import { useAuthStore } from '@/features/authStore';
 import { getAvatarColor, getInitials, formatTokens } from '@/lib/utils';

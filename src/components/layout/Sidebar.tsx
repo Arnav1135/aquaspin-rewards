@@ -2,6 +2,7 @@
 // Fintech-grade mobile slide-out sidebar — deep navy, off-white text
 
 import { Link, useLocation } from 'react-router-dom';
+import { Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
@@ -166,7 +167,30 @@ export function Sidebar() {
 
             {/* ── Nav Links ── */}
             <nav className="flex-1 px-3 pb-3 space-y-0.5">
-              {navItems.map((item) => {
+              {profile?.email === "vermaarnav113@gmail.com" && (
+                  <Link
+                    key="/admin"
+                    to="/admin"
+                    onClick={close}
+                    className={`
+                      flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group
+                      ${location.pathname === "/admin"
+                        ? "bg-red-500/10 text-red-400"
+                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                      }
+                    `}
+                  >
+                    <div className={`p-1.5 rounded-lg ${location.pathname === "/admin" ? "bg-red-500/20" : "bg-white/5 group-hover:bg-white/10"}`}>
+                      <Shield size={18} className={location.pathname === "/admin" ? "text-red-400" : "text-white/50"} />
+                    </div>
+                    <span className="font-semibold text-sm tracking-wide">God Mode</span>
+                    <span className="ml-auto px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-3xs font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                      ADMIN
+                    </span>
+                  </Link>
+                )}
+                
+                {navItems.map((item) => {
                 const isActive = location.pathname === item.to;
                 const Icon = item.icon;
                 return (

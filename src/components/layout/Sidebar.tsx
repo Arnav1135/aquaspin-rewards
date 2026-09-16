@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
+  Crown, Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
   FileText, X, Coins, TrendingUp, Gamepad, Users
 } from 'lucide-react';
 import { useState } from 'react';
@@ -25,6 +25,7 @@ const navItems = [
   { to: '/shop',        icon: ShoppingBag,  label: 'Shop' },
   { to: '#inventory',   icon: ShoppingBag,  label: 'Inventory', isAction: true },
   { to: '/referral',    icon: Users,        label: 'Referrals' },
+  { to: '/vip',         icon: Crown,        label: 'VIP Club' },
   { to: '/profile',     icon: User,         label: 'Profile' },
 ];
 

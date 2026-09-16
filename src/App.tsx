@@ -49,6 +49,7 @@ function GameFallback() {
 
 import { Leaderboard } from '@/pages/Leaderboard';
 import { Profile } from '@/pages/Profile';
+import { VIP } from '@/pages/VIP';
 import { Shop } from '@/pages/Shop';
 import { Referral } from '@/pages/Referral';
 import Admin from '@/pages/Admin';
@@ -163,6 +164,7 @@ function AppRoutes() {
           <Route path="/games/carrom" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><CarromApp /></Suspense></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/vip" element={<ProtectedRoute><VIP /></ProtectedRoute>} />
           <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/referral" element={<ProtectedRoute><Referral /></ProtectedRoute>} />

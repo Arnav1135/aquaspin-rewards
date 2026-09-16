@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { LevelBadge } from '@/components/ui/ProgressBar';
 import { CashoutModal } from './CashoutModal';
-import { Achievements } from '@/components/ui/Achievements';
+import { AchievementsPanel } from '@/components/ui/AchievementsPanel';
 import { DailyQuests } from '@/components/ui/DailyQuests';
 import { AvatarStudio } from '@/components/ui/AvatarStudio';
 import { getAvatarColor, getInitials, formatTokens, copyToClipboard, formatRelativeTime } from '@/lib/utils';
@@ -234,7 +234,7 @@ export function Profile() {
           </Card>
         )}
 
-        <Achievements stats={gameStats} />
+        <AchievementsPanel />
 
         {/* ── Daily Quests ── */}
         <DailyQuests 

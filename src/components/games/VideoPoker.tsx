@@ -84,7 +84,10 @@ const evaluateHand = (cards: PlayingCard[]): { name: string; multiplier: number 
   return { name: 'None', multiplier: PAYTABLE['None'] };
 };
 
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
+
 const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
+  useAIGameEngine('videopoker', 'Video Poker', 'casino', 'dom-css');
   const { profile } = useAuthStore();
   const [bet, setBet] = useState(10);
   const [gameState, setGameState] = useState<'betting' | 'playing' | 'gameover'>('betting');

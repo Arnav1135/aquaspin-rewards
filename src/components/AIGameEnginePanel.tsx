@@ -256,6 +256,17 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
           </div>
         )}
       </div>
+
+      {/* Footer Close Button */}
+      <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+        <button
+          onClick={onClose}
+          className="w-full py-3 px-4 flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors font-semibold shadow-lg shadow-black/20"
+        >
+          <X size={18} />
+          Close Engine Architect
+        </button>
+      </div>
     </motion.div>
   );
 }

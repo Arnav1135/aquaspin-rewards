@@ -154,7 +154,11 @@ function Puck({ onGoal }: { onGoal: (isPlayer: boolean) => void }) {
   );
 }
 
+import { useAIGameEngine } from '@/hooks/useAIGameEngine';
+
 export function AirHockey3DGame({ onClose }: { onClose: () => void }) {
+  useAIGameEngine('airhockey3d', 'Air Hockey 3D', 'arcade', '3d-threejs');
+
   const [score, setScore] = useState([0, 0]);
   const [cameraMode, setCameraMode] = useState<'default' | 'cinematic' | 'impact'>('default');
   const [key, setKey] = useState(0);

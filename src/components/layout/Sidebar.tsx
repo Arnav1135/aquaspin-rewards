@@ -2,12 +2,12 @@
 // Fintech-grade mobile slide-out sidebar — deep navy, off-white text
 
 import { Link, useLocation } from 'react-router-dom';
-import { Shield , Map as MapIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Crown, Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
-  FileText, X, Coins, TrendingUp, Gamepad, Users
-, Map as MapIcon } from 'lucide-react';
+  FileText, X, Coins, TrendingUp, Gamepad, Users, Shield,
+  Map as MapIcon, ShieldCheck
+} from 'lucide-react';
 import { useState } from 'react';
 import { InventoryModal } from '@/components/ui/InventoryModal';
 import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
@@ -21,18 +21,19 @@ const navItems = [
   { to: '/dashboard',   icon: Home,        label: 'Dashboard'  },
   { to: '/map',         icon: MapIcon,     label: '3D Resort Map', badge: 'NEW' },
   { to: '/multiplayer', icon: Users,       label: 'Multiplayer', badge: 'BETA' },
-  { to: '/wheel',       icon: Disc3,        label: 'Spin Wheel', badge: 'SPIN' },
-  { to: '/games',       icon: Gamepad2,     label: 'Mini Games' },
-  { to: '/leaderboard', icon: Trophy,       label: 'Leaderboard' },
-  { to: '/shop',        icon: ShoppingBag,  label: 'Shop' },
-  { to: '#inventory',   icon: ShoppingBag,  label: 'Inventory', isAction: true },
-  { to: '/referral',    icon: Users,        label: 'Referrals' },
-  { to: '/vip',         icon: Crown,        label: 'VIP Club' },
-  { to: '/profile',     icon: User,         label: 'Profile' },
+  { to: '/wheel',       icon: Disc3,       label: 'Spin Wheel', badge: 'SPIN' },
+  { to: '/games',       icon: Gamepad2,    label: 'Mini Games' },
+  { to: '/leaderboard', icon: Trophy,      label: 'Leaderboard' },
+  { to: '/shop',        icon: ShoppingBag, label: 'Shop' },
+  { to: '#inventory',   icon: ShoppingBag, label: 'Inventory',   isAction: true },
+  { to: '/referral',    icon: Users,       label: 'Referrals' },
+  { to: '/vip',         icon: Crown,       label: 'VIP Club' },
+  { to: '/profile',     icon: User,        label: 'Profile' },
 ];
 
 const bottomLinks = [
-  { to: '/legal', icon: FileText, label: 'Privacy & Terms' },
+  { to: '/legal',          icon: FileText,   label: 'Privacy & Terms' },
+  { to: '#provably-fair',  icon: ShieldCheck, label: 'Provably Fair', isAction: true },
 ];
 
 export function Sidebar() {
@@ -44,140 +45,151 @@ export function Sidebar() {
 
   const close = () => setSidebarOpen(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
   const xpProgress = profile ? ((profile.xp % 500) / 500) * 100 : 0;
 
+  const handleNavClick = (e: React.MouseEvent, item: { to: string; isAction?: boolean }) => {
+    if (item.isAction) {
+      e.preventDefault();
+      if (item.to === '#inventory') setInventoryOpen(true);
+      if (item.to === '#provably-fair') setProvablyFairOpen(true);
+    }
+    close();
+  };
+
   return (
-    <AnimatePresence>
-      {sidebarOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            className="fixed inset-0 z-40 lg:hidden"
-            style={{ background: 'rgba(22,33,62,0.55)', backdropFilter: 'blur(4px)' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={close}
-          />
+    <>
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="fixed inset-0 z-40 lg:hidden"
+              style={{ background: 'rgba(22,33,62,0.55)', backdropFilter: 'blur(4px)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={close}
+            />
 
-          {/* Sidebar panel */}
-          <motion.aside
-            className="fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col overflow-y-auto lg:hidden"
-            style={{
-              background: '#7b8bc1',
-              borderRight: '1px solid rgba(74,144,217,0.18)',
-              boxShadow: '8px 0 32px rgba(22,33,62,0.30)',
-            }}
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-          >
-            {/* ── Header ── */}
-            <div
-              className="flex items-center justify-between p-4"
-              style={{ borderBottom: '1px solid rgba(74,144,217,0.15)' }}
+            {/* Sidebar panel */}
+            <motion.aside
+              className="fixed top-0 left-0 bottom-0 z-50 w-72 flex flex-col overflow-y-auto lg:hidden"
+              style={{
+                background: '#7b8bc1',
+                borderRight: '1px solid rgba(74,144,217,0.18)',
+                boxShadow: '8px 0 32px rgba(22,33,62,0.30)',
+              }}
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 40 }}
             >
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #66bdf2 0%, #66bdf2 100%)' }}
-                >
-                  <Gamepad size={16} strokeWidth={2} style={{ color: '#7b8bc1' }} />
-                </div>
-                <span className="font-bold text-sm" style={{ color: '#FFFFFF' }}>
-                  AquaSpin
-                </span>
-              </div>
-              <button
-                className="icon-btn-sm"
-                onClick={close}
-                aria-label="Close menu"
-              >
-                <X size={16} strokeWidth={2} />
-              </button>
-            </div>
-
-            {/* ── User Profile Card ── */}
-            {profile && (
+              {/* ── Header ── */}
               <div
-                className="p-4"
+                className="flex items-center justify-between p-4"
                 style={{ borderBottom: '1px solid rgba(74,144,217,0.15)' }}
               >
-                <div
-                  className="p-3 rounded-2xl"
-                  style={{
-                    background: 'rgba(74,144,217,0.10)',
-                    border: '1px solid rgba(74,144,217,0.20)',
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
-                      style={{
-                        backgroundColor: getAvatarColor(profile.id),
-                        color: '#7b8bc1',
-                      }}
-                    >
-                      {getInitials(profile.username)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate" style={{ color: '#FFFFFF' }}>
-                        {profile.username ?? 'Player'}
-                      </p>
-                      <p className="text-2xs" style={{ color: 'rgba(245,248,252,0.50)' }}>
-                        Level {profile.level}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Token display */}
-                  <div className="flex items-center gap-1.5 mb-2.5">
-                    <Coins size={14} style={{ color: '#66bdf2' }} />
-                    <span className="font-mono font-bold text-sm" style={{ color: '#66bdf2' }}>
-                      {formatTokens(profile.tokens)}
-                    </span>
-                    <span className="text-2xs" style={{ color: 'rgba(245,248,252,0.45)' }}>
-                      tokens
-                    </span>
-                  </div>
-
-                  {/* XP bar */}
-                  <ProgressBar value={xpProgress} height={4} />
-                  <p className="text-2xs mt-1" style={{ color: 'rgba(245,248,252,0.40)' }}>
-                    {profile.xp} XP • Level {profile.level}
-                  </p>
-                </div>
-
-                {/* Cashout CTA */}
-                {profile.tokens >= 1000 && (
-                  <button
-                    className="btn-success w-full mt-3 text-xs py-2.5"
-                    style={{ borderRadius: 12 }}
-                    onClick={() => { openCashoutModal(); close(); }}
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ background: 'linear-gradient(135deg, #66bdf2 0%, #66bdf2 100%)' }}
                   >
-                    <TrendingUp size={14} /> Cash Out Now
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* ── Section Header: Navigation ── */}
-            <div className="px-4 pt-4 pb-1">
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-2xs font-semibold uppercase tracking-widest"
-                  style={{ color: 'rgba(245,248,252,0.35)' }}
+                    <Gamepad size={16} strokeWidth={2} style={{ color: '#7b8bc1' }} />
+                  </div>
+                  <span className="font-bold text-sm" style={{ color: '#FFFFFF' }}>
+                    AquaSpin
+                  </span>
+                </div>
+                <button
+                  className="icon-btn-sm"
+                  onClick={close}
+                  aria-label="Close menu"
                 >
-                  Navigation
-                </span>
-                <span style={{ color: 'rgba(245,248,252,0.25)', fontSize: 16 }}>•••</span>
+                  <X size={16} strokeWidth={2} />
+                </button>
               </div>
-            </div>
 
-            {/* ── Nav Links ── */}
-            <nav className="flex-1 px-3 pb-3 space-y-0.5">
-              {profile?.email === "vermaarnav113@gmail.com" && (
+              {/* ── User Profile Card ── */}
+              {profile && (
+                <div
+                  className="p-4"
+                  style={{ borderBottom: '1px solid rgba(74,144,217,0.15)' }}
+                >
+                  <div
+                    className="p-3 rounded-2xl"
+                    style={{
+                      background: 'rgba(74,144,217,0.10)',
+                      border: '1px solid rgba(74,144,217,0.20)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
+                        style={{
+                          backgroundColor: getAvatarColor(profile.id),
+                          color: '#7b8bc1',
+                        }}
+                      >
+                        {getInitials(profile.username)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate" style={{ color: '#FFFFFF' }}>
+                          {profile.username ?? 'Player'}
+                        </p>
+                        <p className="text-2xs" style={{ color: 'rgba(245,248,252,0.50)' }}>
+                          Level {profile.level}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Token display */}
+                    <div className="flex items-center gap-1.5 mb-2.5">
+                      <Coins size={14} style={{ color: '#66bdf2' }} />
+                      <span className="font-mono font-bold text-sm" style={{ color: '#66bdf2' }}>
+                        {formatTokens(profile.tokens)}
+                      </span>
+                      <span className="text-2xs" style={{ color: 'rgba(245,248,252,0.45)' }}>
+                        tokens
+                      </span>
+                    </div>
+
+                    {/* XP bar */}
+                    <ProgressBar value={xpProgress} height={4} />
+                    <p className="text-2xs mt-1" style={{ color: 'rgba(245,248,252,0.40)' }}>
+                      {profile.xp} XP • Level {profile.level}
+                    </p>
+                  </div>
+
+                  {/* Cashout CTA */}
+                  {profile.tokens >= 1000 && (
+                    <button
+                      className="btn-success w-full mt-3 text-xs py-2.5"
+                      style={{ borderRadius: 12 }}
+                      onClick={() => { openCashoutModal(); close(); }}
+                    >
+                      <TrendingUp size={14} /> Cash Out Now
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* ── Section Header: Navigation ── */}
+              <div className="px-4 pt-4 pb-1">
+                <div className="flex items-center justify-between">
+                  <span
+                    className="text-2xs font-semibold uppercase tracking-widest"
+                    style={{ color: 'rgba(245,248,252,0.35)' }}
+                  >
+                    Navigation
+                  </span>
+                  <span style={{ color: 'rgba(245,248,252,0.25)', fontSize: 16 }}>•••</span>
+                </div>
+              </div>
+
+              {/* ── Nav Links ── */}
+              <nav className="flex-1 px-3 pb-3 space-y-0.5">
+                {profile?.email === "vermaarnav113@gmail.com" && (
                   <Link
                     key="/admin"
                     to="/admin"
@@ -199,77 +211,94 @@ export function Sidebar() {
                     </span>
                   </Link>
                 )}
-                
-                {navItems.map((item) => {
-                const isActive = location.pathname === item.to;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={close}
-                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
-                    style={{
-                      background: isActive ? 'rgba(74,144,217,0.18)' : 'transparent',
-                      color: isActive ? '#66bdf2' : 'rgba(245,248,252,0.60)',
-                    }}
-                    onMouseEnter={e => {
-                      if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(245,248,252,0.05)';
-                    }}
-                    onMouseLeave={e => {
-                      if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent';
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon size={18} strokeWidth={2} />
-                      {item.label}
-                    </div>
-                    {item.badge && (
-                      <span
-                        className="text-2xs px-2 py-0.5 rounded-full font-semibold"
-                        style={{
-                          background: 'rgba(74,144,217,0.22)',
-                          color: '#66bdf2',
-                        }}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
 
-            {/* ── Bottom Links ── */}
-            <div
-              className="p-3 space-y-0.5"
-              style={{ borderTop: '1px solid rgba(74,144,217,0.15)' }}
-            >
-              {bottomLinks.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={close}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200"
-                    style={{ color: 'rgba(245,248,252,0.35)' }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.65)';
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.35)';
-                    }}
-                  >
-                    <Icon size={16} strokeWidth={2} />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </motion.aside>
-        </>
+                {navItems.map((item) => {
+                  const isActive = location.pathname === item.to;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={(e) => handleNavClick(e, item)}
+                      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
+                      style={{
+                        background: isActive ? 'rgba(74,144,217,0.18)' : 'transparent',
+                        color: isActive ? '#66bdf2' : 'rgba(245,248,252,0.60)',
+                      }}
+                      onMouseEnter={e => {
+                        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(245,248,252,0.05)';
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon size={18} strokeWidth={2} />
+                        {item.label}
+                      </div>
+                      {item.badge && (
+                        <span
+                          className="text-2xs px-2 py-0.5 rounded-full font-semibold"
+                          style={{
+                            background: 'rgba(74,144,217,0.22)',
+                            color: '#66bdf2',
+                          }}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              {/* ── Bottom Links ── */}
+              <div
+                className="p-3 space-y-0.5"
+                style={{ borderTop: '1px solid rgba(74,144,217,0.15)' }}
+              >
+                {bottomLinks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={(e) => handleNavClick(e, item)}
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-200"
+                      style={{ color: 'rgba(245,248,252,0.35)' }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.65)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.color = 'rgba(245,248,252,0.35)';
+                      }}
+                    >
+                      <Icon size={16} strokeWidth={2} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+
+                {/* Online users count */}
+                {onlineUsers.length > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-2 text-2xs" style={{ color: 'rgba(245,248,252,0.30)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                    {onlineUsers.length} online now
+                  </div>
+                )}
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Modals */}
+      {inventoryOpen && (
+        <InventoryModal isOpen={inventoryOpen} onClose={() => setInventoryOpen(false)} />
       )}
-    </AnimatePresence>
+      {provablyFairOpen && (
+        <ProvablyFairModal isOpen={provablyFairOpen} onClose={() => setProvablyFairOpen(false)} />
+      )}
+    </>
   );
 }

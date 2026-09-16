@@ -1,15 +1,16 @@
 // src/App.tsx
 // Root router with protected routes, layout, and global providers
 
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
+import { supabase } from '@/lib/supabase';
 
 import { PerspectiveProvider } from '@/engine/core/PerspectiveProvider';
 import { AmbientBackground } from '@/components/layout/AmbientBackground';
@@ -24,6 +25,7 @@ import { PublicProfileModal } from '@/components/ui/PublicProfileModal';
 import { LevelUpManager } from '@/components/ui/LevelUpManager';
 import { LiveWinnersMarquee } from '@/components/ui/LiveWinnersMarquee';
 import { RadioPlayer } from '@/components/ui/RadioPlayer';
+import { DailyRewardModal } from '@/components/ui/DailyRewardModal';
 
 import { Landing } from '@/pages/Landing';
 import { Auth } from '@/pages/Auth';
@@ -32,7 +34,14 @@ import { WheelGame } from '@/pages/WheelGame';
 import { MiniGames } from '@/pages/MiniGames';
 import { CrashGamePage } from '@/pages/CrashGamePage';
 import { Lobby as MultiplayerLobby } from '@/components/multiplayer/Lobby';
-import { lazy, Suspense } from 'react';
+import { Leaderboard } from '@/pages/Leaderboard';
+import { Profile } from '@/pages/Profile';
+import { VIP } from '@/pages/VIP';
+import { Shop } from '@/pages/Shop';
+import { Referral } from '@/pages/Referral';
+import Admin from '@/pages/Admin';
+import { Legal } from '@/pages/Legal';
+import { CasinoMap } from '@/pages/CasinoMap';
 
 const CandyCrunchApp = lazy(() => import('@/games/candy-crunch/CandyCrunchApp'));
 const CarromApp = lazy(() => import('@/games/carrom/CarromApp'));
@@ -46,15 +55,6 @@ function GameFallback() {
     </div>
   );
 }
-
-import { Leaderboard } from '@/pages/Leaderboard';
-import { Profile } from '@/pages/Profile';
-import { VIP } from '@/pages/VIP';
-import { Shop } from '@/pages/Shop';
-import { Referral } from '@/pages/Referral';
-import Admin from '@/pages/Admin';
-import { Legal } from '@/pages/Legal';
-import { CasinoMap } from '@/pages/CasinoMap';
 
 // ── TanStack Query client ───────────────────────────────────────────────────
 const queryClient = new QueryClient({
@@ -89,15 +89,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-import { DailyRewardModal } from '@/components/ui/DailyRewardModal';
-
 // ── Layout wrapper for authenticated pages ──────────────────────────────────
 function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const isLanding = location.pathname === '/';
   const isAuth = location.pathname === '/auth';
 
-  // Don't show header/nav on landing and auth pages
   if (isLanding || isAuth) {
     return <>{children}</>;
   }
@@ -106,11 +103,11 @@ function AppLayout({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       <Sidebar />
-        <GlobalChat />
-        <PublicProfileModal />
-        <LevelUpManager />
-        <LiveWinnersMarquee />
-        <RadioPlayer />
+      <GlobalChat />
+      <PublicProfileModal />
+      <LevelUpManager />
+      <LiveWinnersMarquee />
+      <RadioPlayer />
       <DailyRewardModal />
       <main className="relative z-0">{children}</main>
       <BottomNav />
@@ -118,24 +115,24 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ── Auth Initializer (runs exactly once) ────────────────────────────────────
+// ── Global Broadcast Listener ────────────────────────────────────────────────
 function GlobalBroadcastInitializer() {
   useEffect(() => {
     const channel = supabase.channel('global_announcements');
-    channel.on('broadcast', { event: 'announcement' }, ({ payload }) => {
-      toast.success(payload.message, { icon: '?' });
+    channel.on('broadcast', { event: 'announcement' }, ({ payload }: { payload: { message: string } }) => {
+      toast.success(payload.message, { icon: '📣' });
     }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
   return null;
 }
 
+// ── Auth Initializer (runs exactly once) ────────────────────────────────────
 function AuthInitializer() {
   const { initialize } = useAuthStore();
   useEffect(() => {
     initialize();
-   
-  }, []);
+  }, [initialize]);
   return null;
 }
 
@@ -167,7 +164,7 @@ function AppRoutes() {
 
           {/* Protected */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/map" element={<ProtectedRoute><CasinoMap /></ProtectedRoute>} />
+          <Route path="/map" element={<ProtectedRoute><CasinoMap /></ProtectedRoute>} />
           <Route path="/wheel" element={<ProtectedRoute><WheelGame /></ProtectedRoute>} />
           <Route path="/multiplayer" element={<ProtectedRoute><MultiplayerLobby /></ProtectedRoute>} />
           <Route path="/multiplayer/tictactoe/:matchId" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><TicTacToeOnline /></Suspense></ProtectedRoute>} />
@@ -177,7 +174,7 @@ function AppRoutes() {
           <Route path="/games/carrom" element={<ProtectedRoute><Suspense fallback={<GameFallback />}><CarromApp /></Suspense></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/vip" element={<ProtectedRoute><VIP /></ProtectedRoute>} />
+          <Route path="/vip" element={<ProtectedRoute><VIP /></ProtectedRoute>} />
           <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/referral" element={<ProtectedRoute><Referral /></ProtectedRoute>} />

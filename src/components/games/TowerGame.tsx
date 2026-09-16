@@ -145,10 +145,10 @@ export default function TowerGame({ onClose }: TowerGameProps) {
           </div>
           
           <BetControl
-            bet={betAmount}
-            onBetChange={setBetAmount}
-            min={1}
-            max={profile?.tokens || 1000}
+            betAmount={betAmount}
+            setBetAmount={setBetAmount}
+            minBet={1}
+            maxBet={profile?.tokens || 1000}
             disabled={gameState === 'PLAYING'}
           />
 

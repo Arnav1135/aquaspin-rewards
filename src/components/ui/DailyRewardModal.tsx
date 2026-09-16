@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
 export function DailyRewardModal() {
-  const { profile, updateProfile } = useAuthStore();
+  const { profile, updateProfile, isGuest } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [rewardData, setRewardData] = useState<any>(null);
@@ -27,20 +27,68 @@ export function DailyRewardModal() {
   }, [profile?.last_login_date]);
 
   const handleClaim = async () => {
+    if (!profile) return;
     setClaiming(true);
     try {
-      const { data, error } = await supabase.functions.invoke('daily-reward');
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const now = new Date();
+      const lastLogin = profile.last_login_date ? new Date(profile.last_login_date) : null;
+      
+      if (lastLogin && lastLogin.toDateString() === now.toDateString()) {
+        throw new Error('Already claimed today');
+      }
 
-      setRewardData(data);
-      updateProfile({ 
-        tokens: data.newTokens,
-        xp: data.newXP,
-        level: data.newLevel,
-        login_streak: data.newStreak,
-        last_login_date: new Date().toISOString()
-      });
+      let newStreak = profile.login_streak || 0;
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (lastLogin && lastLogin.toDateString() === yesterday.toDateString()) {
+        newStreak += 1;
+      } else {
+        newStreak = 1;
+      }
+
+      const dayNumber = ((newStreak - 1) % 7) + 1;
+      
+      const DAILY_REWARD_SCHEDULE = [
+        { day: 1, tokens: 50 },
+        { day: 2, tokens: 75 },
+        { day: 3, tokens: 100 },
+        { day: 4, tokens: 100 },
+        { day: 5, tokens: 150 },
+        { day: 6, tokens: 200 },
+        { day: 7, tokens: 500 },
+      ];
+      
+      const rewardTokens = DAILY_REWARD_SCHEDULE.find(r => r.day === dayNumber)?.tokens || 50;
+      const rewardXP = 100;
+      
+      const newTokens = (profile.tokens || 0) + rewardTokens;
+      const newXP = (profile.xp || 0) + rewardXP;
+      const newLevel = Math.min(Math.floor(newXP / 500) + 1, 100);
+
+      const updates = {
+        tokens: newTokens,
+        xp: newXP,
+        level: newLevel,
+        login_streak: newStreak,
+        last_login_date: now.toISOString()
+      };
+
+      // Only hit the database if the user is fully registered
+      if (!isGuest) {
+        const { error } = await supabase.from('users').update(updates).eq('id', profile.id);
+        if (error) throw error;
+        
+        // Log the reward claim
+        await supabase.from('daily_rewards').insert({
+          user_id: profile.id,
+          day_number: dayNumber,
+          tokens: rewardTokens
+        }).catch(() => {}); // ignore failures on this non-critical log
+      }
+
+      setRewardData({ newTokens, newXP, newLevel, newStreak, reward: rewardTokens });
+      updateProfile(updates);
       toast.success('Daily Reward Claimed!');
     } catch (err: any) {
       console.error(err);

@@ -1,3 +1,6 @@
+import { GameShell } from "@/components/games/GameShell";
+import { useNavigate } from "react-router-dom";
+import { AGEA } from "@/engine/AIGameEngineArchitect";
 import React, { useEffect } from 'react';
 import { HeaderHUD } from './components/HeaderHUD';
 import { BoosterBar } from './components/BoosterBar';
@@ -10,7 +13,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { useGameStore } from './engine/GameStore';
 import { soundEngine } from './audio/soundEngine';
 
-export default function CandyCrunchApp() {
+export default function App_CandyCrunchApp() {
   const store = useGameStore();
 
   useEffect(() => {
@@ -43,8 +46,10 @@ export default function CandyCrunchApp() {
     }
   };
 
+  const navigate = useNavigate();
   return (
-    <div className="min-h-screen w-full bg-slate-950 text-white flex flex-col items-center justify-between p-3 sm:p-5 relative overflow-hidden font-sans select-none">
+    <GameShell onClose={() => { AGEA.exitGameExperience(); navigate("/games"); }}>
+      <div className="min-h-screen w-full bg-slate-950 text-white flex flex-col items-center justify-between p-3 sm:p-5 relative overflow-hidden font-sans select-none">
       <div className="absolute inset-0 bg-gradient-to-tr from-sky-950 via-indigo-950 to-purple-950 opacity-90 -z-10" />
 
       <HeaderHUD
@@ -143,7 +148,7 @@ export default function CandyCrunchApp() {
           onClose={() => store.setShowSettings(false)}
         />
       )}
-    </div>
+          </div>
+    </GameShell>
   );
 }
-

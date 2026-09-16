@@ -1,9 +1,12 @@
+import { GameShell } from "@/components/games/GameShell";
+import { useNavigate } from "react-router-dom";
+import { AGEA } from "@/engine/AIGameEngineArchitect";
 import React, { useState } from 'react';
 import { CarromGame3D } from './components/CarromGame3D';
 import { useCarromStore } from './state/CarromState';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CarromApp() {
+export default function App_CarromApp() {
   const [started, setStarted] = useState(false);
   const gameMode = useCarromStore(state => state.gameMode);
 
@@ -12,8 +15,10 @@ export default function CarromApp() {
     setStarted(true);
   };
 
+  const navigate = useNavigate();
   return (
-    <div className="relative w-full h-screen bg-[#0a0a0a] overflow-hidden flex items-center justify-center">
+    <GameShell onClose={() => { AGEA.exitGameExperience(); navigate("/games"); }}>
+      <div className="relative w-full h-screen bg-[#0a0a0a] overflow-hidden flex items-center justify-center">
       <AnimatePresence>
         {!started && (
           <motion.div 
@@ -60,6 +65,7 @@ export default function CarromApp() {
           <CarromGame3D />
         </motion.div>
       )}
-    </div>
+          </div>
+    </GameShell>
   );
 }

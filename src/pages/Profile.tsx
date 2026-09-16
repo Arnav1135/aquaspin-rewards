@@ -1,6 +1,7 @@
 // src/pages/Profile.tsx
 // User profile with stats, transaction history, and cashout modal
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -17,12 +18,15 @@ import { LevelBadge } from '@/components/ui/ProgressBar';
 import { CashoutModal } from './CashoutModal';
 import { Achievements } from '@/components/ui/Achievements';
 import { DailyQuests } from '@/components/ui/DailyQuests';
+import { AvatarStudio } from '@/components/ui/AvatarStudio';
 import { getAvatarColor, getInitials, formatTokens, copyToClipboard, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { Edit2 } from 'lucide-react';
 
 export function Profile() {
   const { profile, isGuest, logout } = useAuthStore();
   const { openCashoutModal, cashoutModalOpen, closeCashoutModal } = useUIStore();
+  const [showAvatarEditor, setShowAvatarEditor] = useState(false);
 
   const { data: transactions } = useQuery({
     queryKey: ['transactions', profile?.id],
@@ -63,18 +67,35 @@ export function Profile() {
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Avatar */}
-          <div className="relative inline-flex mb-4">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center font-display font-bold text-2xl text-navy-900"
-              style={{
-                backgroundColor: getAvatarColor(profile.id),
-                boxShadow: `0 0 30px ${getAvatarColor(profile.id)}60`,
-              }}
-            >
-              {getInitials(profile.username)}
+          <div 
+            className="relative inline-flex mb-4 group cursor-pointer"
+            onClick={() => setShowAvatarEditor(true)}
+          >
+            {profile.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                className="w-20 h-20 rounded-2xl object-cover shadow-[0_0_20px_rgba(0,240,255,0.2)] border border-cyan-500/30" 
+                alt="Avatar" 
+              />
+            ) : (
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center font-display font-bold text-2xl text-navy-900"
+                style={{
+                  backgroundColor: getAvatarColor(profile.id),
+                  boxShadow: `0 0 30px ${getAvatarColor(profile.id)}60`,
+                }}
+              >
+                {getInitials(profile.username)}
+              </div>
+            )}
+            
+            {/* Edit Overlay */}
+            <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
+              <Edit2 size={24} className="text-white" />
             </div>
+
             {profile.streak > 6 && (
-              <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-warn flex items-center justify-center">
+              <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-warn flex items-center justify-center shadow-lg">
                 <Flame size={12} className="text-white" />
               </div>
             )}
@@ -288,6 +309,11 @@ export function Profile() {
 
       {/* Cashout modal */}
       <CashoutModal isOpen={cashoutModalOpen} onClose={closeCashoutModal} />
+
+      {/* Avatar Studio */}
+      {showAvatarEditor && (
+        <AvatarStudio onClose={() => setShowAvatarEditor(false)} />
+      )}
     </div>
   );
 }

@@ -405,5 +405,16 @@
         "title":  "Video Poker",
         "emoji":  "??",
         "thumbnail":  "/thumbnails/videopoker.jpg"
+    },
+    {
+        "key":  "snake",
+        "title":  "Neon Snake",
+        "emoji":  "??",
+        "category":  "Arcade",
+        "reward":  "Tokens per point",
+        "difficulty":  "Medium",
+        "color":  "#00f0ff",
+        "desc":  "Classic snake with neon visuals, power-ups and token rewards.",
+        "thumbnail":  "/thumbnails/snake.jpg"
     }
 ]

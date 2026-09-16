@@ -1,3 +1,4 @@
+import { fullscreenManager, exitGameExperience } from "@/lib/gameLifecycle";
 // src/components/games/GameFrame.tsx
 // ═══════════════════════════════════════════════════════════════════════════
 // UNIVERSAL GAME VISIBILITY PROTECTION FRAME - RESPONSIVE 2D CONTAINER

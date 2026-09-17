@@ -455,5 +455,16 @@
         "color": "#eab308",
         "desc": "3D Dice game.",
         "thumbnail": "/thumbnails/roulette.jpg"
+    },
+    {
+        "key": "tower-3d",
+        "title": "Crypto Towers 3D",
+        "emoji": "🏰",
+        "category": "Casino",
+        "reward": "Multipliers",
+        "difficulty": "Medium",
+        "color": "#8b5cf6",
+        "desc": "3D Towers game.",
+        "thumbnail": "/thumbnails/mines.jpg"
     }
 ]

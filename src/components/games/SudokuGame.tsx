@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { playTone, vibrate } from '@/lib/utils';
+import { CloudSaveService } from '@/lib/cloudSave';
 import toast from 'react-hot-toast';
 
 interface Props { onClose: () => void }
@@ -58,12 +59,53 @@ export function SudokuGame({ onClose }: Props) {
     return () => clearInterval(t);
   }, [phase]);
 
+  // Load from cloud save on mount
+  useEffect(() => {
+    CloudSaveService.load('sudoku').then((state) => {
+      if (state && state.grid && state.solution) {
+        // Reconstruct notes from sets
+        const reconstructedGrid = state.grid.map((r: any) => r.map((c: any) => ({
+          ...c,
+          notes: new Set(c.notes || [])
+        })));
+        setSolution(state.solution);
+        setGrid(reconstructedGrid);
+        setMistakes(state.mistakes || 0);
+        setTimer(state.timer || 0);
+        setDifficulty(state.difficulty || 'Medium');
+        setPhase('playing');
+        toast.success('Restored previous save');
+      }
+    });
+  }, []);
+
+  // Auto-save every 10 seconds
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    const t = setInterval(() => {
+      // Serialize grid notes
+      const serializedGrid = grid.map(r => r.map(c => ({
+        ...c,
+        notes: Array.from(c.notes)
+      })));
+      CloudSaveService.save('sudoku', {
+        grid: serializedGrid,
+        solution,
+        mistakes,
+        timer,
+        difficulty
+      });
+    }, 10000);
+    return () => clearInterval(t);
+  }, [phase, grid, solution, mistakes, timer, difficulty]);
+
   const startGame = useCallback(() => {
     const { puzzle, solution: sol } = generatePuzzle(HOLES[difficulty]);
     setSolution(sol);
     setGrid(puzzle.map(row => row.map(v => ({ value:v, given:v!==0, notes:new Set<number>(), error:false }))));
     setSelected(null); setMistakes(0); setTimer(0); setNotesMode(false);
     setPhase('playing');
+    CloudSaveService.clear('sudoku'); // Reset save when explicit new game is requested
     playTone(500, 0.05, 'sine', 0.1);
   }, [difficulty]);
 
@@ -96,6 +138,7 @@ export function SudokuGame({ onClose }: Props) {
             const elapsed = timer;
             const nb = best===0||elapsed<best?elapsed:best;
             setBest(nb); localStorage.setItem('sdk-best',String(nb));
+            CloudSaveService.clear('sudoku'); // Clear save on win
             toast.success('🎉 Puzzle solved!'); playTone(800,0.1,'sine',0.2); vibrate(100);
           }
         } else {

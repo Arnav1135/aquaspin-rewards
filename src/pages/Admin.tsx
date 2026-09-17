@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "@/features/authStore";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { TelemetryCharts } from "@/components/admin/TelemetryCharts";
 import { Shield, Users, Coins, Activity, Megaphone, Trash2, Ban } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
@@ -74,6 +75,9 @@ export default function Admin() {
             <div className="text-4xl font-black">{stats.activeUsers}</div>
           </motion.div>
         </div>
+
+        {/* TELEMETRY CHARTS */}
+        <TelemetryCharts />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           

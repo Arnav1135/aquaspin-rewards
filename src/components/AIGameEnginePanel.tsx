@@ -257,20 +257,6 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
           </div>
         )}
       </div>
-
-      {/* Footer Close Button */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-        <Button
-          variant="danger"
-          size="lg"
-          fullWidth
-          icon={<X size={18} />}
-          onClick={onClose}
-          className="shadow-[0_0_20px_rgba(244,63,94,0.3)] hover:shadow-[0_0_30px_rgba(244,63,94,0.5)] border border-rose-500/50 uppercase tracking-widest text-xs font-bold"
-        >
-          Terminate Connection
-        </Button>
-      </div>
     </motion.div>
   );
 }

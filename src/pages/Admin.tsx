@@ -134,6 +134,16 @@ export default function Admin() {
           </div>
         </div>
 
+        {/* GLOBAL SETTINGS */}
+        <div className="p-8 bg-[#1a1a1a] rounded-3xl border border-white/5 shadow-xl">
+          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">Global Settings</h2>
+          <div className="flex gap-4">
+            <button className="px-6 py-3 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl" onClick={() => toast.success("Maintenance Mode Toggled")}>
+              Toggle Maintenance Mode
+            </button>
+          </div>
+        </div>
+
         {/* LATEST USERS */}
         <div className="p-8 bg-[#1a1a1a] rounded-3xl border border-white/5 shadow-xl">
           <h2 className="text-xl font-bold text-white mb-6">Latest Registrations</h2>

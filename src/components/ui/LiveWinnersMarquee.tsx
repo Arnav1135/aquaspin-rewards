@@ -24,7 +24,7 @@ export function LiveWinnersMarquee() {
   if (wins.length === 0) return null;
 
   return (
-    <div className="w-full bg-[#0a0f1d] border-y border-white/5 overflow-hidden flex items-center h-10 fixed bottom-0 lg:bottom-0 max-lg:bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40">
+    <div className="w-full bg-[#0a0f1d] border-y border-white/5 overflow-hidden flex items-center h-10 fixed top-16 lg:top-auto lg:bottom-0 left-0 right-0 z-40">
       <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0a0f1d] to-transparent z-10" />
       <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0a0f1d] to-transparent z-10" />
       

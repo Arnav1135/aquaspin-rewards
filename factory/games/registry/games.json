@@ -444,5 +444,16 @@
         "color": "#8b5cf6",
         "desc": "3D Keno Lottery.",
         "thumbnail": "/thumbnails/roulette.jpg"
+    },
+    {
+        "key": "sicbo-3d",
+        "title": "Sic Bo 3D",
+        "emoji": "🎲",
+        "category": "Casino",
+        "reward": "Multipliers",
+        "difficulty": "Medium",
+        "color": "#eab308",
+        "desc": "3D Dice game.",
+        "thumbnail": "/thumbnails/roulette.jpg"
     }
 ]

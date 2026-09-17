@@ -145,6 +145,7 @@ const CrashGame = lazy(() =>
 );
 const PlinkoGame = lazy(() => import("@/components/games/PlinkoGame"));
 const Keno3DGame = lazy(() => import('@/components/games/Keno3DGame').then((m) => ({ default: m.Keno3DGame })));
+const SicBo3DGame = lazy(() => import('@/components/games/SicBo3DGame').then((m) => ({ default: m.SicBo3DGame })));
 const CandyCrushGame = lazy(
   () => import("@/games/candy-crunch/CandyCrunchApp"),
 );
@@ -268,6 +269,8 @@ export function MiniGames() {
     if (!key) return null;
     const p = { onClose: close };
     switch (key) {
+      case 'sicbo-3d':
+        return <SicBo3DGame />;
       case 'keno-3d':
         return <Keno3DGame />;
       case 'slots':

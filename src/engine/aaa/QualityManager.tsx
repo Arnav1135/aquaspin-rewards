@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export type QualityTier = 'LOW' | 'MEDIUM' | 'HIGH' | 'ULTRA';
@@ -75,6 +75,10 @@ export const QualityManager: React.FC<{ children: React.ReactNode, initialTier?:
 
 const QualityEnforcer: React.FC<{ settings: QualitySettings }> = ({ settings }) => {
   const { gl } = useThree();
+  const { tier, setTier } = useQuality();
+  
+  // Track consecutive dropped frames
+  const droppedFramesRef = React.useRef(0);
 
   useEffect(() => {
     // Cap pixel ratio to max 2.0 to avoid mobile overheating and massive performance hits
@@ -86,6 +90,30 @@ const QualityEnforcer: React.FC<{ settings: QualitySettings }> = ({ settings }) 
       gl.shadowMap.type = THREE.PCFSoftShadowMap;
     }
   }, [gl, settings]);
+
+  useFrame((state, delta) => {
+    // Basic FPS detection: delta > 0.05 means < 20 FPS
+    if (delta > 0.05) {
+      droppedFramesRef.current += 1;
+    } else {
+      droppedFramesRef.current = Math.max(0, droppedFramesRef.current - 0.1);
+    }
+    
+    // Trigger automated downgrade if device is struggling
+    if (droppedFramesRef.current > 30) {
+      droppedFramesRef.current = 0;
+      if (tier === 'ULTRA') {
+        setTier('HIGH');
+        console.warn('[LiveOps] Performance rollback: ULTRA -> HIGH');
+      } else if (tier === 'HIGH') {
+        setTier('MEDIUM');
+        console.warn('[LiveOps] Performance rollback: HIGH -> MEDIUM');
+      } else if (tier === 'MEDIUM') {
+        setTier('LOW');
+        console.warn('[LiveOps] Performance rollback: MEDIUM -> LOW');
+      }
+    }
+  });
 
   return null;
 };

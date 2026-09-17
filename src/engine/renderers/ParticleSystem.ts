@@ -6,6 +6,7 @@ export class ParticleSystem {
   private width: number;
   private height: number;
   private animationId: number = 0;
+  private destroyed: boolean = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -14,7 +15,10 @@ export class ParticleSystem {
     this.height = window.innerHeight;
     this.resize();
     window.addEventListener('resize', this.resize);
-    this.initParticles(200);
+    
+    // Adaptive budget: max 200, less on smaller screens
+    const particleCount = Math.min(200, Math.floor((this.width * this.height) / 10000));
+    this.initParticles(particleCount);
     this.loop();
   }
 
@@ -26,19 +30,22 @@ export class ParticleSystem {
   };
 
   private initParticles(count: number) {
+    this.particles = [];
     for (let i = 0; i < count; i++) {
       this.particles.push({
         x: Math.random() * this.width,
         y: Math.random() * this.height,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        size: Math.random() * 2.5 + 0.5,
-        alpha: Math.random() * 0.5 + 0.1
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        size: Math.random() * 2.0 + 0.5,
+        alpha: Math.random() * 0.3 + 0.05
       });
     }
   }
 
   private loop = () => {
+    if (this.destroyed) return;
+    
     this.ctx.clearRect(0, 0, this.width, this.height);
     
     // Draw Aurora gradient base
@@ -70,7 +77,9 @@ export class ParticleSystem {
   };
 
   public destroy() {
+    this.destroyed = true;
     cancelAnimationFrame(this.animationId);
     window.removeEventListener('resize', this.resize);
+    this.particles = [];
   }
 }

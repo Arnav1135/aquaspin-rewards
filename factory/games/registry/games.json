@@ -457,6 +457,18 @@
         "thumbnail": "/thumbnails/roulette.jpg"
     },
     {
+        "key": "horse-racing-3d",
+        "title": "3D Horse Racing",
+        "emoji": "🏇",
+        "category": "Casino",
+        "reward": "Up to 50x",
+        "difficulty": "Medium",
+        "color": "#F59E0B",
+        "desc": "Bet on your favorite horse in this thrilling 3D race!",
+        "thumbnail": "/thumbnails/roulette.jpg",
+        "thumbnailFit": "cover"
+    },
+    {
         "key": "tower-3d",
         "title": "Crypto Towers 3D",
         "emoji": "🏰",

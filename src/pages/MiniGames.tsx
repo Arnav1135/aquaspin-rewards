@@ -11,6 +11,7 @@ import {
   Box,
 } from "lucide-react";
 import toast from "react-hot-toast";
+const HorseRacing3DGame = lazy(() => import('@/components/games/HorseRacing3DGame').then((m) => ({ default: m.default })));
 const VideoPoker = lazy(() => import('@/components/games/VideoPoker').then((m) => ({ default: m.default })));
 const SnakeGame = lazy(() => import('@/components/games/SnakeGame').then((m) => ({ default: m.default })));
 const BaccaratGame = lazy(() => import('@/components/games/BaccaratGame').then((m) => ({ default: m.default })));
@@ -276,6 +277,8 @@ export function MiniGames() {
         return <SicBo3DGame />;
       case 'keno-3d':
         return <Keno3DGame />;
+      case 'horse-racing-3d':
+        return <HorseRacing3DGame {...p} />;
       case 'slots':
         return <SlotsGame />;
       case 'baccarat':

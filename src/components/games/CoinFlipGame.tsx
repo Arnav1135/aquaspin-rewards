@@ -4,6 +4,7 @@ import { QualityManager } from '@/engine/aaa/QualityManager';
 import { PostFXManager } from '@/engine/aaa/PostFXManager';
 import { VFXManager } from '@/engine/aaa/VFXManager';
 import { ParticleManager } from '@/engine/aaa/ParticleManager';
+import { EnvironmentManager } from '@/engine/aaa/EnvironmentManager';
 // src/components/games/CoinFlipGame.tsx
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,10 +96,6 @@ function Coin3D({ flipping, result, selectedSide }: { flipping: boolean; result:
 
   return (
     <group>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 10, 5]} intensity={1.5} castShadow />
-      <pointLight position={[0, 2, 0]} intensity={2} color={selectedSide === 'heads' ? '#fbbf24' : '#a855f7'} />
-
       <RigidBody ref={coinRef} colliders="hull" restitution={0.7} friction={0.4}>
         <group ref={meshRef}>
           {/* Coin Body (True PBR) */}
@@ -481,19 +478,21 @@ export function CoinFlipGame({ onClose }: any) {
               backgroundImage: 'radial-gradient(ellipse at center, #1a2847 0%, #0f1729 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 0, transparent 50%)',
             }}
           >
-            <div className="absolute inset-0 z-0">
-              <Canvas camera={{ position: [0, 3, 6] }}>
-<QualityManager>
-<VFXManager>
-<PostFXManager />
-<ParticleManager />
-<Physics>
-                <Coin3D flipping={flipping} result={result || selectedSide || 'heads'} selectedSide={selectedSide} />
-              </Physics>
-</VFXManager>
-</QualityManager>
-</Canvas>
-            </div>
+              <div className="absolute inset-0 z-0">
+                <Canvas camera={{ position: [0, 3, 6] }}>
+                  <QualityManager>
+                    <EnvironmentManager initialTheme="CASINO">
+                      <VFXManager>
+                        <PostFXManager />
+                        <ParticleManager />
+                        <Physics>
+                          <Coin3D flipping={flipping} result={result || selectedSide || 'heads'} selectedSide={selectedSide} />
+                        </Physics>
+                      </VFXManager>
+                    </EnvironmentManager>
+                  </QualityManager>
+                </Canvas>
+              </div>
 
             {/* Result display overlay */}
             <div className="absolute bottom-10 inset-x-0 min-h-[48px] text-center z-10 pointer-events-none">

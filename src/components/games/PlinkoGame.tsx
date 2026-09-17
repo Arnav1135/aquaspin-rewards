@@ -11,7 +11,7 @@ import { generateOutcome } from './plinko/outcomeEngine';
 import { MockBackend } from '@/lib/api';
 import * as THREE from 'three';
 import { Html, Detailed } from '@react-three/drei';
-import { QualityManager, PostFXManager, VFXManager, ParticleManager } from '@/engine/aaa';
+import { QualityManager, PostFXManager, VFXManager, ParticleManager, EnvironmentManager, EnvironmentTheme } from '@/engine/aaa';
 import { Canvas, useThree } from '@react-three/fiber';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
@@ -538,27 +538,27 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
         <div className="relative flex-1 h-[50vh] md:h-full bg-slate-100/50 overflow-hidden shadow-inner">
           <Canvas camera={{ position: [0, 0, Math.max(15, rows * 1.4)] }}>
             <QualityManager>
-              <VFXManager>
-                <Physics>
-                  <ambientLight intensity={1.2} />
-                  <directionalLight position={[10, 20, 10]} intensity={1.5} castShadow />
-                  <CameraAdjuster rows={rows} />
-                  <PlinkoBoard key={`${rows}-${risk}`} rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
-                  
-                  {balls.map(ball => (
-                    <PlinkoBall 
-                      key={ball.id} 
-                      id={ball.id} 
-                      position={[ball.startX, rows > 12 ? 9 : 7, 0]} 
-                      steeringState={ball.steer}
-                      boardOriginY={rows * 0.4}
-                      onDespawn={removeBall} 
-                    />
-                  ))}
-                  <ParticleManager />
-                </Physics>
-                <PostFXManager />
-              </VFXManager>
+              <EnvironmentManager initialTheme="ARCADE">
+                <VFXManager>
+                  <Physics>
+                    <CameraAdjuster rows={rows} />
+                    <PlinkoBoard key={`${rows}-${risk}`} rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
+                    
+                    {balls.map(ball => (
+                      <PlinkoBall 
+                        key={ball.id} 
+                        id={ball.id} 
+                        position={[ball.startX, rows > 12 ? 9 : 7, 0]} 
+                        steeringState={ball.steer}
+                        boardOriginY={rows * 0.4}
+                        onDespawn={removeBall} 
+                      />
+                    ))}
+                    <ParticleManager />
+                  </Physics>
+                  <PostFXManager />
+                </VFXManager>
+              </EnvironmentManager>
             </QualityManager>
           </Canvas>
           

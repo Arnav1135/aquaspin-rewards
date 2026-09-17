@@ -7,3 +7,4 @@ export * from './GeometryManager';
 export * from './TemporalFXManager';
 export * from './ProgressiveLoadingManager';
 export * from './PredictiveRenderManager';
+export * from './EnvironmentManager';

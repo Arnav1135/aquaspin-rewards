@@ -14,6 +14,7 @@ import { BannerAd } from '@/components/ads/BannerAd';
 import { RewardsSummary } from '@/components/ui/RewardsSummary';
 import { GameCard } from '@/components/ui/GameCard';
 import { NotificationBell } from '@/components/ui/NotificationBell';
+import { DailyRewardsModal } from '@/components/rewards/DailyRewardsModal';
 import gamesRegistry from "../../factory/games/registry/games.json";
 
 const GAMES = gamesRegistry as any[];
@@ -40,11 +41,13 @@ export function Dashboard() {
   };
 
   return (
-    <main
-      className="min-h-screen relative pb-20"
-      style={{ background: 'var(--c-app-bg)' }}
-      aria-label="Dashboard"
-    >
+    <>
+      <DailyRewardsModal />
+      <main
+        className="min-h-screen relative pb-20"
+        style={{ background: 'var(--c-app-bg)' }}
+        aria-label="Dashboard"
+      >
       <div className="max-w-2xl mx-auto flex flex-col min-h-screen relative overflow-hidden">
         
         {/* ── Top Glass Header ── */}
@@ -141,5 +144,6 @@ export function Dashboard() {
         </section>
       </div>
     </main>
+    </>
   );
 }

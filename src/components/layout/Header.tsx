@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, Settings, LogOut, User, Volume2, VolumeX, ChevronDown, Gamepad2, Sun, Moon
+  Menu, Settings, LogOut, User, Volume2, VolumeX, ChevronDown, Gamepad2, Sun, Moon, MessageSquare
 } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
@@ -18,7 +18,7 @@ export function Header() {
   const location = useLocation();
   const isGameActive = location.pathname.includes('/games/') && location.pathname !== '/games';
   const { profile, logout, isGuest } = useAuthStore();
-  const { toggleSidebar, toggleSettings, theme, toggleTheme } = useUIStore();
+  const { toggleSidebar, toggleSettings, theme, toggleTheme, toggleChat } = useUIStore();
   const { soundEnabled, toggleSound } = useGameStore();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -114,6 +114,15 @@ export function Header() {
           )}
 
           <NotificationBell />
+
+          {/* Chat toggle */}
+          <button
+            className="icon-btn-sm relative"
+            onClick={toggleChat}
+            aria-label="Toggle Global Chat"
+          >
+            <MessageSquare size={15} strokeWidth={2} />
+          </button>
 
           {/* Theme toggle — 36px circle icon-btn */}
           <button

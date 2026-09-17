@@ -17,7 +17,7 @@ export function DailyRewardModal() {
     
     // Check if we already claimed today
     const now = new Date();
-    const lastLoginRaw = profile.streak_last || profile.last_login || profile.last_login_date;
+    const lastLoginRaw = profile.streak_last;
     const lastLogin = lastLoginRaw ? new Date(lastLoginRaw) : null;
     
     if (!lastLogin || lastLogin.toDateString() !== now.toDateString()) {
@@ -25,14 +25,14 @@ export function DailyRewardModal() {
       const timer = setTimeout(() => setIsOpen(true), 2000);
       return () => clearTimeout(timer);
     }
-  }, [profile?.last_login_date]);
+  }, [profile?.streak_last]);
 
   const handleClaim = async () => {
     if (!profile) return;
     setClaiming(true);
     try {
       const now = new Date();
-      const lastLoginRaw = profile.streak_last || profile.last_login || profile.last_login_date;
+      const lastLoginRaw = profile.streak_last;
       const lastLogin = lastLoginRaw ? new Date(lastLoginRaw) : null;
       
       if (lastLogin && lastLogin.toDateString() === now.toDateString()) {
@@ -103,7 +103,7 @@ export function DailyRewardModal() {
     setRewardData(null);
   };
 
-  const currentStreak = profile?.login_streak || 0;
+  const currentStreak = profile?.streak || 0;
   const dayNumber = rewardData ? ((rewardData.newStreak - 1) % 7) + 1 : ((currentStreak) % 7) + 1;
 
   const DAILY_REWARD_SCHEDULE = [

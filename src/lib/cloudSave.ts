@@ -53,7 +53,9 @@ export const CloudSaveService = {
       await (supabase.from('game_saves') as any).delete()
         .eq('user_id', profile.id)
         .eq('game_id', gameId);
-    } catch (e) {}
+    } catch (e) {
+      console.warn("Failed to clear cloud save", e);
+    }
     localStorage.removeItem(`cloud-save-${profile.id}-${gameId}`);
   }
 };

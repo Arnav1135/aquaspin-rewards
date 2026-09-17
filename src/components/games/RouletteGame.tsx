@@ -16,27 +16,27 @@ import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
-import { Text } from '@react-three/drei';
+import { Text, Environment, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import gsap from 'gsap';
 
 
 const GEO_BOWL_BASE = new THREE.CylinderGeometry(4.6, 4.8, 0.8, 64, 1, true);
-const MAT_BOWL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#1a0a05", metalness: 0.4, roughness: 0.6, side: THREE.DoubleSide });
+const MAT_BOWL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#f8fafc", metalness: 0.4, roughness: 0.6, side: THREE.DoubleSide });
 const GEO_BOWL_TRIM = new THREE.TorusGeometry(4.5, 0.1, 16, 64);
 const MAT_BOWL_TRIM = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#eab308", metalness: 0.9, roughness: 0.1 });
 const GEO_BOWL_SLOPE = new THREE.CylinderGeometry(4.4, 3.2, 0.6, 64, 1, true);
-const MAT_BOWL_SLOPE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#111", metalness: 0.6, roughness: 0.4, side: THREE.DoubleSide });
+const MAT_BOWL_SLOPE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#e2e8f0", metalness: 0.6, roughness: 0.4, side: THREE.DoubleSide });
 const GEO_DEFLECTOR = new THREE.OctahedronGeometry(0.08, 0);
 const MAT_DEFLECTOR = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#eab308", metalness: 1, roughness: 0.2 });
 
 const GEO_WHEEL_BASE = new THREE.CylinderGeometry(3.2, 3.2, 0.1, 64);
-const MAT_WHEEL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#0a0a0a", metalness: 0.8, roughness: 0.3 });
+const MAT_WHEEL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#ffffff", metalness: 0.8, roughness: 0.3 });
 const GEO_WHEEL_RING = new THREE.TorusGeometry(2.9, 0.03, 16, 64);
 const MAT_WHEEL_RING = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#FFD700", metalness: 1.0, roughness: 0.1 });
 const GEO_WHEEL_TURRET = new THREE.CylinderGeometry(1.2, 1.6, 0.4, 32);
-const MAT_WHEEL_TURRET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#111", metalness: 0.8, roughness: 0.2 });
+const MAT_WHEEL_TURRET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#e2e8f0", metalness: 0.8, roughness: 0.2 });
 const GEO_WHEEL_TURRET_TOP = new THREE.CylinderGeometry(0.3, 1.2, 0.15, 32);
 const MAT_WHEEL_TURRET_TOP = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#d4af37", metalness: 1, roughness: 0.1 });
 const GEO_SPINDLE = new THREE.CylinderGeometry(0.15, 0.2, 0.8, 16);
@@ -45,13 +45,13 @@ const GEO_SPINDLE_TOP = new THREE.SphereGeometry(0.25, 32, 32);
 const GEO_CROSSBAR = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8);
 const GEO_NUMBER_PLATE = new THREE.BoxGeometry(0.42, 0.02, 0.5);
 const GEO_POCKET = new THREE.BoxGeometry(0.33, 0.04, 0.5);
-const MAT_POCKET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#050505", metalness: 0.8, roughness: 0.2 });
+const MAT_POCKET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#cbd5e1", metalness: 0.8, roughness: 0.2 });
 const GEO_DIVIDER = new THREE.BoxGeometry(0.02, 0.1, 1.0);
 const GEO_BALL = new THREE.SphereGeometry(0.12, 32, 32);
 const MAT_BALL = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#ffffff", metalness: 1.0, roughness: 0.0 });
 const MAT_NUMBER_PLATE_RED = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#dc2626", metalness: 0.3, roughness: 0.5 });
 const MAT_NUMBER_PLATE_GREEN = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#16a34a", metalness: 0.3, roughness: 0.5 });
-const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#111111", metalness: 0.3, roughness: 0.5 });
+const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#1e293b", metalness: 0.3, roughness: 0.5 });
 
 
 type GameState = 'BETTING' | 'SPINNING' | 'SETTLING' | 'PAYOUT';
@@ -237,7 +237,7 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
               position={[0, 0.08, -2.6]}
               rotation={[-Math.PI / 2, 0, Math.PI]}
               fontSize={0.22}
-              color="white"
+              color="#1e293b"
               anchorX="center"
               anchorY="middle"
               font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjQ.ttf"
@@ -452,7 +452,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
     
     return (
       <div className="flex gap-2 w-full">
-        <Button variant="ghost" className="h-full px-4 border border-emerald-500 bg-emerald-500/10 text-emerald-400 font-bold text-2xl" onClick={() => handlePlaceBet('straight', '0', [0])}>0</Button>
+        <Button variant="ghost" className="h-full px-4 border border-emerald-500 bg-emerald-500/10 text-emerald-600 font-bold text-2xl" onClick={() => handlePlaceBet('straight', '0', [0])}>0</Button>
         <div className="grid grid-cols-12 gap-1 flex-1">
           {grid.map(num => (
             <Button 
@@ -470,13 +470,17 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/90 backdrop-blur-md">
-      <Card className="relative w-full max-w-6xl h-[90vh] flex flex-col gap-0 overflow-hidden shadow-2xl border-navy-600 bg-navy-900 rounded-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-200/90 backdrop-blur-md">
+      <Card className="relative w-full max-w-6xl h-[90vh] flex flex-col gap-0 overflow-hidden shadow-2xl border-slate-300 bg-white rounded-2xl">
         
         {/* 3D Canvas Viewport */}
-        <div className="relative flex-1 bg-navy-950 overflow-hidden cursor-move">
+        <div className="relative flex-1 bg-slate-50 overflow-hidden cursor-move">
           <Canvas camera={{ position: [0, 8, 5] }}>
-<QualityManager>
+<ambientLight intensity={0.7} />
+  <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
+  <Environment preset="city" />
+  <ContactShadows position={[0, -0.4, 0]} opacity={0.4} scale={20} blur={2} far={4} />
+  <QualityManager>
 <VFXManager>
 <PostFXManager />
 <ParticleManager />
@@ -521,9 +525,9 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
                     <Button variant="ghost" className="border border-slate-700 text-slate-300 font-bold" onClick={() => handlePlaceBet('even_odd', 'EVEN', Array.from({length: 18}, (_,i)=>(i+1)*2))}>EVEN</Button>
                   </div>
                   
-                  <div className="text-sm font-bold text-slate-400 flex justify-between bg-slate-950 p-3 rounded-lg">
-                    <span className="text-cyan-400">Total Wager: <span className="text-white">{placedBets.reduce((s, b) => s + b.amount, 0)}</span></span>
-                    <span className="text-emerald-400 tracking-wider">La Partage Active</span>
+                  <div className="text-sm font-bold text-slate-500 flex justify-between bg-slate-950 p-3 rounded-lg">
+                    <span className="text-cyan-400">Total Wager: <span className="text-slate-900">{placedBets.reduce((s, b) => s + b.amount, 0)}</span></span>
+                    <span className="text-emerald-600 tracking-wider">La Partage Active</span>
                   </div>
                 </div>
               </motion.div>
@@ -535,9 +539,9 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
              <div className="absolute top-4 left-4 z-20 space-y-2 pointer-events-none">
                 <h4 className="text-xs text-slate-500 font-bold tracking-widest uppercase">Active Bets</h4>
                 {placedBets.map(bet => (
-                  <div key={bet.id} className="text-xs bg-slate-800/80 border border-slate-600 px-3 py-1.5 rounded flex gap-2 items-center text-white backdrop-blur-md">
+                  <div key={bet.id} className="text-xs bg-slate-800/80 border border-slate-600 px-3 py-1.5 rounded flex gap-2 items-center text-slate-900 backdrop-blur-md">
                      <span className="text-cyan-400 font-bold">{bet.amount}</span> 
-                     <span className="text-slate-400">on</span>
+                     <span className="text-slate-500">on</span>
                      <span className="font-bold">{bet.label}</span>
                   </div>
                 ))}

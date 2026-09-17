@@ -422,5 +422,16 @@
         "color":  "#00f0ff",
         "desc":  "Classic snake with neon visuals, power-ups and token rewards.",
         "thumbnail":  "/thumbnails/snake.jpg"
+    },
+    {
+        "key":  "poker-3d",
+        "title":  "Poker 3D",
+        "emoji":  "🃏",
+        "category":  "Casino",
+        "reward":  "Multipliers",
+        "difficulty":  "Hard",
+        "color":  "#22c55e",
+        "desc":  "3D Texas Hold'em Poker.",
+        "thumbnail":  "/thumbnails/videopoker.jpg"
     }
 ]

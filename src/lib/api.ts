@@ -40,5 +40,46 @@ export const MockBackend = {
       outcome: randomFloat,
       serverSeed, // Reveal it to the client for verification
     };
+  },
+
+  /**
+   * Simulates the server processing a Plinko bet.
+   * Resolves the path server-side to guarantee fairness.
+   */
+  async placePlinkoBet(clientSeed: string, nonce: number, rows: number, _betAmount: number): Promise<{ path: ('L'|'R')[], targetBucket: number, serverSeed: string }> {
+    const serverSeed = activeCommitments.get(clientSeed);
+    if (!serverSeed) {
+      throw new Error("No active commitment found for this client seed.");
+    }
+    activeCommitments.delete(clientSeed);
+
+    // Dynamic import to avoid circular dependencies if any, but since we are just mocking, we can use the same logic locally:
+    // Plinko generates L/R by HMACing the seeds
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(serverSeed);
+    const msgData = encoder.encode(`${clientSeed}:${nonce}`);
+    
+    const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const signature = await crypto.subtle.sign('HMAC', key, msgData);
+    const hashArray = Array.from(new Uint8Array(signature));
+    
+    const path: ('L' | 'R')[] = [];
+    let bucket = 0;
+    
+    for (let i = 0; i < rows; i++) {
+      const byte = hashArray[i];
+      if (byte % 2 === 1) {
+        path.push('R');
+        bucket += 1;
+      } else {
+        path.push('L');
+      }
+    }
+
+    return {
+      path,
+      targetBucket: bucket,
+      serverSeed
+    };
   }
 };

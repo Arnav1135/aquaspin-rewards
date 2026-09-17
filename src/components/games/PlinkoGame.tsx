@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
 import { RigidBody, Physics, RapierRigidBody, InstancedRigidBodies, BallCollider, CuboidCollider, interactionGroups } from '@react-three/rapier';
 import { generateOutcome } from './plinko/outcomeEngine';
+import { MockBackend } from '@/lib/api';
 import * as THREE from 'three';
 import { Html, Detailed } from '@react-three/drei';
 import { QualityManager, PostFXManager, VFXManager, ParticleManager } from '@/engine/aaa';
@@ -270,6 +271,11 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
   const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number, finalBalance: number }[]>([]);
   const [bucketHits, setBucketHits] = useState<Record<number, number>>({});
   const [bigWinIdx, setBigWinIdx] = useState<number | null>(null);
+
+  // Provably Fair State
+  const [clientSeed, setClientSeed] = useState(() => Math.random().toString(36).substring(2));
+  const [serverSeedHash, setServerSeedHash] = useState('');
+  const [serverSeed, setServerSeed] = useState<string | null>(null);
   
   // Track settled rounds to ensure idempotency
   const settledRoundsRef = useRef<Set<string>>(new Set());
@@ -321,13 +327,15 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
       return false;
     }
     
-    const clientSeed = crypto.randomUUID();
-    const serverSeed = "local-server-seed-" + Date.now();
     const nonce = Math.floor(Math.random() * 10000);
     
     try {
-      // Local provably fair outcome generator
-      const outcome = await generateOutcome(serverSeed, clientSeed, nonce, rows);
+      // Server-authoritative Provably Fair resolution
+      const hash = MockBackend.getCommitment(clientSeed);
+      setServerSeedHash(hash);
+      setServerSeed(null); // hide until landed
+
+      const outcome = await MockBackend.placePlinkoBet(clientSeed, nonce, rows, bet);
       const targetBucket = outcome.targetBucket;
       
       const multiplier = multipliers[targetBucket];
@@ -345,7 +353,9 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
         currentRow: 0,
         lastSteeredRow: -1,
         targetBucket: targetBucket,
-        totalRows: rows
+        totalRows: rows,
+        // Save the seed so we can reveal it when this specific ball lands
+        serverSeed: outcome.serverSeed 
       };
       
       // Deterministic start X derived from round ID
@@ -460,6 +470,11 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
     const authoritativeBucket = ball.steer.targetBucket;
     if (bucketIdx !== authoritativeBucket) {
       console.warn(`[Plinko] Physics mismatch. Visual: ${bucketIdx}, Auth: ${authoritativeBucket}`);
+    }
+    
+    // Reveal server seed for Provably Fair verification
+    if (ball.steer.serverSeed) {
+      setServerSeed(ball.steer.serverSeed);
     }
     
     setBucketHits(prev => ({ ...prev, [authoritativeBucket]: (prev[authoritativeBucket] || 0) + 1 }));
@@ -720,10 +735,36 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
               </Button>
             )}
           </div>
+
+          {/* Provably Fair HUD */}
+          <div className="mt-4 pt-4 border-t border-slate-100 text-[9px] text-slate-400 font-mono space-y-1">
+            <div className="flex justify-between">
+              <span>Client Seed:</span>
+              <span className="truncate w-32 text-right">{clientSeed}</span>
+            </div>
+            {serverSeedHash && (
+              <div className="flex justify-between">
+                <span>Server Hash:</span>
+                <span className="truncate w-32 text-right">{serverSeedHash.substring(0, 16)}...</span>
+              </div>
+            )}
+            {serverSeed && (
+              <div className="flex justify-between text-blue-500 font-bold">
+                <span>Revealed Seed:</span>
+                <span className="truncate w-32 text-right cursor-help" title={serverSeed}>{serverSeed.substring(0, 16)}...</span>
+              </div>
+            )}
+            <button 
+              className="w-full text-center text-slate-400 hover:text-blue-500 mt-2 transition-colors" 
+              onClick={() => setClientSeed(Math.random().toString(36).substring(2))}
+              disabled={autoRunning || balls.length > 0}
+            >
+              Change Client Seed
+            </button>
+          </div>
         </div>
 
       </Card>
     </div>
   );
 }
-

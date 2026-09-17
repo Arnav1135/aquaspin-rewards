@@ -6,6 +6,7 @@ export interface PathSteeringState {
   lastSteeredRow: number;
   targetBucket: number;
   totalRows: number;
+  serverSeed?: string;
 }
 
 const PEG_SPACING_Y = 0.8;

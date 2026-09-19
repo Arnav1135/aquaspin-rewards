@@ -487,53 +487,29 @@ export class CameraController {
   }
 
   public playIntroSweep() {
-    const isPortrait = this.container.clientWidth / (this.container.clientHeight || 1) < 1.0;
-    const targetPos = this.getPresetPosition('standard', this.currentOrientationColor, isPortrait);
-    const targetRelPos = this._tmpVec.copy(targetPos).sub(this.controls.target);
-    const targetSph = new THREE.Spherical().setFromVector3(targetRelPos);
-
-    const startSph = new THREE.Spherical(16.0, 1.1, targetSph.theta - Math.PI / 4);
-
-    if (this.activeTween) this.activeTween.kill();
-    this.isTweening = true;
-
-    const animState = {
-      radius: startSph.radius,
-      phi: startSph.phi,
-      theta: startSph.theta,
-    };
-
-    const pos = new THREE.Vector3().setFromSpherical(startSph).add(this.controls.target);
-    this.camera.position.copy(pos);
-    this.camera.lookAt(this.controls.target);
-    this.controls.update();
-
-    const tl = gsap.timeline({
+    this.killActiveTweens();
+    
+    // Start zoomed out and high up
+    this.camera.position.set(20, 15, 20);
+    this.camera.lookAt(0, 0, 0);
+    
+    // Sweep in with cinematic bezier-like motion
+    this.activeTween = gsap.to(this.camera.position, {
+      x: 0,
+      y: 9.5,
+      z: 10.5,
+      duration: 2.5,
+      ease: 'power3.inOut',
       onUpdate: () => {
-        const sph = this._tmpSpherical.set(animState.radius, animState.phi, animState.theta);
-        if (isNaN(sph.radius) || isNaN(sph.phi) || isNaN(sph.theta)) return;
-        const p = this._tmpVec.setFromSpherical(sph).add(this.controls.target);
-        this.camera.position.copy(p);
-        this.camera.lookAt(this.controls.target);
+        this.camera.lookAt(0, 0, 0);
+        this.controls.target.set(0, 0, 0);
         this.controls.update();
       },
       onComplete: () => {
         this.isTweening = false;
-        this.activeTween = null;
-        this.controls.update();
-        this.lastInteractionTime = Date.now();
-      },
+        this.updateResponsiveFraming();
+      }
     });
-
-    tl.to(animState, {
-      radius: targetSph.radius,
-      phi: targetSph.phi,
-      theta: targetSph.theta,
-      duration: 1.2,
-      ease: 'power2.out',
-    });
-
-    this.activeTween = tl;
   }
 
   // Check effect: Subtle camera zoom-in (8% closer) and quick smooth recovery
@@ -672,7 +648,28 @@ export class CameraController {
   }
 
   // Anti-occlusion: Fades out piece meshes that physically block view lines to legal move tiles
-  public updateAntiOcclusion(
+  public playCheckmateSequence(winningColor: PieceColor, kingPos: THREE.Vector3) {
+      this.killActiveTweens();
+      
+      const angle = winningColor === 'w' ? Math.PI / 4 : -Math.PI / 4;
+      const dist = 5.0;
+      
+      // Dramatic slow motion zoom into the defeated king
+      this.activeTween = gsap.to(this.camera.position, {
+        x: kingPos.x + Math.cos(angle) * dist,
+        y: kingPos.y + 3.0,
+        z: kingPos.z + Math.sin(angle) * dist,
+        duration: 3.0,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          this.camera.lookAt(kingPos);
+          this.controls.target.copy(kingPos);
+          this.controls.update();
+        }
+      });
+    }
+
+    public updateAntiOcclusion(
     pieceMeshes: Map<string, THREE.Mesh>,
     targetPositions: THREE.Vector3[]
   ) {

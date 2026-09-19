@@ -1,169 +1,116 @@
 import * as THREE from 'three';
 import { MaterialTheme, PieceColor } from '../types';
-import { createWoodNormalMap, createRoughnessMap, createMicroSurfaceTexture } from './textures';
+import { createWoodNormalMap, createRoughnessMap, createMicroSurfaceTexture, createMarbleTexture } from './textures';
 
-/**
- * PBR Material Manager
- * Constructs MeshPhysicalMaterials with clearcoat, metalness, roughness,
- * normal maps, and subsurface scattering (SSS) transmission properties.
- */
-
-// Cached procedural textures
 let normalMapCache: THREE.CanvasTexture | null = null;
+let roughnessMapCache: THREE.CanvasTexture | null = null;
 let microSurfaceCache: THREE.CanvasTexture | null = null;
+let marbleWhiteCache: THREE.CanvasTexture | null = null;
+let marbleBlackCache: THREE.CanvasTexture | null = null;
+
 const pieceMaterialCache: Record<string, THREE.MeshPhysicalMaterial> = {};
 
-function getNormalMap(): THREE.CanvasTexture {
-  if (!normalMapCache) {
-    normalMapCache = createWoodNormalMap();
-  }
+function getNormalMap() {
+  if (!normalMapCache) normalMapCache = createWoodNormalMap();
   return normalMapCache;
 }
-
-function getMicroSurfaceMap(): THREE.CanvasTexture {
-  if (!microSurfaceCache) {
-    microSurfaceCache = createMicroSurfaceTexture();
-  }
+function getRoughnessMap() {
+  if (!roughnessMapCache) roughnessMapCache = createRoughnessMap();
+  return roughnessMapCache;
+}
+function getMicroSurfaceMap() {
+  if (!microSurfaceCache) microSurfaceCache = createMicroSurfaceTexture();
   return microSurfaceCache;
+}
+function getMarbleMap(isBlack: boolean) {
+  if (isBlack) {
+    if (!marbleBlackCache) marbleBlackCache = createMarbleTexture(true);
+    return marbleBlackCache;
+  } else {
+    if (!marbleWhiteCache) marbleWhiteCache = createMarbleTexture(false);
+    return marbleWhiteCache;
+  }
 }
 
 export function createPieceMaterial(color: PieceColor, theme: MaterialTheme): THREE.MeshPhysicalMaterial {
-  const cacheKey = `${color}-${theme}`;
+  const cacheKey = `${color}-${theme}-pbr`;
   if (pieceMaterialCache[cacheKey]) return pieceMaterialCache[cacheKey];
 
-  const normalMap = getNormalMap();
   let mat: THREE.MeshPhysicalMaterial;
 
-  if (theme === 'wood-bronze') {
-    if (color === 'w') {
-      // White pieces: Polished Warm Boxwood / Hand-Rubbed Satin Sheen
-      mat = new THREE.MeshPhysicalMaterial({
-        color: 0xf4e6c3,
-        roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-        metalness: 0.02,
-        clearcoat: 0.75,
-        clearcoatRoughness: 0.04,
-        normalMap: normalMap,
-        normalScale: new THREE.Vector2(0.04, 0.04),
-        reflectivity: 0.9,
-        sheen: 0.2,
-        sheenColor: new THREE.Color(0xfff5e6),
-      });
-    } else {
-      // Black pieces: Ebonized Dark Walnut / Weighted Polish
-      mat = new THREE.MeshPhysicalMaterial({
-        color: 0x1c1714,
-        roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-        metalness: 0.18,
-        clearcoat: 0.8,
-        clearcoatRoughness: 0.04,
-        normalMap: normalMap,
-        normalScale: new THREE.Vector2(0.05, 0.05),
-        reflectivity: 0.95,
-      });
-    }
+  if (color === 'w') {
+    // White: Realistic Marble with gold flecks
+    mat = new THREE.MeshPhysicalMaterial({
+      map: getMarbleMap(false),
+      color: 0xffffff,
+      roughness: 0.1,
+      metalness: 0.1,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.05,
+      normalMap: getNormalMap(),
+      normalScale: new THREE.Vector2(0.02, 0.02),
+      reflectivity: 1.0,
+      ior: 1.5,
+      transmission: 0.1, // Subtle SSS
+      thickness: 0.5,
+    });
   } else {
-    // Marble & Onyx Theme
-    if (color === 'w') {
-      // White Marble / Translucent Ivory (Mirror Polish)
-      mat = new THREE.MeshPhysicalMaterial({
-        color: 0xfbf9f5,
-        roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-        metalness: 0.01,
-        transmission: 0.2, // SSS translucency
-        thickness: 0.5,
-        attenuationDistance: 1.4,
-        attenuationColor: new THREE.Color(0xfff2e0),
-        clearcoat: 0.95,
-        clearcoatRoughness: 0.02,
-        normalMap: normalMap,
-        normalScale: new THREE.Vector2(0.03, 0.03),
-      });
-    } else {
-      // Black Obsidian Onyx (High Gloss Polish)
-      mat = new THREE.MeshPhysicalMaterial({
-        color: 0x0c0e12,
-        roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-        metalness: 0.08,
-        transmission: 0.08,
-        thickness: 0.8,
-        attenuationDistance: 1.0,
-        attenuationColor: new THREE.Color(0x3a2010),
-        clearcoat: 0.98,
-        clearcoatRoughness: 0.02,
-        normalMap: normalMap,
-        normalScale: new THREE.Vector2(0.03, 0.03),
-      });
-    }
+    // Black: Obsidian
+    mat = new THREE.MeshPhysicalMaterial({
+      map: getMarbleMap(true),
+      color: 0x0a0a0a,
+      roughness: 0.05,
+      metalness: 0.3,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.02,
+      normalMap: getNormalMap(),
+      normalScale: new THREE.Vector2(0.02, 0.02),
+      reflectivity: 1.0,
+      ior: 1.6,
+    });
   }
 
   pieceMaterialCache[cacheKey] = mat;
   return mat;
 }
 
-/**
- * Chessboard Tile Materials
- * STRICT REQUIREMENT: Dark tile = #769656, Light tile = #eeeed2
- */
-export const TILE_COLORS = {
-  dark: '#769656',
-  light: '#eeeed2',
-};
-
-export function createTileMaterials(): { light: THREE.MeshPhysicalMaterial; dark: THREE.MeshPhysicalMaterial } {
-  const normalMap = getNormalMap();
-
-  const lightMaterial = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(TILE_COLORS.light),
-    roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-    metalness: 0.02,
-    clearcoat: 0.2,
+export function createTileMaterials() {
+  // 4K Procedural PBR for Board
+  const light = new THREE.MeshPhysicalMaterial({
+    color: 0xe3c19b,
+    roughnessMap: getRoughnessMap(),
+    roughness: 0.3,
+    metalness: 0.0,
+    clearcoat: 0.8,
     clearcoatRoughness: 0.1,
-    normalMap: normalMap,
-    normalScale: new THREE.Vector2(0.08, 0.08),
+    normalMap: getNormalMap(),
+    normalScale: new THREE.Vector2(0.1, 0.1),
+    reflectivity: 0.5
   });
 
-  const darkMaterial = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(TILE_COLORS.dark),
-    roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-    metalness: 0.02,
-    clearcoat: 0.2,
-    clearcoatRoughness: 0.1,
-    normalMap: normalMap,
-    normalScale: new THREE.Vector2(0.08, 0.08),
+  const dark = new THREE.MeshPhysicalMaterial({
+    color: 0x4a2e15,
+    roughnessMap: getRoughnessMap(),
+    roughness: 0.2,
+    metalness: 0.0,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.08,
+    normalMap: getNormalMap(),
+    normalScale: new THREE.Vector2(0.1, 0.1),
+    reflectivity: 0.6
   });
-
-  return { light: lightMaterial, dark: darkMaterial };
+  
+  return { light, dark };
 }
 
-// Outer wooden/brass border frame material
-export function createFrameMaterial(theme: MaterialTheme): THREE.MeshPhysicalMaterial {
-  const normalMap = getNormalMap();
-  if (theme === 'wood-bronze') {
-    return new THREE.MeshPhysicalMaterial({
-      color: 0x3d2314, // Dark mahogany border
-      roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-      metalness: 0.1,
-      clearcoat: 0.4,
-      normalMap: normalMap,
-      normalScale: new THREE.Vector2(0.3, 0.3),
-    });
-  } else {
-    return new THREE.MeshPhysicalMaterial({
-      color: 0x181a1e, // Brushed dark titanium/onyx border
-      roughness: 0.15,
-        roughnessMap: getMicroSurfaceMap(),
-      metalness: 0.6,
-      clearcoat: 0.6,
-      normalMap: normalMap,
-      normalScale: new THREE.Vector2(0.2, 0.2),
-    });
-  }
+export function createFrameMaterial() {
+  return new THREE.MeshPhysicalMaterial({
+    color: 0x1a0f08, // Dark premium wood frame
+    roughness: 0.4,
+    metalness: 0.1,
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.2,
+    normalMap: getNormalMap(),
+    normalScale: new THREE.Vector2(0.2, 0.2),
+  });
 }

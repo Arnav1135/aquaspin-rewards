@@ -1,206 +1,156 @@
 import * as THREE from 'three';
 
-/**
- * Procedural Texture Generator for PBR Maps
- * Generates high-resolution 2K normal maps, roughness maps, micro wood/marble grains,
- * felt bottom textures, and a custom Studio HDRI environment map for reflections.
- */
-
-// Generate a subtle wood grain / marble normal map
+// Procedural 4K Textures for AAA PBR Rendering
 export function createWoodNormalMap(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
+  canvas.width = 4096;
+  canvas.height = 4096;
   const ctx = canvas.getContext('2d')!;
 
-  // Default normal map blue-purple background (RGB: 128, 128, 255)
   ctx.fillStyle = 'rgb(128, 128, 255)';
-  ctx.fillRect(0, 0, 1024, 1024);
+  ctx.fillRect(0, 0, 4096, 4096);
 
-  const imgData = ctx.getImageData(0, 0, 1024, 1024);
+  const imgData = ctx.getImageData(0, 0, 4096, 4096);
   const data = imgData.data;
 
-  // Add subtle ring/grain normal perturbation
-  for (let y = 0; y < 1024; y++) {
-    for (let x = 0; x < 1024; x++) {
-      const idx = (y * 1024 + x) * 4;
-      const noise1 = Math.sin(x * 0.05 + Math.sin(y * 0.01) * 8.0) * 12;
-      const noise2 = (Math.random() - 0.5) * 6;
+  for (let y = 0; y < 4096; y++) {
+    for (let x = 0; x < 4096; x++) {
+      const idx = (y * 4096 + x) * 4;
+      const noise1 = Math.sin(x * 0.02 + Math.sin(y * 0.005) * 12.0) * 8;
+      const noise2 = (Math.random() - 0.5) * 4;
 
       const nx = 128 + Math.floor(noise1 + noise2);
       const ny = 128 + Math.floor((Math.random() - 0.5) * 4);
-      const nz = 255;
-
+      
       data[idx] = Math.min(255, Math.max(0, nx));
       data[idx + 1] = Math.min(255, Math.max(0, ny));
-      data[idx + 2] = Math.min(255, Math.max(0, nz));
+      data[idx + 2] = 255;
     }
   }
 
   ctx.putImageData(imgData, 0, 0);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(2, 2);
-  return texture;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 16;
+  return tex;
 }
 
-// Generate Roughness Map with subtle fingerprints and fine grain
-export function createRoughnessMap(baseRoughness: number): THREE.CanvasTexture {
+export function createRoughnessMap(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 4096;
+  canvas.height = 4096;
   const ctx = canvas.getContext('2d')!;
-
-  const baseVal = Math.floor(baseRoughness * 255);
-  ctx.fillStyle = `rgb(${baseVal},${baseVal},${baseVal})`;
-  ctx.fillRect(0, 0, 512, 512);
-
-  const imgData = ctx.getImageData(0, 0, 512, 512);
+  
+  ctx.fillStyle = 'rgb(100, 100, 100)';
+  ctx.fillRect(0, 0, 4096, 4096);
+  
+  const imgData = ctx.getImageData(0, 0, 4096, 4096);
   const data = imgData.data;
 
-  for (let i = 0; i < data.length; i += 4) {
-    const val = baseVal + Math.floor((Math.random() - 0.5) * 20);
-    const clamped = Math.min(255, Math.max(0, val));
-    data[i] = clamped;
-    data[i + 1] = clamped;
-    data[i + 2] = clamped;
+  // Add dust, scratches and edge wear approximation via high frequency noise + streaks
+  for (let y = 0; y < 4096; y++) {
+    for (let x = 0; x < 4096; x++) {
+      const idx = (y * 4096 + x) * 4;
+      
+      // Micro scratches
+      const isScratch = Math.random() > 0.9995;
+      
+      let val = 100 + (Math.random() - 0.5) * 20; // base roughness variance
+      if (isScratch) val = 180; // scratch makes it rougher
+      
+      data[idx] = val;
+      data[idx + 1] = val;
+      data[idx + 2] = val;
+    }
   }
-
+  
   ctx.putImageData(imgData, 0, 0);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1, 1);
-  return texture;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 16;
+  return tex;
 }
 
-// Generate Micro-Surface Map for Dust/Scratches (AAA Realism)
 export function createMicroSurfaceTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
+  canvas.width = 2048;
+  canvas.height = 2048;
   const ctx = canvas.getContext('2d')!;
   
-  ctx.fillStyle = 'rgba(200, 200, 200, 1)';
-  ctx.fillRect(0, 0, 1024, 1024);
-  
-  // Procedural Noise for Dust/Scratches
-  for(let i=0; i<50000; i++) {
-    ctx.fillStyle = "rgba(255, 255, 255, " + (Math.random() * 0.15) + ")";
-    ctx.fillRect(Math.random() * 1024, Math.random() * 1024, Math.random() * 2, Math.random() * 2);
+  const imgData = ctx.createImageData(2048, 2048);
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    const v = 200 + Math.random() * 55;
+    imgData.data[i] = v;
+    imgData.data[i+1] = v;
+    imgData.data[i+2] = v;
+    imgData.data[i+3] = 255;
   }
-  
-  for(let i=0; i<10000; i++) {
-    ctx.fillStyle = "rgba(0, 0, 0, " + (Math.random() * 0.1) + ")";
-    ctx.fillRect(Math.random() * 1024, Math.random() * 1024, Math.random() * 3, Math.random() * 3);
-  }
-  
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  return texture;
+  ctx.putImageData(imgData, 0, 0);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(10, 10);
+  tex.anisotropy = 16;
+  return tex;
 }
 
-// Generate Felt Pad Texture for piece bottoms
-export function createFeltTexture(): THREE.CanvasTexture {
+export function createMarbleTexture(isBlack: boolean): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
+  canvas.width = 4096;
+  canvas.height = 4096;
   const ctx = canvas.getContext('2d')!;
-
-  ctx.fillStyle = '#1e3a1e'; // Dark green felt pad
-  ctx.fillRect(0, 0, 256, 256);
-
-  // Add fiber noise
-  for (let i = 0; i < 20000; i++) {
-    const x = Math.random() * 256;
-    const y = Math.random() * 256;
-    ctx.fillStyle = Math.random() > 0.5 ? '#2d5a2d' : '#142814';
-    ctx.fillRect(x, y, 1, 3);
+  
+  ctx.fillStyle = isBlack ? '#111111' : '#f0f0f0';
+  ctx.fillRect(0, 0, 4096, 4096);
+  
+  // Fake perlin veins
+  ctx.globalAlpha = 0.3;
+  ctx.strokeStyle = isBlack ? '#333333' : '#cccccc';
+  for(let i=0; i<100; i++) {
+    ctx.lineWidth = Math.random() * 20 + 2;
+    ctx.beginPath();
+    let x = Math.random() * 4096;
+    let y = Math.random() * 4096;
+    ctx.moveTo(x, y);
+    for(let j=0; j<20; j++) {
+      x += (Math.random() - 0.5) * 500;
+      y += (Math.random() - 0.5) * 500;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
   }
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  return texture;
+  
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 16;
+  return tex;
 }
 
-/**
- * Creates a studio HDRI environment map texture dynamically using equirectangular rendering
- * Provides rich soft studio lights, warm key lights, cold fill lights, and overhead softboxes.
- */
 export function createStudioHDRIEnvironment(renderer: THREE.WebGLRenderer): THREE.Texture {
-  const scene = new THREE.Scene();
-
-  // Gradient sky background sphere
-  const skyGeo = new THREE.SphereGeometry(100, 32, 32);
-  const skyMat = new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    uniforms: {
-      topColor: { value: new THREE.Color(0x384252) },
-      bottomColor: { value: new THREE.Color(0x101216) },
-    },
-    vertexShader: `
-      varying vec3 vWorldPosition;
-      void main() {
-        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-        vWorldPosition = worldPosition.xyz;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform vec3 topColor;
-      uniform vec3 bottomColor;
-      varying vec3 vWorldPosition;
-      void main() {
-        float h = normalize(vWorldPosition).y;
-        gl_FragColor = vec4(mix(bottomColor, topColor, max(h, 0.0)), 1.0);
-      }
-    `,
-  });
-  const sky = new THREE.Mesh(skyGeo, skyMat);
-  scene.add(sky);
-
-  // Softbox panels for specular reflections
-  const panelGeo = new THREE.PlaneGeometry(30, 30);
-
-  // Key light panel (warm high brightness)
-  const keyMat = new THREE.MeshBasicMaterial({ color: 0xfffaed, side: THREE.DoubleSide });
-  const keyPanel = new THREE.Mesh(panelGeo, keyMat);
-  keyPanel.position.set(40, 50, 40);
-  keyPanel.lookAt(0, 0, 0);
-  scene.add(keyPanel);
-
-  // Fill light panel (cool blue soft)
-  const fillMat = new THREE.MeshBasicMaterial({ color: 0x88bbff, side: THREE.DoubleSide });
-  const fillPanel = new THREE.Mesh(panelGeo, fillMat);
-  fillPanel.position.set(-50, 30, -30);
-  fillPanel.lookAt(0, 0, 0);
-  scene.add(fillPanel);
-
-  // Overhead softbox (bright white studio roof light)
-  const roofMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-  const roofPanel = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), roofMat);
-  roofPanel.position.set(0, 80, 0);
-  roofPanel.rotation.x = Math.PI / 2;
-  scene.add(roofPanel);
-
-  // Generate cube env map using PMREM
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   pmremGenerator.compileEquirectangularShader();
 
-  const cubeRenderTarget = pmremGenerator.fromScene(scene);
+  const canvas = document.createElement('canvas');
+  canvas.width = 2048;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d')!;
 
-  // Cleanup
-  skyGeo.dispose();
-  skyMat.dispose();
-  panelGeo.dispose();
-  keyMat.dispose();
-  fillMat.dispose();
-  roofMat.dispose();
+  const grad = ctx.createLinearGradient(0, 0, 0, 1024);
+  grad.addColorStop(0, '#0a1020');
+  grad.addColorStop(0.5, '#152540');
+  grad.addColorStop(1, '#050a10');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 2048, 1024);
 
-  return cubeRenderTarget.texture;
+  // Soft box lights
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur = 100;
+  ctx.beginPath(); ctx.arc(512, 300, 150, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(1536, 400, 100, 0, Math.PI * 2); ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+  texture.dispose();
+  pmremGenerator.dispose();
+
+  return envMap;
 }

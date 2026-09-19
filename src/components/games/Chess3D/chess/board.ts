@@ -40,6 +40,16 @@ export function worldToAlgebra(pos: THREE.Vector3): string | null {
 
 export function create3DBoard(theme: MaterialTheme): BoardMeshContainer {
   const boardGroup = new THREE.Group();
+  
+  // Add premium wooden frame
+  const frameGeo = new THREE.BoxGeometry(9.0, 0.4, 9.0);
+  const frameMat = createFrameMaterial();
+  const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+  frameMesh.position.y = -0.25;
+  frameMesh.receiveShadow = true;
+  frameMesh.castShadow = true;
+  boardGroup.add(frameMesh);
+  
   const tilesMap = new Map<string, THREE.Mesh>();
   const positionsMap = new Map<string, THREE.Vector3>();
 

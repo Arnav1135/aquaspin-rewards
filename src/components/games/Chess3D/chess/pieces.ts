@@ -6,7 +6,7 @@ import * as THREE from 'three';
  * merged sub-features (Rook battlements, King cross), and computed vertex normals.
  */
 
-const RADIAL_SEGMENTS = 96;
+const RADIAL_SEGMENTS = 128;
 
 /**
  * Helper to generate smooth profile points from control points using CatmullRomCurve2

@@ -207,7 +207,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-2 sm:p-4 font-sans select-none overflow-hidden pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]">
       {/* TOP BAR */}
-      <header className="pointer-events-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl border border-white/20 bg-slate-900/90 p-2.5 sm:p-3 shadow-2xl backdrop-blur-md">
+      <header className="pointer-events-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-3xl border border-white/20 bg-slate-900/90 p-2.5 sm:p-3 shadow-2xl backdrop-blur-md">
         {/* Title & Status Bar Row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
@@ -266,7 +266,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
               className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] sm:text-xs font-semibold shadow-inner ${
                 turn === 'w'
                   ? 'bg-amber-100 text-slate-900 border border-amber-300'
-                  : 'bg-slate-800 text-amber-200 border border-slate-700'
+                  : 'bg-slate-800 text-amber-200 border border-white/10'
               }`}
             >
               <span
@@ -312,7 +312,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                 soundFx.playClick();
                 onFlipBoard();
               }}
-              className="flex shrink-0 items-center gap-1 rounded-xl border border-white/10 bg-slate-800/80 px-2.5 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white transition"
+              className="flex shrink-0 items-center gap-1 rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg px-2.5 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white transition"
               title="Flip Board 180°"
             >
               <Repeat className="h-3 w-3 text-amber-400" />
@@ -329,7 +329,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
             className={`flex shrink-0 items-center gap-1 rounded-xl border px-2 py-1 text-[11px] font-medium transition ${
               showFPS
                 ? 'border-emerald-500/50 bg-emerald-950/80 text-emerald-300'
-                : 'border-white/10 bg-slate-800/80 text-slate-400 hover:text-white'
+                : 'border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg text-slate-400 hover:text-white'
             }`}
             title="Toggle Live FPS Counter"
           >
@@ -351,7 +351,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
             className={`flex shrink-0 items-center gap-1 rounded-xl border px-2.5 py-1 text-[11px] font-medium transition ${
               ambientMode !== 'none'
                 ? 'border-emerald-500/40 bg-emerald-950/60 text-emerald-300'
-                : 'border-white/10 bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white'
+                : 'border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg text-slate-300 hover:bg-slate-700 hover:text-white'
             }`}
             title="Toggle Ambient Background Soundscape"
           >
@@ -369,7 +369,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
               soundFx.playClick();
               onSetTheme(materialTheme === 'wood-bronze' ? 'marble-onyx' : 'wood-bronze');
             }}
-            className="flex shrink-0 items-center gap-1 rounded-xl border border-white/10 bg-slate-800/80 px-2.5 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white transition"
+            className="flex shrink-0 items-center gap-1 rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg px-2.5 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-700 hover:text-white transition"
             title="Switch Material Theme"
           >
             <Layers className="h-3 w-3 text-amber-400" />
@@ -377,7 +377,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
           </button>
 
           {/* Camera Angles */}
-          <div className="flex shrink-0 items-center rounded-xl border border-white/10 bg-slate-800/80 p-0.5">
+          <div className="flex shrink-0 items-center rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg p-0.5">
             <button
               onClick={() => onSetCameraPreset('standard')}
               className="rounded-lg px-2 py-1 text-[10px] font-semibold text-slate-300 hover:bg-slate-700 hover:text-white"
@@ -411,7 +411,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
           {/* Sound Toggle */}
           <button
             onClick={onToggleSound}
-            className="shrink-0 rounded-xl border border-white/10 bg-slate-800/80 p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white"
+            className="shrink-0 rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white"
             title="Toggle Audio"
           >
             {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-400" /> : <VolumeX className="h-3.5 w-3.5 text-slate-500" />}
@@ -421,14 +421,14 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
 
       {/* HANDOFF TOAST BANNER FOR PASS & PLAY */}
       {handoffToast && (
-        <div ref={handoffToastRef} className="pointer-events-auto mx-auto my-2 max-w-sm rounded-2xl border border-amber-500/50 bg-slate-900/95 p-3 text-center text-xs font-extrabold text-amber-300 shadow-2xl backdrop-blur-md">
+        <div ref={handoffToastRef} className="pointer-events-auto mx-auto my-2 max-w-sm rounded-3xl border border-amber-500/50 bg-slate-900/80 backdrop-blur-2xl border-white/10 p-3 text-center text-xs font-extrabold text-amber-300 shadow-2xl backdrop-blur-md">
           {handoffToast}
         </div>
       )}
 
       {/* ONLINE ROOM STATUS BADGE */}
       {gameMode === 'online' && onlineRoomCode && (
-        <div className="pointer-events-auto mx-auto my-2 flex items-center gap-2 rounded-2xl border border-emerald-500/40 bg-slate-900/90 px-4 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md">
+        <div className="pointer-events-auto mx-auto my-2 flex items-center gap-2 rounded-3xl border border-emerald-500/40 bg-slate-900/90 px-4 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md">
           <Globe className="h-4 w-4 text-emerald-400" />
           <span>Room Code: <strong className="font-mono text-amber-300">{onlineRoomCode}</strong></span>
           <button
@@ -443,7 +443,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
       )}
 
       {/* MOBILE COMPACT FLOATING DOCK (BELOW TOP HEADER - NON OBSTRUCTIVE) */}
-      <div className="pointer-events-auto fixed top-[108px] left-2.5 z-30 flex sm:hidden items-center gap-1.5 rounded-2xl border border-white/20 bg-slate-900/90 p-1.5 shadow-xl backdrop-blur-md">
+      <div className="pointer-events-auto fixed top-[108px] left-2.5 z-30 flex sm:hidden items-center gap-1.5 rounded-3xl border border-white/20 bg-slate-900/90 p-1.5 shadow-xl backdrop-blur-md">
         <button
           onClick={onUndoMove}
           className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-800 text-amber-300 active:scale-95 transition"
@@ -536,7 +536,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
       <div className="hidden md:flex justify-between gap-4 py-4 overflow-hidden pointer-events-none">
         {/* LEFT SIDE: MODE & ACTIONS */}
         <div className="pointer-events-auto flex flex-col gap-2 w-48">
-          <div className="rounded-2xl border border-white/15 bg-slate-900/85 p-3 backdrop-blur-md">
+          <div className="rounded-3xl border border-white/15 bg-slate-900/85 p-3 backdrop-blur-md">
             <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">Game Mode</p>
             <div className="flex flex-col gap-1.5">
               <button
@@ -570,7 +570,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
               </button>
 
               {gameMode === 'ai' && (
-                <div className="mt-1 flex flex-col gap-1 rounded-xl bg-slate-800/80 p-1.5 border border-emerald-500/20">
+                <div className="mt-1 flex flex-col gap-1 rounded-xl bg-white/10 backdrop-blur-xl border-white/20 shadow-lg p-1.5 border border-emerald-500/20">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Difficulty</span>
                     <span className="text-[10px] font-extrabold text-emerald-400 capitalize">{aiDifficulty}</span>
@@ -587,7 +587,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                         className={`rounded-lg py-1 text-[10px] font-bold capitalize transition ${
                           aiDifficulty === d
                             ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                            : 'text-slate-300 bg-slate-900/60 hover:bg-slate-700'
+                            : 'text-slate-300 bg-slate-900/40 backdrop-blur-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] border-white/20 hover:bg-slate-700'
                         }`}
                       >
                         {d}
@@ -600,7 +600,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="rounded-2xl border border-white/15 bg-slate-900/85 p-3 backdrop-blur-md flex flex-col gap-2">
+          <div className="rounded-3xl border border-white/15 bg-slate-900/85 p-3 backdrop-blur-md flex flex-col gap-2">
             <button
               onClick={onNewGame}
               className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-2 text-xs font-bold text-slate-950 shadow-md hover:brightness-110 active:scale-95 transition"
@@ -630,7 +630,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
         {/* RIGHT SIDE: MOVE HISTORY & CAPTURED PIECES */}
         <div className="pointer-events-auto flex flex-col gap-2 w-56">
           {/* Captured Pieces Bar */}
-          <div className="rounded-2xl border border-white/15 bg-slate-900/85 p-2.5 backdrop-blur-md">
+          <div className="rounded-3xl border border-white/15 bg-slate-900/85 p-2.5 backdrop-blur-md">
             <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400 mb-1">
               <span>Captured</span>
               {advScore !== 0 && (
@@ -666,7 +666,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
           </div>
 
           {/* Move History Table */}
-          <div className="flex-1 flex flex-col rounded-2xl border border-white/15 bg-slate-900/85 p-3 backdrop-blur-md max-h-60 overflow-hidden">
+          <div className="flex-1 flex flex-col rounded-3xl border border-white/15 bg-slate-900/85 p-3 backdrop-blur-md max-h-60 overflow-hidden">
             <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2">Move Log</p>
             <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1 text-xs text-slate-300 font-mono">
               {moveHistory.length === 0 ? (
@@ -690,10 +690,10 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
       </div>
 
       {/* MOBILE FLOATING BOTTOM DOCK */}
-      <div className="md:hidden pointer-events-auto mt-auto flex items-center justify-between gap-1.5 rounded-2xl border border-white/20 bg-slate-900/95 p-2 shadow-2xl backdrop-blur-lg">
+      <div className="md:hidden pointer-events-auto mt-auto flex items-center justify-between gap-1.5 rounded-3xl border border-white/20 bg-slate-900/80 backdrop-blur-2xl border-white/10 p-2 shadow-2xl backdrop-blur-lg">
         <button
           onClick={onUndoMove}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 rounded-xl border border-white/10 bg-slate-800/80 py-2 text-[10px] font-semibold text-slate-200 active:scale-95 transition"
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg py-2 text-[10px] font-semibold text-slate-200 active:scale-95 transition"
         >
           <span className="text-xs">↩</span>
           Undo
@@ -720,7 +720,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 rounded-xl border py-2 text-[10px] font-bold active:scale-95 transition ${
             mobileDrawer === 'moves'
               ? 'border-amber-400 bg-amber-500 text-slate-950 shadow-sm'
-              : 'border-white/10 bg-slate-800/80 text-slate-200'
+              : 'border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg text-slate-200'
           }`}
         >
           <List className="h-3.5 w-3.5" />
@@ -741,7 +741,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
         <div className="md:hidden pointer-events-auto fixed inset-x-0 bottom-0 z-40 p-3 pt-0">
           <div
             ref={mobileSheetRef}
-            className="rounded-3xl border border-amber-500/30 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-3 max-h-[50vh]"
+            className="rounded-3xl border border-amber-500/30 bg-slate-900/80 backdrop-blur-2xl border-white/10 p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-3 max-h-[50vh]"
           >
             <div className="flex items-center justify-between border-b border-white/10 pb-2">
               <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -825,10 +825,10 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                   onSetGameMode('pvp');
                   onCloseModeModal();
                 }}
-                className={`flex flex-col text-left p-4 rounded-2xl border transition active:scale-95 ${
+                className={`flex flex-col text-left p-4 rounded-3xl border transition active:scale-95 ${
                   gameMode === 'pvp'
                     ? 'border-amber-400 bg-amber-500/20 shadow-lg'
-                    : 'border-white/10 bg-slate-800/80 hover:bg-slate-800 hover:border-amber-500/40'
+                    : 'border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg hover:bg-slate-800 hover:border-amber-500/40'
                 }`}
               >
                 <Users className="h-6 w-6 text-amber-400 mb-2" />
@@ -843,10 +843,10 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                   onCreateOnlineRoom();
                   onCloseModeModal();
                 }}
-                className={`flex flex-col text-left p-4 rounded-2xl border transition active:scale-95 ${
+                className={`flex flex-col text-left p-4 rounded-3xl border transition active:scale-95 ${
                   gameMode === 'online'
                     ? 'border-amber-400 bg-amber-500/20 shadow-lg'
-                    : 'border-white/10 bg-slate-800/80 hover:bg-slate-800 hover:border-amber-500/40'
+                    : 'border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg hover:bg-slate-800 hover:border-amber-500/40'
                 }`}
               >
                 <Globe className="h-6 w-6 text-blue-400 mb-2" />
@@ -861,10 +861,10 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                   onSetGameMode('ai', selectedAiDiff, selectedUserColor);
                   onCloseModeModal();
                 }}
-                className={`flex flex-col text-left p-4 rounded-2xl border transition active:scale-95 ${
+                className={`flex flex-col text-left p-4 rounded-3xl border transition active:scale-95 ${
                   gameMode === 'ai'
                     ? 'border-amber-400 bg-amber-500/20 shadow-lg'
-                    : 'border-white/10 bg-slate-800/80 hover:bg-slate-800 hover:border-amber-500/40'
+                    : 'border-white/10 bg-white/10 backdrop-blur-xl border-white/20 shadow-lg hover:bg-slate-800 hover:border-amber-500/40'
                 }`}
               >
                 <Bot className="h-6 w-6 text-emerald-400 mb-2" />
@@ -874,7 +874,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
             </div>
 
             {/* SECONDARY SELECTOR FOR USER VS AI MODE */}
-            <div className="rounded-2xl border border-white/10 bg-slate-800/60 p-4 flex flex-col gap-3">
+            <div className="rounded-3xl border border-white/10 bg-slate-800/60 p-4 flex flex-col gap-3">
               <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">AI Options & Piece Color</span>
               <div className="grid grid-cols-2 gap-3">
                 {/* Difficulty Selector */}
@@ -973,7 +973,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                 <button
                   key={item.type}
                   onClick={() => promotionModal.callback(item.type)}
-                  className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-slate-800 p-2.5 hover:border-amber-400 hover:bg-slate-700 transition active:scale-95"
+                  className="flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-slate-800 p-2.5 hover:border-amber-400 hover:bg-slate-700 transition active:scale-95"
                 >
                   <span className="text-2xl text-amber-300">{item.icon}</span>
                   <span className="text-[10px] font-semibold text-slate-300 mt-1">{item.label}</span>
@@ -988,7 +988,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
       {isGameOver && (
         <div className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
           <div ref={gameOverBoxRef} className="rounded-3xl border border-amber-500/40 bg-slate-900/90 p-6 sm:p-8 text-center shadow-2xl max-w-sm w-full">
-            <div className="mx-auto mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-inner">
+            <div className="mx-auto mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-inner">
               <Trophy className="h-7 w-7 sm:h-8 sm:w-8" />
             </div>
 
@@ -997,7 +997,7 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
 
             <button
               onClick={onNewGame}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-xs sm:text-sm font-extrabold text-slate-950 shadow-lg hover:brightness-110 active:scale-95 transition"
+              className="w-full flex items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-xs sm:text-sm font-extrabold text-slate-950 shadow-lg hover:brightness-110 active:scale-95 transition"
             >
               <RotateCcw className="h-4 w-4" />
               Play Again

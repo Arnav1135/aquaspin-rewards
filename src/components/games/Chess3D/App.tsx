@@ -64,6 +64,31 @@ export default function App({ onClose }: { onClose?: () => void }) {
     if (chess.isGameOver()) {
       setIsGameOver(true);
       if (chess.isCheckmate()) {
+        const winningColor = currentTurn === 'w' ? 'b' : 'w';
+        
+        // Find king position
+        if (sceneRef.current) {
+           const kingSquare = chess.board().reduce((acc, row, rIdx) => {
+             row.forEach((p, fIdx) => {
+               if (p && p.type === 'k' && p.color === currentTurn) {
+                 acc = String.fromCharCode(97 + fIdx) + (8 - rIdx);
+               }
+             });
+             return acc;
+           }, '');
+           
+           if (kingSquare) {
+             const { algebraToWorld } = require('./chess/board');
+             const kingPos = algebraToWorld(kingSquare);
+             // Use ts-ignore to bypass private access for cinematic effect
+             // @ts-ignore
+             if (sceneRef.current.cameraController && sceneRef.current.cameraController.playCheckmateSequence) {
+               // @ts-ignore
+               sceneRef.current.cameraController.playCheckmateSequence(winningColor, kingPos);
+             }
+           }
+        }
+  
         const winner = currentTurn === 'w' ? 'Black' : 'White';
         setGameOverReason(`Checkmate! ${winner} Wins`);
       } else if (chess.isDraw()) {

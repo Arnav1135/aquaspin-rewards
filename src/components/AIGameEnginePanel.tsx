@@ -41,7 +41,7 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
       initial={{ opacity: 0, x: 300 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 300 }}
-      className="fixed right-0 top-0 bottom-0 w-full sm:w-[480px] bg-[#090b11]/95 border-l border-cyan-500/20 backdrop-blur-xl z-[9999] flex flex-col shadow-2xl text-slate-100 font-sans"
+      className="fixed right-0 top-0 bottom-0 w-[85vw] max-w-[480px] bg-[#090b11]/95 border-l border-cyan-500/20 backdrop-blur-xl z-[9999] flex flex-col shadow-2xl text-slate-100 font-sans"
     >
       {/* Header */}
       <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
@@ -55,8 +55,8 @@ export function AIGameEnginePanel({ onClose, activeGameId }: Props) {
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="p-1.5 hover:bg-rose-950/50 rounded-lg text-slate-400 hover:text-rose-400 transition-colors">
-          <X size={18} />
+        <button onClick={onClose} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-rose-500/20 rounded-lg text-slate-300 hover:text-rose-400 border border-transparent hover:border-rose-500/30 transition-all text-xs font-bold">
+          <X size={14} /> Close
         </button>
       </div>
 

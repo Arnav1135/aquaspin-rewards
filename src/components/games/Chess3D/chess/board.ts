@@ -46,9 +46,9 @@ export function create3DBoard(theme: MaterialTheme): BoardMeshContainer {
   const frameMat = createFrameMaterial();
   const frameMesh = new THREE.Mesh(frameGeo, frameMat);
   frameMesh.position.y = -0.25;
-  frameMesh.receiveShadow = true;
-  frameMesh.castShadow = true;
-  boardGroup.add(frameMesh);
+  outerFrameMesh.receiveShadow = true;
+  outerFrameMesh.castShadow = true;
+  boardGroup.add(outerFrameMesh);
   
   const tilesMap = new Map<string, THREE.Mesh>();
   const positionsMap = new Map<string, THREE.Vector3>();
@@ -79,13 +79,13 @@ export function create3DBoard(theme: MaterialTheme): BoardMeshContainer {
   }
 
   // 2. Outer Frame
-  const frameMat = createFrameMaterial(theme);
+  const outerFrameMat = createFrameMaterial();
   const outerFrameGeo = new THREE.BoxGeometry(9.2, 0.22, 9.2);
   const innerFrameGeo = new THREE.BoxGeometry(8.05, 0.25, 8.05);
 
   // Frame Border Shell
-  const frameMesh = new THREE.Mesh(outerFrameGeo, frameMat);
-  frameMesh.position.set(0, -0.12, 0);
+  const outerFrameMesh = new THREE.Mesh(outerFrameGeo, outerFrameMat);
+  outerFrameMesh.position.set(0, -0.12, 0);
   frameMesh.receiveShadow = true;
   frameMesh.castShadow = true;
   boardGroup.add(frameMesh);
@@ -108,7 +108,7 @@ export function create3DBoard(theme: MaterialTheme): BoardMeshContainer {
   boardGroup.add(labelsGroup);
 
   const updateTheme = (newTheme: MaterialTheme) => {
-    frameMesh.material = createFrameMaterial(newTheme);
+    outerFrameMesh.material = createFrameMaterial();
   };
 
   return {

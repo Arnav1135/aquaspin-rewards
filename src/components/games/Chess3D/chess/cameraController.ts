@@ -487,7 +487,7 @@ export class CameraController {
   }
 
   public playIntroSweep() {
-    this.killActiveTweens();
+    if(this.activeTween) this.activeTween.kill();
     
     // Start zoomed out and high up
     this.camera.position.set(20, 15, 20);
@@ -649,7 +649,7 @@ export class CameraController {
 
   // Anti-occlusion: Fades out piece meshes that physically block view lines to legal move tiles
   public playCheckmateSequence(winningColor: PieceColor, kingPos: THREE.Vector3) {
-      this.killActiveTweens();
+      if(this.activeTween) this.activeTween.kill();
       
       const angle = winningColor === 'w' ? Math.PI / 4 : -Math.PI / 4;
       const dist = 5.0;

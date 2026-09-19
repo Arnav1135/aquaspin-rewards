@@ -524,10 +524,10 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
       if (mult >= 5) vibrate(100);
       
       // Update UI balance securely to the final balance provided by the server initially
-      secureRecordGameResult({ userId: profile!.id, betAmount: ball.betAmount, earnedAmount: win, xpEarned: Math.floor(ball.betAmount * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
+      secureRecordGameResult({ userId: profile!.id, betAmount: ball.bet, earnedAmount: winAmount, xpEarned: Math.floor(ball.bet * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
     } else {
       // Even if 0 win, ensure UI syncs to the final server balance
-      secureRecordGameResult({ userId: profile!.id, betAmount: ball.betAmount, earnedAmount: win, xpEarned: Math.floor(ball.betAmount * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
+      secureRecordGameResult({ userId: profile!.id, betAmount: ball.bet, earnedAmount: winAmount, xpEarned: Math.floor(ball.bet * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
     }
   }, [balls, profile, updateProfile, removeBall, stopAutobet, stopOnProfit, stopOnLoss]);
 
@@ -769,4 +769,5 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+
 

@@ -37,7 +37,7 @@ export function Dashboard() {
   const continueGame = GAMES.find(g => g.key === 'crash') || GAMES[1];
 
   const handleGameClick = (key: string) => {
-    navigate(`/games`);
+    navigate(`/games?game=${key}`);
   };
 
   return (

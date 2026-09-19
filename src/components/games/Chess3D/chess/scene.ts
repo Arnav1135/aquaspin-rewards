@@ -968,9 +968,9 @@ export class Chess3DScene {
         // Spawn particle burst effect at capture square
         const capPos = algebraToWorld(capturedSquare);
           this.triggerCaptureParticles(capPos, capturedPieceData.color);
-          // @ts-ignore
+          // @ts-expect-error
 this.triggerShockwave(capPos);
-          // @ts-ignore
+          // @ts-expect-error
 this.triggerDisintegrate(capturedMesh);
 
         capturedMesh.userData = {}; // clear square and tile tracking so tray pieces don't block raycasting
@@ -1218,3 +1218,4 @@ this.triggerDisintegrate(capturedMesh);
     this.renderer.dispose();
   }
 }
+

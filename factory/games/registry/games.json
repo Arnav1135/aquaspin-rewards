@@ -52,7 +52,8 @@
         "difficulty": "Medium",
         "color": "#FFD700",
         "desc": "Click tiles to find gems. Avoid hidden mines and cash out early!",
-        "thumbnail": "/thumbnails/mines_premium.jpg"
+        "thumbnail": "/thumbnails/mines_premium.jpg",
+        "key": "mines"
     },
     {
         "key": "plinko",

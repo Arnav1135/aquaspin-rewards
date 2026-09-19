@@ -81,9 +81,9 @@ export default function App({ onClose }: { onClose?: () => void }) {
              const { algebraToWorld } = require('./chess/board');
              const kingPos = algebraToWorld(kingSquare);
              // Use ts-ignore to bypass private access for cinematic effect
-             // @ts-ignore
+             // @ts-expect-error
              if (sceneRef.current.cameraController && sceneRef.current.cameraController.playCheckmateSequence) {
-               // @ts-ignore
+               // @ts-expect-error
                sceneRef.current.cameraController.playCheckmateSequence(winningColor, kingPos);
              }
            }
@@ -453,3 +453,4 @@ export default function App({ onClose }: { onClose?: () => void }) {
     </div>
   );
 }
+

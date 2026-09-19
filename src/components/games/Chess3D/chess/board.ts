@@ -46,9 +46,9 @@ export function create3DBoard(theme: MaterialTheme): BoardMeshContainer {
   const frameMat = createFrameMaterial();
   const frameMesh = new THREE.Mesh(frameGeo, frameMat);
   frameMesh.position.y = -0.25;
-  outerFrameMesh.receiveShadow = true;
-  outerFrameMesh.castShadow = true;
-  boardGroup.add(outerFrameMesh);
+  frameMesh.receiveShadow = true;
+  frameMesh.castShadow = true;
+  boardGroup.add(frameMesh);
   
   const tilesMap = new Map<string, THREE.Mesh>();
   const positionsMap = new Map<string, THREE.Vector3>();
@@ -86,9 +86,9 @@ export function create3DBoard(theme: MaterialTheme): BoardMeshContainer {
   // Frame Border Shell
   const outerFrameMesh = new THREE.Mesh(outerFrameGeo, outerFrameMat);
   outerFrameMesh.position.set(0, -0.12, 0);
-  frameMesh.receiveShadow = true;
-  frameMesh.castShadow = true;
-  boardGroup.add(frameMesh);
+  outerFrameMesh.receiveShadow = true;
+  outerFrameMesh.castShadow = true;
+  boardGroup.add(outerFrameMesh);
 
   // 3. Ground Plane for Contact Shadows
   const groundGeo = new THREE.PlaneGeometry(30, 30);

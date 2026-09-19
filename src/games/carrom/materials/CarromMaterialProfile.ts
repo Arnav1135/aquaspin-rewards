@@ -66,14 +66,14 @@ export class CarromMaterialProfile {
     const key = 'BoardSurfaceMaterial';
     if (!this.cache.has(key)) {
       this.cache.set(key, new THREE.MeshPhysicalMaterial({
-        color: '#e6cda3', // Very light, high quality Baltic Birch
-        roughness: 0.15, // Extremely smooth for sliding
+        color: '#4a2511', // Premium Indian Rosewood Base
+        roughness: 0.1, // Highly polished wooden surface
         roughnessMap: getMicroSurfaceTexture(),
-        metalness: 0.0,
-        clearcoat: 0.5,
-        clearcoatRoughness: 0.05,
-        envMapIntensity: 1.0,
-        anisotropy: 0.2, // Subtle directional grain reflection
+        metalness: 0.05,
+        clearcoat: 1.0, // High gloss polish
+        clearcoatRoughness: 0.02,
+        envMapIntensity: 2.5, // Strong environmental reflection
+        anisotropy: 0.8, // Strong directional grain reflection
       }));
     }
     return this.cache.get(key)!;
@@ -86,12 +86,12 @@ export class CarromMaterialProfile {
         map: woodTexObj.color,
         roughnessMap: woodTexObj.roughness,
         normalMap: woodTexObj.normal,
-        color: '#2b1004', // Very dark polished rosewood
-        roughness: 0.2,
-        metalness: 0.05,
+        color: '#2a1105', // Deep dark Indian Rosewood border
+        roughness: 0.15,
+        metalness: 0.1,
         clearcoat: 1.0,
-        clearcoatRoughness: 0.1,
-        envMapIntensity: 1.5,
+        clearcoatRoughness: 0.05,
+        envMapIntensity: 2.0,
       }));
     }
     return this.cache.get(key)!;
@@ -101,11 +101,11 @@ export class CarromMaterialProfile {
     const key = 'ClothMaterial';
     if (!this.cache.has(key)) {
       this.cache.set(key, new THREE.MeshPhysicalMaterial({
-        color: '#1e3f28',
-        roughness: 1.0,
+        color: '#1a3a2a', // Deep casino/tournament green cloth for pockets
+        roughness: 0.9,
         metalness: 0.0,
         clearcoat: 0.0,
-        envMapIntensity: 0.1,
+        envMapIntensity: 0.2,
       }));
     }
     return this.cache.get(key)!;
@@ -116,16 +116,15 @@ export class CarromMaterialProfile {
     if (!this.cache.has(key)) {
       const isWhite = type === 'WHITE';
       this.cache.set(key, new THREE.MeshPhysicalMaterial({
-        color: isWhite ? '#fffaef' : '#080808', // True Ivory and True Ebony
-        roughness: isWhite ? 0.08 : 0.05, 
+        color: isWhite ? '#fdfbf7' : '#111111', // Premium Resin Ivory and Ebony
+        roughness: isWhite ? 0.05 : 0.03, // Extremely polished
         roughnessMap: getMicroSurfaceTexture(),
-        metalness: 0.1,
+        metalness: 0.15, // Metallic Reflection Layer
         clearcoat: 1.0,
-        clearcoatRoughness: 0.02,
-        envMapIntensity: 3.0,
-        transmission: isWhite ? 0.15 : 0.0,
-        ior: 1.55, // Ivory IOR
-        thickness: 0.01, // Real thickness
+        clearcoatRoughness: 0.01,
+        envMapIntensity: 4.0, // Dynamic Reflection
+        transmission: isWhite ? 0.05 : 0.0,
+        ior: 1.5,
       }));
     }
     return this.cache.get(key)!;
@@ -136,12 +135,12 @@ export class CarromMaterialProfile {
     if (!this.cache.has(key)) {
       const isWhite = type === 'WHITE';
       this.cache.set(key, new THREE.MeshPhysicalMaterial({
-        color: isWhite ? '#eaddcc' : '#050505',
-        roughness: 0.15, 
-        metalness: 0.1,
+        color: isWhite ? '#e8dbcc' : '#0a0a0a',
+        roughness: 0.1, 
+        metalness: 0.2, // Bevel edge reflection
         clearcoat: 1.0,
-        clearcoatRoughness: 0.05,
-        envMapIntensity: 2.5,
+        clearcoatRoughness: 0.02,
+        envMapIntensity: 3.5,
       }));
     }
     return this.cache.get(key)!;
@@ -194,37 +193,37 @@ export class CarromMaterialProfile {
           roughnessMap: getMicroSurfaceTexture(),
           metalness: 0.1,
           transmission: 1.0, 
-          thickness: 0.02, // Realistic physical thickness
+          thickness: 0.1, // High crystal thickness
           clearcoat: 1.0,
           clearcoatRoughness: 0.0,
-          envMapIntensity: 3.5,
-          ior: 1.52,
+          envMapIntensity: 4.0, // High Fresnel reflection
+          ior: 1.6, // Crystal glass IOR
           attenuationColor: new THREE.Color('#d9eafc'),
-          attenuationDistance: 0.1,
+          attenuationDistance: 0.2,
         });
         break;
       case 'METALLIC_ACCENT':
         mat = new THREE.MeshPhysicalMaterial({
           color: '#ffcc00', 
-          roughness: 0.05,
+          roughness: 0.1,
           roughnessMap: getMicroSurfaceTexture(),
-          metalness: 1.0,
+          metalness: 1.0, // Full metallic ring
           clearcoat: 1.0,
-          clearcoatRoughness: 0.02,
-          envMapIntensity: 3.0,
+          clearcoatRoughness: 0.05,
+          envMapIntensity: 3.5,
         });
         break;
       case 'POLISHED':
       default:
         mat = new THREE.MeshPhysicalMaterial({
           color: '#f4f6f8', // Premium ceramic/acrylic
-          roughness: 0.02,
+          roughness: 0.01,
           roughnessMap: getMicroSurfaceTexture(),
-          metalness: 0.1,
+          metalness: 0.2, // Subtle reflection
           clearcoat: 1.0,
           clearcoatRoughness: 0.01,
-          envMapIntensity: 3.0,
-          ior: 1.5,
+          envMapIntensity: 4.0,
+          ior: 1.55,
         });
         break;
     }

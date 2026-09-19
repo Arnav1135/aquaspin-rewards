@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback, Suspense } from "react";
+import { useAuthStore } from '@/features/authStore';
+import { secureRecordGameResult } from '@/lib/secureEconomy';
 import { Maximize, Minimize, X } from "lucide-react";
 import { fullscreenManager, exitGameExperience } from "@/lib/gameLifecycle";
 
@@ -34,6 +36,24 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 export const GameShell: React.FC<GameShellProps> = ({ children, onClose }) => {
   const [viewportHeight, setViewportHeight] = useState("100dvh");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { profile, updateProfile } = useAuthStore();
+  useEffect(() => {
+    let rewarded = false;
+    const timer = setTimeout(() => {
+      if (!rewarded && profile && !profile.id.startsWith('guest')) {
+        rewarded = true;
+        secureRecordGameResult({
+          userId: profile.id,
+          betAmount: 0,
+          earnedAmount: 15,
+          xpEarned: 50
+        }).then(res => {
+          if (res.data) updateProfile({ tokens: res.data });
+        }).catch(() => {});
+      }
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, [profile?.id]);
 
   // Synchronize state with real browser fullscreen
   useEffect(() => {

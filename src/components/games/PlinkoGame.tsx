@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { X, Coins, Play, Square } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
+import { secureRecordGameResult } from '@/lib/secureEconomy';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -523,10 +524,10 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
       if (mult >= 5) vibrate(100);
       
       // Update UI balance securely to the final balance provided by the server initially
-      (updateProfile as any)({ tokens: ball.finalBalance });
+      secureRecordGameResult({ userId: profile!.id, betAmount: ball.betAmount, earnedAmount: win, xpEarned: Math.floor(ball.betAmount * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
     } else {
       // Even if 0 win, ensure UI syncs to the final server balance
-      (updateProfile as any)({ tokens: ball.finalBalance });
+      secureRecordGameResult({ userId: profile!.id, betAmount: ball.betAmount, earnedAmount: win, xpEarned: Math.floor(ball.betAmount * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
     }
   }, [balls, profile, updateProfile, removeBall, stopAutobet, stopOnProfit, stopOnLoss]);
 
@@ -768,3 +769,4 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+

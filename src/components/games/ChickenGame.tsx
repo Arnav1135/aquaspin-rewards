@@ -142,7 +142,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
 
       if (profile && !profile.id.startsWith('guest')) {
         try { 
-          await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 0 });
+          await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: 0, xpEarned: Math.floor(betAmount * 0.1) });
         } catch (e) {
           console.error('Failed to update game stats:', e);
         }
@@ -178,8 +178,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     const fb = balance + won;
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await secureRecordGameResult({ userId: profile.id, betAmount: betAmount, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.1) });
-        await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: 1 });
+        await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.15) });
       } catch (e) {
         console.error('Failed to update user after cashout:', e);
       }
@@ -443,5 +442,6 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     </div>
   );
 }
+
 
 

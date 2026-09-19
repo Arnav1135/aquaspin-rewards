@@ -96,8 +96,7 @@ export function FlipGame({ onClose }: FlipGameProps) {
       const fb = nb + (won ? payout : 0);
       if (profile && !profile.id.startsWith('guest')) {
         try {
-          await secureRecordGameResult({ userId: profile.id, betAmount: betAmount, earnedAmount: won ? payout : 0, xpEarned: Math.floor(betAmount * 0.1) });
-          await (supabase.from('game_stats') as any).upsert({ user_id: profile.id, games_played: 1, games_won: won ? 1 : 0 });
+          await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: won ? payout : 0, xpEarned: Math.floor(betAmount * 0.1) });
         } catch (e) {
           console.error('Failed to update user after flip:', e);
         }
@@ -216,5 +215,6 @@ export function FlipGame({ onClose }: FlipGameProps) {
     </div>
   );
 }
+
 
 

@@ -13,6 +13,7 @@ export interface QualityConfig {
   targetFPS: number;
   enableSoftShadows: boolean;
   pieceDetailScale: number;
+  useInstancing: boolean;
 }
 
 export function detectDeviceTier(): QualityConfig {

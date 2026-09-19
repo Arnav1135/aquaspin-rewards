@@ -60,8 +60,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 function CarromUIOverlay() {
   const turnState = useCarromStore(state => state.turnState);
   const power = useCarromStore(state => state.power);
-  const coins = useCarromStore(state => state.coins);
-  const scores = useCarromStore(state => state.scores); // Assuming scores exist, else mock
+  const players = useCarromStore(state => state.players);
 
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-50">
@@ -73,8 +72,8 @@ function CarromUIOverlay() {
       >
         {/* Player 1 Score Card */}
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] min-w-[120px]">
-          <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Player 1</h3>
-          <div className="text-3xl font-black text-white">{scores?.player1 || 0}</div>
+          <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">{players[0]?.name || 'Player 1'}</h3>
+          <div className="text-3xl font-black text-white">{players[0]?.score || 0}</div>
         </div>
 
         {/* Status Indicator */}
@@ -84,8 +83,8 @@ function CarromUIOverlay() {
 
         {/* Player 2 Score Card */}
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] min-w-[120px] text-right">
-          <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Player 2</h3>
-          <div className="text-3xl font-black text-white">{scores?.player2 || 0}</div>
+          <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">{players[1]?.name || 'Player 2'}</h3>
+          <div className="text-3xl font-black text-white">{players[1]?.score || 0}</div>
         </div>
       </motion.div>
 

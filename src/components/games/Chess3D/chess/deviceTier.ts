@@ -58,9 +58,10 @@ export function detectDeviceTier(): QualityConfig {
         shadowMapSize: 512,
         useHDRI: false,
         useSSAO: false,
-        targetFPS: 30,
+        targetFPS: 60,
         enableSoftShadows: false,
-        pieceDetailScale: 0.8,
+        pieceDetailScale: 0.25,
+        useInstancing: true,
       };
     case 'mid':
       return {
@@ -73,7 +74,8 @@ export function detectDeviceTier(): QualityConfig {
         useSSAO: false,
         targetFPS: 60,
         enableSoftShadows: true,
-        pieceDetailScale: 1.0,
+        pieceDetailScale: 0.5,
+        useInstancing: true,
       };
     case 'high':
     default:
@@ -85,9 +87,10 @@ export function detectDeviceTier(): QualityConfig {
         shadowMapSize: 2048,
         useHDRI: true,
         useSSAO: true,
-        targetFPS: 60,
+        targetFPS: 144,
         enableSoftShadows: true,
         pieceDetailScale: 1.0,
+        useInstancing: false,
       };
   }
 }

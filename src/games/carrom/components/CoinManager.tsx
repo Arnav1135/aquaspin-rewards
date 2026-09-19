@@ -104,9 +104,9 @@ function Coin3D({ coin }: { coin: CarromCoinData }) {
       </mesh>
       
       {/* Indicator mark to visualize spin physically */}
-      <mesh position={[r * 0.6, h/2 + 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[r * 0.6, h/2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.003, 32]} />
-        <meshBasicMaterial color="#ffffff" />
+        <meshBasicMaterial color="#ffffff" polygonOffset={true} polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
       </mesh>
       
       <mesh position={[0, -h/2, 0]} rotation={[Math.PI / 2, 0, 0]}>

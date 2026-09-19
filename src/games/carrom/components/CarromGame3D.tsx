@@ -55,15 +55,74 @@ function VictoryVFX() {
   return null;
 }
 
+import { motion, AnimatePresence } from 'framer-motion';
+
 function CarromUIOverlay() {
   const turnState = useCarromStore(state => state.turnState);
   const power = useCarromStore(state => state.power);
+  const coins = useCarromStore(state => state.coins);
+  const scores = useCarromStore(state => state.scores); // Assuming scores exist, else mock
 
   return (
-    <div style={{ position: 'absolute', top: 20, left: 20, color: 'white', fontFamily: 'sans-serif', pointerEvents: 'none' }}>
-      <h2>Carrom 3D Pro</h2>
-      <p>Status: {turnState}</p>
-      <p>Power: {Math.round(power)}%</p>
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 z-50">
+      {/* Top Bar - Scores and Status */}
+      <motion.div 
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="flex justify-between items-start w-full"
+      >
+        {/* Player 1 Score Card */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] min-w-[120px]">
+          <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Player 1</h3>
+          <div className="text-3xl font-black text-white">{scores?.player1 || 0}</div>
+        </div>
+
+        {/* Status Indicator */}
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 px-6 py-2 rounded-full">
+          <span className="text-white font-bold tracking-widest uppercase text-sm">{turnState.replace('_', ' ')}</span>
+        </div>
+
+        {/* Player 2 Score Card */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] min-w-[120px] text-right">
+          <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-1">Player 2</h3>
+          <div className="text-3xl font-black text-white">{scores?.player2 || 0}</div>
+        </div>
+      </motion.div>
+
+      {/* Bottom Bar - Power and Controls */}
+      <AnimatePresence>
+        {(turnState === 'AIMING' || turnState === 'SHOOTING') && (
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            className="flex flex-col items-center gap-4 w-full max-w-md mx-auto"
+          >
+            {/* Power Meter */}
+            <div className="w-full bg-black/40 backdrop-blur-xl border border-white/20 p-4 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+              <div className="flex justify-between text-white/80 text-xs font-bold uppercase tracking-widest mb-2">
+                <span>Power</span>
+                <span>{Math.round(power)}%</span>
+              </div>
+              <div className="w-full h-3 bg-black/50 rounded-full overflow-hidden border border-white/10">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-300"
+                  style={{ width: `${power}%` }}
+                />
+              </div>
+            </div>
+            
+            {/* Action Button */}
+            <div className="pointer-events-auto">
+               {/* Controls are typically handled by CarromControls.tsx (drag on striker), 
+                   but we can add a visual hint here */}
+               <div className="text-white/50 text-xs uppercase tracking-widest bg-black/40 px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
+                  Drag Striker to Shoot
+               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

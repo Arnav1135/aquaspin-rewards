@@ -67,13 +67,13 @@ export function Board3D() {
         </mesh>
         
         {/* Decorations - High Res */}
-        <mesh position={[0, 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.1, 0.102, 128]} />
-          <meshBasicMaterial color="#a67c52" transparent opacity={0.8} />
+          <meshBasicMaterial color="#a67c52" transparent opacity={0.8} polygonOffset={true} polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
         </mesh>
-        <mesh position={[0, 0.0001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.4, 0.403, 128]} />
-          <meshBasicMaterial color="#a67c52" transparent opacity={0.8} />
+          <meshBasicMaterial color="#a67c52" transparent opacity={0.8} polygonOffset={true} polygonOffsetFactor={-1} polygonOffsetUnits={-1} />
         </mesh>
       </RigidBody>
 

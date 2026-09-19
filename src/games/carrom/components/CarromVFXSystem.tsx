@@ -59,12 +59,27 @@ export function CarromVFXSystem() {
   
   const particleIndex = useRef(0);
 
+  // Shockwave Rings State
+  const [shockwaves, setShockwaves] = React.useState<{id: number, pos: [number,number,number], intensity: number, color: string, createdAt: number}[]>([]);
+  const shockwaveId = useRef(0);
+
   useEffect(() => {
     const handleEvent = ((e: CustomEvent<VFXEvent>) => {
       const { type, position, intensity, color, mass = 1, velocity = [0,0,0] } = e.detail;
       if (type === 'pocket_shadow') return; // Handled elsewhere
 
       if (type === 'dust' && qualityRef.current === 'LOW') return;
+
+      // Trigger Shockwave for strong impacts
+      if (type === 'impact' && intensity > 1.5) {
+        setShockwaves(prev => [...prev, {
+          id: shockwaveId.current++,
+          pos: position,
+          intensity,
+          color: color || '#ffffff',
+          createdAt: Date.now()
+        }]);
+      }
 
       let count = 0;
       let baseColor = new THREE.Color(color || '#FFD700');
@@ -137,7 +152,7 @@ export function CarromVFXSystem() {
           p.color.copy(baseColor).addScalar((Math.random() - 0.5) * 0.1);
           p.size = 0.01;
         } else {
-          // Cinematic Impact
+          // Cinematic Impact (Sparks)
           const impactScale = intensity > 2 ? 3 : intensity > 0.5 ? 1.5 : 0.5;
           p.velocity.set(
             velocity[0] * 0.2 + (Math.random() - 0.5) * intensity * impactScale,
@@ -164,6 +179,10 @@ export function CarromVFXSystem() {
   useFrame((state, delta) => {
     if (!meshRef.current) return;
     
+    // Clean up dead shockwaves
+    const now = Date.now();
+    setShockwaves(prev => prev.filter(sw => now - sw.createdAt < 500));
+
     let activeCount = 0;
     const gravity = -4.0;
     
@@ -194,9 +213,22 @@ export function CarromVFXSystem() {
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, MAX_PARTICLES]}>
-      <sphereGeometry args={[1, 8, 8]} />
-      <meshBasicMaterial toneMapped={false} />
-    </instancedMesh>
+    <>
+      <instancedMesh ref={meshRef} args={[undefined, undefined, MAX_PARTICLES]}>
+        <sphereGeometry args={[1, 8, 8]} />
+        <meshBasicMaterial toneMapped={false} />
+      </instancedMesh>
+      {shockwaves.map(sw => {
+        const age = (Date.now() - sw.createdAt) / 500;
+        const scale = 1 + age * sw.intensity * 2;
+        const opacity = 1 - age;
+        return (
+          <mesh key={sw.id} position={sw.pos} rotation={[-Math.PI/2, 0, 0]} scale={[scale, scale, scale]}>
+            <ringGeometry args={[0.02, 0.025, 32]} />
+            <meshBasicMaterial color={sw.color} transparent opacity={opacity} toneMapped={false} />
+          </mesh>
+        );
+      })}
+    </>
   );
 }

@@ -23,35 +23,35 @@ import gsap from 'gsap';
 
 
 const GEO_BOWL_BASE = new THREE.CylinderGeometry(4.6, 4.8, 0.8, 64, 1, true);
-const MAT_BOWL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#f8fafc", metalness: 0.4, roughness: 0.6, side: THREE.DoubleSide });
+const MAT_BOWL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 2.0, color: "#3a1608", metalness: 0.1, roughness: 0.1, side: THREE.DoubleSide }); // Rich Mahogany Wood
 const GEO_BOWL_TRIM = new THREE.TorusGeometry(4.5, 0.1, 16, 64);
-const MAT_BOWL_TRIM = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#eab308", metalness: 0.9, roughness: 0.1 });
+const MAT_BOWL_TRIM = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#eab308", metalness: 1.0, roughness: 0.15 }); // Polished Gold Trim
 const GEO_BOWL_SLOPE = new THREE.CylinderGeometry(4.4, 3.2, 0.6, 64, 1, true);
-const MAT_BOWL_SLOPE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#e2e8f0", metalness: 0.6, roughness: 0.4, side: THREE.DoubleSide });
+const MAT_BOWL_SLOPE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 1.5, color: "#221109", metalness: 0.3, roughness: 0.2, side: THREE.DoubleSide }); // Dark Wood/Resin track
 const GEO_DEFLECTOR = new THREE.OctahedronGeometry(0.08, 0);
-const MAT_DEFLECTOR = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#eab308", metalness: 1, roughness: 0.2 });
+const MAT_DEFLECTOR = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#fef08a", metalness: 1.0, roughness: 0.1 }); // Shiny Brass
 
 const GEO_WHEEL_BASE = new THREE.CylinderGeometry(3.2, 3.2, 0.1, 64);
-const MAT_WHEEL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#ffffff", metalness: 0.8, roughness: 0.3 });
+const MAT_WHEEL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#111111", metalness: 0.4, roughness: 0.2 }); // Deep Glossy Black
 const GEO_WHEEL_RING = new THREE.TorusGeometry(2.9, 0.03, 16, 64);
-const MAT_WHEEL_RING = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#FFD700", metalness: 1.0, roughness: 0.1 });
+const MAT_WHEEL_RING = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#FFD700", metalness: 1.0, roughness: 0.1 });
 const GEO_WHEEL_TURRET = new THREE.CylinderGeometry(1.2, 1.6, 0.4, 32);
-const MAT_WHEEL_TURRET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#e2e8f0", metalness: 0.8, roughness: 0.2 });
+const MAT_WHEEL_TURRET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#d4af37", metalness: 0.9, roughness: 0.15 }); // Polished Brass Turret
 const GEO_WHEEL_TURRET_TOP = new THREE.CylinderGeometry(0.3, 1.2, 0.15, 32);
-const MAT_WHEEL_TURRET_TOP = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#d4af37", metalness: 1, roughness: 0.1 });
+const MAT_WHEEL_TURRET_TOP = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#fef08a", metalness: 1.0, roughness: 0.1 });
 const GEO_SPINDLE = new THREE.CylinderGeometry(0.15, 0.2, 0.8, 16);
-const MAT_SPINDLE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#d4af37", metalness: 1, roughness: 0.1 });
+const MAT_SPINDLE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#fef08a", metalness: 1.0, roughness: 0.1 });
 const GEO_SPINDLE_TOP = new THREE.SphereGeometry(0.25, 32, 32);
 const GEO_CROSSBAR = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8);
 const GEO_NUMBER_PLATE = new THREE.BoxGeometry(0.42, 0.02, 0.5);
 const GEO_POCKET = new THREE.BoxGeometry(0.33, 0.04, 0.5);
-const MAT_POCKET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#cbd5e1", metalness: 0.8, roughness: 0.2 });
+const MAT_POCKET = new THREE.MeshPhysicalMaterial({ clearcoat: 0.5, clearcoatRoughness: 0.2, envMapIntensity: 1.0, color: "#cbd5e1", metalness: 0.9, roughness: 0.3 }); // Metallic Pocket
 const GEO_DIVIDER = new THREE.BoxGeometry(0.02, 0.1, 1.0);
 const GEO_BALL = new THREE.SphereGeometry(0.12, 32, 32);
-const MAT_BALL = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#ffffff", metalness: 1.0, roughness: 0.0 });
-const MAT_NUMBER_PLATE_RED = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#dc2626", metalness: 0.3, roughness: 0.5 });
-const MAT_NUMBER_PLATE_GREEN = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#16a34a", metalness: 0.3, roughness: 0.5 });
-const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, transmission: 0, thickness: 0, color: "#1e293b", metalness: 0.3, roughness: 0.5 });
+const MAT_BALL = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.0, envMapIntensity: 2.5, color: "#ffffff", metalness: 0.1, roughness: 0.0 }); // Glossy Ivory/Resin Ball
+const MAT_NUMBER_PLATE_RED = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.0, color: "#991b1b", metalness: 0.1, roughness: 0.2 }); // Deep Casino Red
+const MAT_NUMBER_PLATE_GREEN = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.0, color: "#166534", metalness: 0.1, roughness: 0.2 }); // Deep Casino Green
+const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.0, color: "#0f172a", metalness: 0.1, roughness: 0.2 }); // Deep Black
 
 
 type GameState = 'BETTING' | 'SPINNING' | 'SETTLING' | 'PAYOUT';
@@ -237,7 +237,7 @@ function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, whe
               position={[0, 0.08, -2.6]}
               rotation={[-Math.PI / 2, 0, Math.PI]}
               fontSize={0.22}
-              color="#1e293b"
+              color="#ffffff"
               anchorX="center"
               anchorY="middle"
               font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjQ.ttf"
@@ -468,26 +468,28 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       </div>
     );
   };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-200/90 backdrop-blur-md">
-      <Card className="relative w-full max-w-6xl h-[90vh] flex flex-col gap-0 overflow-hidden shadow-2xl border-slate-300 bg-white rounded-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-emerald-950/90 backdrop-blur-md">
+      <Card className="relative w-full max-w-6xl h-[90vh] flex flex-col gap-0 overflow-hidden shadow-2xl border-yellow-700/50 bg-black rounded-2xl">
         
         {/* 3D Canvas Viewport */}
-        <div className="relative flex-1 bg-slate-50 overflow-hidden cursor-move">
+        <div className="relative flex-1 bg-emerald-950 overflow-hidden cursor-move">
           <Canvas camera={{ position: [0, 8, 5] }}>
-<ambientLight intensity={0.7} />
-  <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
-  <Environment preset="city" />
-  <ContactShadows position={[0, -0.4, 0]} opacity={0.4} scale={20} blur={2} far={4} />
-  <QualityManager>
-<VFXManager>
-<PostFXManager />
-<ParticleManager />
-            <CameraController gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
-            <group>
-               <RouletteBowl />
-               <group ref={wheelRef}>
+            {/* Cinematic Casino Lighting */}
+            <ambientLight intensity={0.2} color="#ffffff" />
+            <spotLight position={[5, 12, 5]} intensity={3.5} angle={0.4} penumbra={0.8} castShadow shadow-bias={-0.0001} color="#ffecd1" />
+            <spotLight position={[-5, 12, -5]} intensity={2.0} angle={0.5} penumbra={1.0} color="#e0f2fe" />
+            <spotLight position={[0, 8, 0]} intensity={1.0} angle={0.6} penumbra={0.5} castShadow />
+            <Environment preset="studio" />
+            <ContactShadows position={[0, -0.4, 0]} opacity={0.6} scale={20} blur={2} far={4} color="#000000" />
+            <QualityManager>
+              <VFXManager>
+                <PostFXManager />
+                <ParticleManager />
+                <CameraController gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
+                <group>
+                  <RouletteBowl />
+                  <group ref={wheelRef}>
                  <RouletteWheel3D gameState={gameState} wheelRotRef={wheelRef} />
                </group>
                <BallKinematic gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />

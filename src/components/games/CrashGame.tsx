@@ -43,7 +43,7 @@ function Shockwave({ position, isActive }: { position: THREE.Vector3, isActive: 
   return (
     <mesh ref={meshRef} position={position}>
       <sphereGeometry args={[1, 32, 32]} />
-      <meshBasicMaterial ref={materialRef} color="#00f0ff" transparent opacity={0.8} depthWrite={false} blending={THREE.AdditiveBlending} wireframe />
+      <meshBasicMaterial ref={materialRef} color="#FFD700" transparent opacity={0.8} depthWrite={false} blending={THREE.AdditiveBlending} wireframe />
     </mesh>
   );
 }
@@ -224,7 +224,7 @@ function RocketFlightPath({ pathRef, crashed }: { pathRef: React.MutableRefObjec
     if (lineRef.current && pathRef.current.length >= 2) {
       const positions = pathRef.current.flatMap(p => [p.x, p.y, p.z]);
       lineRef.current.geometry.setPositions(positions);
-      lineRef.current.material.color.set(crashed ? "#ef4444" : "#00FFFF");
+      lineRef.current.material.color.set(crashed ? "#ef4444" : "#FFD700");
     }
   });
 
@@ -232,7 +232,7 @@ function RocketFlightPath({ pathRef, crashed }: { pathRef: React.MutableRefObjec
     <Line 
       ref={lineRef}
       points={[[0,0,0], [0,0,0]]} 
-      color={crashed ? "#ef4444" : "#00FFFF"} 
+      color={crashed ? "#ef4444" : "#FFD700"} 
       lineWidth={5} 
       dashed={false} 
       toneMapped={false}
@@ -411,7 +411,7 @@ function Rocket3D({
           
           <mesh position={[0.5, 0.3, 0]} rotation={[Math.PI / 4, 0, 0]}>
             <sphereGeometry args={[0.25, 16, 16, 0, Math.PI]} />
-            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#00f0ff" metalness={0.9} roughness={0.1} />
+            <meshPhysicalMaterial clearcoat={1.0} clearcoatRoughness={0.1} envMapIntensity={1.5} transmission={0} thickness={0} color="#FFD700" metalness={0.9} roughness={0.1} />
           </mesh>
           
           {gameState === 'climbing' && !crashed && (
@@ -492,7 +492,7 @@ function PassingRings({ speed, isActive }: { speed: number, isActive: boolean })
       {Array.from({ length: ringCount }).map((_, i) => (
         <mesh key={i} position={[i * spacing, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20]} rotation={[0, Math.PI / 2, 0]}>
           <torusGeometry args={[8, 0.1, 16, 50]} />
-          <meshBasicMaterial color="#3b82f6" transparent opacity={0.2} wireframe />
+          <meshBasicMaterial color="#F59E0B" transparent opacity={0.2} wireframe />
         </mesh>
       ))}
     </group>
@@ -559,7 +559,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
     if (m >= 10) return '#ef4444';
     if (m >= 5) return '#f97316';
     if (m >= 2) return '#eab308';
-    return '#00F0FF';
+    return '#FFD700';
   };
 
   const tick = () => {
@@ -785,13 +785,13 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
   return (
     <div 
-      className={`flex flex-col-reverse xl:flex-row gap-6 p-2 sm:p-4 max-w-7xl mx-auto w-full min-h-[calc(100dvh-120px)] items-stretch transition-all duration-300 border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl ${
+      className={`flex flex-col-reverse xl:flex-row gap-6 p-2 sm:p-4 max-w-7xl mx-auto w-full min-h-[calc(100dvh-120px)] items-stretch transition-all duration-300 border border-white/10 shadow-2xl rounded-2xl ${
         tinnitusActive ? 'filter saturate-30 contrast-125' : ''
       }`}
-      style={{ transform: getScreenTremor(), background: 'linear-gradient(135deg, #0f1f3d 0%, #0a1628 50%, #0d1a30 100%)' }}
+      style={{ transform: getScreenTremor(), background: 'linear-gradient(135deg, #111111 0%, #050505 50%, #0a0a0a 100%)' }}
     >
       {timeDilationActive && (
-        <div className="absolute inset-0 pointer-events-none z-10 shadow-[inset_0_0_80px_rgba(0,240,255,0.35)] animate-pulse" />
+        <div className="absolute inset-0 pointer-events-none z-10 shadow-[inset_0_0_80px_rgba(255,215,0,0.15)] animate-pulse" />
       )}
 
       {isAborting && (

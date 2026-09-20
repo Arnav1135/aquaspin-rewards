@@ -27,7 +27,7 @@ export const CARROM_PHYSICS = {
     ANGULAR_DAMPING: 0.5,
   },
   PHYSICS: {
-    TIME_STEP: 1 / 120, // Strict 120fps determinism
+    TIME_STEP: 1 / 60, // Strict 120fps determinism
     CCD_ENABLED: true, 
     MAX_VELOCITY: 8.0, 
     SLEEP_THRESHOLD: 0.005,
@@ -39,3 +39,4 @@ export const CARROM_PHYSICS = {
     DEPTH: 0.04,
   }
 };
+

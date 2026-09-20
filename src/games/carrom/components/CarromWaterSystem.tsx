@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { carromVfxEvents, VFXEvent } from './CarromVFXSystem';
+import { useCarromQuality } from './CarromPerformanceManager';
 
 const WaterShader = {
   uniforms: {
@@ -68,6 +69,8 @@ const WaterShader = {
 };
 
 export function CarromWaterSystem() {
+  const quality = useCarromQuality();
+  const segments = quality === 'ULTRA' ? 256 : quality === 'HIGH' ? 128 : 64;
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const { camera } = useThree();
@@ -109,7 +112,7 @@ export function CarromWaterSystem() {
 
   return (
     <mesh ref={meshRef} position={[0, -0.005, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[1.6, 1.6, 256, 256]} />
+      <planeGeometry args={[1.6, 1.6, segments, segments]} />
       <shaderMaterial
         ref={materialRef}
         uniforms={THREE.UniformsUtils.clone(WaterShader.uniforms)}
@@ -122,3 +125,5 @@ export function CarromWaterSystem() {
     </mesh>
   );
 }
+
+

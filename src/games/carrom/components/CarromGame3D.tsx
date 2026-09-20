@@ -22,6 +22,7 @@ import { CarromEnvironmentSystem } from '../environment/CarromEnvironmentSystem'
 import { CarromHeroStudio } from '../environment/CarromHeroStudio';
 import { CarromContactShadows } from '../rendering/CarromShadowSystem';
 import { CarromDebugOverlay } from '../debug/CarromDebugOverlay';
+import { CarromPerformanceManager } from './CarromPerformanceManager';
 import { CarromPostProcessing } from './CarromPostProcessing';
 import { CarromVFXSystem, triggerVFX } from './CarromVFXSystem';
 import { QualityManager, VFXManager, ParticleManager } from '../../../engine/aaa';
@@ -147,6 +148,7 @@ export function CarromGame3D() {
         >
         <QualityManager>
           <VFXManager>
+            <CarromPerformanceManager />
             <AILoop />
             <VictoryVFX />
             <Suspense fallback={null}>
@@ -196,3 +198,4 @@ export function CarromGame3D() {
     </CarromRenderGuard>
   );
 }
+

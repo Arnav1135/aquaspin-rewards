@@ -1,3 +1,4 @@
+import gsap from 'gsap';
 import { Graphics, Container } from 'pixi.js';
 import { ThemeManager } from '../systems/ThemeManager';
 import { useGameState } from '../state/useGameState';
@@ -160,3 +161,4 @@ export class TubeGraphics extends Container {
     }
   }
 }
+

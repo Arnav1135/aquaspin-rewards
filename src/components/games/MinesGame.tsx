@@ -489,11 +489,13 @@ export function MinesGame({ onClose }: MinesGameProps) {
         </div>
 
         <div className="absolute inset-0 z-0 cursor-crosshair">
-          <Canvas camera={{ position: [0, 8, 8] }}>
+          <Canvas camera={{ position: [0, 8, 8], fov: 50, rotation: [-Math.PI / 4, 0, 0] }}>
 <QualityManager>
 <VFXManager>
 <PostFXManager />
 <ParticleManager />
+            <ambientLight intensity={1.5} />
+            <directionalLight position={[5, 10, 5]} intensity={2} castShadow />
             {/* Grid Container tilted slightly to face camera better */}
             <group rotation={[-0.2, 0, 0]}>
               {/* Base Platform underneath the tiles */}
@@ -583,6 +585,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
     </div>
   );
 }
+
 
 
 

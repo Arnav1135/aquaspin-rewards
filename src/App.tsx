@@ -25,7 +25,6 @@ import { PublicProfileModal } from '@/components/ui/PublicProfileModal';
 import { LevelUpManager } from '@/components/ui/LevelUpManager';
 import { LiveWinnersMarquee } from '@/components/ui/LiveWinnersMarquee';
 import { RadioPlayer } from '@/components/ui/RadioPlayer';
-import { DailyRewardModal } from '@/components/ui/DailyRewardModal';
 
 import { Landing } from '@/pages/Landing';
 import { Auth } from '@/pages/Auth';
@@ -108,7 +107,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <LevelUpManager />
       <LiveWinnersMarquee />
       <RadioPlayer />
-      <DailyRewardModal />
       <main className="relative z-0">{children}</main>
       <BottomNav />
     </>
@@ -230,3 +228,4 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+

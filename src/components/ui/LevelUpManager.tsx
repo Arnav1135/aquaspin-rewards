@@ -12,15 +12,7 @@ export function LevelUpManager() {
 
   // Helper to calculate level from total XP
   const calculateLevel = (xp: number) => {
-    let lvl = 1;
-    let threshold = 500;
-    let remainingXp = xp;
-    while (remainingXp >= threshold) {
-      remainingXp -= threshold;
-      lvl++;
-      threshold = lvl * 500;
-    }
-    return lvl;
+    return Math.floor(xp / 500) + 1;
   };
 
   useEffect(() => {
@@ -28,7 +20,8 @@ export function LevelUpManager() {
     
     const correctLevel = calculateLevel(profile.xp || 0);
     
-    if (correctLevel > (profile.level || 1)) {
+    const lastLevel = parseInt(localStorage.getItem('last_level_up') || '1', 10);
+    if (correctLevel > (profile.level || 1) && correctLevel > lastLevel) {
       // Level Up!
       setShowLevelUp(correctLevel);
       
@@ -65,7 +58,7 @@ export function LevelUpManager() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
-            onClick={() => setShowLevelUp(null)}
+            onClick={() => { setShowLevelUp(null); localStorage.setItem('last_level_up', showLevelUp.toString()); }}
           />
           <motion.div
             initial={{ scale: 0.5, y: 100, opacity: 0, rotate: -10 }}
@@ -93,7 +86,7 @@ export function LevelUpManager() {
             </p>
 
             <button
-              onClick={() => setShowLevelUp(null)}
+              onClick={() => { setShowLevelUp(null); localStorage.setItem('last_level_up', showLevelUp.toString()); }}
               className="px-8 py-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black rounded-2xl text-xl shadow-[0_0_30px_rgba(250,204,21,0.4)] transition-all active:scale-95 flex items-center gap-2"
             >
               <Zap size={24} /> AWESOME

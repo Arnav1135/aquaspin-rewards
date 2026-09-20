@@ -12,6 +12,7 @@ const REWARD_AMOUNTS = [100, 200, 300, 500, 750, 1000, 2500];
 
 export function DailyRewardsModal() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasAutoShown, setHasAutoShown] = useState(false);
   const canClaimToday = useDailyRewardsStore(s => s.canClaimToday());
   const claimReward = useDailyRewardsStore(s => s.claimReward);
   const streak = useDailyRewardsStore(s => s.streak);
@@ -20,8 +21,8 @@ export function DailyRewardsModal() {
 
   useEffect(() => {
     // Show modal automatically if they can claim today
-    if (canClaimToday && profile) {
-      const timer = setTimeout(() => setIsOpen(true), 1500); // Slight delay after login
+    if (canClaimToday && profile && !hasAutoShown) {
+      const timer = setTimeout(() => { setIsOpen(true); setHasAutoShown(true); }, 1500); // Slight delay after login
       return () => clearTimeout(timer);
     }
   }, [canClaimToday, profile]);
@@ -152,4 +153,5 @@ export function DailyRewardsModal() {
     </AnimatePresence>
   );
 }
+
 

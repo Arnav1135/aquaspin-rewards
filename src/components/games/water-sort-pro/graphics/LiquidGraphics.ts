@@ -96,7 +96,7 @@ export class LiquidGraphics extends Container {
       const isSurface = remainingVolume <= 0 && currentSegmentHeight > 0;
       const topY = bottomY - currentSegmentHeight + (isSurface ? this.surfaceRipple : 0);
 
-      g.roundRect(2, topY, w - 4, currentSegmentHeight + 2, Math.min(6, (w - 4) / 2));
+      g.rect(2, topY, w - 4, currentSegmentHeight + 1);
       g.fill({ color: hexColor });
 
       if (isSurface) {
@@ -104,10 +104,7 @@ export class LiquidGraphics extends Container {
         g.fill({ color: 0xFFFFFF, alpha: 0.28 });
       }
 
-      if (currentSegmentHeight > 2) {
-        g.rect(2, bottomY - Math.min(6, currentSegmentHeight), w - 4, Math.min(6, currentSegmentHeight));
-        g.fill({ color: 0x000000, alpha: 0.1 });
-      }
+      
 
       if (colorBlindMode && currentSegmentHeight > segmentHeight * 0.5) {
         const hash = colorId % 5 + 1;
@@ -125,5 +122,6 @@ export class LiquidGraphics extends Container {
     });
   }
 }
+
 
 

@@ -7,7 +7,7 @@ const fragment = `
   
   uniform sampler2D uTexture;
   uniform float uTime;
-  uniform float uPouring; // 0.0 to 1.0 indicating if pouring is active
+  uniform float uPouring;
   
   float hash(vec2 p) {
       return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
@@ -23,34 +23,19 @@ const fragment = `
 
   void main() {
     vec2 coord = vTextureCoord;
-    
-    // Dynamic physics: ripples and waves
     float wave = sin(coord.y * 30.0 + uTime * 3.0) * 0.002;
-    if (uPouring > 0.0) {
-      // Turbulance during pouring
-      wave += sin(coord.y * 60.0 - uTime * 15.0) * 0.008 * uPouring;
-    }
-    
+    if (uPouring > 0.0) { wave += sin(coord.y * 60.0 - uTime * 15.0) * 0.008 * uPouring; }
     vec2 distortedCoord = coord + vec2(wave, 0.0);
-    
-    // Sample texture with chromatic aberration (Refraction)
     float r = texture(uTexture, distortedCoord + vec2(0.003, 0.0)).r;
     vec4 baseColor = texture(uTexture, distortedCoord);
     float b = texture(uTexture, distortedCoord - vec2(0.003, 0.0)).b;
-    
     vec4 color = vec4(r, baseColor.g, b, baseColor.a);
-    
-    // Meniscus effect: brighten the top edge of the fluid
     float alphaUp = texture(uTexture, distortedCoord - vec2(0.0, 0.015)).a;
     float meniscus = (1.0 - alphaUp) * color.a * 0.6;
-    
-    // Bubbles effect during pouring
     float bNoise = noise(coord * 80.0 + vec2(0.0, -uTime * 8.0));
     float bubbleMask = smoothstep(0.85, 1.0, bNoise) * uPouring * color.a;
-    
     color.rgb += vec3(bubbleMask);
     color.rgb += vec3(meniscus);
-    
     finalColor = color;
   }
 `;
@@ -69,6 +54,7 @@ const vertex = `
 export class LiquidFilter extends Filter {
   constructor() {
     const glProgram = GlProgram.from({
+      vertex,
       fragment,
       name: 'liquid-filter'
     });
@@ -89,12 +75,8 @@ export class LiquidFilter extends Filter {
   }
 
   setPouring(isPouring: boolean) {
-    // Smoothly transition pouring uniform
     const current = this.resources.liquidUniforms.uniforms.uPouring;
     const target = isPouring ? 1.0 : 0.0;
     this.resources.liquidUniforms.uniforms.uPouring += (target - current) * 0.1;
   }
 }
-
-
-

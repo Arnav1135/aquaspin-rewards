@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDailyRewardsStore } from '@/features/dailyRewardsStore';
 import { useAuthStore } from '@/features/authStore';
 import { Button } from '@/components/ui/Button';
+import { secureUpdateTokens } from '@/lib/secureEconomy';
 import { Gift, Calendar, CheckCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
@@ -56,6 +57,9 @@ export function DailyRewardsModal() {
 
     if (profile) {
       (updateProfile as any)({ tokens: profile.tokens + amount });
+      if (!profile.id.startsWith('guest')) {
+        secureUpdateTokens(profile.id, amount).catch(console.error);
+      }
     }
     
     toast.success(`Claimed ${amount} tokens! Day ${streak + 1} streak!`);
@@ -148,3 +152,4 @@ export function DailyRewardsModal() {
     </AnimatePresence>
   );
 }
+

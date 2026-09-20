@@ -9,7 +9,7 @@ import { LiquidGraphics } from '../graphics/LiquidGraphics';
 export class LiquidPhysics {
   static applyWaveEffect(container: Container, ticker: Ticker) {
     const filter = new LiquidFilter();
-    container.filters = [filter];
+    // container.filters = [filter];
     
     // Animate the filter
     const updatePhysics = (ticker: Ticker) => {
@@ -31,4 +31,5 @@ export class LiquidPhysics {
     });
   }
 }
+
 

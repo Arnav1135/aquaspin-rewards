@@ -58,22 +58,17 @@ const fragment = `
 const vertex = `
   in vec2 aPosition;
   out vec2 vTextureCoord;
-  
-  uniform mat3 uProjectionMatrix;
-  uniform mat3 uWorldTransformMatrix;
-  uniform mat3 uTransformMatrix;
+  uniform mat3 uFilterMatrix;
 
   void main() {
-    vec3 position = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix * vec3(aPosition, 1.0);
-    gl_Position = vec4(position.xy, 0.0, 1.0);
-    vTextureCoord = aPosition; 
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+    vTextureCoord = (uFilterMatrix * vec3(aPosition, 1.0)).xy;
   }
 `;
 
 export class LiquidFilter extends Filter {
   constructor() {
     const glProgram = GlProgram.from({
-      vertex,
       fragment,
       name: 'liquid-filter'
     });
@@ -100,3 +95,6 @@ export class LiquidFilter extends Filter {
     this.resources.liquidUniforms.uniforms.uPouring += (target - current) * 0.1;
   }
 }
+
+
+

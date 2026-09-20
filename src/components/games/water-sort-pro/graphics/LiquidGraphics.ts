@@ -31,8 +31,8 @@ export class LiquidGraphics extends Container {
 
     this.liquidMask = new Graphics();
     this.createMask();
+    this.addChild(this.liquidMask);
     this.mask = this.liquidMask;
-    // DO NOT addChild(this.liquidMask) because it will render a white block over the liquid in Pixi v8
     
     this.contentLayer = new Graphics();
     this.addChild(this.contentLayer);
@@ -125,4 +125,5 @@ export class LiquidGraphics extends Container {
     });
   }
 }
+
 

@@ -92,14 +92,14 @@ export class AnimationSystem {
     }
 
     const T = {
-      move: 0.50,
-      tilt: 0.45,
-      anticipation: 0.12,
-      transfer: Math.min(1.15, Math.max(0.70, 0.70 + (amount - 1) * 0.14)),
-      drain: 0.20,
-      settle: 0.16,
-      returnTilt: 0.40,
-      returnPosition: 0.55,
+      move: 0.30,
+      tilt: 0.25,
+      anticipation: 0.05,
+      transfer: Math.min(0.65, Math.max(0.40, 0.40 + (amount - 1) * 0.08)),
+      drain: 0.12,
+      settle: 0.08,
+      returnTilt: 0.25,
+      returnPosition: 0.35,
     };
 
     const tl = gsap.timeline({ onComplete });
@@ -313,3 +313,4 @@ export class AnimationSystem {
     });
   }
 }
+

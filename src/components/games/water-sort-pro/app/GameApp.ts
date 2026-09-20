@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import gsap from 'gsap';
 import { TubeGraphics } from '../graphics/TubeGraphics';
 import { LiquidGraphics } from '../graphics/LiquidGraphics';
 import { AnimationSystem } from '../systems/AnimationSystem';
@@ -595,3 +596,4 @@ export class GameApp {
     }
   }
 }
+

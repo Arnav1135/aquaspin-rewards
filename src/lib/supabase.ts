@@ -6,9 +6,9 @@ import type { Database } from '@/types/database';
 
 // ── Environment variables ────────────────────────────────────────────────────
  
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '';
  
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
@@ -210,3 +210,4 @@ export async function claimDailyReward(userId: string, streak: number, tokensToA
 
   return { error: null };
 }
+

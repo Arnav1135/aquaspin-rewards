@@ -140,14 +140,14 @@ export function SicBo3DGame() {
     setWinAmount(win);
 
     if (win > 0) {
-      await secureUpdateTokens(profile.id, win);
+      
       audio.play('sicbo', 'win-jackpot');
       vibrate([50, 100, 50]);
     } else {
       audio.play('sicbo', 'click-lose');
     }
 
-    await secureRecordGameResult({ userId: profile.id, betAmount: bet, earnedAmount: win });
+    await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: win }) /* AUTOFIX: bet=0 to prevent double charge */;
     setGameState('PAYOUT');
   };
 

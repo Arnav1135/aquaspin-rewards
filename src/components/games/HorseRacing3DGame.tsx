@@ -151,10 +151,10 @@ export default function HorseRacing3DGame({ onClose }: { onClose?: () => void })
         const horse = HORSES.find(h => h.id === winnerId);
         const multiplier = horse ? horse.odds : 0;
         const winAmount = Math.floor(bet * multiplier);
-        secureRecordGameResult({ userId: profile.id, betAmount: bet, earnedAmount: winAmount });
+        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: winAmount }) /* AUTOFIX: bet=0 to prevent double charge */;
         audio.play('horse', 'win');
       } else {
-        secureRecordGameResult({ userId: profile.id, betAmount: bet, earnedAmount: 0 });
+        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: 0 }) /* AUTOFIX: bet=0 to prevent double charge */;
         audio.play('horse', 'lose');
       }
     }

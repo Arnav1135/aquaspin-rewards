@@ -76,8 +76,8 @@ export function Tower3DGame() {
     if (gameState !== 'PLAYING' || activeRow === 0) return;
     
     const payout = Math.floor(bet * MULTIPLIERS[activeRow - 1]);
-    await secureUpdateTokens(profile!.id, payout);
-    await secureRecordGameResult({ userId: profile!.id, betAmount: bet, earnedAmount: payout });
+    
+    await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: payout }) /* AUTOFIX: bet=0 to prevent double charge */;
     
     setWinAmount(payout);
     setGameState('CASHOUT');
@@ -104,7 +104,7 @@ export function Tower3DGame() {
       setGameState('CRASHED');
       audio.play('tower', 'click-lose');
       vibrate([100, 200, 100]);
-      await secureRecordGameResult({ userId: profile!.id, betAmount: bet, earnedAmount: 0 });
+      await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: 0 }) /* AUTOFIX: bet=0 to prevent double charge */;
 
       // Apply explosive forces
       setTimeout(() => {
@@ -134,8 +134,8 @@ export function Tower3DGame() {
       if (activeRow === TOWER_ROWS - 1) {
         // Auto cashout on top
         const payout = Math.floor(bet * MULTIPLIERS[TOWER_ROWS - 1]);
-        await secureUpdateTokens(profile!.id, payout);
-        await secureRecordGameResult({ userId: profile!.id, betAmount: bet, earnedAmount: payout });
+        
+        await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: payout }) /* AUTOFIX: bet=0 to prevent double charge */;
         
         setWinAmount(payout);
         setGameState('CASHOUT');

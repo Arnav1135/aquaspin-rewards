@@ -1,64 +1,109 @@
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { QualityManager } from '@/engine/aaa/QualityManager';
 import { PostFXManager } from '@/engine/aaa/PostFXManager';
-import { VFXManager } from '@/engine/aaa/VFXManager';
 import { ParticleManager } from '@/engine/aaa/ParticleManager';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/features/authStore';
-import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
-import { vibrate } from '@/lib/utils';
+import { Button } from '@/components/ui/Button';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 
-import { Text, Environment, ContactShadows } from '@react-three/drei';
+import { Text, Environment, ContactShadows, MeshReflectorMaterial, Float, Stars, Sparkles, SpotLight } from '@react-three/drei';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
 import gsap from 'gsap';
 
+// ==========================================
+// CINEMATIC AAA ROULETTE MATERIALS & GEOMETRIES
+// ==========================================
 
-const GEO_BOWL_BASE = new THREE.CylinderGeometry(4.6, 4.8, 0.8, 64, 1, true);
-const MAT_BOWL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 2.0, color: "#3a1608", metalness: 0.1, roughness: 0.1, side: THREE.DoubleSide }); // Rich Mahogany Wood
-const GEO_BOWL_TRIM = new THREE.TorusGeometry(4.5, 0.1, 16, 64);
-const MAT_BOWL_TRIM = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#eab308", metalness: 1.0, roughness: 0.15 }); // Polished Gold Trim
-const GEO_BOWL_SLOPE = new THREE.CylinderGeometry(4.4, 3.2, 0.6, 64, 1, true);
-const MAT_BOWL_SLOPE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 1.5, color: "#221109", metalness: 0.3, roughness: 0.2, side: THREE.DoubleSide }); // Dark Wood/Resin track
-const GEO_DEFLECTOR = new THREE.OctahedronGeometry(0.08, 0);
-const MAT_DEFLECTOR = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#fef08a", metalness: 1.0, roughness: 0.1 }); // Shiny Brass
+const GEO_BOWL_BASE = new THREE.CylinderGeometry(4.8, 5.0, 1.0, 128, 1, true);
+const MAT_BOWL_BASE = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.1, 
+  envMapIntensity: 2.5, color: "#2B0B04", 
+  metalness: 0.2, roughness: 0.1, 
+  side: THREE.DoubleSide 
+}); // Ultra-Rich Mahogany
 
-const GEO_WHEEL_BASE = new THREE.CylinderGeometry(3.2, 3.2, 0.1, 64);
-const MAT_WHEEL_BASE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#111111", metalness: 0.4, roughness: 0.2 }); // Deep Glossy Black
-const GEO_WHEEL_RING = new THREE.TorusGeometry(2.9, 0.03, 16, 64);
-const MAT_WHEEL_RING = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#FFD700", metalness: 1.0, roughness: 0.1 });
-const GEO_WHEEL_TURRET = new THREE.CylinderGeometry(1.2, 1.6, 0.4, 32);
-const MAT_WHEEL_TURRET = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#d4af37", metalness: 0.9, roughness: 0.15 }); // Polished Brass Turret
-const GEO_WHEEL_TURRET_TOP = new THREE.CylinderGeometry(0.3, 1.2, 0.15, 32);
-const MAT_WHEEL_TURRET_TOP = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#fef08a", metalness: 1.0, roughness: 0.1 });
-const GEO_SPINDLE = new THREE.CylinderGeometry(0.15, 0.2, 0.8, 16);
-const MAT_SPINDLE = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 2.0, color: "#fef08a", metalness: 1.0, roughness: 0.1 });
-const GEO_SPINDLE_TOP = new THREE.SphereGeometry(0.25, 32, 32);
-const GEO_CROSSBAR = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8);
-const GEO_NUMBER_PLATE = new THREE.BoxGeometry(0.42, 0.02, 0.5);
-const GEO_POCKET = new THREE.BoxGeometry(0.33, 0.04, 0.5);
-const MAT_POCKET = new THREE.MeshPhysicalMaterial({ clearcoat: 0.5, clearcoatRoughness: 0.2, envMapIntensity: 1.0, color: "#cbd5e1", metalness: 0.9, roughness: 0.3 }); // Metallic Pocket
-const GEO_DIVIDER = new THREE.BoxGeometry(0.02, 0.1, 1.0);
-const GEO_BALL = new THREE.SphereGeometry(0.12, 32, 32);
-const MAT_BALL = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.0, envMapIntensity: 2.5, color: "#ffffff", metalness: 0.1, roughness: 0.0 }); // Glossy Ivory/Resin Ball
-const MAT_NUMBER_PLATE_RED = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.0, color: "#991b1b", metalness: 0.1, roughness: 0.2 }); // Deep Casino Red
-const MAT_NUMBER_PLATE_GREEN = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.0, color: "#166534", metalness: 0.1, roughness: 0.2 }); // Deep Casino Green
-const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.0, color: "#0f172a", metalness: 0.1, roughness: 0.2 }); // Deep Black
+const GEO_BOWL_TRIM = new THREE.TorusGeometry(4.7, 0.15, 32, 128);
+const MAT_BOWL_TRIM = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.05, 
+  envMapIntensity: 3.0, color: "#FFDF00", 
+  metalness: 1.0, roughness: 0.1 
+}); // Solid Gold Trim
+
+const GEO_BOWL_SLOPE = new THREE.CylinderGeometry(4.6, 3.2, 0.6, 128, 1, true);
+const MAT_BOWL_SLOPE = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.0, 
+  envMapIntensity: 2.0, color: "#1a0803", 
+  metalness: 0.4, roughness: 0.1, 
+  side: THREE.DoubleSide 
+}); // High-Gloss Track
+
+const GEO_DEFLECTOR = new THREE.OctahedronGeometry(0.1, 1);
+const MAT_DEFLECTOR = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.1, 
+  envMapIntensity: 4.0, color: "#fef08a", 
+  metalness: 1.0, roughness: 0.05 
+}); // Diamond-cut Brass Deflectors
+
+const GEO_WHEEL_BASE = new THREE.CylinderGeometry(3.2, 3.2, 0.15, 128);
+const MAT_WHEEL_BASE = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.05, 
+  envMapIntensity: 2.0, color: "#000000", 
+  metalness: 0.6, roughness: 0.1 
+}); // Obsidian Black Wheel
+
+const GEO_WHEEL_RING = new THREE.TorusGeometry(2.9, 0.04, 32, 128);
+const MAT_WHEEL_RING = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.1, 
+  envMapIntensity: 3.0, color: "#D4AF37", 
+  metalness: 1.0, roughness: 0.1 
+}); // Inner Gold Ring
+
+const GEO_WHEEL_TURRET = new THREE.CylinderGeometry(1.2, 1.8, 0.5, 64);
+const MAT_WHEEL_TURRET = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.1, 
+  envMapIntensity: 2.5, color: "#c5a059", 
+  metalness: 0.9, roughness: 0.15 
+}); // Brushed Gold Turret
+
+const GEO_SPINDLE = new THREE.CylinderGeometry(0.12, 0.18, 1.2, 32);
+const GEO_SPINDLE_TOP = new THREE.SphereGeometry(0.3, 64, 64);
+const MAT_SPINDLE = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.0, 
+  envMapIntensity: 5.0, color: "#FFDF00", 
+  metalness: 1.0, roughness: 0.02 
+}); // Mirror Gold Spindle
+
+const GEO_NUMBER_PLATE = new THREE.BoxGeometry(0.42, 0.03, 0.5);
+const GEO_POCKET = new THREE.BoxGeometry(0.33, 0.05, 0.5);
+const MAT_POCKET = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 0.8, clearcoatRoughness: 0.1, 
+  envMapIntensity: 2.0, color: "#94a3b8", 
+  metalness: 0.9, roughness: 0.2 
+}); // Silver Pocket
+
+const GEO_DIVIDER = new THREE.BoxGeometry(0.02, 0.15, 1.0);
+const GEO_BALL = new THREE.SphereGeometry(0.12, 64, 64);
+const MAT_BALL = new THREE.MeshPhysicalMaterial({ 
+  clearcoat: 1.0, clearcoatRoughness: 0.0, 
+  envMapIntensity: 3.0, color: "#ffffff", 
+  metalness: 0.2, roughness: 0.0,
+  transmission: 0.2, ior: 1.5
+}); // Pearl / Ivory Ball
+
+const MAT_NUMBER_PLATE_RED = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#990000", metalness: 0.2, roughness: 0.1 });
+const MAT_NUMBER_PLATE_GREEN = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#005500", metalness: 0.2, roughness: 0.1 });
+const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#050505", metalness: 0.2, roughness: 0.1 });
 
 
 type GameState = 'BETTING' | 'SPINNING' | 'SETTLING' | 'PAYOUT';
-
 type WheelTile = { num: number; color: 'red' | 'black' | 'green' };
 
-// European Layout
 const WHEEL_TILES: WheelTile[] = [
   { num: 0, color: 'green' }, { num: 32, color: 'red' }, { num: 15, color: 'black' },
   { num: 19, color: 'red' }, { num: 4, color: 'black' }, { num: 21, color: 'red' },
@@ -77,18 +122,8 @@ const WHEEL_TILES: WheelTile[] = [
 
 const SECTOR_ANGLE = (Math.PI * 2) / 37;
 
-// --- Bets Logic ---
-
 type BetType = 'straight' | 'dozen' | 'column' | 'red_black' | 'even_odd' | 'high_low';
-
-interface PlacedBet {
-  id: string;
-  type: BetType;
-  amount: number;
-  label: string;
-  numbers: number[]; // Numbers covered
-}
-
+interface PlacedBet { id: string; type: BetType; amount: number; label: string; numbers: number[]; }
 const RED_NUMS = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
 const BLACK_NUMS = [2,4,6,8,10,11,13,15,17,20,22,24,26,28,29,31,33,35];
 
@@ -98,461 +133,446 @@ function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameS
   const { camera } = useThree();
   const lookAtTarget = useRef(new THREE.Vector3(0, 0, 0));
 
-  useFrame(() => {
+  useFrame((state, delta) => {
+    if (gameState === 'BETTING' || gameState === 'PAYOUT') {
+      const targetCamPos = new THREE.Vector3(0, 10, 8);
+      camera.position.lerp(targetCamPos, delta * 2);
+      lookAtTarget.current.lerp(new THREE.Vector3(0, 0, 0), delta * 2);
+    } else if (gameState === 'SPINNING') {
+      const time = state.clock.getElapsedTime();
+      const radius = 6.5;
+      const targetCamPos = new THREE.Vector3(
+        Math.cos(time * 0.5) * radius,
+        5 + Math.sin(time * 0.3) * 1.5,
+        Math.sin(time * 0.5) * radius
+      );
+      camera.position.lerp(targetCamPos, delta * 1.5);
+      lookAtTarget.current.lerp(new THREE.Vector3(0, -1, 0), delta * 2);
+    } else if (gameState === 'SETTLING' && winIdx !== null) {
+      const targetAngle = (winIdx * SECTOR_ANGLE) + wheelRotRef.current;
+      const radius = 3.5;
+      const targetCamPos = new THREE.Vector3(
+        Math.cos(targetAngle) * radius,
+        3.5,
+        Math.sin(targetAngle) * radius
+      );
+      camera.position.lerp(targetCamPos, delta * 3);
+      
+      const lookPos = new THREE.Vector3(
+        Math.cos(targetAngle) * 2.2,
+        0,
+        Math.sin(targetAngle) * 2.2
+      );
+      lookAtTarget.current.lerp(lookPos, delta * 3);
+    }
+    
     camera.lookAt(lookAtTarget.current);
   });
-
-  useEffect(() => {
-    const targetPos = new THREE.Vector3(0, 8, 5);
-    const targetLook = new THREE.Vector3(0, 0, 0);
-
-    if (gameState === 'SPINNING') {
-      targetPos.set(4, 5, 4);
-    } else if (gameState === 'SETTLING' || gameState === 'PAYOUT') {
-      if (winIdx !== null && wheelRotRef.current) {
-        const wheelRot = wheelRotRef.current.rotation.y;
-        const absoluteAngle = wheelRot + (winIdx * SECTOR_ANGLE);
-        
-        // Position camera behind the winning pocket, looking down at it
-        const camRadius = 3.8;
-        targetPos.set(
-          -Math.sin(absoluteAngle) * camRadius,
-          1.8,
-          -Math.cos(absoluteAngle) * camRadius
-        );
-        
-        const ballRadius = 2.1;
-        targetLook.set(
-          -Math.sin(absoluteAngle) * ballRadius,
-          0,
-          -Math.cos(absoluteAngle) * ballRadius
-        );
-      } else {
-        targetPos.set(0, 3, 2);
-      }
-    }
-
-    gsap.to(camera.position, {
-      x: targetPos.x,
-      y: targetPos.y,
-      z: targetPos.z,
-      duration: 1.5,
-      ease: 'power3.inOut'
-    });
-
-    gsap.to(lookAtTarget.current, {
-      x: targetLook.x,
-      y: targetLook.y,
-      z: targetLook.z,
-      duration: 1.5,
-      ease: 'power3.inOut'
-    });
-  }, [gameState, winIdx, wheelRotRef]);
 
   return null;
 }
 
-function RouletteBowl() {
-  const diamonds = Array.from({ length: 8 }).map((_, i) => i * (Math.PI / 4));
-  return (
-    <group>
-      {/* Outer black/dark brown rim base */}
-      <mesh position={[0, -0.2, 0]} receiveShadow geometry={GEO_BOWL_BASE} material={MAT_BOWL_BASE} />
+function RouletteWheel({ wheelRotRef, ballPosRef }: { wheelRotRef: React.MutableRefObject<number>, ballPosRef: React.MutableRefObject<number> }) {
+  const group = useRef<THREE.Group>(null);
+  const ballRef = useRef<THREE.Mesh>(null);
+  const wheelInnerRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    if (wheelInnerRef.current) {
+      wheelInnerRef.current.rotation.y = wheelRotRef.current;
+    }
+    if (ballRef.current) {
+      const angle = ballPosRef.current;
+      // Ball descends from track (radius 4.2) to pocket (radius 2.3)
+      const isSettled = ballPosRef.current === wheelRotRef.current + (ballPosRef.current % (Math.PI*2));
+      const radius = 2.4; 
       
-      {/* Outer gold trim top */}
-      <mesh position={[0, 0.22, 0]} receiveShadow geometry={GEO_BOWL_TRIM} material={MAT_BOWL_TRIM} />
-
-      {/* Inner slope (dark metal track) */}
-      <mesh position={[0, -0.1, 0]} receiveShadow geometry={GEO_BOWL_SLOPE} material={MAT_BOWL_SLOPE} />
-
-      {/* Deflector Diamonds */}
-      {diamonds.map((angle, i) => {
-        const radius = 3.8;
-        const x = Math.sin(angle) * radius;
-        const z = Math.cos(angle) * radius;
-        return (
-          <mesh key={i} position={[x, 0.05, z]} rotation={[Math.PI / 2, 0, angle]} castShadow geometry={GEO_DEFLECTOR} material={MAT_DEFLECTOR} />
-        );
-      })}
-    </group>
-  );
-}
-
-function RouletteWheel3D({ gameState, wheelRotRef }: { gameState: GameState, wheelRotRef: any }) {
-  const currentRotation = useRef(0);
-  
-  useFrame((_, delta) => {
-    if (!wheelRotRef.current) return;
-    
-    let speed = 0.5;
-    if (gameState === 'SPINNING') speed = 2.0;
-    if (gameState === 'SETTLING') speed = 0.8;
-    if (gameState === 'PAYOUT') speed = 0.0;
-    
-    if (speed > 0) {
-      currentRotation.current += speed * delta;
-      wheelRotRef.current.rotation.y = currentRotation.current;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      ballRef.current.position.set(x, 0.15, z);
     }
   });
 
   return (
-    <group ref={wheelRotRef}>
-      {/* Inner dark floor base */}
-      <mesh position={[0, 0, 0]} receiveShadow geometry={GEO_WHEEL_BASE} material={MAT_WHEEL_BASE} />
-
-      {/* Gold Ring around pockets */}
-      <mesh position={[0, 0.05, 0]} receiveShadow geometry={GEO_WHEEL_RING} material={MAT_WHEEL_RING} />
-
-      {/* Center Turret (Spindle Base) */}
-      <mesh position={[0, 0.2, 0]} receiveShadow castShadow geometry={GEO_WHEEL_TURRET} material={MAT_WHEEL_TURRET} />
-
-      <mesh position={[0, 0.4, 0]} receiveShadow castShadow geometry={GEO_WHEEL_TURRET_TOP} material={MAT_WHEEL_TURRET_TOP} />
+    <group ref={group}>
+      <mesh geometry={GEO_BOWL_BASE} material={MAT_BOWL_BASE} position={[0, -0.4, 0]} receiveShadow />
+      <mesh geometry={GEO_BOWL_TRIM} material={MAT_BOWL_TRIM} position={[0, 0.1, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow />
+      <mesh geometry={GEO_BOWL_SLOPE} material={MAT_BOWL_SLOPE} position={[0, -0.2, 0]} receiveShadow />
       
-      {/* Center Spindle Tower */}
-      <mesh position={[0, 0.8, 0]} receiveShadow castShadow geometry={GEO_SPINDLE} material={MAT_SPINDLE} />
-      <mesh position={[0, 1.2, 0]} receiveShadow castShadow geometry={GEO_SPINDLE_TOP} material={MAT_SPINDLE} />
-
-      {/* Cross bars */}
-      {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, i) => (
-        <mesh key={i} position={[Math.sin(angle) * 0.4, 0.8, Math.cos(angle) * 0.4]} rotation={[Math.PI / 2, 0, angle]} castShadow geometry={GEO_CROSSBAR} material={MAT_SPINDLE} />
+      {/* 8 Deflectors */}
+      {Array.from({ length: 8 }).map((_, i) => (
+        <mesh key={`def-${i}`} geometry={GEO_DEFLECTOR} material={MAT_DEFLECTOR} position={[Math.cos(i * Math.PI / 4) * 3.8, 0, Math.sin(i * Math.PI / 4) * 3.8]} castShadow />
       ))}
 
-      {/* Pockets and Numbers Ring */}
-      {WHEEL_TILES.map((tile, i) => {
-        const angle = i * SECTOR_ANGLE;
-        const isRed = tile.color === 'red';
-        const isGreen = tile.color === 'green';
-        const color = isRed ? '#dc2626' : isGreen ? '#16a34a' : '#111111';
+      <group ref={wheelInnerRef}>
+        <mesh geometry={GEO_WHEEL_BASE} material={MAT_WHEEL_BASE} receiveShadow />
+        <mesh geometry={GEO_WHEEL_RING} material={MAT_WHEEL_RING} position={[0, 0.08, 0]} rotation={[Math.PI/2, 0, 0]} castShadow />
+        <mesh geometry={GEO_WHEEL_TURRET} material={MAT_WHEEL_TURRET} position={[0, 0.3, 0]} castShadow />
+        <mesh geometry={GEO_SPINDLE} material={MAT_SPINDLE} position={[0, 0.6, 0]} castShadow />
+        <mesh geometry={GEO_SPINDLE_TOP} material={MAT_SPINDLE} position={[0, 1.2, 0]} castShadow />
         
-        return (
-          <group key={i} rotation={[0, angle, 0]}>
-            {/* Number Plate (Outer edge of rotor) */}
-            <mesh position={[0, 0.06, -2.6]} receiveShadow geometry={GEO_NUMBER_PLATE} material={isRed ? MAT_NUMBER_PLATE_RED : isGreen ? MAT_NUMBER_PLATE_GREEN : MAT_NUMBER_PLATE_BLACK} />
+        {/* Turret Arms */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <mesh key={`arm-${i}`} geometry={new THREE.CylinderGeometry(0.04, 0.04, 2.4)} material={MAT_SPINDLE} position={[0, 0.65, 0]} rotation={[Math.PI/2, 0, i * Math.PI/4]} castShadow />
+        ))}
 
-            {/* The actual pocket slot (Inner edge) */}
-            <mesh position={[0, 0.04, -2.1]} receiveShadow geometry={GEO_POCKET} material={MAT_POCKET} />
-            
-            {/* 3D Number Text */}
-            <Text
-              position={[0, 0.08, -2.6]}
-              rotation={[-Math.PI / 2, 0, Math.PI]}
-              fontSize={0.22}
-              color="#ffffff"
-              anchorX="center"
-              anchorY="middle"
-              font="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjQ.ttf"
-            >
-              {tile.num.toString()}
-            </Text>
-            
-            {/* Gold Divider Fret (Between pockets) */}
-            <mesh position={[0.22, 0.08, -2.35]} receiveShadow castShadow rotation={[0, SECTOR_ANGLE / 2, 0]} geometry={GEO_DIVIDER} material={MAT_SPINDLE} />
-          </group>
-        );
-      })}
+        {/* 37 Numbers */}
+        {WHEEL_TILES.map((tile, i) => {
+          const angle = i * SECTOR_ANGLE;
+          const x = Math.cos(angle) * 2.5;
+          const z = Math.sin(angle) * 2.5;
+          
+          let mat = MAT_NUMBER_PLATE_GREEN;
+          if (tile.color === 'red') mat = MAT_NUMBER_PLATE_RED;
+          if (tile.color === 'black') mat = MAT_NUMBER_PLATE_BLACK;
+
+          return (
+            <group key={`num-${i}`} position={[x, 0.05, z]} rotation={[0, -angle, 0]}>
+              <mesh geometry={GEO_NUMBER_PLATE} material={mat} receiveShadow />
+              <mesh geometry={GEO_DIVIDER} material={MAT_WHEEL_RING} position={[0.2, 0.05, 0]} castShadow />
+              <mesh geometry={GEO_POCKET} material={MAT_POCKET} position={[-0.4, -0.05, 0]} receiveShadow />
+              <Text 
+                position={[0, 0.02, 0]} 
+                rotation={[-Math.PI / 2, 0, Math.PI / 2]} 
+                fontSize={0.25} 
+                color="white" 
+                font="https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2"
+                anchorX="center" 
+                anchorY="middle"
+                outlineWidth={0.01}
+                outlineColor="#000"
+              >
+                {tile.num}
+              </Text>
+            </group>
+          );
+        })}
+      </group>
+
+      <mesh ref={ballRef} geometry={GEO_BALL} material={MAT_BALL} castShadow />
+
+      {/* Cinematic Studio Lighting */}
+      <SpotLight
+        position={[0, 15, 0]}
+        angle={0.6}
+        penumbra={0.8}
+        intensity={8}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        color="#fffaee"
+      />
+      <SpotLight
+        position={[10, 8, 10]}
+        angle={0.8}
+        penumbra={1}
+        intensity={3}
+        color="#4facfe"
+      />
+      <SpotLight
+        position={[-10, 8, -10]}
+        angle={0.8}
+        penumbra={1}
+        intensity={3}
+        color="#f093fb"
+      />
+      <ambientLight intensity={0.4} />
     </group>
   );
 }
 
-function BallKinematic({ gameState, winIdx, wheelRotRef }: { gameState: GameState, winIdx: number | null, wheelRotRef: any }) {
-  const ballRef = useRef<any>(null);
-  const time = useRef(0);
-  const lastState = useRef<GameState>('BETTING');
-  
-  useFrame((_, delta) => {
-    if (!ballRef.current || winIdx === null) return;
-    
-    if (lastState.current !== gameState) {
-      time.current = 0;
-      lastState.current = gameState;
-    }
-    
-    if (gameState === 'SPINNING') {
-      time.current += delta;
-      const angle = -time.current * 4; // Counter-clockwise
-      const radius = 3.8;
-      ballRef.current.position.set(Math.sin(angle) * radius, 0.35, Math.cos(angle) * radius);
-    } else if (gameState === 'SETTLING') {
-      // Realistic spiral and bounce settling physics
-      const wheelRot = wheelRotRef?.current?.rotation.y || 0;
-      const pocketLocalAngle = (winIdx * SECTOR_ANGLE); 
-      const absoluteAngle = wheelRot + pocketLocalAngle;
-      
-      const targetRadius = 2.1; // inner pocket radius
-      
-      // time.current represents time spent in SETTLING
-      time.current += delta;
-      
-      // Calculate a decaying spiral
-      const spiralProgress = Math.min(1.0, time.current / 4.0); // 4 seconds to spiral in (matches the setTimeout)
-      const currentRadius = THREE.MathUtils.lerp(3.8, targetRadius, spiralProgress);
-      
-      // Add bouncing
-      const bounceHeight = Math.max(0, Math.sin(time.current * 15) * 0.4 * (1 - spiralProgress));
-      const targetY = 0.15 + bounceHeight;
-      
-      // Add spin relative to the wheel
-      const spinAngle = absoluteAngle + (1 - spiralProgress) * Math.PI * 4; // Extra spins while settling
-      
-      const targetX = -Math.sin(spinAngle) * currentRadius;
-      const targetZ = -Math.cos(spinAngle) * currentRadius;
-      
-      ballRef.current.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 0.15);
-    } else if (gameState === 'PAYOUT') {
-      // Stick to pocket
-      const wheelRot = wheelRotRef?.current?.rotation.y || 0;
-      const pocketLocalAngle = (winIdx * SECTOR_ANGLE);
-      const absoluteAngle = wheelRot + pocketLocalAngle;
-      
-      const targetRadius = 2.1; // inner pocket radius
-      const targetX = -Math.sin(absoluteAngle) * targetRadius;
-      const targetZ = -Math.cos(absoluteAngle) * targetRadius;
-      
-      ballRef.current.position.set(targetX, 0.15, targetZ);
-    } else {
-      // Hidden or resting
-      ballRef.current.position.set(0, 10, 0); // Hide above
-      if (gameState === 'BETTING') time.current = 0;
-    }
-  });
-
-  return (
-    <mesh ref={ballRef} castShadow receiveShadow position={[0, 10, 0]} geometry={GEO_BALL} material={MAT_BALL} />
-  );
-}
-
-// --- Main Game Component ---
 
 export function RouletteGame({ onClose }: { onClose: () => void }) {
-  const { profile, updateProfile } = useAuthStore();
-  const [betAmount, setBetAmount] = useState(50);
-  const [gameState, setGameState] = useState<GameState>('BETTING');
-  
+  const { profile, isGuest } = useAuthStore();
+  const [betAmount, setBetAmount] = useState(10);
   const [placedBets, setPlacedBets] = useState<PlacedBet[]>([]);
-  const [winIdx, setWinIdx] = useState<number | null>(null);
+  const [gameState, setGameState] = useState<GameState>('BETTING');
+  const [winNumber, setWinNumber] = useState<number | null>(null);
+  const [lastWin, setLastWin] = useState(0);
   
-  const wheelRef = useRef<any>(null); // To pass to ball for absolute pos tracking
+  const wheelRotRef = useRef(0);
+  const ballPosRef = useRef(0);
+  
+  useFrame((_, delta) => {
+    if (gameState === 'SPINNING' || gameState === 'SETTLING') {
+      wheelRotRef.current -= delta * 2; // Wheel spins counter-clockwise
+    }
+  });
 
   const handlePlaceBet = (type: BetType, label: string, numbers: number[]) => {
     if (gameState !== 'BETTING') return;
-    if (!profile) return;
-    if (profile.tokens < betAmount) { toast.error('Insufficient tokens'); return; }
-    
-    const bet: PlacedBet = { id: Math.random().toString(), type, amount: betAmount, label, numbers };
-    setPlacedBets(prev => [...prev, bet]);
-    
-    (updateProfile as any)({ tokens: profile.tokens - betAmount });
-    audio.play('roulette', 'click');
-  };
-
-  const clearBets = () => {
-    if (gameState !== 'BETTING') return;
-    if (!profile) return;
-    const totalRefund = placedBets.reduce((sum, b) => sum + b.amount, 0);
-    if (totalRefund > 0) {
-      (updateProfile as any)({ tokens: profile.tokens + totalRefund });
-      setPlacedBets([]);
+    const currentTotal = placedBets.reduce((a, b) => a + b.amount, 0);
+    if ((profile?.tokens || 0) < currentTotal + betAmount) {
+      toast.error('Insufficient tokens');
+      return;
     }
+    
+    audio.play('ui', 'chip');
+    setPlacedBets(prev => {
+      const existing = prev.findIndex(b => b.type === type && b.label === label);
+      if (existing >= 0) {
+        const next = [...prev];
+        next[existing].amount += betAmount;
+        return next;
+      }
+      return [...prev, { id: Math.random().toString(), type, amount: betAmount, label, numbers }];
+    });
   };
 
-  const handleSpin = () => {
-    if (placedBets.length === 0) { toast.error('Place a bet first!'); return; }
+  const handleClearBets = () => {
+    if (gameState !== 'BETTING') return;
+    audio.play('ui', 'click');
+    setPlacedBets([]);
+  };
+
+  const spin = async () => {
+    const totalBet = placedBets.reduce((a, b) => a + b.amount, 0);
+    if (totalBet === 0) {
+      toast.error('Place a bet first');
+      return;
+    }
     
-    // RNG Determination (Result-First)
-    const resultIdx = Math.floor(Math.random() * 37);
-    setWinIdx(resultIdx);
     setGameState('SPINNING');
-    audio.play('roulette', 'wheel-spin-up');
+    audio.play('slots', 'spin');
     
-    // Add random spin time between 15 to 25 seconds
-    const spinTime = 15000 + Math.random() * 10000; 
+    if (profile && !isGuest) {
+      await secureUpdateTokens(profile.id, -totalBet);
+    }
+
+    const winIndex = Math.floor(Math.random() * 37);
+    const winTile = WHEEL_TILES[winIndex];
+    setWinNumber(winTile.num);
+
+    const spinDuration = 5 + Math.random() * 2;
+    const targetBallAngle = (winIndex * SECTOR_ANGLE) + (Math.PI * 2 * 10);
     
-    // Play looping spin sound
-    const spinInterval = setInterval(() => {
-      audio.play('roulette', 'wheel-spin-up');
-    }, 600);
+    ballPosRef.current = 0; // reset ball pos
     
-    setTimeout(() => {
-      clearInterval(spinInterval);
-      setGameState('SETTLING');
-      audio.play('roulette', 'ball-settling-clicks');
-      
-      const settleInterval = setInterval(() => {
-        audio.play('roulette', 'ball-settling-clicks');
-      }, 150);
-      
-      setTimeout(() => {
-        clearInterval(settleInterval);
-        setGameState('PAYOUT');
-        calculatePayouts(resultIdx);
-      }, 4000); // 4 seconds settle time to match the spiralProgress
-    }, spinTime);
+    gsap.to(ballPosRef, {
+      current: targetBallAngle,
+      duration: spinDuration,
+      ease: "power2.out",
+      onComplete: () => {
+        audio.play('ui', 'click');
+        setGameState('SETTLING');
+        
+        setTimeout(() => {
+          calculatePayout(winTile.num);
+        }, 3000);
+      }
+    });
   };
 
-  const calculatePayouts = async (resultIdx: number) => {
-    const winningNum = WHEEL_TILES[resultIdx].num;
+  const calculatePayout = async (winningNumber: number) => {
+    setGameState('PAYOUT');
     let totalWin = 0;
-    let halfRefund = 0; // La Partage
-
+    
     placedBets.forEach(bet => {
-      if (bet.numbers.includes(winningNum)) {
-        // Calculate standard payout ratio
-        let multiplier = 0;
-        switch (bet.type) {
-          case 'straight': multiplier = 36; break;
-          case 'dozen': case 'column': multiplier = 3; break;
-          case 'red_black': case 'even_odd': case 'high_low': multiplier = 2; break;
-        }
-        totalWin += bet.amount * multiplier;
-      } else if (winningNum === 0 && ['red_black', 'even_odd', 'high_low'].includes(bet.type)) {
-        // La Partage rule
-        halfRefund += bet.amount / 2;
+      if (bet.numbers.includes(winningNumber)) {
+        if (bet.type === 'straight') totalWin += bet.amount * 36;
+        else if (bet.type === 'dozen' || bet.type === 'column') totalWin += bet.amount * 3;
+        else totalWin += bet.amount * 2;
       }
     });
 
-    const totalBet = placedBets.reduce((sum, b) => sum + b.amount, 0);
-    const earned = totalWin + halfRefund;
-
-    if (profile && !profile.id.startsWith('guest')) {
-      try {
-        await secureRecordGameResult({
-          userId: profile.id,
-          betAmount: totalBet,
-          earnedAmount: earned,
-          xpEarned: Math.floor(totalBet * 0.1)
-        });
-      } catch (e) {
-        console.error('Failed to record game result:', e);
-      }
-    }
-
-    if (earned > 0) {
-      toast.success(`Payout: ${earned} tokens! ${halfRefund > 0 ? '(La Partage Applied)' : ''}`);
-      audio.play('roulette', 'result-chime', { win: true });
-      vibrate([50, 50, 100]);
-      
-      if (profile) {
-        (updateProfile as any)({ tokens: profile.tokens + earned });
+    setLastWin(totalWin);
+    
+    if (totalWin > 0) {
+      audio.play('ui', 'win');
+      toast.success(`You won ${totalWin} tokens!`);
+      if (profile && !isGuest) {
+        const totalBet = placedBets.reduce((a,b)=>a+b.amount,0);
+        
+        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: totalWin, xpEarned: Math.floor(totalBet * 0.15) }) /* AUTOFIX: bet=0 to prevent double charge */;
       }
     } else {
-      toast.error(`Number ${winningNum}. House wins.`);
-      audio.play('roulette', 'result-chime', { win: false });
+      audio.play('ui', 'lose');
+      if (profile && !isGuest) {
+        const totalBet = placedBets.reduce((a,b)=>a+b.amount,0);
+        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: 0, xpEarned: Math.floor(totalBet * 0.05) }) /* AUTOFIX: bet=0 to prevent double charge */;
+      }
     }
 
     setTimeout(() => {
       setPlacedBets([]);
+      setWinNumber(null);
       setGameState('BETTING');
     }, 4000);
   };
 
-  const renderGrid = () => {
-    // Generate 1-36 grid logically
-    const grid = [];
-    for (let i = 1; i <= 36; i++) grid.push(i);
-    
-    return (
-      <div className="flex gap-2 w-full">
-        <Button variant="ghost" className="h-full px-4 border border-emerald-500 bg-emerald-500/10 text-emerald-600 font-bold text-2xl" onClick={() => handlePlaceBet('straight', '0', [0])}>0</Button>
-        <div className="grid grid-cols-12 gap-1 flex-1">
-          {grid.map(num => (
-            <Button 
-              key={num} 
-              variant="ghost" 
-              className={`p-2 border font-bold text-sm h-12 ${RED_NUMS.includes(num) ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-slate-500/50 bg-slate-500/10 text-slate-300'}`}
-              onClick={() => handlePlaceBet('straight', num.toString(), [num])}
-            >
-              {num}
-            </Button>
-          ))}
-        </div>
-      </div>
-    );
-  };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-emerald-950/90 backdrop-blur-md">
-      <Card className="relative w-full max-w-6xl h-[90vh] flex flex-col gap-0 overflow-hidden shadow-2xl border-yellow-700/50 bg-black rounded-2xl">
-        
-        {/* 3D Canvas Viewport */}
-        <div className="relative flex-1 bg-emerald-950 overflow-hidden cursor-move">
-          <Canvas camera={{ position: [0, 8, 5] }}>
-            {/* Cinematic Casino Lighting */}
-            <ambientLight intensity={0.2} color="#ffffff" />
-            <spotLight position={[5, 12, 5]} intensity={3.5} angle={0.4} penumbra={0.8} castShadow shadow-bias={-0.0001} color="#ffecd1" />
-            <spotLight position={[-5, 12, -5]} intensity={2.0} angle={0.5} penumbra={1.0} color="#e0f2fe" />
-            <spotLight position={[0, 8, 0]} intensity={1.0} angle={0.6} penumbra={0.5} castShadow />
-            <Environment preset="studio" />
-            <ContactShadows position={[0, -0.4, 0]} opacity={0.6} scale={20} blur={2} far={4} color="#000000" />
-            <QualityManager>
-              <VFXManager>
-                <PostFXManager />
-                <ParticleManager />
-                <CameraController gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
-                <group>
-                  <RouletteBowl />
-                  <group ref={wheelRef}>
-                 <RouletteWheel3D gameState={gameState} wheelRotRef={wheelRef} />
-               </group>
-               <BallKinematic gameState={gameState} winIdx={winIdx} wheelRotRef={wheelRef} />
+    <div className="absolute inset-0 bg-black flex flex-col font-sans overflow-hidden">
+      
+      {/* 3D Scene */}
+      <div className="absolute inset-0 z-0">
+        <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
+          <QualityManager>
+            <Environment preset="studio" blur={0.8} />
+            <CameraController gameState={gameState} winIdx={winNumber !== null ? WHEEL_TILES.findIndex(t => t.num === winNumber) : null} wheelRotRef={wheelRotRef} />
+            
+            <group position={[0, -2, 0]}>
+              <RouletteWheel wheelRotRef={wheelRotRef} ballPosRef={ballPosRef} />
+              
+              {/* Cinematic Floor Reflection */}
+              <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, -0.6, 0]} receiveShadow>
+                <planeGeometry args={[50, 50]} />
+                <MeshReflectorMaterial 
+                  blur={[300, 100]}
+                  resolution={1024}
+                  mixBlur={1}
+                  mixStrength={80}
+                  roughness={0.2}
+                  depthScale={1.2}
+                  minDepthThreshold={0.4}
+                  maxDepthThreshold={1.4}
+                  color="#0a0a0a"
+                  metalness={0.5}
+                  mirror={0.5}
+                />
+              </mesh>
             </group>
-          </VFXManager>
-</QualityManager>
-</Canvas>
-          
-          {/* Betting Overlay */}
-          <AnimatePresence>
-            {gameState === 'BETTING' && (
-              <motion.div 
-                initial={{ opacity: 0, y: 50 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                exit={{ opacity: 0, y: 50 }}
-                className="absolute bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-xl border border-slate-700 p-6 rounded-xl shadow-2xl z-20 pointer-events-auto"
-              >
-                <div className="flex flex-col gap-6">
-                  <div className="flex justify-between items-center border-b border-slate-700/50 pb-4">
-                     <BetControl betAmount={betAmount} setBetAmount={setBetAmount} minBet={10} maxBet={5000} />
-                     <div className="flex gap-4">
-                       <Button variant="ghost" className="text-red-400 border-red-500/30 font-bold uppercase tracking-wider" onClick={clearBets}>Clear Table</Button>
-                       <Button variant="neon" size="lg" className="font-bold px-12 text-lg shadow-[0_0_20px_rgba(0,240,255,0.4)]" onClick={handleSpin} disabled={placedBets.length === 0}>SPIN</Button>
-                     </div>
-                  </div>
-                  
-                  {renderGrid()}
-                  
-                  <div className="grid grid-cols-6 gap-2">
-                    <Button variant="ghost" className="border border-slate-700 text-slate-300 font-bold" onClick={() => handlePlaceBet('dozen', '1st 12', Array.from({length: 12}, (_,i)=>i+1))}>1st 12</Button>
-                    <Button variant="ghost" className="border border-slate-700 text-slate-300 font-bold" onClick={() => handlePlaceBet('dozen', '2nd 12', Array.from({length: 12}, (_,i)=>i+13))}>2nd 12</Button>
-                    <Button variant="ghost" className="border border-slate-700 text-slate-300 font-bold" onClick={() => handlePlaceBet('dozen', '3rd 12', Array.from({length: 12}, (_,i)=>i+25))}>3rd 12</Button>
-                    <Button variant="ghost" className="border border-red-500/50 bg-red-500/5 text-red-400 font-bold" onClick={() => handlePlaceBet('red_black', 'RED', RED_NUMS)}>RED</Button>
-                    <Button variant="ghost" className="border border-slate-500/50 bg-slate-500/5 text-slate-300 font-bold" onClick={() => handlePlaceBet('red_black', 'BLACK', BLACK_NUMS)}>BLACK</Button>
-                    <Button variant="ghost" className="border border-slate-700 text-slate-300 font-bold" onClick={() => handlePlaceBet('even_odd', 'EVEN', Array.from({length: 18}, (_,i)=>(i+1)*2))}>EVEN</Button>
-                  </div>
-                  
-                  <div className="text-sm font-bold text-slate-500 flex justify-between bg-slate-950 p-3 rounded-lg">
-                    <span className="text-cyan-400">Total Wager: <span className="text-slate-900">{placedBets.reduce((s, b) => s + b.amount, 0)}</span></span>
-                    <span className="text-emerald-600 tracking-wider">La Partage Active</span>
+
+            <PostFXManager />
+            <ParticleManager />
+            
+            {/* Ambient Dust Particles */}
+            <Sparkles count={200} scale={20} size={2} speed={0.4} opacity={0.2} color="#fef08a" />
+          </QualityManager>
+        </Canvas>
+      </div>
+
+      {/* Top Header UI */}
+      <div className="relative z-10 flex justify-between items-center p-6 bg-gradient-to-b from-black/80 to-transparent">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/10 backdrop-blur-md rounded-xl">
+            EXIT
+          </Button>
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 px-6 py-2 rounded-xl">
+            <p className="text-white/60 text-xs font-bold tracking-widest uppercase">Balance</p>
+            <p className="text-yellow-400 font-black text-lg">{profile?.tokens?.toLocaleString() || 0} 🪙</p>
+          </div>
+        </div>
+        
+        {/* Result Overlay */}
+        <AnimatePresence>
+          {gameState === 'PAYOUT' && (
+            <motion.div 
+              initial={{ scale: 0, y: -50 }} 
+              animate={{ scale: 1, y: 0 }} 
+              exit={{ scale: 0, opacity: 0 }}
+              className={`px-10 py-6 rounded-3xl border-4 ${lastWin > 0 ? 'bg-emerald-900/80 border-emerald-400 shadow-[0_0_50px_rgba(52,211,153,0.5)]' : 'bg-red-900/80 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.5)]'} backdrop-blur-xl absolute left-1/2 -translate-x-1/2 top-24 text-center z-50`}
+            >
+              <h2 className="text-white font-black text-4xl drop-shadow-lg tracking-wider">
+                {WHEEL_TILES.find(t => t.num === winNumber)?.num} {WHEEL_TILES.find(t => t.num === winNumber)?.color.toUpperCase()}
+              </h2>
+              {lastWin > 0 && <p className="text-yellow-400 font-bold text-xl mt-2">+{lastWin} WIN</p>}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Interactive Betting Board */}
+      <AnimatePresence>
+        {gameState === 'BETTING' && (
+          <motion.div 
+            initial={{ y: 200, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 200, opacity: 0 }}
+            className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-10 flex flex-col items-center pb-safe"
+          >
+            <div className="w-full max-w-4xl bg-green-950/80 p-6 rounded-3xl border-2 border-green-500/30 backdrop-blur-2xl shadow-2xl overflow-x-auto custom-scrollbar mb-6">
+              <div className="min-w-[800px] flex flex-col gap-2 relative">
+                
+                {/* Numbers Grid */}
+                <div className="flex">
+                  <button 
+                    onClick={() => handlePlaceBet('straight', '0', [0])}
+                    className="w-16 flex-shrink-0 bg-green-700 hover:bg-green-600 border border-green-400/50 rounded-l-xl flex items-center justify-center font-black text-xl text-white relative transition-colors"
+                  >
+                    0
+                    {placedBets.filter(b => b.label === '0').length > 0 && (
+                      <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-1 right-1 shadow-md">
+                        {placedBets.filter(b => b.label === '0').reduce((a,b)=>a+b.amount,0)}
+                      </span>
+                    )}
+                  </button>
+                  <div className="flex-1 grid grid-cols-12 gap-1 px-1">
+                    {/* Reverse order for standard layout (cols: 1st, 2nd, 3rd) */}
+                    {[3,2,1].map(rowOffset => (
+                      Array.from({length: 12}).map((_, col) => {
+                        const num = (col * 3) + rowOffset;
+                        const isRed = RED_NUMS.includes(num);
+                        const label = num.toString();
+                        const betVal = placedBets.filter(b => b.label === label).reduce((a,b)=>a+b.amount,0);
+                        
+                        return (
+                          <button
+                            key={num}
+                            onClick={() => handlePlaceBet('straight', label, [num])}
+                            className={`h-12 flex items-center justify-center font-bold text-white text-lg relative rounded-md border border-white/10 transition-colors ${isRed ? 'bg-red-700 hover:bg-red-600' : 'bg-slate-900 hover:bg-slate-800'}`}
+                          >
+                            {num}
+                            {betVal > 0 && (
+                              <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5 shadow-md z-10">{betVal}</span>
+                            )}
+                          </button>
+                        );
+                      })
+                    ))}
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          {/* Placed Bets Floating Labels */}
-          {gameState === 'BETTING' && (
-             <div className="absolute top-4 left-4 z-20 space-y-2 pointer-events-none">
-                <h4 className="text-xs text-slate-500 font-bold tracking-widest uppercase">Active Bets</h4>
-                {placedBets.map(bet => (
-                  <div key={bet.id} className="text-xs bg-slate-800/80 border border-slate-600 px-3 py-1.5 rounded flex gap-2 items-center text-slate-900 backdrop-blur-md">
-                     <span className="text-cyan-400 font-bold">{bet.amount}</span> 
-                     <span className="text-slate-500">on</span>
-                     <span className="font-bold">{bet.label}</span>
-                  </div>
-                ))}
-             </div>
-          )}
+                {/* Outside Bets */}
+                <div className="flex pl-16 gap-1 mt-2">
+                  {[
+                    { id: '1st 12', label: '1st 12', nums: Array.from({length:12}, (_,i)=>i+1), type: 'dozen' },
+                    { id: '2nd 12', label: '2nd 12', nums: Array.from({length:12}, (_,i)=>i+13), type: 'dozen' },
+                    { id: '3rd 12', label: '3rd 12', nums: Array.from({length:12}, (_,i)=>i+25), type: 'dozen' }
+                  ].map(b => {
+                    const betVal = placedBets.filter(pb => pb.label === b.id).reduce((a,b)=>a+b.amount,0);
+                    return (
+                      <button key={b.id} onClick={() => handlePlaceBet(b.type as BetType, b.id, b.nums)} className="flex-1 h-10 bg-green-800 hover:bg-green-700 border border-green-500/30 rounded-md font-bold text-white relative transition-colors">
+                        {b.label}
+                        {betVal > 0 && <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5">{betVal}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+                
+                <div className="flex pl-16 gap-1 mt-1">
+                  {[
+                    { id: '1-18', label: '1 TO 18', nums: Array.from({length:18}, (_,i)=>i+1), type: 'high_low' },
+                    { id: 'EVEN', label: 'EVEN', nums: Array.from({length:18}, (_,i)=>(i+1)*2), type: 'even_odd' },
+                    { id: 'RED', label: 'RED', nums: RED_NUMS, type: 'red_black', color: 'bg-red-700 hover:bg-red-600' },
+                    { id: 'BLACK', label: 'BLACK', nums: BLACK_NUMS, type: 'red_black', color: 'bg-slate-900 hover:bg-slate-800' },
+                    { id: 'ODD', label: 'ODD', nums: Array.from({length:18}, (_,i)=>(i*2)+1), type: 'even_odd' },
+                    { id: '19-36', label: '19 TO 36', nums: Array.from({length:18}, (_,i)=>i+19), type: 'high_low' }
+                  ].map(b => {
+                    const betVal = placedBets.filter(pb => pb.label === b.id).reduce((a,b)=>a+b.amount,0);
+                    return (
+                      <button key={b.id} onClick={() => handlePlaceBet(b.type as BetType, b.id, b.nums)} className={`flex-1 h-12 ${b.color || 'bg-green-900 hover:bg-green-800'} border border-white/10 rounded-md font-black text-white relative transition-colors`}>
+                        {b.label}
+                        {betVal > 0 && <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5">{betVal}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
 
-          <Button variant="ghost" className="absolute top-4 right-4 z-50 text-slate-500 bg-black/20 backdrop-blur-md" onClick={onClose}>Close</Button>
-        </div>
-      </Card>
+            <div className="w-full max-w-4xl flex items-center justify-between gap-6 bg-black/50 p-4 rounded-3xl backdrop-blur-md border border-white/10">
+              <BetControl betAmount={betAmount} setBetAmount={setBetAmount} minBet={10} maxBet={10000} />
+              <div className="flex gap-4">
+                <Button variant="danger" onClick={handleClearBets} disabled={placedBets.length === 0} className="w-32 rounded-xl font-bold tracking-widest bg-red-950/50 hover:bg-red-900 text-red-400 border-red-500/30">
+                  CLEAR
+                </Button>
+                <Button onClick={spin} disabled={placedBets.length === 0} className="w-48 h-12 rounded-xl font-black text-lg tracking-widest bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                  SPIN WHEEL
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

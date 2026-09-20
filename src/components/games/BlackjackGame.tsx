@@ -141,10 +141,10 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
         try {
           await secureRecordGameResult({
             userId: pr.id,
-            betAmount: betAmount,
+            betAmount: 0,
             earnedAmount: earned,
             xpEarned: Math.floor(betAmount * 0.1)
-          });
+          }) /* AUTOFIX: bet=0 to prevent double charge */;
           return true;
         } catch (err) {
           return true;

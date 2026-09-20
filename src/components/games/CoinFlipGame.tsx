@@ -221,10 +221,10 @@ export function CoinFlipGame({ onClose }: any) {
         try {
           const { error: updateError } = await secureRecordGameResult({
             userId: pr.id,
-            betAmount: betAmount,
+            betAmount: 0,
             earnedAmount: earned,
             xpEarned: Math.floor(betAmount * 0.1)
-          });
+          }) /* AUTOFIX: bet=0 to prevent double charge */;
 
           if (updateError) {
             logError(updateError, { context: 'coinflip_result_update' });

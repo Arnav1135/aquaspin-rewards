@@ -9,6 +9,7 @@ export interface Player {
 
 export interface MatchState {
   matchId: string;
+  gameKey: string;
   players: Player[];
   status: 'waiting' | 'in_progress' | 'finished';
 }
@@ -17,18 +18,17 @@ type MatchmakingCallback = (match: MatchState) => void;
 
 export class MatchmakingService {
   private channel: RealtimeChannel | null = null;
-  private currentMatchId: string | null = null;
+  private matchChannel: RealtimeChannel | null = null;
+  public currentMatchId: string | null = null;
   private me: Player | null = null;
   
   public onMatchFound: MatchmakingCallback | null = null;
+  public onGameStateUpdate: ((payload: any) => void) | null = null;
 
-  constructor() {}
-
-  public joinQueue(player: Player) {
+  public joinQueue(player: Player, gameKey: string = 'any') {
     this.me = player;
     
-    // Create or join a 'matchmaking' channel
-    this.channel = supabase.channel('matchmaking', {
+    this.channel = supabase.channel(`matchmaking_${gameKey}`, {
       config: {
         presence: {
           key: player.id,
@@ -40,14 +40,8 @@ export class MatchmakingService {
       .on('presence', { event: 'sync' }, () => {
         const state = this.channel?.presenceState();
         if (state) {
-          this.processQueue(state);
+          this.processQueue(state, gameKey);
         }
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('Player joined queue:', key, newPresences);
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('Player left queue:', key, leftPresences);
       })
       .on('broadcast', { event: 'match_found' }, ({ payload }) => {
         const match = payload as MatchState;
@@ -60,7 +54,6 @@ export class MatchmakingService {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // Track presence
           await this.channel?.track({
             id: player.id,
             username: player.username,
@@ -71,7 +64,7 @@ export class MatchmakingService {
       });
   }
 
-  private processQueue(state: Record<string, any[]>) {
+  private processQueue(state: Record<string, any[]>, gameKey: string) {
     if (!this.me) return;
 
     const queuedPlayers: any[] = [];
@@ -81,53 +74,32 @@ export class MatchmakingService {
       }
     }
 
-    // Sort by queuedAt to prioritize older queue entries
     queuedPlayers.sort((a, b) => a.queuedAt - b.queuedAt);
 
-    // If I'm the oldest in queue and there's at least 2 players, I should orchestrate the match
     if (queuedPlayers.length >= 2 && queuedPlayers[0].id === this.me.id) {
-      const p1 = queuedPlayers[0];
-      const p2 = queuedPlayers[1];
-
-      const matchId = `match_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-      const matchState: MatchState = {
+      const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const players = [queuedPlayers[0], queuedPlayers[1]];
+      
+      const match: MatchState = {
         matchId,
-        players: [
-          { id: p1.id, username: p1.username, level: p1.level },
-          { id: p2.id, username: p2.username, level: p2.level }
-        ],
+        gameKey,
+        players: players.map(p => ({ id: p.id, username: p.username, level: p.level })),
         status: 'in_progress'
       };
 
-      // Broadcast match to all in queue
       this.channel?.send({
         type: 'broadcast',
         event: 'match_found',
-        payload: matchState
+        payload: match
       });
     }
   }
 
-  public leaveQueue() {
-    if (this.channel) {
-      this.channel.untrack();
-      supabase.removeChannel(this.channel);
-      this.channel = null;
-    }
-  }
-
-  // --- Game State Sync via Supabase Broadcasts ---
-  
-  private gameChannel: RealtimeChannel | null = null;
-  public onGameStateUpdate: ((state: any) => void) | null = null;
-
   public connectToMatch(matchId: string) {
-    if (this.gameChannel) {
-      supabase.removeChannel(this.gameChannel);
-    }
-    this.gameChannel = supabase.channel(`match_${matchId}`);
+    this.currentMatchId = matchId;
+    this.matchChannel = supabase.channel(`match_${matchId}`);
     
-    this.gameChannel
+    this.matchChannel
       .on('broadcast', { event: 'game_state' }, ({ payload }) => {
         if (this.onGameStateUpdate) {
           this.onGameStateUpdate(payload);
@@ -136,21 +108,30 @@ export class MatchmakingService {
       .subscribe();
   }
 
-  public sendGameStateUpdate(state: any) {
-    if (this.gameChannel) {
-      this.gameChannel.send({
+  public sendGameStateUpdate(payload: any) {
+    if (this.matchChannel) {
+      this.matchChannel.send({
         type: 'broadcast',
         event: 'game_state',
-        payload: state
+        payload
       });
     }
   }
 
   public disconnectFromMatch() {
-    if (this.gameChannel) {
-      supabase.removeChannel(this.gameChannel);
-      this.gameChannel = null;
+    if (this.matchChannel) {
+      this.matchChannel.unsubscribe();
+      this.matchChannel = null;
     }
     this.currentMatchId = null;
+  }
+
+  public leaveQueue() {
+    if (this.channel) {
+      this.channel.unsubscribe();
+      this.channel = null;
+    }
+    this.currentMatchId = null;
+    this.me = null;
   }
 }

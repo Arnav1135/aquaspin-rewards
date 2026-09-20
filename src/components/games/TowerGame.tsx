@@ -87,10 +87,10 @@ export default function TowerGame({ onClose }: TowerGameProps) {
       if (pr && !pr.id.startsWith('guest')) {
         await secureRecordGameResult({
           userId: pr.id,
-          betAmount: betAmount,
+          betAmount: 0,
           earnedAmount: 0, // Lost
           xpEarned: Math.floor(betAmount * 0.1)
-        });
+        }) /* AUTOFIX: bet=0 to prevent double charge */;
       }
     } else {
       // SAFE
@@ -116,10 +116,10 @@ export default function TowerGame({ onClose }: TowerGameProps) {
     if (pr && !pr.id.startsWith('guest')) {
       await secureRecordGameResult({
         userId: pr.id,
-        betAmount: betAmount,
+        betAmount: 0,
         earnedAmount: winnings,
         xpEarned: Math.floor(betAmount * 0.1)
-      });
+      }) /* AUTOFIX: bet=0 to prevent double charge */;
       toast.success(`Cashed out ${winnings} tokens!`);
     }
   };

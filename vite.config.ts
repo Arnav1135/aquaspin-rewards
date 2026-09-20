@@ -5,6 +5,7 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   worker: {
     format: 'es'
   },
@@ -81,3 +82,4 @@ export default defineConfig({
     chunkSizeWarningLimit: 4000,
   },
 });
+

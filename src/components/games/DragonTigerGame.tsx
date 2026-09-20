@@ -140,10 +140,10 @@ export function DragonTigerGame({ onClose }: any) {
       try {
         await secureRecordGameResult({
           userId: pr.id,
-          betAmount: betAmount,
+          betAmount: 0,
           earnedAmount: earned,
           xpEarned: Math.floor(betAmount * 0.1)
-        });
+        }) /* AUTOFIX: bet=0 to prevent double charge */;
 
         await (supabase.from('game_stats') as any).upsert({
           user_id: pr.id,

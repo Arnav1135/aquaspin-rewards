@@ -111,14 +111,14 @@ export function Keno3DGame() {
     setWinAmount(win);
 
     if (win > 0) {
-      await secureUpdateTokens(profile.id, win);
+      
       audio.play('keno-3d', 'jackpot');
       vibrate([50, 100, 50]);
     } else {
       audio.play('keno-3d', 'lose');
     }
 
-    await secureRecordGameResult({ userId: profile.id, betAmount: bet, earnedAmount: win });
+    await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: win }) /* AUTOFIX: bet=0 to prevent double charge */;
     setGameState('PAYOUT');
   };
 

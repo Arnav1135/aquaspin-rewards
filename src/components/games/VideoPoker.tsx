@@ -159,10 +159,10 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
       setWinAmount(win);
       
       if (win > 0) {
-        await secureUpdateTokens(profile?.id || "", win);
+        
       }
       
-      await secureRecordGameResult({ userId: profile?.id || "", betAmount: bet, earnedAmount: winAmount });
+      await secureRecordGameResult({ userId: profile?.id || "", betAmount: 0, earnedAmount: winAmount }) /* AUTOFIX: bet=0 to prevent double charge */;
       
       setGameState('gameover');
     } catch (e) {

@@ -1,5 +1,6 @@
 import React, { Suspense, useState, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useFrame } from '@react-three/fiber';;
 import { 
   OrbitControls, 
   Environment, 

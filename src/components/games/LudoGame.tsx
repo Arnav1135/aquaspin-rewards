@@ -8,7 +8,8 @@ import { LayerA_ErrorBoundary } from '../../engine/stability/LayerA_ErrorBoundar
 import { RecoveryCoordinator } from '../../engine/stability/RecoveryCoordinator';
 import { ChaosTestRunner } from '../../engine/stability/ChaosTestRunner';
 import toast from 'react-hot-toast';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useFrame, useThree } from '@react-three/fiber';;
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';

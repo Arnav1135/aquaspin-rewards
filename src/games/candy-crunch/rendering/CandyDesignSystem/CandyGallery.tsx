@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useFrame } from '@react-three/fiber';;
 import * as THREE from 'three';
 import { CandyAssetRegistry } from './CandyAssetRegistry';
 import { CandyColor, CandyShape, SpecialType } from '../../types';

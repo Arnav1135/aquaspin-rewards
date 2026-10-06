@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useFrame } from '@react-three/fiber';;
 import { Html, ScrollControls, useScroll, Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { GameFrame } from './GameFrame';

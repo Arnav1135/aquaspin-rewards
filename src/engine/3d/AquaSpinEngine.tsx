@@ -1,6 +1,7 @@
 import { ReactNode, useMemo, Suspense, useEffect } from 'react';
 import * as THREE from 'three';
-import { Canvas, useThree } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useThree } from '@react-three/fiber';;
 
 function WebGLCleanup() {
   const { gl } = useThree();

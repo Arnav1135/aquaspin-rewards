@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useFrame } from '@react-three/fiber';;
 import { OrbitControls, Environment, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { BetControl } from '@/components/ui/BetControl';

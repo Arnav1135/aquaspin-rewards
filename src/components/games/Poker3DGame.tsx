@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 import { Physics, RigidBody } from '@react-three/rapier';
 import { Card as CardType, PokerEngine } from '@/lib/pokerEngine';
 import { Button } from '@/components/ui/Button';

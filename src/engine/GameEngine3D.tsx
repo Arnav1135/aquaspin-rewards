@@ -1,6 +1,6 @@
 import { ReactNode, useMemo, useState } from 'react';
 import * as THREE from 'three';
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 import {
   EffectComposer,
   Bloom,

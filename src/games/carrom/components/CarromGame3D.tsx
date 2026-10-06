@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 import { Physics } from '@react-three/rapier';
 import { Board3D } from './Board3D';
 import { Striker3D } from './Striker3D';

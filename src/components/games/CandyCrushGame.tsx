@@ -11,7 +11,7 @@ import { AnimationEngine } from './candycrush/AnimationEngine';
 import { SoundEngine } from './candycrush/SoundEngine';
 import { LightingSystem } from '../../engine/3d';
 import { QualityManager, PostFXManager, VFXManager, ParticleManager, useVFX } from '../../engine/aaa';
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 // Ensure engines are initialized
 void UIEngine;
 void AnimationEngine;

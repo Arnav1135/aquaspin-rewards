@@ -11,7 +11,8 @@ import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
 import { getKenoMultiplier } from '@/lib/kenoMath';
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useFrame } from '@react-three/fiber';;
 import { QualityManager, PostFXManager, VFXManager, ParticleManager } from '@/engine/aaa';
 import { RigidBody, Physics, CuboidCollider } from '@react-three/rapier';
 import { Html, Environment, ContactShadows, Sphere } from '@react-three/drei';

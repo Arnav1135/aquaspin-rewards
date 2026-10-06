@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { useCarromStore } from '../state/CarromState';
@@ -23,6 +23,7 @@ export function CarromCameraController() {
   const cameraProfile = useCarromStore(state => state.cameraProfile);
   
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
+  const { size } = useThree();
   
   const vec = useRef(new THREE.Vector3());
   const target = useRef(new THREE.Vector3());
@@ -60,7 +61,7 @@ export function CarromCameraController() {
     
     // Adjust FOV based on aspect ratio to fit board on mobile portrait
     const aspect = state.size.width / state.size.height;
-    let targetFov = profile.fov;
+    let targetFov = (size.width / size.height < 1 ? profile.fov / Math.max(0.4, size.width / size.height) * 0.9 : profile.fov);
     if (aspect < 1) {
        // Expand FOV for portrait mode
        targetFov = Math.min(targetFov * (1 / aspect) * 0.8, 80);
@@ -112,3 +113,4 @@ export function CarromCameraController() {
 
   return <PerspectiveCamera ref={cameraRef} makeDefault fov={45} />;
 }
+

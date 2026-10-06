@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import { MockBackend } from '@/lib/api';
 import { OpportunityEngine } from '@/lib/opportunityEngine';
 
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 import { QualityManager, PostFXManager, VFXManager, ParticleManager, useVFX } from '@/engine/aaa';
 import { RigidBody, Physics } from '@react-three/rapier';
 import { Html, Line, Stars } from '@react-three/drei';

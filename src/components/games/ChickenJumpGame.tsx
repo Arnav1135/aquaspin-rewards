@@ -1,4 +1,4 @@
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 import { Physics } from '@react-three/rapier';
 import { QualityManager } from '@/engine/aaa/QualityManager';
 import { PostFXManager } from '@/engine/aaa/PostFXManager';

@@ -22,7 +22,7 @@ import toast from 'react-hot-toast';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { ContactShadows, PresentationControls, Float } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 const GEO_CYLINDER = new THREE.CylinderGeometry(2.8, 2.8, 0.4, 64);
 const GEO_CIRCLE = new THREE.CircleGeometry(2.8, 64);
 const GEO_TORUS = new THREE.TorusGeometry(2.8, 0.08, 16, 100);

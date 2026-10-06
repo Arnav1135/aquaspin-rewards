@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { QualityManager, PostFXManager, ParticleManager, VFXManager } from '@/engine/aaa';

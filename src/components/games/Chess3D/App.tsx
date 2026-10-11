@@ -7,6 +7,7 @@ import { computeAIMove } from './chess/aiController';
 import { OnlineMultiplayerManager } from './chess/onlineMultiplayer';
 import { GameModeController } from './chess/gameModeController';
 import { soundFx } from './audio/sound';
+import toast from 'react-hot-toast';
 
 const modeCtrl = new GameModeController();
 
@@ -399,7 +400,10 @@ export default function App({ onClose }: { onClose?: () => void }) {
     soundFx.playClick();
     computeAIMove(chessRef.current, 'hard').then(bestMove => {
       if (bestMove) {
-        alert(`💡 Recommended Move: ${bestMove.from.toUpperCase()} ➔ ${bestMove.to.toUpperCase()}`);
+        toast.success(`💡 Recommended Move: ${bestMove.from.toUpperCase()} ➔ ${bestMove.to.toUpperCase()}`, {
+          icon: '♟️',
+          duration: 3500,
+        });
       }
     });
   };

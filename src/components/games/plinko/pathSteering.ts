@@ -30,11 +30,10 @@ export function getBiasImpulse(
   
   const direction = state.path[logicalRow];
   
-  // Smooth bounded steering. Max steering force remains within normal bounds.
-  // We use a gentle constant magnitude. No overpowering final rows.
-  const magnitude = 0.05 + (logicalRow / state.totalRows) * 0.02; // Slightly scales down but never snaps
+  // Smooth bounded steering with decisive momentum so balls roll cleanly off pegs
+  const magnitude = 0.18 + (logicalRow / state.totalRows) * 0.05;
   
   const impulseX = direction === 'R' ? magnitude : -magnitude;
   
-  return { x: impulseX, y: 0, z: 0 };
+  return { x: impulseX, y: -0.05, z: 0 };
 }

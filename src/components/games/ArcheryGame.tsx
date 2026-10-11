@@ -17,7 +17,7 @@ import toast from 'react-hot-toast';
 const GEO_ARROW_SHAFT = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8);
 const MAT_ARROW_SHAFT = new THREE.MeshStandardMaterial({ color: "#8B4513" });
 const GEO_ARROW_HEAD = new THREE.CylinderGeometry(0.03, 0.001, 0.1, 8);
-const MAT_ARROW_HEAD = new THREE.MeshStandardMaterial({ color: "#silver", metalness: 0.8, roughness: 0.2 });
+const MAT_ARROW_HEAD = new THREE.MeshStandardMaterial({ color: "#cccccc", metalness: 0.8, roughness: 0.2 });
 const GEO_ARROW_FEATHER = new THREE.BoxGeometry(0.1, 0.1, 0.01);
 const MAT_ARROW_FEATHER = new THREE.MeshStandardMaterial({ color: "#ff0000" });
 

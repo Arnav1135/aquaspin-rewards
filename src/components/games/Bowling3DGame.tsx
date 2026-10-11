@@ -1,5 +1,5 @@
 import { useAIGameEngine } from '@/hooks/useAIGameEngine';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Text, RoundedBox } from '@react-three/drei';
@@ -85,13 +85,13 @@ function BowlingBall({ rolling, power, spin, onFinish }: { rolling: boolean, pow
   const ballRef = useRef<RapierRigidBody>(null);
   const doneRef = useRef(false);
   
-  useState(() => {
+  useEffect(() => {
     if (rolling && ballRef.current) {
       const p = 15 + (power * 35);
       ballRef.current.applyImpulse({ x: spin * 3, y: 0, z: -p }, true);
       ballRef.current.applyTorqueImpulse({ x: -p * 0.2, y: spin * 2, z: 0 }, true);
     }
-  });
+  }, [rolling, power, spin]);
 
   useFrame(() => {
     if (!ballRef.current) return;

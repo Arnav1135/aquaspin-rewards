@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import { Html, Detailed } from '@react-three/drei';
 import { QualityManager, PostFXManager, VFXManager, ParticleManager, EnvironmentManager, EnvironmentTheme } from '@/engine/aaa';
 import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
-import { useThree } from '@react-three/fiber';;
+import { useThree, useFrame } from '@react-three/fiber';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import { triggerWinCelebration } from '@/lib/winCelebration';
@@ -145,8 +145,8 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
           key={peg.id} 
           type="fixed" 
           position={peg.pos}
-          restitution={0.3}
-          friction={0.1}
+          restitution={0.65}
+          friction={0.01}
           userData={{ isPeg: true }}
         >
           <BallCollider args={[PEG_RADIUS]} />
@@ -203,6 +203,7 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
   const rbRef = useRef<any>(null);
   const steerRef = useRef<PathSteeringState>({ ...steeringState });
   const lastHitTime = useRef(0);
+  const stuckTimer = useRef(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -214,9 +215,43 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
   // Give it an initial spin to prevent sticking
   useEffect(() => {
     if (rbRef.current) {
-      rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: (Math.random() - 0.5) * 0.1 }, true);
+      const firstDir = steerRef.current.path[0] === 'R' ? 1 : -1;
+      rbRef.current.applyImpulse({ x: firstDir * 0.12, y: -0.5, z: 0 }, true);
+      rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: -firstDir * 0.05 }, true);
     }
   }, []);
+
+  // Continuous frame watchdog: Never allow ball to stay asleep or stuck on pegs
+  useFrame((_, delta) => {
+    if (!rbRef.current) return;
+    const pos = rbRef.current.translation();
+    const vel = rbRef.current.linvel();
+
+    // Lock strictly to 2D plane (Z = 0)
+    if (Math.abs(pos.z) > 0.001) {
+      rbRef.current.setTranslation({ x: pos.x, y: pos.y, z: 0 }, true);
+    }
+
+    // Active in peg field (above the buckets)
+    const fieldBottom = boardOriginY - (steerRef.current.totalRows + 0.5) * 0.8;
+    if (pos.y > fieldBottom) {
+      const speedSq = vel.x * vel.x + vel.y * vel.y;
+      // If speed drops significantly while perched on a peg or divider
+      if (speedSq < 0.15) {
+        stuckTimer.current += delta;
+        if (stuckTimer.current > 0.12) {
+          stuckTimer.current = 0;
+          const targetRow = Math.min(Math.max(0, steerRef.current.currentRow), steerRef.current.totalRows - 1);
+          const dir = steerRef.current.path[targetRow] === 'R' ? 1 : -1;
+          rbRef.current.wakeUp();
+          rbRef.current.applyImpulse({ x: dir * 0.25, y: -0.2, z: 0 }, true);
+          rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: -dir * 0.1 }, true);
+        }
+      } else {
+        stuckTimer.current = 0;
+      }
+    }
+  });
 
   const handleCollision = (e: any) => {
     if (e.other.rigidBodyObject?.userData?.isPeg) {
@@ -227,6 +262,7 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
 
       if (rbRef.current) {
         const pos = rbRef.current.translation();
+        audio.play('plinko', 'peg-bounce', { x: pos.x });
         const impulse = getBiasImpulse(steerRef.current, pos.y, boardOriginY);
         if (impulse) {
           rbRef.current.applyImpulse(impulse, true);
@@ -243,8 +279,11 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
       ref={rbRef} 
       position={position} 
       colliders="ball" 
-      restitution={0.3} 
-      friction={0}
+      restitution={0.65} 
+      friction={0.01}
+      linearDamping={0.05}
+      angularDamping={0.05}
+      canSleep={false}
       ccd={true}
       userData={{ isBall: true }}
       name={id}
@@ -362,7 +401,8 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
       
       // Deterministic start X derived from round ID
       const hashVal = Array.from(clientSeed).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const startX = ((hashVal % 100) / 100 - 0.5) * 0.02;
+      const firstDir = outcome.path[0] === 'R' ? 1 : -1;
+      const startX = (firstDir * 0.09) + ((hashVal % 100) / 100 - 0.5) * 0.04;
       
       setBalls(prev => [...prev, { id: roundId, bet, startX, steer, payout, finalBalance: newBalance }]);
       return true;
@@ -550,7 +590,7 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
                       <PlinkoBall 
                         key={ball.id} 
                         id={ball.id} 
-                        position={[ball.startX, rows > 12 ? 9 : 7, 0]} 
+                        position={[ball.startX, rows * 0.4 + 1.8, 0]} 
                         steeringState={ball.steer}
                         boardOriginY={rows * 0.4}
                         onDespawn={removeBall} 

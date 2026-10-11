@@ -1,5 +1,5 @@
 import { useAIGameEngine } from '@/hooks/useAIGameEngine';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Text, RoundedBox } from '@react-three/drei';
@@ -93,7 +93,7 @@ function Basketball({ shooting, power, onResult, isScored }: { shooting: boolean
   });
 
   // When shooting state changes from false to true, apply impulse
-  useState(() => {
+  useEffect(() => {
     if (shooting && ballRef.current) {
       // power is 0 to 1, map to impulse
       const impulseY = 8 + (power * 6);
@@ -101,7 +101,7 @@ function Basketball({ shooting, power, onResult, isScored }: { shooting: boolean
       ballRef.current.applyImpulse({ x: 0, y: impulseY, z: impulseZ }, true);
       ballRef.current.applyTorqueImpulse({ x: -2, y: 0, z: 0 }, true); // Backspin
     }
-  });
+  }, [shooting, power]);
 
   return (
     <RigidBody 

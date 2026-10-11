@@ -2,7 +2,7 @@
     {
         "key": "slots",
         "title": "Lucky Slots",
-        "emoji": "??",
+        "emoji": "🎰",
         "category": "Casino",
         "reward": "Up to 50x",
         "difficulty": "Easy",
@@ -13,7 +13,7 @@
     {
         "key": "baccarat",
         "title": "Baccarat",
-        "emoji": "??",
+        "emoji": "🎴",
         "category": "Casino",
         "reward": "Up to 9x",
         "difficulty": "Medium",
@@ -410,13 +410,13 @@
         "desc": "Standard Jacks or Better Video Poker",
         "reward": "Payouts",
         "title": "Video Poker",
-        "emoji": "??",
+        "emoji": "🃏",
         "thumbnail": "/thumbnails/videopoker.jpg"
     },
     {
         "key": "snake",
         "title": "Neon Snake",
-        "emoji": "??",
+        "emoji": "🐍",
         "category": "Arcade",
         "reward": "Tokens per point",
         "difficulty": "Medium",
@@ -438,7 +438,7 @@
     {
         "key": "keno-3d",
         "title": "Keno 3D",
-        "emoji": "dY",
+        "emoji": "🎱",
         "category": "Casino",
         "reward": "Multipliers",
         "difficulty": "Medium",

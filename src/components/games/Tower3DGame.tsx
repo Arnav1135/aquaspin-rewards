@@ -38,23 +38,27 @@ export function Tower3DGame() {
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [winAmount, setWinAmount] = useState(0);
 
+  // Anti-Cheat: Private ref to prevent client inspection of bomb locations
+  const secretBombsRef = useRef<Map<number, number>>(new Map());
   const blockRefs = useRef<(RapierRigidBody | null)[]>([]);
 
   const initTower = () => {
     const newBlocks: BlockData[] = [];
+    const secretBombs = new Map<number, number>();
     for (let r = 0; r < TOWER_ROWS; r++) {
-      // Pick bomb col
       const bombCol = Math.floor(Math.random() * COLS);
+      secretBombs.set(r, bombCol);
       for (let c = 0; c < COLS; c++) {
         newBlocks.push({
           id: `r${r}c${c}`,
           row: r,
           col: c,
-          isBomb: c === bombCol,
+          isBomb: false, // masked from client state
           revealed: false
         });
       }
     }
+    secretBombsRef.current = secretBombs;
     setBlocks(newBlocks);
     setActiveRow(0);
     setGameState('PLAYING');
@@ -80,6 +84,13 @@ export function Tower3DGame() {
     
     await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: payout }) /* AUTOFIX: bet=0 to prevent double charge */;
     
+    // Reveal all remaining blocks safely on cashout
+    setBlocks(prev => prev.map(b => ({
+      ...b,
+      isBomb: secretBombsRef.current.get(b.row) === b.col,
+      revealed: true
+    })));
+
     setWinAmount(payout);
     setGameState('CASHOUT');
     audio.play('tower', 'win-jackpot');
@@ -91,15 +102,20 @@ export function Tower3DGame() {
     const block = blocks[index];
     if (block.row !== activeRow || block.revealed) return;
 
+    const isActualBomb = secretBombsRef.current.get(block.row) === block.col;
+
     // Reveal block
     const newBlocks = [...blocks];
-    newBlocks[index] = { ...block, revealed: true };
+    newBlocks[index] = { ...block, isBomb: isActualBomb, revealed: true };
 
-    if (block.isBomb) {
-      // BOOM
-      // Reveal all bombs
+    if (isActualBomb) {
+      // BOOM - Reveal all bombs on crash
       newBlocks.forEach(b => {
-        if (b.isBomb) b.revealed = true;
+        const isB = secretBombsRef.current.get(b.row) === b.col;
+        if (isB) {
+          b.isBomb = true;
+          b.revealed = true;
+        }
       });
       setBlocks(newBlocks);
       setGameState('CRASHED');

@@ -30,8 +30,9 @@ export default function TowerGame({ onClose }: TowerGameProps) {
   
   // Track which columns the user clicked per row
   const [clicks, setClicks] = useState<number[]>([]);
-  // Store the mine locations per row
+  // Store the mine locations per row (only populated upon game over to prevent client inspection)
   const [mineCols, setMineCols] = useState<number[]>([]);
+  const secretMinesRef = useRef<number[]>([]);
 
   const profileRef = useRef(profile);
   useEffect(() => { profileRef.current = profile; }, [profile]);
@@ -55,9 +56,10 @@ export default function TowerGame({ onClose }: TowerGameProps) {
       const { error } = await secureUpdateTokens(pr.id, -betAmount);
       if (error) throw error;
       
-      // Generate mines for this round
+      // Generate mines for this round and protect in private ref
       const newMines = Array.from({ length: ROWS }).map(() => Math.floor(Math.random() * COLS));
-      setMineCols(newMines);
+      secretMinesRef.current = newMines;
+      setMineCols([]); // masked from client state
       setClicks([]);
       setCurrentRow(0);
       setGameState('PLAYING');
@@ -76,10 +78,11 @@ export default function TowerGame({ onClose }: TowerGameProps) {
     newClicks[rowIdx] = colIdx;
     setClicks(newClicks);
 
-    const isMine = mineCols[rowIdx] === colIdx;
+    const isMine = secretMinesRef.current[rowIdx] === colIdx;
 
     if (isMine) {
       // BOOM
+      setMineCols([...secretMinesRef.current]); // reveal all on crash
       setGameState('CRASHED');
       audio.play('lose', 'fall');
       
@@ -109,6 +112,7 @@ export default function TowerGame({ onClose }: TowerGameProps) {
     const currentMult = MULTIPLIERS[currentClicks.length - 1];
     const winnings = Math.floor(betAmount * currentMult);
 
+    setMineCols([...secretMinesRef.current]); // reveal on cashout
     setGameState('CASHOUT');
     audio.play('win', 'jackpot');
     

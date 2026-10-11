@@ -6,6 +6,8 @@ import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -182,13 +184,28 @@ export function LimboGame({ onClose }: any) {
     }
     updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
 
-    const u = Math.random();
+    // Sanitize target multiplier against extreme bounds / NaN exploits
+    const safeTarget = Math.max(1.01, Math.min(10000, Number.isFinite(targetMultiplier) ? targetMultiplier : 2.0));
+
+    // Provably Fair Cryptographic Roll Calculation
+    const pfState = useProvablyFairStore.getState();
+    let serverSeed = pfState.activeServerSeed;
+    if (!serverSeed) {
+      await pfState.rotateServerSeed();
+      serverSeed = useProvablyFairStore.getState().activeServerSeed;
+    }
+    const clientSeed = pfState.clientSeed || 'aquaspin_limbo';
+    const nonce = pfState.getAndIncrementNonce();
+    const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+
+    // Provably fair roll with 4% house edge (96% RTP)
+    const u = Math.max(0.00001, outcomeFloat);
     let roll = Math.round((0.96 / u) * 100) / 100;
     if (roll < 1.0) roll = 1.0;
-    if (roll > 100000) roll = 100000;
+    if (roll > 10000) roll = 10000;
     
-    const isWin = roll >= targetMultiplier;
-    const isNearMiss = !isWin && roll >= targetMultiplier * 0.88;
+    const isWin = roll >= safeTarget;
+    const isNearMiss = !isWin && roll >= safeTarget * 0.88;
 
     let count = 0;
     const steps = 18;

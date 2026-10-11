@@ -193,6 +193,9 @@ export function MinesGame({ onClose }: MinesGameProps) {
   const [vinnitusActive, setVinnitusActive] = useState(false);
   const [screenJolt, setScreenJolt] = useState<{ x: number; y: number } | null>(null);
 
+  // Anti-Cheat: Private encrypted ref to prevent client-side DevTools / DOM state inspection
+  const secretMinesRef = useRef<Set<number>>(new Set());
+
   const balance = profile?.tokens ?? 0;
   const currentMultiplier = getMinesMultiplier(mineCount, clicks);
 
@@ -273,7 +276,9 @@ export function MinesGame({ onClose }: MinesGameProps) {
       step++;
     }
     
-    setTiles(Array.from({ length: 25 }, (_, i) => ({ id: i, isMine: mineIdx.has(i), clicked: false, exploding: false, revealed: false })));
+    // Store in private ref so unclicked tiles never expose isMine: true to the DOM or React State
+    secretMinesRef.current = mineIdx;
+    setTiles(Array.from({ length: 25 }, (_, i) => ({ id: i, isMine: false, clicked: false, exploding: false, revealed: false })));
     setIsPlaying(true);
     setClicks(0);
     setGameOver(false);
@@ -291,10 +296,11 @@ export function MinesGame({ onClose }: MinesGameProps) {
     const tile = tiles[id];
     if (tile.clicked) return;
 
+    const isActualMine = secretMinesRef.current.has(id);
     const newTiles = [...tiles];
-    newTiles[id] = { ...tile, clicked: true, revealed: true };
+    newTiles[id] = { ...tile, isMine: isActualMine, clicked: true, revealed: true };
 
-    if (tile.isMine) {
+    if (isActualMine) {
       newTiles[id].exploding = true;
       setTiles(newTiles);
       setGameOver(true);
@@ -314,13 +320,13 @@ export function MinesGame({ onClose }: MinesGameProps) {
       
       toast.error('💥 DETONATED! Hit a live mine!', { duration: 3000 });
 
-      // Reveal other mines
-      const mineIds = newTiles.filter(t => t.isMine && t.id !== id).map(t => t.id);
-      mineIds.forEach((mid, i) => {
+      // Reveal other mines at game over
+      const remainingMineIds = Array.from(secretMinesRef.current).filter(mid => mid !== id);
+      remainingMineIds.forEach((mid, i) => {
         setTimeout(() => {
           setTiles(prev => {
             const copy = [...prev];
-            copy[mid] = { ...copy[mid], clicked: true };
+            copy[mid] = { ...copy[mid], isMine: true, clicked: true };
             return copy;
           });
           audio.play('mines', 'tile-flip');
@@ -359,7 +365,12 @@ export function MinesGame({ onClose }: MinesGameProps) {
     setGameOver(true);
     setHasWon(true);
 
-    setTiles(prev => prev.map(t => ({ ...t, clicked: true })));
+    // Reveal remaining board safely upon cashout
+    setTiles(prev => prev.map(t => ({ 
+      ...t, 
+      isMine: secretMinesRef.current.has(t.id),
+      clicked: true 
+    })));
 
     const profit = won - betAmount;
     toast.success(`🎉 Secure Abort! +${profit} tokens`, { duration: 3000, icon: '💰' });

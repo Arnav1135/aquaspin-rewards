@@ -1,5 +1,4 @@
-// src/components/games/ChickenGame.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HelpCircle, Shield, CloudSun } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
@@ -43,6 +42,9 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
   // Custom Visual Themes
   const [activeTheme, setActiveTheme] = useState<HazardTheme>('farm');
   const [chickenPosition, setChickenPosition] = useState<number | null>(null);
+
+  // Anti-Cheat: Private encrypted ref to prevent client-side DevTools / DOM state inspection
+  const secretBonesRef = useRef<Set<number>>(new Set());
 
   const balance = profile?.tokens ?? 0;
   const currentMultiplier = getMultiplier(boneCount, clicks);
@@ -96,7 +98,10 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     
     const boneIdx = new Set<number>();
     while (boneIdx.size < boneCount) boneIdx.add(Math.floor(Math.random() * 25));
-    setTiles(Array.from({ length: 25 }, (_, i) => ({ id: i, isBone: boneIdx.has(i), clicked: false })));
+    
+    // Store in private ref so unclicked tiles never expose isBone: true to DOM or React State
+    secretBonesRef.current = boneIdx;
+    setTiles(Array.from({ length: 25 }, (_, i) => ({ id: i, isBone: false, clicked: false })));
     setIsPlaying(true);
     setClicks(0);
     setGameOver(false);
@@ -113,12 +118,14 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     if (!isPlaying || gameOver) return;
     const tile = tiles[id];
     if (tile.clicked) return;
+
+    const isActualBone = secretBonesRef.current.has(id);
     const newTiles = [...tiles];
-    newTiles[id] = { ...tile, clicked: true };
+    newTiles[id] = { ...tile, isBone: isActualBone, clicked: true };
 
     setChickenPosition(id);
 
-    if (tile.isBone) {
+    if (isActualBone) {
       // Splintering bridge collapse slow-motion sequence
       setTiles(newTiles);
       setGameOver(true);
@@ -130,12 +137,12 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
       
       toast.error('💀 Splinter! Plank collapsed!');
 
-      // Reveal other bones
-      const boneIds = newTiles.filter(t => t.isBone && t.id !== id).map(t => t.id);
-      boneIds.forEach((bid, i) => {
+      // Reveal other bones on game over
+      const remainingBoneIds: number[] = Array.from(secretBonesRef.current).filter((bid): bid is number => typeof bid === 'number' && bid !== id);
+      remainingBoneIds.forEach((bid: number, i: number) => {
         setTimeout(() => setTiles(prev => { 
           const c = [...prev]; 
-          c[bid] = { ...c[bid], clicked: true }; 
+          c[bid] = { ...c[bid], isBone: true, clicked: true }; 
           return c; 
         }), (i + 1) * 90);
       });
@@ -169,7 +176,11 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     setIsPlaying(false);
     setGameOver(true);
     setHasWon(true);
-    setTiles(prev => prev.map(t => ({ ...t, clicked: true })));
+    setTiles(prev => prev.map(t => ({ 
+      ...t, 
+      isBone: secretBonesRef.current.has(t.id),
+      clicked: true 
+    })));
 
     toast.success(`🐔 Triumphant bawk! +${won - betAmount} tokens!`);
     audio.play('chicken', 'cash-out-safe');

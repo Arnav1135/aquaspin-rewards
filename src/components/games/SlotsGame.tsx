@@ -87,8 +87,9 @@ export default function SlotsGame() {
         if (profile) {
           await secureRecordGameResult({
             userId: profile.id,
-            betAmount,
+            betAmount: 0, /* bet charged upfront */
             earnedAmount: payout,
+            xpEarned: Math.floor(betAmount * 0.1),
           });
         }
       }, 2000);

@@ -13,6 +13,8 @@ import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -334,9 +336,18 @@ export function CoinFlipGame({ onClose }: any) {
       audio.play('coinflip', 'coin-toss-spin');
       vibrate([30, 30, 30]);
 
-      // Determine result (50/50)
-      const random = Math.random();
-      const coinResult: CoinSide = random < 0.5 ? 'heads' : 'tails';
+      // Provably Fair outcome calculation
+      const pfState = useProvablyFairStore.getState();
+      let serverSeed = pfState.activeServerSeed;
+      if (!serverSeed) {
+        await pfState.rotateServerSeed();
+        serverSeed = useProvablyFairStore.getState().activeServerSeed;
+      }
+      const clientSeed = pfState.clientSeed || 'aquaspin_coinflip';
+      const nonce = pfState.getAndIncrementNonce();
+      const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+
+      const coinResult: CoinSide = outcomeFloat < 0.5 ? 'heads' : 'tails';
 
       // Wait for animation to complete
       setSafeTimeout(async () => {
@@ -347,7 +358,7 @@ export function CoinFlipGame({ onClose }: any) {
           // Check if player won
           const won = coinResult === selectedSide;
           const multiplier = 1.98; // 1% house edge: (1 - 0.01) / 0.5 = 1.98x
-          const earned = Math.floor(betAmount * multiplier);
+          const earned = won ? Math.floor(betAmount * multiplier) : 0;
           const finalBalance = balanceRef.current + earned;
 
           setPayoutResult(earned);

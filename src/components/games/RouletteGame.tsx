@@ -1,10 +1,9 @@
 import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
-import { useFrame, useThree } from '@react-three/fiber';;
-import { Physics } from '@react-three/rapier';
+import { useFrame, useThree } from '@react-three/fiber';
 import { QualityManager } from '@/engine/aaa/QualityManager';
 import { PostFXManager } from '@/engine/aaa/PostFXManager';
 import { ParticleManager } from '@/engine/aaa/ParticleManager';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/features/authStore';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
@@ -12,6 +11,7 @@ import { BetControl } from '@/components/ui/BetControl';
 import { Button } from '@/components/ui/Button';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 import { Text, Environment, ContactShadows, MeshReflectorMaterial, Float, Stars, Sparkles, SpotLight } from '@react-three/drei';
 import * as THREE from 'three';
@@ -173,19 +173,20 @@ function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameS
   return null;
 }
 
-function RouletteWheel({ wheelRotRef, ballPosRef }: { wheelRotRef: React.MutableRefObject<number>, ballPosRef: React.MutableRefObject<number> }) {
+function RouletteWheel({ wheelRotRef, ballPosRef, gameState }: { wheelRotRef: React.MutableRefObject<number>, ballPosRef: React.MutableRefObject<number>, gameState: GameState }) {
   const group = useRef<THREE.Group>(null);
   const ballRef = useRef<THREE.Mesh>(null);
   const wheelInnerRef = useRef<THREE.Group>(null);
 
-  useFrame(() => {
+  useFrame((_, delta) => {
+    if (gameState === 'SPINNING' || gameState === 'SETTLING') {
+      wheelRotRef.current -= delta * 2; // Wheel spins counter-clockwise
+    }
     if (wheelInnerRef.current) {
       wheelInnerRef.current.rotation.y = wheelRotRef.current;
     }
     if (ballRef.current) {
       const angle = ballPosRef.current;
-      // Ball descends from track (radius 4.2) to pocket (radius 2.3)
-      const isSettled = ballPosRef.current === wheelRotRef.current + (ballPosRef.current % (Math.PI*2));
       const radius = 2.4; 
       
       const x = Math.cos(angle) * radius;
@@ -237,7 +238,6 @@ function RouletteWheel({ wheelRotRef, ballPosRef }: { wheelRotRef: React.Mutable
                 rotation={[-Math.PI / 2, 0, Math.PI / 2]} 
                 fontSize={0.25} 
                 color="white" 
-                font="https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2"
                 anchorX="center" 
                 anchorY="middle"
                 outlineWidth={0.01}
@@ -292,12 +292,15 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
   
   const wheelRotRef = useRef(0);
   const ballPosRef = useRef(0);
-  
-  useFrame((_, delta) => {
-    if (gameState === 'SPINNING' || gameState === 'SETTLING') {
-      wheelRotRef.current -= delta * 2; // Wheel spins counter-clockwise
-    }
-  });
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      gsap.killTweensOf(ballPosRef);
+    };
+  }, []);
 
   const handlePlaceBet = (type: BetType, label: string, numbers: number[]) => {
     if (gameState !== 'BETTING') return;
@@ -345,6 +348,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       }
     }
 
+    if (!isMountedRef.current) return;
     setGameState('SPINNING');
     audio.play('slots', 'spin');
 
@@ -362,10 +366,12 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       duration: spinDuration,
       ease: "power2.out",
       onComplete: () => {
+        if (!isMountedRef.current) return;
         audio.play('ui', 'click');
         setGameState('SETTLING');
         
         setTimeout(() => {
+          if (!isMountedRef.current) return;
           calculatePayout(winTile.num);
         }, 3000);
       }
@@ -373,6 +379,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
   };
 
   const calculatePayout = async (winningNumber: number) => {
+    if (!isMountedRef.current) return;
     setGameState('PAYOUT');
     let totalWin = 0;
     
@@ -391,7 +398,6 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       toast.success(`You won ${totalWin} tokens!`);
       if (profile && !isGuest) {
         const totalBet = placedBets.reduce((a,b)=>a+b.amount,0);
-        
         secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: totalWin, xpEarned: Math.floor(totalBet * 0.15) }) /* AUTOFIX: bet=0 to prevent double charge */;
       }
     } else {
@@ -403,6 +409,7 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
     }
 
     setTimeout(() => {
+      if (!isMountedRef.current) return;
       setPlacedBets([]);
       setWinNumber(null);
       setGameState('BETTING');
@@ -410,45 +417,58 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="absolute inset-0 bg-black flex flex-col font-sans overflow-hidden">
-      
-      {/* 3D Scene */}
-      <div className="absolute inset-0 z-0">
-        <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
-          <QualityManager>
-            <Environment preset="studio" blur={0.8} />
-            <CameraController gameState={gameState} winIdx={winNumber !== null ? WHEEL_TILES.findIndex(t => t.num === winNumber) : null} wheelRotRef={wheelRotRef} />
-            
-            <group position={[0, -2, 0]}>
-              <RouletteWheel wheelRotRef={wheelRotRef} ballPosRef={ballPosRef} />
-              
-              {/* Cinematic Floor Reflection */}
-              <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, -0.6, 0]} receiveShadow>
-                <planeGeometry args={[50, 50]} />
-                <MeshReflectorMaterial 
-                  blur={[300, 100]}
-                  resolution={1024}
-                  mixBlur={1}
-                  mixStrength={80}
-                  roughness={0.2}
-                  depthScale={1.2}
-                  minDepthThreshold={0.4}
-                  maxDepthThreshold={1.4}
-                  color="#0a0a0a"
-                  metalness={0.5}
-                  mirror={0.5}
-                />
-              </mesh>
-            </group>
+    <ErrorBoundary name="RouletteGame">
+      <div className="absolute inset-0 bg-black flex flex-col font-sans overflow-hidden">
+        
+        {/* 3D Scene */}
+        <div className="absolute inset-0 z-0">
+          <ErrorBoundary name="Roulette3DCanvas" fallback={() => (
+            <div className="w-full h-full flex flex-col items-center justify-center text-white/70 bg-neutral-950 p-6">
+              <p className="text-xl font-bold mb-2 text-yellow-500">3D Graphics Fallback</p>
+              <p className="text-sm text-center max-w-sm mb-4">The 3D wheel encountered a WebGL issue. You can still play with the betting table below.</p>
+              {winNumber !== null && (
+                <div className="px-6 py-4 rounded-xl bg-neutral-900 border border-yellow-500/30 text-center">
+                  <span className="text-2xl font-black text-yellow-400">Winning Number: {winNumber}</span>
+                </div>
+              )}
+            </div>
+          )}>
+            <Canvas shadows dpr={[1, 2]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
+              <QualityManager>
+                <Environment preset="studio" blur={0.8} />
+                <CameraController gameState={gameState} winIdx={winNumber !== null ? WHEEL_TILES.findIndex(t => t.num === winNumber) : null} wheelRotRef={wheelRotRef} />
+                
+                <group position={[0, -2, 0]}>
+                  <RouletteWheel wheelRotRef={wheelRotRef} ballPosRef={ballPosRef} gameState={gameState} />
+                  
+                  {/* Cinematic Floor Reflection */}
+                  <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, -0.6, 0]} receiveShadow>
+                    <planeGeometry args={[50, 50]} />
+                    <MeshReflectorMaterial 
+                      blur={[300, 100]}
+                      resolution={1024}
+                      mixBlur={1}
+                      mixStrength={80}
+                      roughness={0.2}
+                      depthScale={1.2}
+                      minDepthThreshold={0.4}
+                      maxDepthThreshold={1.4}
+                      color="#0a0a0a"
+                      metalness={0.5}
+                      mirror={0.5}
+                    />
+                  </mesh>
+                </group>
 
-            <PostFXManager />
-            <ParticleManager />
-            
-            {/* Ambient Dust Particles */}
-            <Sparkles count={200} scale={20} size={2} speed={0.4} opacity={0.2} color="#fef08a" />
-          </QualityManager>
-        </Canvas>
-      </div>
+                <PostFXManager />
+                <ParticleManager />
+                
+                {/* Ambient Dust Particles */}
+                <Sparkles count={200} scale={20} size={2} speed={0.4} opacity={0.2} color="#fef08a" />
+              </QualityManager>
+            </Canvas>
+          </ErrorBoundary>
+        </div>
 
       {/* Top Header UI */}
       <div className="relative z-10 flex justify-between items-center p-6 bg-gradient-to-b from-black/80 to-transparent">
@@ -584,5 +604,6 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
         )}
       </AnimatePresence>
     </div>
+  </ErrorBoundary>
   );
 }

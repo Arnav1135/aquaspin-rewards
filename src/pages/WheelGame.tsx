@@ -1,11 +1,11 @@
 // src/pages/WheelGame.tsx
-// 3D Canvas-based spinning wheel powered by Three.js (React Three Fiber)
+// Hyper-Realistic 2D Luxury Casino Spin Wheel
 
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { GameShell } from '@/components/games/GameShell';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Coins, Volume2, VolumeX, Palette, Play, Zap, Clock } from 'lucide-react';
+import { Coins, Volume2, VolumeX, Palette, Play, Zap, Clock, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useGameStore, WHEEL_SEGMENTS, WHEEL_THEMES } from '@/features/gameStore';
 import { invokeEdgeFunction } from '@/lib/supabase';
@@ -15,193 +15,22 @@ import { TokenCounter } from '@/components/ui/TokenCounter';
 import { RewardedAd } from '@/components/ads/RewardedAd';
 import { InterstitialAd } from '@/components/ads/BannerAd';
 import { playTone, vibrate, formatTokens } from '@/lib/utils';
+import { audio } from '@/lib/audioEngine';
 import type { SpinResult } from '@/types/database';
 import toast from 'react-hot-toast';
-
-// 3D Imports
-import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { ContactShadows, PresentationControls, Float } from '@react-three/drei';
-import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
 import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
 import { ProvablyFair } from '@/lib/crypto/provablyFair';
-const GEO_CYLINDER = new THREE.CylinderGeometry(2.8, 2.8, 0.4, 64);
-const GEO_CIRCLE = new THREE.CircleGeometry(2.8, 64);
-const GEO_TORUS = new THREE.TorusGeometry(2.8, 0.08, 16, 100);
-const GEO_CONE = new THREE.ConeGeometry(0.3, 0.6, 4);
-
-const MAT_BASE = new THREE.MeshStandardMaterial({ color: '#ffffff', metalness: 0.2, roughness: 0.8 });
-// wheel face material is handled below
-
+import { RealisticWheel2D } from '@/components/wheel/RealisticWheel2D';
 
 const SPIN_COST = 10;
-
-// ── 3D Wheel Component ──────────────────────────────────────────────────────
-function Wheel3D({ theme, angleRef, spinning }: { theme: any, angleRef: React.MutableRefObject<number>, spinning: boolean }) {
-  const wheelRef = useRef<THREE.Group>(null);
-  
-  // Generate a texture for the wheel face using off-screen canvas
-  const wheelTexture = useMemo(() => {
-    const size = 1024;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d')!;
-    const cx = size / 2;
-    const cy = size / 2;
-    const radius = size / 2 - 20;
-
-    const segmentCount = WHEEL_SEGMENTS.length;
-    const segmentAngle = (2 * Math.PI) / segmentCount;
-
-    // Background
-    ctx.fillStyle = theme.borderColor;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius + 15, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Segments
-    WHEEL_SEGMENTS.forEach((seg, i) => {
-      const startAngle = i * segmentAngle - Math.PI / 2;
-      const endAngle = startAngle + segmentAngle;
-
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, startAngle, endAngle);
-      ctx.closePath();
-
-      const segGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-      const isDark = i % 2 === 0;
-      segGradient.addColorStop(0, isDark ? '#0A1428' : '#0D1B36');
-      segGradient.addColorStop(0.6, isDark ? '#0D1B36' : '#112244');
-      segGradient.addColorStop(1, isDark ? '#112244' : '#162B57');
-
-      ctx.fillStyle = segGradient;
-      ctx.fill();
-
-      // Border
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, startAngle, endAngle);
-      ctx.closePath();
-      ctx.strokeStyle = seg.isJackpot ? '#FFD700' : `${theme.borderColor}60`;
-      ctx.lineWidth = seg.isJackpot ? 8 : 4;
-      ctx.stroke();
-
-      // Text
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(startAngle + segmentAngle / 2);
-      ctx.translate(radius * 0.7, 0);
-
-      ctx.font = seg.isJackpot ? 'bold 45px Orbitron, sans-serif' : 'bold 40px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      if (seg.isJackpot) {
-        ctx.shadowColor = '#FFD700';
-        ctx.shadowBlur = 15;
-        ctx.fillStyle = '#FFD700';
-        ctx.fillText('JACKPOT', 0, -20);
-        ctx.font = 'bold 38px Orbitron, sans-serif';
-        ctx.fillText('500', 0, 30);
-      } else {
-        ctx.shadowColor = seg.glowColor;
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = '#E8F4FD';
-        const parts = seg.label.split(' ');
-        ctx.fillText(parts[0], 0, -25);
-        ctx.font = 'bold 32px Inter, sans-serif';
-        ctx.fillStyle = seg.glowColor;
-        ctx.fillText(parts[1] ?? '', 0, 25);
-      }
-      ctx.restore();
-    });
-
-    // Center
-    ctx.beginPath();
-    ctx.arc(cx, cy, 120, 0, 2 * Math.PI);
-    ctx.fillStyle = theme.centerColor;
-    ctx.fill();
-    ctx.lineWidth = 15;
-    ctx.strokeStyle = theme.borderColor;
-    ctx.stroke();
-    
-    ctx.font = 'bold 40px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = theme.borderColor;
-    ctx.fillText('SPIN', cx, cy);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = 16;
-    return texture;
-  }, [theme]);
-
-  // Use frame to sync wheel rotation with the ref driven by the easeOut animation
-  useFrame(() => {
-    if (wheelRef.current) {
-      wheelRef.current.rotation.z = angleRef.current;
-      if (spinning) {
-         // Add a tiny bit of random shake to the group to simulate force
-         wheelRef.current.position.x = (Math.random() - 0.5) * 0.02;
-         wheelRef.current.position.y = (Math.random() - 0.5) * 0.02;
-      } else {
-         wheelRef.current.position.set(0,0,0);
-      }
-    }
-  });
-
-  return (
-    <PresentationControls global config={{ mass: 2, tension: 500 }} snap={{ mass: 4, tension: 1500 }} rotation={[0, 0, 0]} polar={[-Math.PI / 6, Math.PI / 6]} azimuth={[-Math.PI / 6, Math.PI / 6]}>
-      <Float speed={2} rotationIntensity={0.2} floatIntensity={0.2}>
-        <group ref={wheelRef}>
-          {/* Main Cylinder */}
-          <mesh rotation={[Math.PI / 2, 0, 0]} receiveShadow castShadow>
-            <cylinderGeometry args={[2.8, 2.8, 0.4, 64]} />
-            <meshStandardMaterial 
-              color="#ffffff" 
-              metalness={0.4} 
-              roughness={0.2} 
-            />
-          </mesh>
-          
-          {/* Top face with texture */}
-          <mesh position={[0, 0, 0.21]} receiveShadow>
-            <circleGeometry args={[2.8, 64]} />
-            <meshStandardMaterial 
-              map={wheelTexture} 
-              metalness={0.3} 
-              roughness={0.4} 
-              emissive={theme.borderColor}
-              emissiveIntensity={0.1}
-            />
-          </mesh>
-
-          {/* Golden Rim */}
-          <mesh position={[0, 0, 0.1]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-            <torusGeometry args={[2.8, 0.08, 16, 100]} />
-            <meshStandardMaterial color={theme.borderColor} metalness={0.8} roughness={0.2} />
-          </mesh>
-        </group>
-
-        {/* 3D Pointer / Flipper */}
-        <group position={[0, 2.9, 0.4]}>
-          <mesh castShadow>
-            <coneGeometry args={[0.3, 0.6, 4]} />
-            <meshStandardMaterial color={theme.pointerColor} metalness={0.9} roughness={0.1} />
-          </mesh>
-        </group>
-      </Float>
-    </PresentationControls>
-  );
-}
 
 // ── Main UI Component ────────────────────────────────────────────────────────
 export function WheelGame() {
   const animationRef = useRef<number>(0);
   const currentAngleRef = useRef(0);
   const isSpinningRef = useRef(false);
+
+  const [rotationAngle, setRotationAngle] = useState(0);
 
   const { profile, updateProfile, refreshProfile } = useAuthStore();
   const {
@@ -240,6 +69,15 @@ export function WheelGame() {
     return () => clearInterval(interval);
   }, [spinCooldownEndsAt, isCoolingDown, getCooldownRemaining]);
 
+  // Clean up RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
   // ── Execute spin animation + server result ─────────────────────────────────
   const executeSpin = useCallback(async (spinType: 'paid' | 'ad_rewarded') => {
     if (isSpinningRef.current) return;
@@ -258,7 +96,7 @@ export function WheelGame() {
     }
 
     if (soundEnabled) {
-      playTone(440, 0.1, 'sawtooth', 0.2);
+      audio.playChime(440, 0.2, 0.3);
     }
     vibrate([50, 30, 50]);
 
@@ -290,77 +128,116 @@ export function WheelGame() {
     }
 
     const targetSegmentIndex = serverResult.segment_index ?? Math.floor(Math.random() * segmentCount);
+    // In RealisticWheel2D, segment i is at angle = -i * segmentAngle
     const targetSegmentAngle = -targetSegmentIndex * segmentAngle;
-    const minSpins = 5 * 2 * Math.PI;
-    const targetAngle = currentAngleRef.current - (currentAngleRef.current % (2 * Math.PI))
-      + targetSegmentAngle - minSpins;
+    const minSpins = 6 * 2 * Math.PI; // 6 full rotations for suspense
+
+    // Calculate landing target angle
+    const currentBase = currentAngleRef.current - (currentAngleRef.current % (2 * Math.PI));
+    const targetAngle = currentBase + targetSegmentAngle - minSpins;
 
     const startAngle = currentAngleRef.current;
     const angleDiff = targetAngle - startAngle;
-    const duration = 4000;
+    const duration = 4800; // 4.8s realistic casino wheel deceleration
     const startTime = performance.now();
 
-    const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
+    // High-inertia physical deceleration with micro-bounce settle
+    const easeOutWithSettle = (t: number) => {
+      if (t >= 1) return 1;
+      // Quartic ease out
+      const base = 1 - Math.pow(1 - t, 4);
+      return base;
+    };
 
     const animate = (time: number) => {
       const elapsed = time - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const easedProgress = easeOut(progress);
+      const easedProgress = easeOutWithSettle(progress);
 
-      currentAngleRef.current = startAngle + angleDiff * easedProgress;
-
-      if (soundEnabled && Math.floor(easedProgress * 20) > Math.floor((easedProgress - 0.02) * 20)) {
-        playTone(600 + (1 - easedProgress) * 400, 0.05, 'square', 0.1);
-      }
+      const nextAngle = startAngle + angleDiff * easedProgress;
+      currentAngleRef.current = nextAngle;
+      setRotationAngle(nextAngle);
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        isSpinningRef.current = false;
-        setSpinning(false);
-        setSpinResult(serverResult);
-        addSpinToHistory(serverResult!);
+        // Subtle micro-settle bounce
+        const settleStart = performance.now();
+        const settleDuration = 400;
 
-        setCooldown(Date.now() + 30 * 1000);
-        setCooldownSecs(30);
-        refreshProfile();
+        const animateSettle = (now: number) => {
+          const settleElapsed = now - settleStart;
+          const sProgress = Math.min(settleElapsed / settleDuration, 1);
+          // Damped oscillation
+          const settleOffset = Math.sin(sProgress * Math.PI * 3) * Math.exp(-sProgress * 4) * 0.02;
+          const finalAngle = targetAngle + settleOffset;
+          currentAngleRef.current = finalAngle;
+          setRotationAngle(finalAngle);
 
-        const isJackpot = serverResult!.reward >= 500;
-        if (isJackpot) {
-          fireJackpotConfetti();
-          vibrate([100, 50, 100, 50, 200]);
-          if (soundEnabled) {
-            playTone(523, 0.2, 'sine', 0.4);
-            setTimeout(() => playTone(659, 0.2, 'sine', 0.4), 200);
-            setTimeout(() => playTone(784, 0.4, 'sine', 0.4), 400);
+          if (sProgress < 1) {
+            animationRef.current = requestAnimationFrame(animateSettle);
+          } else {
+            currentAngleRef.current = targetAngle;
+            setRotationAngle(targetAngle);
+            finishSpin(serverResult!);
           }
-        } else {
-          fireNormalConfetti();
-          vibrate(100);
-          if (soundEnabled) {
-            playTone(523, 0.15, 'sine', 0.3);
-            setTimeout(() => playTone(659, 0.2, 'sine', 0.3), 150);
-          }
-        }
+        };
 
-        setFloatingReward({ amount: serverResult!.reward, show: true });
-        setTimeout(() => setFloatingReward({ amount: 0, show: false }), 2000);
+        animationRef.current = requestAnimationFrame(animateSettle);
       }
     };
 
     animationRef.current = requestAnimationFrame(animate);
-  }, [soundEnabled, profile, updateProfile, setSpinning, setCooldown, addSpinToHistory, refreshProfile, segmentAngle, segmentCount]);
+  }, [soundEnabled, profile, updateProfile, setSpinning, segmentAngle, segmentCount]);
+
+  const finishSpin = useCallback((serverResult: SpinResult) => {
+    isSpinningRef.current = false;
+    setSpinning(false);
+    setSpinResult(serverResult);
+    addSpinToHistory(serverResult);
+
+    setCooldown(Date.now() + 30 * 1000);
+    setCooldownSecs(30);
+    refreshProfile();
+
+    const isJackpot = serverResult.reward >= 500;
+    if (isJackpot) {
+      fireJackpotConfetti();
+      vibrate([100, 50, 100, 50, 200]);
+      if (soundEnabled) {
+        audio.playChime(523, 0.4, 0.5);
+        setTimeout(() => audio.playChime(659, 0.4, 0.5), 180);
+        setTimeout(() => audio.playChime(784, 0.8, 0.6), 360);
+      }
+    } else {
+      fireNormalConfetti();
+      vibrate(100);
+      if (soundEnabled) {
+        audio.playChime(659, 0.3, 0.4);
+        setTimeout(() => audio.playChime(880, 0.5, 0.4), 150);
+      }
+    }
+
+    setFloatingReward({ amount: serverResult.reward, show: true });
+    setTimeout(() => setFloatingReward({ amount: 0, show: false }), 2200);
+  }, [soundEnabled, setSpinning, addSpinToHistory, setCooldown, refreshProfile]);
 
   const fireNormalConfetti = () => {
-    confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 }, colors: ['#00F0FF', '#00C8D4', '#E8F4FD', '#00788A'] });
+    confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 }, colors: ['#00F0FF', '#00C8D4', '#E8F4FD', '#FFD700'] });
   };
 
   const fireJackpotConfetti = () => {
-    const count = 5;
+    const count = 6;
     for (let i = 0; i < count; i++) {
       setTimeout(() => {
-        confetti({ particleCount: 80, spread: 360, startVelocity: 30, origin: { x: Math.random(), y: Math.random() - 0.2 }, colors: ['#FFD700', '#FFC107', '#FF4500', '#00F0FF'] });
-      }, i * 250);
+        confetti({
+          particleCount: 100,
+          spread: 360,
+          startVelocity: 35,
+          origin: { x: Math.random(), y: Math.random() - 0.2 },
+          colors: ['#FFD700', '#FFC107', '#FF9100', '#00F0FF', '#FFFFFF']
+        });
+      }, i * 220);
     }
   };
 
@@ -390,82 +267,163 @@ export function WheelGame() {
 
   return (
     <GameShell onClose={() => window.history.back()}>
-      <div className="min-h-screen bg-navy-900 pt-20 pb-24 px-4 overflow-hidden relative">
-        <div className="max-w-2xl mx-auto space-y-6 relative z-10">
+      <div className="min-h-screen bg-[#070d18] pt-16 pb-24 px-4 overflow-hidden relative font-sans">
+        
+        {/* Subtle Ambient Background Gradients */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-gradient-to-b from-cyan-900/15 via-blue-900/5 to-transparent blur-3xl pointer-events-none" />
 
-        <div className="text-center">
-          <h1 className="font-display text-3xl font-bold text-gradient-cyan mb-2">3D Wheel of Fortune</h1>
-          <p className="text-text-secondary text-sm">Spin costs {SPIN_COST} tokens • Win up to 500!</p>
-        </div>
+        <div className="max-w-2xl mx-auto space-y-5 relative z-10">
 
-        {profile && (
-          <div className="flex items-center justify-center">
-            <div className="token-badge px-4 py-2">
-              <TokenCounter value={profile.tokens} size="md" />
+          {/* Header */}
+          <div className="text-center pt-2">
+            <h1 className="font-display text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-amber-300 drop-shadow-md tracking-tight mb-1">
+              Wheel of Fortune
+            </h1>
+            <p className="text-white/60 text-xs sm:text-sm font-medium">
+              Spin costs <span className="text-amber-400 font-bold">{SPIN_COST} tokens</span> • Win up to <span className="text-yellow-300 font-extrabold">500 Tokens!</span>
+            </p>
+          </div>
+
+          {/* Token Counter */}
+          {profile && (
+            <div className="flex items-center justify-center">
+              <div className="bg-[#0b162c]/80 border border-white/10 rounded-2xl px-5 py-2 backdrop-blur-md shadow-xl flex items-center gap-2">
+                <TokenCounter value={profile.tokens} size="md" />
+              </div>
             </div>
+          )}
+
+          {/* ── 2D Hyper-Realistic Wheel Container ── */}
+          <div className="relative py-2 flex flex-col items-center">
+            <RealisticWheel2D
+              rotationAngle={rotationAngle}
+              isSpinning={isSpinning}
+              themeName={wheelTheme}
+              onCenterClick={handleSpinClick}
+              canSpin={!isCoolingDown()}
+            />
+
+            {/* Spin Result Announcement Modal */}
+            <AnimatePresence>
+              {spinResult && (
+                <motion.div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-50 pointer-events-none"
+                  initial={{ opacity: 0, y: 30, scale: 0.85 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9, y: -20 }}
+                  transition={{ type: 'spring', stiffness: 450, damping: 26 }}
+                >
+                  <div
+                    className={`rounded-3xl p-7 text-center shadow-[0_20px_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl border-2 ${
+                      spinResult.reward >= 500
+                        ? 'border-amber-400 bg-black/90 shadow-amber-500/30'
+                        : 'border-cyan-400 bg-black/85 shadow-cyan-500/30'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-1.5 mb-2">
+                      <Sparkles size={16} className={spinResult.reward >= 500 ? 'text-amber-400' : 'text-cyan-400'} />
+                      <p className="text-xs uppercase tracking-widest font-extrabold text-white/70">
+                        {spinResult.reward >= 500 ? '🎰 GRAND JACKPOT! 🎰' : '🎉 CONGRATULATIONS!'}
+                      </p>
+                      <Sparkles size={16} className={spinResult.reward >= 500 ? 'text-amber-400' : 'text-cyan-400'} />
+                    </div>
+                    <p
+                      className={`font-black text-5xl sm:text-6xl tracking-tight drop-shadow-xl ${
+                        spinResult.reward >= 500
+                          ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-100 to-amber-500'
+                          : 'text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-sky-100'
+                      }`}
+                    >
+                      +{formatTokens(spinResult.reward)}
+                    </p>
+                    <p className="text-white/80 font-semibold text-sm mt-3 uppercase tracking-wide">
+                      {spinResult.segment}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        )}
 
-        <div className="flex flex-col items-center gap-4">
-          
-          {/* ── 3D Canvas Container ── */}
-          <div className="relative w-full h-[400px] md:h-[500px]">
-            <Canvas>
-              <Wheel3D theme={theme} angleRef={currentAngleRef} spinning={isSpinning} />
-              <ContactShadows position={[0, -3.5, 0]} opacity={0.5} scale={10} blur={2} far={4} color="#0A1428" />
-            </Canvas>
-          </div>
-
-          {/* ── Spin result announcement ── */}
-          <AnimatePresence>
-            {spinResult && (
-              <motion.div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center z-20 pointer-events-none"
-                initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              >
-                <div className={`glass-card rounded-2xl p-6 text-center shadow-2xl backdrop-blur-xl ${spinResult.reward >= 500 ? 'border-gold-neon bg-navy-900/80' : 'border-cyan-neon bg-navy-900/80'}`}>
-                  <p className="text-sm text-text-secondary mb-1">{spinResult.reward >= 500 ? '🎰 JACKPOT! 🎰' : '🎉 You won!'}</p>
-                  <p className={`font-display text-5xl font-bold drop-shadow-xl ${spinResult.reward >= 500 ? 'text-neon-gold' : 'text-neon-cyan'}`}>
-                    +{formatTokens(spinResult.reward)}
-                  </p>
-                  <p className="text-text-secondary text-sm mt-2">{spinResult.segment}</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
-            <Button variant="primary" size="lg" fullWidth onClick={handleSpinClick} loading={isSpinning} disabled={isCoolingDown() || isSpinning}>
-              {isCoolingDown() ? <><Clock size={18} />Wait {cooldownSecs}s</> : <><Coins size={18} />Spin ({SPIN_COST} Tokens)</>}
+          {/* Action Controls */}
+          <div className="flex flex-col items-center gap-3 w-full max-w-sm mx-auto">
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={handleSpinClick}
+              loading={isSpinning}
+              disabled={isCoolingDown() || isSpinning}
+              className="py-4 text-base font-black shadow-lg shadow-cyan-500/20"
+            >
+              {isCoolingDown() ? (
+                <>
+                  <Clock size={18} className="animate-spin" />
+                  Wait {cooldownSecs}s
+                </>
+              ) : (
+                <>
+                  <Coins size={18} />
+                  Spin Now ({SPIN_COST} Tokens)
+                </>
+              )}
             </Button>
-            <Button variant="neon" fullWidth onClick={handleFreeSpinAd} disabled={isSpinning}>
-              <Play size={16} />Free Spin (Watch Ad)
+
+            <Button
+              variant="neon"
+              fullWidth
+              onClick={handleFreeSpinAd}
+              disabled={isSpinning}
+              className="py-3 font-bold"
+            >
+              <Play size={16} />
+              Free Spin (Watch Video Ad)
             </Button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button className="btn-ghost p-2 rounded-xl text-muted hover:text-text-secondary" onClick={toggleSound}>
+          {/* Utility Toggles (Audio, Theme) */}
+          <div className="flex items-center justify-center gap-3 pt-1">
+            <button
+              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-colors shadow-md"
+              onClick={toggleSound}
+              title={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
+            >
               {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </button>
+
             <div className="relative">
-              <button className="btn-ghost p-2 rounded-xl text-muted hover:text-text-secondary" onClick={() => setThemePickerOpen(!themePickerOpen)}>
+              <button
+                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-colors shadow-md"
+                onClick={() => setThemePickerOpen(!themePickerOpen)}
+                title="Change Wheel Theme"
+              >
                 <Palette size={18} />
               </button>
+
               <AnimatePresence>
                 {themePickerOpen && (
                   <motion.div
-                    className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 glass-card rounded-xl p-2 flex gap-2"
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                    className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#0d182e]/95 backdrop-blur-xl border border-white/15 rounded-2xl p-2.5 flex gap-2 shadow-2xl z-40"
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
                   >
                     {(Object.keys(WHEEL_THEMES) as (keyof typeof WHEEL_THEMES)[]).map((t) => (
                       <button
                         key={t}
-                        className={`w-7 h-7 rounded-lg border-2 transition-all ${wheelTheme === t ? 'scale-110' : 'opacity-60 hover:opacity-100'}`}
-                        style={{ backgroundColor: WHEEL_THEMES[t].borderColor + '33', borderColor: WHEEL_THEMES[t].borderColor }}
-                        onClick={() => { setWheelTheme(t); setThemePickerOpen(false); }}
+                        className={`w-8 h-8 rounded-xl border-2 transition-all flex items-center justify-center ${
+                          wheelTheme === t ? 'scale-110 shadow-lg' : 'opacity-60 hover:opacity-100'
+                        }`}
+                        style={{
+                          backgroundColor: WHEEL_THEMES[t].borderColor + '33',
+                          borderColor: WHEEL_THEMES[t].borderColor,
+                          boxShadow: wheelTheme === t ? `0 0 12px ${WHEEL_THEMES[t].borderColor}` : 'none',
+                        }}
+                        onClick={() => {
+                          setWheelTheme(t);
+                          setThemePickerOpen(false);
+                        }}
+                        title={WHEEL_THEMES[t].name}
                       />
                     ))}
                   </motion.div>
@@ -473,37 +431,60 @@ export function WheelGame() {
               </AnimatePresence>
             </div>
           </div>
+
+          {/* Wheel Segments Legend */}
+          <Card className="rounded-3xl p-5 border border-white/10 bg-[#0d1629]/70 backdrop-blur-md shadow-2xl">
+            <h3 className="font-display text-xs uppercase tracking-widest font-extrabold text-white/60 mb-3 flex items-center gap-1.5">
+              <span>🎡</span>
+              <span>Available Prizes</span>
+            </h3>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {WHEEL_SEGMENTS.map((seg, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-transform hover:scale-[1.02] border ${
+                    seg.isJackpot
+                      ? 'border-amber-400/50 bg-gradient-to-r from-amber-950/60 to-yellow-900/40 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.2)]'
+                      : 'border-white/5 bg-white/5 text-white/80'
+                  }`}
+                >
+                  <Zap size={11} style={{ color: seg.glowColor }} />
+                  <span className="truncate">{seg.isJackpot ? '🏆 JACKPOT' : seg.label}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
         </div>
 
-        <Card className="rounded-2xl">
-          <h3 className="font-display text-sm font-semibold text-text-secondary mb-3">🎡 Wheel Segments</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {WHEEL_SEGMENTS.map((seg, i) => (
-              <div key={i} className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-navy-800 border text-xs font-medium ${seg.isJackpot ? 'border-gold-neon/40 text-gold-neon' : 'border-navy-600 text-text-secondary'}`}>
-                <Zap size={10} style={{ color: seg.glowColor }} />
-                <span>{seg.isJackpot ? '🏆 JACKPOT' : seg.label}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
+        {/* Floating Reward Animation */}
+        <AnimatePresence>
+          {floatingReward.show && (
+            <motion.div
+              className="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50"
+              initial={{ opacity: 1, y: 0, scale: 0.8 }}
+              animate={{ opacity: 0, y: -120, scale: 1.5 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2, ease: 'easeOut' }}
+            >
+              <span className="font-black text-5xl sm:text-6xl text-cyan-300 drop-shadow-[0_0_30px_rgba(0,240,255,0.9)]">
+                +{formatTokens(floatingReward.amount)}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      </div>
-
-      <AnimatePresence>
-        {floatingReward.show && (
-          <motion.div
-            className="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50"
-            initial={{ opacity: 1, y: 0, scale: 0.8 }} animate={{ opacity: 0, y: -100, scale: 1.4 }} exit={{ opacity: 0 }} transition={{ duration: 1.8, ease: 'easeOut' }}
-          >
-            <span className="font-display font-bold text-4xl text-neon-cyan drop-shadow-[0_0_20px_rgba(0,240,255,0.8)]">
-              +{formatTokens(floatingReward.amount)}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <RewardedAd isOpen={rewardedAdOpen} onClose={() => setRewardedAdOpen(false)} onRewardEarned={handleAdRewardEarned} triggerReason="free spin" />
-      <InterstitialAd isOpen={interstitialOpen} onClose={handleInterstitialClose} delay={3} />
+        <RewardedAd
+          isOpen={rewardedAdOpen}
+          onClose={() => setRewardedAdOpen(false)}
+          onRewardEarned={handleAdRewardEarned}
+          triggerReason="free spin"
+        />
+        <InterstitialAd
+          isOpen={interstitialOpen}
+          onClose={handleInterstitialClose}
+          delay={3}
+        />
       </div>
     </GameShell>
   );

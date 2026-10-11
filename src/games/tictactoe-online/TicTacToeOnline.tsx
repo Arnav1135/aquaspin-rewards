@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -43,6 +43,7 @@ export default function TicTacToeOnline() {
   const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
   const [service, setService] = useState<MatchmakingService | null>(null);
   const [betDeducted, setBetDeducted] = useState(false);
+  const payoutProcessedRef = useRef(false);
 
   const controls = useAnimation();
   const mouseX = useMotionValue(typeof window !== "undefined" ? window.innerWidth / 2 : 0);
@@ -116,6 +117,71 @@ export default function TicTacToeOnline() {
     secureUpdateTokens(profile.id, -MATCH_BET).catch(console.error);
   }, [synced, betDeducted, profile, match]);
 
+  // Secure Payout Logic — only Host (Player X) triggers to guarantee atomic resolution
+  useEffect(() => {
+    if (!gameState.winner || !isPlayerX || !match || payoutProcessedRef.current) return;
+    payoutProcessedRef.current = true;
+
+    const processPayout = async () => {
+      if (gameState.winner === "X" || gameState.winner === "O") {
+        const winnerId = gameState.winner === "X" ? match.players[0].id : match.players[1].id;
+        const loserId = gameState.winner === "X" ? match.players[1].id : match.players[0].id;
+
+        // Both players already had MATCH_BET deducted upfront.
+        // Winner receives 90 tokens payout (net +40 profit).
+        await secureRecordGameResult({
+          userId: winnerId,
+          betAmount: 0,
+          earnedAmount: MATCH_BET * 2 - 10,
+          xpEarned: 25,
+        });
+
+        // Loser receives 0 payout (net -50 loss).
+        await secureRecordGameResult({
+          userId: loserId,
+          betAmount: 0,
+          earnedAmount: 0,
+          xpEarned: 5,
+        });
+      } else if (gameState.winner === "DRAW") {
+        // Refund both players their initial bet
+        await secureUpdateTokens(match.players[0].id, MATCH_BET);
+        await secureUpdateTokens(match.players[1].id, MATCH_BET);
+        await secureRecordGameResult({
+          userId: match.players[0].id,
+          betAmount: 0,
+          earnedAmount: 0,
+          xpEarned: 10,
+        });
+        await secureRecordGameResult({
+          userId: match.players[1].id,
+          betAmount: 0,
+          earnedAmount: 0,
+          xpEarned: 10,
+        });
+      }
+      useAuthStore.getState().refreshProfile();
+    };
+
+    processPayout().catch(console.error);
+  }, [gameState.winner, isPlayerX, match]);
+
+  // Forfeit Payout — If an opponent disconnects before completion, remaining player is awarded win
+  useEffect(() => {
+    if (!opponentLeft || gameState.winner || payoutProcessedRef.current || !profile || !match) return;
+    payoutProcessedRef.current = true;
+
+    // Remaining player wins by forfeit
+    secureRecordGameResult({
+      userId: profile.id,
+      betAmount: 0,
+      earnedAmount: MATCH_BET * 2 - 10,
+      xpEarned: 25,
+    }).then(() => {
+      useAuthStore.getState().refreshProfile();
+    }).catch(console.error);
+  }, [opponentLeft, gameState.winner, profile, match]);
+
   useEffect(() => {
     if (!matchId || !profile || !match) {
       navigate("/multiplayer");
@@ -129,6 +195,7 @@ export default function TicTacToeOnline() {
       if (payload.type === "MOVE") {
         setGameState(payload.state);
       } else if (payload.type === "REMATCH") {
+        payoutProcessedRef.current = false;
         setGameState(payload.state);
       } else if (payload.type === "LEAVE") {
         setOpponentLeft(true);
@@ -193,31 +260,8 @@ export default function TicTacToeOnline() {
 
     if (winner && winner !== "DRAW") audio.play("tictactoe", "win");
     else if (winner === "DRAW") audio.play("tictactoe", "draw");
-
-    // Secure Payout Logic — only Host (Player X) triggers to prevent double billing
-    if (winner && isPlayerX && match) {
-      if (winner === "X" || winner === "O") {
-        const winnerId = winner === "X" ? match.players[0].id : match.players[1].id;
-        const loserId  = winner === "X" ? match.players[1].id : match.players[0].id;
-        // Winner gets 90 tokens (2x bet minus 10-token house edge)
-        await secureRecordGameResult({
-          userId: winnerId,
-          betAmount: MATCH_BET,
-          earnedAmount: MATCH_BET * 2 - 10,
-          xpEarned: 25,
-        });
-        // Record loss for loser (bet already deducted client-side on their end)
-        await secureRecordGameResult({
-          userId: loserId,
-          betAmount: MATCH_BET,
-          earnedAmount: 0,
-          xpEarned: 5,
-        });
-      }
-    }
   };
 
-  
   const sendEmote = (emoji: string) => {
     const x = Math.random() * 80 + 10;
     setFloatingEmotes(prev => [...prev, { id: Math.random().toString(), emoji, x }]);
@@ -229,6 +273,7 @@ export default function TicTacToeOnline() {
   const handleRematch = () => {
     if (gameState.rematchRequestedBy && gameState.rematchRequestedBy !== profile?.id) {
       // Both agreed, restart
+      payoutProcessedRef.current = false;
       const newState: GameState = { ...INITIAL_STATE };
       setGameState(newState);
       service?.sendGameStateUpdate({ type: "REMATCH", state: newState });

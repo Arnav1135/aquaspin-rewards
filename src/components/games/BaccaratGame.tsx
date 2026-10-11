@@ -32,10 +32,23 @@ const calculateScore = (cards: Card[]): number => {
   return total % 10;
 };
 
-const getRandomCard = (): Card => ({
-  suit: SUITS[Math.floor(Math.random() * SUITS.length)],
-  value: VALUES[Math.floor(Math.random() * VALUES.length)]
-});
+const getRandomCard = (): Card => {
+  let sIdx = 0;
+  let vIdx = 0;
+  if (typeof window !== 'undefined' && window.crypto) {
+    const arr = new Uint32Array(2);
+    window.crypto.getRandomValues(arr);
+    sIdx = arr[0] % SUITS.length;
+    vIdx = arr[1] % VALUES.length;
+  } else {
+    sIdx = Math.floor(Math.random() * SUITS.length);
+    vIdx = Math.floor(Math.random() * VALUES.length);
+  }
+  return {
+    suit: SUITS[sIdx],
+    value: VALUES[vIdx]
+  };
+};
 
 export default function BaccaratGame() {
   useAIGameEngine('baccarat', 'Baccarat', 'arcade', 'dom-css');
@@ -146,9 +159,9 @@ export default function BaccaratGame() {
     
     let winAmount = 0;
     if (winner === betType) {
-      if (winner === 'tie') winAmount = betAmount * 9;
-      else if (winner === 'banker') winAmount = betAmount * 1.95;
-      else winAmount = betAmount * 2;
+      if (winner === 'tie') winAmount = Math.floor(betAmount * 9);
+      else if (winner === 'banker') winAmount = Math.floor(betAmount * 1.95);
+      else winAmount = Math.floor(betAmount * 2);
     } else if (winner === 'tie' && betType !== 'tie') {
       winAmount = betAmount;
     }
@@ -156,8 +169,9 @@ export default function BaccaratGame() {
     if (profile) {
       await secureRecordGameResult({
         userId: profile.id,
-        betAmount,
+        betAmount: 0,
         earnedAmount: winAmount,
+        xpEarned: Math.floor(betAmount * 0.1),
       });
     }
     
@@ -175,7 +189,7 @@ export default function BaccaratGame() {
 
   const renderCard = (card: Card, index: number) => {
     const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-    const suitSymbol = { hearts: '?', diamonds: '?', clubs: '?', spades: '?' }[card.suit];
+    const suitSymbol = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[card.suit];
     
     return (
       <motion.div

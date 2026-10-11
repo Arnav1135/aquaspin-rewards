@@ -23,7 +23,14 @@ export const PokerEngine = {
   shuffle(deck: Card[]): Card[] {
     const newDeck = [...deck];
     for (let i = newDeck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      let j = 0;
+      if (typeof window !== 'undefined' && window.crypto) {
+        const arr = new Uint32Array(1);
+        window.crypto.getRandomValues(arr);
+        j = arr[0] % (i + 1);
+      } else {
+        j = Math.floor(Math.random() * (i + 1));
+      }
       [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
     }
     return newDeck;

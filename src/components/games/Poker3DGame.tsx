@@ -45,31 +45,35 @@ function CardMesh({ card, position, rotation }: { card: CardType, position: [num
 }
 
 export function Poker3DGame({ onClose }: { onClose: () => void }) {
-  const [deck, setDeck] = useState<CardType[]>([]);
+  const deckRef = useRef<CardType[]>([]);
   const [communityCards, setCommunityCards] = useState<CardType[]>([]);
   const [playerHand, setPlayerHand] = useState<CardType[]>([]);
   const [phase, setPhase] = useState<'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER' | 'SHOWDOWN'>('PREFLOP');
   
   const startGame = () => {
     const newDeck = PokerEngine.shuffle(PokerEngine.createDeck());
-    setPlayerHand([newDeck.pop()!, newDeck.pop()!]);
+    const card1 = newDeck.pop()!;
+    const card2 = newDeck.pop()!;
+    deckRef.current = newDeck;
+    setPlayerHand([card1, card2]);
     setCommunityCards([]);
-    setDeck(newDeck);
     setPhase('PREFLOP');
   };
 
   const dealNext = () => {
     if (phase === 'PREFLOP') {
-      const newComm = [deck.pop()!, deck.pop()!, deck.pop()!];
-      setCommunityCards(newComm);
+      const c1 = deckRef.current.pop()!;
+      const c2 = deckRef.current.pop()!;
+      const c3 = deckRef.current.pop()!;
+      setCommunityCards([c1, c2, c3]);
       setPhase('FLOP');
     } else if (phase === 'FLOP') {
-      const newComm = [...communityCards, deck.pop()!];
-      setCommunityCards(newComm);
+      const c = deckRef.current.pop()!;
+      setCommunityCards(prev => [...prev, c]);
       setPhase('TURN');
     } else if (phase === 'TURN') {
-      const newComm = [...communityCards, deck.pop()!];
-      setCommunityCards(newComm);
+      const c = deckRef.current.pop()!;
+      setCommunityCards(prev => [...prev, c]);
       setPhase('RIVER');
     } else if (phase === 'RIVER') {
       setPhase('SHOWDOWN');

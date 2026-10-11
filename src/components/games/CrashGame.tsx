@@ -652,6 +652,18 @@ export function CrashGame({ onClose }: CrashGameProps) {
     if (outOfTrials) { toast.error('Out of free trials! Deposit to play.'); return; }
     const actualBetAmount = isFreeTrial ? 0 : betAmount;
     if (actualBetAmount > balance) { toast.error('Insufficient tokens!'); return; }
+
+    if (profile && !profile.id.startsWith('guest') && actualBetAmount > 0) {
+      try {
+        await secureUpdateTokens(profile.id, -actualBetAmount);
+      } catch (err: any) {
+        toast.error(err?.message || 'Transaction rejected. Insufficient tokens.');
+        return;
+      }
+    }
+
+    const nb = balance - actualBetAmount;
+    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     
     if (isFreeTrial) {
       toast.success(`Free Trial Used! (${freeTrials - 1} left)`, { icon: '🎁' });
@@ -683,16 +695,6 @@ export function CrashGame({ onClose }: CrashGameProps) {
         
         setGameState('climbing');
         audio.play('crash', 'tick');
-
-        const nb = balance - actualBetAmount;
-        if (profile && !profile.id.startsWith('guest')) {
-          try { 
-            secureUpdateTokens(profile.id, -actualBetAmount).then();
-          } catch (e) {
-            console.error('Failed to update user balance:', e);
-          }
-        }
-        updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
         
         // Real SDE-3 Provably Fair Cryptographic Mechanics
         (async () => {

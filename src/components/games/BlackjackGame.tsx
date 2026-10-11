@@ -61,9 +61,20 @@ function calculateHandValue(hand: PlayingCard[]): number {
 function getRandomCard(): PlayingCard {
   const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
   const ranks: Rank[] = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  let sIdx = 0;
+  let rIdx = 0;
+  if (typeof window !== 'undefined' && window.crypto) {
+    const arr = new Uint32Array(2);
+    window.crypto.getRandomValues(arr);
+    sIdx = arr[0] % suits.length;
+    rIdx = arr[1] % ranks.length;
+  } else {
+    sIdx = Math.floor(Math.random() * suits.length);
+    rIdx = Math.floor(Math.random() * ranks.length);
+  }
   return {
-    suit: suits[Math.floor(Math.random() * suits.length)],
-    rank: ranks[Math.floor(Math.random() * ranks.length)],
+    suit: suits[sIdx],
+    rank: ranks[rIdx],
   };
 }
 
@@ -106,6 +117,7 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
   const balance = profile?.tokens ?? 0;
   const profileRef = useRef(profile);
   const balanceRef = useRef(balance);
+  const dealerHoleCardRef = useRef<PlayingCard | null>(null);
 
   const updateUserBalance = useCallback(
     withErrorHandling(
@@ -194,8 +206,11 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
 
     audio.play('cards', 'shuffle');
     
+    const dUp = getRandomCard();
+    const dHole = getRandomCard();
+    dealerHoleCardRef.current = dHole;
     setPlayerHand([getRandomCard(), getRandomCard()]);
-    setDealerHand([getRandomCard(), { ...getRandomCard(), hidden: true }]);
+    setDealerHand([dUp, { suit: 'spades', rank: 'A', hidden: true }]);
   };
 
   const handleHit = () => {
@@ -242,8 +257,9 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
   const handleStand = (customPlayerHand?: PlayingCard[]) => {
     const finalPlayerHand = customPlayerHand || playerHand;
     setGameState('dealerTurn');
-    let currentDealerHand = [...dealerHand];
-    currentDealerHand[1].hidden = false;
+    const revealedHole = dealerHoleCardRef.current || getRandomCard();
+    let currentDealerHand = [dealerHand[0], { ...revealedHole, hidden: false }];
+    setDealerHand(currentDealerHand);
     
     const playDealer = () => {
       const dealerVal = calculateHandValue(currentDealerHand);
@@ -272,6 +288,10 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
   };
 
   const handleGameOver = async (pHand: PlayingCard[], dHand: PlayingCard[], message: string) => {
+    if (dealerHoleCardRef.current && dHand[1]?.hidden) {
+      dHand = [dHand[0], { ...dealerHoleCardRef.current, hidden: false }];
+      setDealerHand(dHand);
+    }
     setGameState('gameOver');
     setResultMessage(message);
     

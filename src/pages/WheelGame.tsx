@@ -22,7 +22,9 @@ import toast from 'react-hot-toast';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { ContactShadows, PresentationControls, Float } from '@react-three/drei';
-import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
 const GEO_CYLINDER = new THREE.CylinderGeometry(2.8, 2.8, 0.4, 64);
 const GEO_CIRCLE = new THREE.CircleGeometry(2.8, 64);
 const GEO_TORUS = new THREE.TorusGeometry(2.8, 0.08, 16, 100);
@@ -266,13 +268,24 @@ export function WheelGame() {
       if (error || !data) throw new Error('API Error');
       serverResult = data;
     } catch {
+      const pfState = useProvablyFairStore.getState();
+      let serverSeed = pfState.activeServerSeed;
+      if (!serverSeed) {
+        await pfState.rotateServerSeed();
+        serverSeed = useProvablyFairStore.getState().activeServerSeed;
+      }
+      const clientSeed = pfState.clientSeed || 'aquaspin_wheel';
+      const nonce = pfState.getAndIncrementNonce();
+      const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+      const chosenIndex = Math.floor(outcomeFloat * WHEEL_SEGMENTS.length);
+
       serverResult = {
         success: true,
-        reward: WHEEL_SEGMENTS[Math.floor(Math.random() * WHEEL_SEGMENTS.length)].tokens,
-        segment: WHEEL_SEGMENTS[0].label,
-        segment_index: Math.floor(Math.random() * WHEEL_SEGMENTS.length),
+        reward: WHEEL_SEGMENTS[chosenIndex].tokens,
+        segment: WHEEL_SEGMENTS[chosenIndex].label,
+        segment_index: chosenIndex,
         spin_type: spinType,
-        new_balance: (profile?.tokens ?? 0) + 50,
+        new_balance: (profile?.tokens ?? 0) + WHEEL_SEGMENTS[chosenIndex].tokens,
       };
     }
 

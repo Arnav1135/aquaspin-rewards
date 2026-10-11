@@ -1,4 +1,6 @@
-import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import { Physics } from '@react-three/rapier';
 import { QualityManager } from '@/engine/aaa/QualityManager';
 import { PostFXManager } from '@/engine/aaa/PostFXManager';
@@ -253,8 +255,23 @@ export function MinesGame({ onClose }: MinesGameProps) {
     }
     (updateProfile as any)({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     
+    // Provably Fair Cryptographic Mine Generation
+    const pfState = useProvablyFairStore.getState();
+    let serverSeed = pfState.activeServerSeed;
+    if (!serverSeed) {
+      await pfState.rotateServerSeed();
+      serverSeed = useProvablyFairStore.getState().activeServerSeed;
+    }
+    const clientSeed = pfState.clientSeed || 'aquaspin_client';
+    const nonce = pfState.getAndIncrementNonce();
+
     const mineIdx = new Set<number>();
-    while (mineIdx.size < mineCount) mineIdx.add(Math.floor(Math.random() * 25));
+    let step = 0;
+    while (mineIdx.size < mineCount) {
+      const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, `${clientSeed}:${step}`, nonce);
+      mineIdx.add(Math.floor(outcomeFloat * 25));
+      step++;
+    }
     
     setTiles(Array.from({ length: 25 }, (_, i) => ({ id: i, isMine: mineIdx.has(i), clicked: false, exploding: false, revealed: false })));
     setIsPlaying(true);

@@ -25,6 +25,7 @@ import { PublicProfileModal } from '@/components/ui/PublicProfileModal';
 import { LevelUpManager } from '@/components/ui/LevelUpManager';
 import { LiveWinnersMarquee } from '@/components/ui/LiveWinnersMarquee';
 import { RadioPlayer } from '@/components/ui/RadioPlayer';
+import { ProvablyFairWidget } from '@/components/ui/ProvablyFairWidget';
 
 import { Landing } from '@/pages/Landing';
 import { Auth } from '@/pages/Auth';
@@ -107,6 +108,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <LevelUpManager />
       <LiveWinnersMarquee />
       <RadioPlayer />
+      <ProvablyFairWidget />
       <main className="relative z-0">{children}</main>
       <BottomNav />
     </>

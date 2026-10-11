@@ -10,10 +10,11 @@ import { BetControl } from '@/components/ui/BetControl';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
-import { MockBackend } from '@/lib/api';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import { OpportunityEngine } from '@/lib/opportunityEngine';
 
-import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
+import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
 import { QualityManager, PostFXManager, VFXManager, ParticleManager, useVFX } from '@/engine/aaa';
 import { RigidBody, Physics } from '@react-three/rapier';
 import { Html, Line, Stars } from '@react-three/drei';
@@ -693,24 +694,31 @@ export function CrashGame({ onClose }: CrashGameProps) {
         }
         updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
         
-        // Provably Fair Mechanics
-        const hash = MockBackend.getCommitment(clientSeed);
-        setServerSeedHash(hash);
-        setServerSeed(null);
+        // Real SDE-3 Provably Fair Cryptographic Mechanics
+        (async () => {
+          const pfState = useProvablyFairStore.getState();
+          let serverSeed = pfState.activeServerSeed;
+          if (!serverSeed) {
+            await pfState.rotateServerSeed();
+            serverSeed = useProvablyFairStore.getState().activeServerSeed;
+          }
+          const activeClientSeed = pfState.clientSeed || 'aquaspin_crash';
+          const nonce = pfState.getAndIncrementNonce();
+          const hash = await ProvablyFair.hashServerSeed(serverSeed);
+          setServerSeedHash(hash);
+          setServerSeed(null);
 
-        const result = MockBackend.placeBet(clientSeed, 1, actualBetAmount);
-        const randomFloat = result.outcome;
-        
-        // Crash Point Formula (e.g. 1% house edge)
-        const point = Math.floor(100 * (0.99 / (1 - randomFloat))) / 100;
-        crashPointRef.current = Math.max(1.00, point);
-        crashTimeRef.current = Date.now(); // prepare for crash
-        
-        // Save the secret seed to reveal later
-        serverSeedRef.current = result.serverSeed;
+          const randomFloat = await ProvablyFair.calculateOutcome(serverSeed, activeClientSeed, nonce);
+          
+          // Crash Point Formula (1% house edge)
+          const point = Math.floor(100 * (0.99 / Math.max(0.001, 1 - randomFloat))) / 100;
+          crashPointRef.current = Math.max(1.00, point);
+          crashTimeRef.current = Date.now();
+          serverSeedRef.current = serverSeed;
 
-        startTimeRef.current = Date.now();
-        rAFRef.current = requestAnimationFrame(tick);
+          startTimeRef.current = Date.now();
+          rAFRef.current = requestAnimationFrame(tick);
+        })();
 
         socialIntervalRef.current = setInterval(() => {
           const u = FAKE_USERS[Math.floor(Math.random() * FAKE_USERS.length)];

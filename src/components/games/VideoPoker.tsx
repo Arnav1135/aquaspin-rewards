@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
@@ -51,7 +51,20 @@ const createDeck = (): PlayingCard[] => {
       deck.push({ suit, rank, value });
     }
   }
-  return deck.sort(() => Math.random() - 0.5);
+  for (let i = deck.length - 1; i > 0; i--) {
+    let randIndex = 0;
+    if (typeof window !== 'undefined' && window.crypto) {
+      const arr = new Uint32Array(1);
+      window.crypto.getRandomValues(arr);
+      randIndex = arr[0] % (i + 1);
+    } else {
+      randIndex = Math.floor(Math.random() * (i + 1));
+    }
+    const temp = deck[i];
+    deck[i] = deck[randIndex];
+    deck[randIndex] = temp;
+  }
+  return deck;
 };
 
 const evaluateHand = (cards: PlayingCard[]): { name: string; multiplier: number } => {
@@ -91,7 +104,7 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
   const { profile } = useAuthStore();
   const [bet, setBet] = useState(10);
   const [gameState, setGameState] = useState<'betting' | 'playing' | 'gameover'>('betting');
-  const [deck, setDeck] = useState<PlayingCard[]>([]);
+  const deckRef = useRef<PlayingCard[]>([]);
   const [hand, setHand] = useState<PlayingCard[]>([]);
   const [held, setHeld] = useState<boolean[]>([false, false, false, false, false]);
   const [winAmount, setWinAmount] = useState(0);
@@ -107,23 +120,18 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
 
     setIsProcessing(true);
     try {
-      const success = await secureUpdateTokens(profile?.id || "", -bet);
-      if (!success) {
-        toast.error('Insufficient funds');
-        setIsProcessing(false);
-        return;
-      }
+      await secureUpdateTokens(profile?.id || "", -bet);
       
       const newDeck = createDeck();
       setHand(newDeck.splice(0, 5));
-      setDeck(newDeck);
+      deckRef.current = newDeck;
       setHeld([false, false, false, false, false]);
       setGameState('playing');
       setWinAmount(0);
       setHandName('');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error('Error starting game');
+      toast.error(e?.message || 'Error starting game');
     }
     setIsProcessing(false);
   }, [profile, bet]);
@@ -141,16 +149,15 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
     setIsProcessing(true);
     try {
       const newHand = [...hand];
-      const newDeck = [...deck];
       
       for (let i = 0; i < 5; i++) {
         if (!held[i]) {
-          newHand[i] = newDeck.pop()!;
+          const nextCard = deckRef.current.pop();
+          if (nextCard) newHand[i] = nextCard;
         }
       }
       
       setHand(newHand);
-      setDeck(newDeck);
       
       const result = evaluateHand(newHand);
       setHandName(result.name);
@@ -159,18 +166,23 @@ const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
       setWinAmount(win);
       
       if (win > 0) {
-        
+        toast.success(`🎉 ${result.name}! Won ${win} tokens!`);
       }
       
-      await secureRecordGameResult({ userId: profile?.id || "", betAmount: 0, earnedAmount: winAmount }) /* AUTOFIX: bet=0 to prevent double charge */;
+      await secureRecordGameResult({ 
+        userId: profile?.id || "", 
+        betAmount: 0, 
+        earnedAmount: win,
+        xpEarned: Math.floor(bet * 0.1)
+      });
       
       setGameState('gameover');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error('Error drawing cards');
+      toast.error(e?.message || 'Error drawing cards');
     }
     setIsProcessing(false);
-  }, [gameState, profile, hand, deck, held, bet]);
+  }, [gameState, profile, hand, held, bet]);
 
   return (
     <div className="flex flex-col items-center p-4 h-full bg-slate-900 text-white overflow-y-auto">

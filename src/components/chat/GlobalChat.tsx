@@ -62,17 +62,29 @@ export function GlobalChat() {
     };
   }, [chatOpen]);
 
+  const lastChatTimeRef = useRef<number>(0);
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isGuest || !profile) return;
     
-    const text = input.trim();
+    const now = Date.now();
+    if (now - lastChatTimeRef.current < 1200) {
+      return; // Rate limit 1.2s between messages
+    }
+
+    const text = input.trim().slice(0, 250);
     setInput("");
+    lastChatTimeRef.current = now;
     
-    await (supabase as any).from("global_chat").insert({
-      user_id: profile.id,
-      message: text
-    });
+    try {
+      await (supabase as any).from("global_chat").insert({
+        user_id: profile.id,
+        message: text
+      });
+    } catch (err) {
+      console.error("Failed to send chat message:", err);
+    }
   };
 
   return (

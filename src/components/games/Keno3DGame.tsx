@@ -70,25 +70,28 @@ export function Keno3DGame() {
     if (profile.tokens < bet) return toast.error("Insufficient tokens.");
     if (gameState !== 'IDLE') return;
 
+    try {
+      await secureUpdateTokens(profile.id, -bet);
+    } catch (e: any) {
+      setGameState('IDLE');
+      return toast.error(e?.message || "Transaction failed.");
+    }
+
     setGameState('DRAWING');
     setDrawnNumbers([]);
     setWinAmount(0);
     setMultiplier(0);
 
-    const success = await secureUpdateTokens(profile.id, -bet);
-    if (!success) {
-      setGameState('IDLE');
-      return toast.error("Transaction failed.");
-    }
-
     audio.play('keno-3d', 'spin');
 
-    // Generate 10 winning numbers
+    // Generate 10 winning numbers securely
     const winners: number[] = [];
-    while(winners.length < 10) {
-      const r = Math.floor(Math.random() * 40) + 1;
-      if (!winners.includes(r)) winners.push(r);
+    const pool = Array.from({ length: 40 }, (_, i) => i + 1);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
     }
+    winners.push(...pool.slice(0, 10));
 
     // Draw one by one
     for (let i = 0; i < 10; i++) {

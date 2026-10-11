@@ -58,8 +58,11 @@ export function SicBo3DGame() {
     if (gameState !== 'IDLE') return;
     if (profile.tokens < bet) return toast.error("Insufficient tokens.");
 
-    const success = await secureUpdateTokens(profile.id, -bet);
-    if (!success) return toast.error("Transaction failed.");
+    try {
+      await secureUpdateTokens(profile.id, -bet);
+    } catch (e: any) {
+      return toast.error(e?.message || "Transaction failed.");
+    }
 
     setGameState('ROLLING');
     audio.play('sicbo', 'click-spin');

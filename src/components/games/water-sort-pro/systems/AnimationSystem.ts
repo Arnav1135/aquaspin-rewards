@@ -3,14 +3,23 @@ import { Container, Graphics } from 'pixi.js';
 import { ParticleSystem } from './ParticleSystem';
 
 export class AnimationSystem {
-  static bounceSelection(target: Container, originalY: number) {
+  static bounceSelection(target: Container, originalY?: number) {
     gsap.killTweensOf(target);
-    gsap.to(target, { y: originalY - 25, scaleX: 1.05, scaleY: 1.05, duration: 0.4, ease: 'back.out(1.2)' });
+    const baseY = (target as any).baseY !== undefined ? (target as any).baseY : (originalY ?? target.y);
+    (target as any).baseY = baseY;
+    if ((target as any).baseX === undefined) {
+      (target as any).baseX = target.x;
+    }
+    gsap.to(target, { y: baseY - 25, scaleX: 1.05, scaleY: 1.05, duration: 0.4, ease: 'back.out(1.2)' });
   }
 
-  static resetSelection(target: Container, originalY: number) {
+  static resetSelection(target: Container, originalY?: number) {
     gsap.killTweensOf(target);
-    gsap.to(target, { y: originalY, scaleX: 1, scaleY: 1, duration: 0.5, ease: 'bounce.out' });
+    const baseY = (target as any).baseY !== undefined ? (target as any).baseY : (originalY ?? target.y);
+    const baseX = (target as any).baseX !== undefined ? (target as any).baseX : target.x;
+    (target as any).baseY = baseY;
+    (target as any).baseX = baseX;
+    gsap.to(target, { x: baseX, y: baseY, rotation: 0, scaleX: 1, scaleY: 1, duration: 0.5, ease: 'bounce.out' });
   }
 
   static animatePour(
@@ -294,20 +303,32 @@ export class AnimationSystem {
     });
   }
 
-  static animateShake(target: Container, originalX: number, originalY: number, onComplete?: () => void) {
+  static animateShake(target: Container, originalX?: number, originalY?: number, onComplete?: () => void) {
     gsap.killTweensOf(target);
-    const tl = gsap.timeline({ onComplete });
-    tl.to(target, { rotation: 0.1, x: originalX + 5, duration: 0.05 })
-      .to(target, { rotation: -0.1, x: originalX - 5, duration: 0.05 })
-      .to(target, { rotation: 0.1, x: originalX + 5, duration: 0.05 })
-      .to(target, { rotation: -0.1, x: originalX - 5, duration: 0.05 })
-      .to(target, { rotation: 0, x: originalX, y: originalY, scaleX: 1, scaleY: 1, duration: 0.1, ease: 'bounce.out' });
+    const baseX = (target as any).baseX !== undefined ? (target as any).baseX : (originalX ?? target.x);
+    const baseY = (target as any).baseY !== undefined ? (target as any).baseY : (originalY ?? target.y);
+    (target as any).baseX = baseX;
+    (target as any).baseY = baseY;
+    const tl = gsap.timeline({
+      onComplete: () => {
+        target.x = baseX;
+        target.y = baseY;
+        target.rotation = 0;
+        target.scale.set(1, 1);
+        if (onComplete) onComplete();
+      }
+    });
+    tl.to(target, { rotation: 0.1, x: baseX + 5, duration: 0.05 })
+      .to(target, { rotation: -0.1, x: baseX - 5, duration: 0.05 })
+      .to(target, { rotation: 0.1, x: baseX + 5, duration: 0.05 })
+      .to(target, { rotation: -0.1, x: baseX - 5, duration: 0.05 })
+      .to(target, { rotation: 0, x: baseX, y: baseY, scaleX: 1, scaleY: 1, duration: 0.1, ease: 'bounce.out' });
   }
 
   static triggerLevelComplete(tubes: Container[]) {
     const tl = gsap.timeline();
     tubes.forEach((tube, i) => {
-      const baseY = tube.y;
+      const baseY = (tube as any).baseY !== undefined ? (tube as any).baseY : tube.y;
       tl.to(tube, { y: baseY - 30, scaleX: 1.1, scaleY: 1.1, duration: 0.2, ease: 'back.out' }, i * 0.1);
       tl.to(tube, { y: baseY, scaleX: 1, scaleY: 1, duration: 0.4, ease: 'bounce.out' }, i * 0.1 + 0.2);
     });

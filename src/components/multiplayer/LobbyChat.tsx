@@ -54,18 +54,30 @@ export function LobbyChat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const lastChatTimeRef = useRef<number>(0);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !profile) return;
     
-    const text = inputText.trim();
-    setInputText('');
+    const now = Date.now();
+    if (now - lastChatTimeRef.current < 1200) {
+      return;
+    }
 
-    await (supabase.from('lobby_chat') as any).insert({
-      user_id: profile.id,
-      username: profile.username || 'Anonymous',
-      text
-    });
+    const text = inputText.trim().slice(0, 250);
+    setInputText('');
+    lastChatTimeRef.current = now;
+
+    try {
+      await (supabase.from('lobby_chat') as any).insert({
+        user_id: profile.id,
+        username: profile.username || 'Anonymous',
+        text
+      });
+    } catch (err) {
+      console.error("Lobby chat insert error:", err);
+    }
   };
 
   return (

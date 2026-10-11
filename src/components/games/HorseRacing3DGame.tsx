@@ -6,7 +6,8 @@ import * as THREE from 'three';
 import { BetControl } from '@/components/ui/BetControl';
 import { useAuthStore } from '@/features/authStore';
 import { audio } from '@/lib/audioEngine';
-import { secureRecordGameResult } from '@/lib/secureEconomy';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import toast from 'react-hot-toast';
 
 const HORSES = [
   { id: 1, name: "Crimson Lightning", color: "#EF4444", odds: 2.0, speedBase: 0.8 },
@@ -94,10 +95,15 @@ export default function HorseRacing3DGame({ onClose }: { onClose?: () => void })
   const { profile } = useAuthStore();
   const [bet, setBet] = useState(10);
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   
   const [gameState, setGameState] = useState<'BETTING' | 'RACING' | 'FINISHED'>('BETTING');
   const [progresses, setProgresses] = useState<number[]>(HORSES.map(() => 0));
   const [winnerId, setWinnerId] = useState<number | null>(null);
+
+  const activeBetRef = useRef<number>(0);
+  const activeHorseRef = useRef<number | null>(null);
+  const settledRef = useRef<boolean>(false);
   
   useEffect(() => {
     if (gameState !== 'RACING') return;
@@ -129,44 +135,75 @@ export default function HorseRacing3DGame({ onClose }: { onClose?: () => void })
           }
         }
 
-        if (isFinished) {
+        if (isFinished && !settledRef.current) {
+          settledRef.current = true;
           setGameState('FINISHED');
           setWinnerId(currentLeader);
+
+          // Atomic settlement
+          const finalHorse = currentLeader;
+          const chosenHorse = activeHorseRef.current;
+          const currentBet = activeBetRef.current;
+
+          if (profile && chosenHorse !== null) {
+            if (finalHorse === chosenHorse) {
+              const horse = HORSES.find(h => h.id === finalHorse);
+              const multiplier = horse ? horse.odds : 0;
+              const winAmount = Math.floor(currentBet * multiplier);
+              secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: winAmount, xpEarned: Math.floor(currentBet * 0.1) });
+              audio.play('horse', 'win');
+              toast.success(`🎉 Horse #${finalHorse} won! +${winAmount} tokens!`);
+            } else {
+              secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: 0, xpEarned: Math.floor(currentBet * 0.05) });
+              audio.play('horse', 'lose');
+              toast.error(`Horse #${finalHorse} won. Better luck next time!`);
+            }
+          }
         }
 
         return next;
       });
 
-      if (gameState === 'RACING') {
+      if (gameState === 'RACING' && !settledRef.current) {
         animId = requestAnimationFrame(tick);
       }
     };
 
     animId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animId);
-  }, [gameState]);
+  }, [gameState, profile]);
 
-  useEffect(() => {
-    if (gameState === 'FINISHED' && winnerId !== null && profile) {
-      if (winnerId === selectedHorseId) {
-        const horse = HORSES.find(h => h.id === winnerId);
-        const multiplier = horse ? horse.odds : 0;
-        const winAmount = Math.floor(bet * multiplier);
-        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: winAmount }) /* AUTOFIX: bet=0 to prevent double charge */;
-        audio.play('horse', 'win');
-      } else {
-        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: 0 }) /* AUTOFIX: bet=0 to prevent double charge */;
-        audio.play('horse', 'lose');
-      }
+  const handleStart = async () => {
+    if (!profile) {
+      toast.error('Please login to race.');
+      return;
     }
-  }, [gameState, winnerId, selectedHorseId, bet, profile]);
+    if (!selectedHorseId || bet <= 0) {
+      toast.error('Please select a horse and bet amount.');
+      return;
+    }
+    if (profile.tokens < bet) {
+      toast.error('Insufficient tokens.');
+      return;
+    }
+    if (gameState === 'RACING' || isStarting) return;
 
-  const handleStart = () => {
-    if (!selectedHorseId || bet <= 0) return;
-    setGameState('RACING');
-    setProgresses(HORSES.map(() => 0));
-    setWinnerId(null);
-    audio.play('horse', 'click');
+    setIsStarting(true);
+    try {
+      await secureUpdateTokens(profile.id, -bet);
+      activeBetRef.current = bet;
+      activeHorseRef.current = selectedHorseId;
+      settledRef.current = false;
+
+      setProgresses(HORSES.map(() => 0));
+      setWinnerId(null);
+      setGameState('RACING');
+      audio.play('horse', 'click');
+    } catch (e: any) {
+      toast.error(e?.message || 'Transaction failed. Try again.');
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   return (

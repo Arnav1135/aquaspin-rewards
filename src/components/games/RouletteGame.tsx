@@ -332,12 +332,21 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       return;
     }
     
+    if (profile && !isGuest) {
+      if (profile.tokens < totalBet) {
+        toast.error('Insufficient tokens');
+        return;
+      }
+      try {
+        await secureUpdateTokens(profile.id, -totalBet);
+      } catch (e: any) {
+        toast.error(e?.message || 'Transaction failed');
+        return;
+      }
+    }
+
     setGameState('SPINNING');
     audio.play('slots', 'spin');
-    
-    if (profile && !isGuest) {
-      await secureUpdateTokens(profile.id, -totalBet);
-    }
 
     const winIndex = Math.floor(Math.random() * 37);
     const winTile = WHEEL_TILES[winIndex];

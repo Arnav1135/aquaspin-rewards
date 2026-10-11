@@ -277,6 +277,8 @@ export class GameApp {
 
       tubeContainer.x = x;
       tubeContainer.y = y;
+      (tubeContainer as any).baseX = x;
+      (tubeContainer as any).baseY = y;
       
       // Reset logic state for the tube
       AnimationSystem.resetSelection(tubeContainer, y);
@@ -307,7 +309,7 @@ export class GameApp {
       if (this.stateData[index].length > 0) {
         s.setSelectedTube(index);
         audioMixer.playSelect(getPan(index));
-        AnimationSystem.bounceSelection(this.tubes[index], this.tubes[index].y);
+        AnimationSystem.bounceSelection(this.tubes[index], (this.tubes[index] as any).baseY ?? this.tubes[index].y);
         
         const srcColor = this.stateData[index][this.stateData[index].length - 1];
         const activeTheme = ThemeManager.getTheme(s.theme);
@@ -318,7 +320,7 @@ export class GameApp {
       if (s.selectedTube === index) {
         s.setSelectedTube(-1);
         audioMixer.playSelect(getPan(index));
-        AnimationSystem.resetSelection(this.tubes[index], this.tubes[index].y);
+        AnimationSystem.resetSelection(this.tubes[index], (this.tubes[index] as any).baseY ?? this.tubes[index].y);
         this.tubeGraphics[index].setHighlight(false);
       } else {
         this.attemptPour(s.selectedTube, index, getPan(s.selectedTube), getPan(index));
@@ -329,7 +331,7 @@ export class GameApp {
   private handleBackgroundClick() {
     const s = useGameState.getState();
     if (s.selectedTube !== -1 && !s.isAnimating) {
-      AnimationSystem.resetSelection(this.tubes[s.selectedTube], this.tubes[s.selectedTube].y);
+      AnimationSystem.resetSelection(this.tubes[s.selectedTube], (this.tubes[s.selectedTube] as any).baseY ?? this.tubes[s.selectedTube].y);
       this.tubeGraphics[s.selectedTube].setHighlight(false);
       s.setSelectedTube(-1);
     }
@@ -382,8 +384,8 @@ export class GameApp {
       
       const srcCol = srcIdx % cols;
       const srcRow = Math.floor(srcIdx / cols);
-      const startX = srcCol * (this.tubeWidth + this.gap);
-      const startY = srcRow * (this.tubeHeight + this.gap * 2);
+      const startX = (sourceContainer as any).baseX !== undefined ? (sourceContainer as any).baseX : srcCol * (this.tubeWidth + this.gap);
+      const startY = (sourceContainer as any).baseY !== undefined ? (sourceContainer as any).baseY : srcRow * (this.tubeHeight + this.gap * 2);
 
       this.interactionLock = true;
       AnimationSystem.animatePour(
@@ -425,7 +427,7 @@ export class GameApp {
       // Invalid Pour (full or color mismatch)
       audioMixer.playInvalidMove();
       this.interactionLock = true;
-      AnimationSystem.animateShake(this.tubes[srcIdx], this.tubes[srcIdx].x, this.tubes[srcIdx].y, () => {
+      AnimationSystem.animateShake(this.tubes[srcIdx], (this.tubes[srcIdx] as any).baseX ?? this.tubes[srcIdx].x, (this.tubes[srcIdx] as any).baseY ?? this.tubes[srcIdx].y, () => {
         this.interactionLock = false;
       });
       this.tubeGraphics[srcIdx].setHighlight(false);
@@ -453,7 +455,7 @@ export class GameApp {
     this.liquids[lastMove.dest].updateLiquids(dest);
     
     if (s.selectedTube !== -1) {
-      AnimationSystem.resetSelection(this.tubes[s.selectedTube], this.tubes[s.selectedTube].y);
+      AnimationSystem.resetSelection(this.tubes[s.selectedTube], (this.tubes[s.selectedTube] as any).baseY ?? this.tubes[s.selectedTube].y);
       s.setSelectedTube(-1);
     }
     
@@ -504,15 +506,15 @@ export class GameApp {
       
       if (hint.recommendedMove) {
         // Highlight the tubes momentarily
-        AnimationSystem.bounceSelection(this.tubes[hint.recommendedMove.source], this.tubes[hint.recommendedMove.source].y);
+        AnimationSystem.bounceSelection(this.tubes[hint.recommendedMove.source], (this.tubes[hint.recommendedMove.source] as any).baseY ?? this.tubes[hint.recommendedMove.source].y);
         setTimeout(() => {
-          AnimationSystem.bounceSelection(this.tubes[hint.recommendedMove!.destination], this.tubes[hint.recommendedMove!.destination].y);
+          AnimationSystem.bounceSelection(this.tubes[hint.recommendedMove!.destination], (this.tubes[hint.recommendedMove!.destination] as any).baseY ?? this.tubes[hint.recommendedMove!.destination].y);
         }, 300);
         
         // Auto-reset them if not selected by player
         setTimeout(() => {
-          if (s.selectedTube !== hint.recommendedMove!.source) AnimationSystem.resetSelection(this.tubes[hint.recommendedMove!.source], this.tubes[hint.recommendedMove!.source].y);
-          if (s.selectedTube !== hint.recommendedMove!.destination) AnimationSystem.resetSelection(this.tubes[hint.recommendedMove!.destination], this.tubes[hint.recommendedMove!.destination].y);
+          if (s.selectedTube !== hint.recommendedMove!.source) AnimationSystem.resetSelection(this.tubes[hint.recommendedMove!.source], (this.tubes[hint.recommendedMove!.source] as any).baseY ?? this.tubes[hint.recommendedMove!.source].y);
+          if (s.selectedTube !== hint.recommendedMove!.destination) AnimationSystem.resetSelection(this.tubes[hint.recommendedMove!.destination], (this.tubes[hint.recommendedMove!.destination] as any).baseY ?? this.tubes[hint.recommendedMove!.destination].y);
         }, 1000);
         
         // Push explanation to UI

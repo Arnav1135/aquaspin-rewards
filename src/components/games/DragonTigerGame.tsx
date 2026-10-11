@@ -22,7 +22,17 @@ const SUITS = ['♠', '♥', '♦', '♣'];
 const LABELS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
 function getRandomCard(): CardData {
-  const s = Math.floor(Math.random() * 4), v = Math.floor(Math.random() * 13);
+  let s = 0;
+  let v = 0;
+  if (typeof window !== 'undefined' && window.crypto) {
+    const arr = new Uint32Array(2);
+    window.crypto.getRandomValues(arr);
+    s = arr[0] % 4;
+    v = arr[1] % 13;
+  } else {
+    s = Math.floor(Math.random() * 4);
+    v = Math.floor(Math.random() * 13);
+  }
   return { suit: SUITS[s], value: v + 1, label: LABELS[v] };
 }
 
@@ -124,8 +134,13 @@ export function DragonTigerGame({ onClose }: any) {
       }
       
       if (!error && tokensChange !== 0) {
-        const res = await secureUpdateTokens(pr.id, tokensChange);
-        error = res.error;
+        try {
+          const res = await secureUpdateTokens(pr.id, tokensChange);
+          error = res.error;
+        } catch (err: any) {
+          error = err;
+          toast.error(err?.message || 'Transaction rejected');
+        }
       }
       return !error;
     },

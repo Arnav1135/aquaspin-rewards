@@ -26,12 +26,19 @@ export function DailyRewardsModal() {
     lastLogin.getDate() !== today.getDate()
   );
 
+  const todayStr = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+  const todayShownKey = `daily_reward_shown_${todayStr}`;
+
   useEffect(() => {
-    if (canClaimToday && profile && !hasAutoShown && profile.id !== 'guest') {
-      const timer = setTimeout(() => { setIsOpen(true); setHasAutoShown(true); }, 1500);
+    const alreadyShownToday = localStorage.getItem(todayShownKey) === 'true';
+    if (canClaimToday && profile && !alreadyShownToday && profile.id !== 'guest') {
+      const timer = setTimeout(() => { 
+        setIsOpen(true); 
+        localStorage.setItem(todayShownKey, 'true');
+      }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [canClaimToday, profile, hasAutoShown]);
+  }, [canClaimToday, profile, todayShownKey]);
 
   const handleClaim = async () => {
     if (!profile || profile.id === 'guest') {

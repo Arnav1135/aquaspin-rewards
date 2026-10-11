@@ -64,8 +64,15 @@ export const useProvablyFairStore = create<ProvablyFairState>()(
     }),
     {
       name: 'provably-fair-storage',
-      // Only persist non-sensitive state to localStorage. 
-      // In a real AAA setup, activeServerSeed is stored on Redis.
+      // Only persist public verification artifacts to localStorage, never the secret active seed
+      partialize: (state) => ({
+        clientSeed: state.clientSeed,
+        serverSeedHash: state.serverSeedHash,
+        nonce: state.nonce,
+        previousServerSeed: state.previousServerSeed,
+        previousClientSeed: state.previousClientSeed,
+        previousNonce: state.previousNonce,
+      }),
     }
   )
 );

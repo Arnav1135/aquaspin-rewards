@@ -61,9 +61,10 @@ export async function getUserProfile(userId: string) {
   return db.from('users').select('*').eq('id', userId).single();
 }
 
-/** Update user token balance */
-export async function updateUserTokens(userId: string, newBalance: number) {
-  return db.from('users').update({ tokens: newBalance }).eq('id', userId);
+/** Update user token balance (DEPRECATED: Direct table updates are disabled for security; use secureEconomy) */
+export async function updateUserTokens(_userId: string, _newBalance: number) {
+  console.warn('[Security] Direct updateUserTokens call blocked. Please use secureEconomy module.');
+  return { error: { message: 'Direct client-side token modification is disabled for security.' } };
 }
 
 /** Fetch spin history for a user (last 20) */
@@ -189,25 +190,10 @@ export async function getDailyRewardStatus(userId: string) {
     .limit(1);
 }
 
-/** Claim daily login reward */
-export async function claimDailyReward(userId: string, streak: number, tokensToAward: number) {
-  const dayNumber = ((streak - 1) % 7) + 1;
-
-  const { error: rewardError } = await db
-    .from('daily_rewards')
-    .insert({ user_id: userId, day_number: dayNumber, tokens: tokensToAward });
-
-  if (rewardError) return { error: rewardError.message };
-
-   
-  const { error: streakError } = await (supabase as any).rpc('update_streak', { p_user_id: userId });
-  if (streakError) return { error: streakError.message };
-
-  const { data: user } = await getUserProfile(userId);
-  if (user) {
-    await updateUserTokens(userId, (user as { tokens: number }).tokens + tokensToAward);
-  }
-
-  return { error: null };
+/** Claim daily login reward via secure edge function */
+export async function claimDailyReward(_userId: string, _streak: number, _tokensToAward: number) {
+  const { data, error } = await supabase.functions.invoke('daily-reward');
+  if (error) return { error: error.message };
+  return { data, error: null };
 }
 

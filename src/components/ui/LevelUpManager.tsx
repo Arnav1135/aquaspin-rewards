@@ -19,10 +19,24 @@ export function LevelUpManager() {
     if (!profile) return;
     
     const correctLevel = calculateLevel(profile.xp || 0);
-    
-    const lastLevel = parseInt(localStorage.getItem('last_level_up') || '1', 10);
+    const storedLevelStr = localStorage.getItem('last_level_up');
+
+    // If first time loading this browser session, sync to user's current level without pop-up spam
+    if (storedLevelStr === null) {
+      const initialLevel = Math.max(profile.level || 1, correctLevel);
+      localStorage.setItem('last_level_up', initialLevel.toString());
+      if ((profile.level || 1) < correctLevel) {
+        // @ts-expect-error - Expected strict mismatch
+        supabase.from("users").update({ level: correctLevel }).eq("id", profile.id).then();
+        updateProfile({ level: correctLevel });
+      }
+      return;
+    }
+
+    const lastLevel = parseInt(storedLevelStr, 10);
     if (correctLevel > (profile.level || 1) && correctLevel > lastLevel) {
-      // Level Up!
+      // Immediately record new level to prevent any repeated pop-up triggers
+      localStorage.setItem('last_level_up', correctLevel.toString());
       setShowLevelUp(correctLevel);
       
       // Update DB and local state

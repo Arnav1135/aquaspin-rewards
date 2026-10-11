@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Star, Coins, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
-import { secureUpdateTokens } from '@/lib/secureEconomy';
+import { secureShopPurchase } from '@/lib/secureEconomy';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { TokenCounter } from '@/components/ui/TokenCounter';
@@ -169,24 +169,17 @@ export function Shop() {
     setConfirmItem(null);
 
     try {
-      // Apply instant effects
-      let bonusTokens = 0;
-      if (confirmItem.id === 'token_rain') {
-        bonusTokens = Math.floor(Math.random() * 251) + 50; // 50–300
-      }
-
-      const amountChange = -confirmItem.cost + bonusTokens;
-      const { data: newTokens } = await secureUpdateTokens(profile.id, amountChange);
-      if (newTokens !== null) {
-        updateProfile({ tokens: newTokens });
+      const { data } = await secureShopPurchase(profile.id, confirmItem.id);
+      if (data && data.success) {
+        updateProfile({ tokens: data.new_balance });
+        setSuccessItem(confirmItem);
+        const bonusMsg = data.bonus > 0 ? ` (Won +${data.bonus} bonus tokens!)` : '';
+        toast.success(`${confirmItem.name} purchased!${bonusMsg} ${confirmItem.effect}`);
       } else {
         throw new Error('Transaction failed');
       }
-
-      setSuccessItem(confirmItem);
-      toast.success(`${confirmItem.name} purchased! ${confirmItem.effect}`);
-    } catch {
-      toast.error('Purchase failed. Please try again.');
+    } catch (err: any) {
+      toast.error(err.message || 'Purchase failed. Please try again.');
     } finally {
       setPurchasing(null);
     }

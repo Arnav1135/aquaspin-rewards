@@ -1,5 +1,16 @@
 [
     {
+        "key": "holesink",
+        "title": "Hole Sink 3D",
+        "emoji": "🕳️",
+        "category": "Arcade",
+        "reward": "Up to 3.5x",
+        "difficulty": "Medium",
+        "color": "#06B6D4",
+        "desc": "Devour city props and outgrow rival holes in an intense 3D arena battle!",
+        "thumbnail": "/thumbnails/holesink.jpg"
+    },
+    {
         "key": "slots",
         "title": "Lucky Slots",
         "emoji": "🎰",

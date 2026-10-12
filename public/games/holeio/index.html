@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Hole.io - Clean Scraped Build</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="TemplateData/style64.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background-color: #070a12;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #gameContainer {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      background: #000;
+    }
+    .webgl-content {
+      width: 100%; height: 100%; position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+    }
+    #loadingBox {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center; color: #fff; font-family: sans-serif;
+      z-index: 100;
+    }
+    #loadingInfo {
+      font-size: 20px; font-weight: bold; margin-bottom: 12px;
+      letter-spacing: 2px; color: #38bdf8;
+    }
+    #progressBar {
+      width: 240px; height: 10px; background: #1e293b;
+      border-radius: 999px; overflow: hidden; margin: 0 auto 16px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    #progressBarFill {
+      width: 0%; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8);
+      transition: width 0.2s ease;
+    }
+    .rotate-spinner {
+      width: 36px; height: 36px; animation: spin 1s linear infinite; margin: 0 auto;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+  <script type="text/javascript">
+    var CONFIG = { BuildPath: "b/4/" };
+    window.player_id = Math.floor(Math.random() * 100000000);
+  </script>
+</head>
+<body>
+  <div class="webgl-content" id="webgl-content">
+    <canvas id="gameContainer"></canvas>
+    <div id="loadingBox">
+      <div id="loadingInfo">LOADING HOLE.IO...</div>
+      <div id="progressBar">
+        <div id="progressBarFill"></div>
+      </div>
+      <img id="spinner" class="rotate-spinner" src="TemplateData/loading_rotate_white.png" alt="Loading" />
+    </div>
+  </div>
+
+  <script src="TemplateData/UnityProgress.js"></script>
+  <script>
+    // Intercept and bypass external ad/tracking demands
+    window.onGamePlayPressed = function(showPreroll) {
+      if (window.sendMessageToUnity) {
+        window.sendMessageToUnity('{"eventName": "adsComplete","data": {"allow": "true"}}');
+      }
+    };
+
+    window.gameStart = function() {
+      var box = document.getElementById("loadingBox");
+      if (box) box.style.display = "none";
+      if (window.parent) {
+        window.parent.postMessage({ type: 'HOLEIO_GAME_START' }, '*');
+      }
+    };
+
+    window.gameOverParent = function() {
+      if (window.parent) {
+        window.parent.postMessage({ type: 'HOLEIO_GAME_OVER' }, '*');
+      }
+    };
+
+    window.mapsOpen = function() {};
+    window.mapsClose = function() {};
+    window.showAdsBanner = function() {};
+
+    // Custom Progress updater
+    var origUnityProgress = window.UnityProgress;
+    window.UnityProgress = function(gameInstance, progress) {
+      var fill = document.getElementById("progressBarFill");
+      if (fill && typeof progress === 'number') {
+        fill.style.width = Math.min(100, Math.round(progress * 100)) + "%";
+      }
+      if (progress >= 1) {
+        var box = document.getElementById("loadingBox");
+        if (box) box.style.display = "none";
+      }
+      if (typeof origUnityProgress === 'function') {
+        try { origUnityProgress(gameInstance, progress); } catch(e) {}
+      }
+    };
+  </script>
+  <script src="b/4/gameWebGL.js" async></script>
+</body>
+</html>

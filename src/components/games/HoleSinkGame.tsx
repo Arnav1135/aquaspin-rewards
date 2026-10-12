@@ -22,6 +22,7 @@ const ROUND_TIME = 90; // 90 seconds per match
 const BASE_RADIUS = 1.3;
 
 type GameState = 'BETTING' | 'PLAYING' | 'GAME_OVER';
+type EngineMode = 'scraped' | 'native';
 
 interface PropItem {
   id: number;
@@ -323,6 +324,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
   const [lastWin, setLastWin] = useState(0);
   const [playerRank, setPlayerRank] = useState(1);
+  const [engineMode, setEngineMode] = useState<EngineMode>('scraped');
 
   const isMountedRef = useRef(true);
   const keysRef = useRef<{ [k: string]: boolean }>({});
@@ -896,34 +898,43 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* 3D Scene Canvas */}
+        {/* Game Canvas / Scraped Engine Container */}
         <div className="flex-1 w-full h-full relative z-0">
-          <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[30, 40, 20]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
-            <pointLight position={[0, 15, 0]} intensity={2.0} color="#38bdf8" distance={60} />
+          {engineMode === 'scraped' ? (
+            <iframe
+              src="/games/holeio/index.html"
+              className="w-full h-full border-0 absolute inset-0 bg-black"
+              title="Hole.io Original Game"
+              allow="autoplay; fullscreen; gamepad"
+            />
+          ) : (
+            <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
+              <ambientLight intensity={0.5} />
+              <directionalLight position={[30, 40, 20]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
+              <pointLight position={[0, 15, 0]} intensity={2.0} color="#38bdf8" distance={60} />
 
-            {/* Arena Floor & Props */}
-            <ArenaFloor />
+              {/* Arena Floor & Props */}
+              <ArenaFloor />
 
-            {propsList.map((prop) => (
-              <PropMesh key={prop.id} prop={prop} />
-            ))}
+              {propsList.map((prop) => (
+                <PropMesh key={prop.id} prop={prop} />
+              ))}
 
-            {/* Player Hole */}
-            <HoleMesh entity={player} />
+              {/* Player Hole */}
+              <HoleMesh entity={player} />
 
-            {/* AI Rivals */}
-            {aiHoles.map((ai) => (
-              <HoleMesh key={ai.id} entity={ai} />
-            ))}
+              {/* AI Rivals */}
+              {aiHoles.map((ai) => (
+                <HoleMesh key={ai.id} entity={ai} />
+              ))}
 
-            {/* Camera follow */}
-            <CameraController playerHole={player} />
+              {/* Camera follow */}
+              <CameraController playerHole={player} />
 
-            {/* Ambient Atmosphere Particles */}
-            <Sparkles count={120} scale={50} size={2} speed={0.4} opacity={0.25} color="#38bdf8" />
-          </Canvas>
+              {/* Ambient Atmosphere Particles */}
+              <Sparkles count={120} scale={50} size={2} speed={0.4} opacity={0.25} color="#38bdf8" />
+            </Canvas>
+          )}
         </div>
 
         {/* Betting / Launch Overlay */}
@@ -941,9 +952,35 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <h1 className="text-3xl font-black text-white tracking-wider mb-2">HOLE SINK 3D</h1>
-                <p className="text-xs text-slate-400 mb-6 max-w-xs">
+                <p className="text-xs text-slate-400 mb-4 max-w-xs">
                   Devour city traffic, benches, cars & rival holes. Grow to massive proportions and dominate the 90-second match!
                 </p>
+
+                {/* Engine Mode Toggle */}
+                <div className="flex gap-2 w-full mb-4 p-1 bg-black/40 border border-white/10 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() => setEngineMode('scraped')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                      engineMode === 'scraped'
+                        ? 'bg-cyan-500 text-black shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🕹️ Original Game (Scraped)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEngineMode('native')}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                      engineMode === 'native'
+                        ? 'bg-yellow-500 text-black shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    ⚡ Native 3D Arena
+                  </button>
+                </div>
 
                 {/* Reward Tier Guide */}
                 <div className="grid grid-cols-3 gap-2 w-full mb-6">

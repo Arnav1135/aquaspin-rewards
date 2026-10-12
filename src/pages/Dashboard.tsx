@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, User, Plus, Play, Calendar, Star,
   Gamepad2, Trophy, Wallet, ChevronRight, Zap,
-  Globe2, Users, Search, Loader2, Target, Flame, TrendingUp, Sparkles, Award
+  Globe2, Users, Search, Loader2, Target, Flame, TrendingUp, Sparkles, Award, Gift
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/authStore';
@@ -25,7 +25,7 @@ const STAGGER = { animate: { transition: { staggerChildren: 0.1 } } };
 
 export function Dashboard() {
   const { profile, isGuest } = useAuthStore();
-  const { openCashoutModal } = useUIStore();
+  const { openCashoutModal, openDailyRewardModal } = useUIStore();
   const navigate = useNavigate();
   
   const [isMatchmaking, setIsMatchmaking] = useState(false);
@@ -265,7 +265,7 @@ export function Dashboard() {
               </div>
             </motion.section>
 
-            {/* Daily Spin Wheel (Hyper-Vibrant) */}
+            {/* Daily Quests (Daily Spin Wheel & Daily Login Streak) */}
             <motion.section variants={CARD_ANIM}>
               <div className="flex items-center justify-between mb-4 px-1">
                 <h2 className="text-base font-black text-white flex items-center gap-2 tracking-widest uppercase">
@@ -273,21 +273,44 @@ export function Dashboard() {
                   Daily Quests
                 </h2>
               </div>
-              <Link to="/wheel">
-                <div className="bg-gradient-to-br from-amber-900/60 to-orange-900/40 rounded-[2rem] p-6 border border-amber-500/30 shadow-2xl flex items-center justify-between relative overflow-hidden group hover:border-amber-400/60 transition-all backdrop-blur-md">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-3xl rounded-full mix-blend-screen pointer-events-none group-hover:bg-amber-400/20 transition-all duration-700"></div>
-                  <div className="relative z-10">
-                    <h3 className="font-black text-white text-xl tracking-wide">Daily Spin Wheel</h3>
-                    <p className="text-amber-200/80 text-sm mt-1 font-medium">Spin to win up to 500 tokens!</p>
-                    <div className="mt-5 inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-400 text-[10px] font-black tracking-widest uppercase px-4 py-2 rounded-xl border border-amber-400/30 shadow-[0_0_20px_rgba(251,191,36,0.2)]">
-                      <Sparkles size={12} className="fill-amber-400" /> Available Now
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Daily Spin Wheel */}
+                <Link to="/wheel">
+                  <div className="h-full bg-gradient-to-br from-amber-950/60 to-orange-950/40 rounded-[2rem] p-6 border border-amber-500/30 shadow-2xl flex items-center justify-between relative overflow-hidden group hover:border-amber-400/60 transition-all backdrop-blur-md cursor-pointer">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 blur-3xl rounded-full mix-blend-screen pointer-events-none group-hover:bg-amber-400/20 transition-all duration-700"></div>
+                    <div className="relative z-10">
+                      <h3 className="font-black text-white text-lg tracking-wide">Daily Spin Wheel</h3>
+                      <p className="text-amber-200/80 text-xs mt-1 font-medium">Spin to win up to 500 tokens!</p>
+                      <div className="mt-4 inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-400 text-[10px] font-black tracking-widest uppercase px-3.5 py-1.5 rounded-xl border border-amber-400/30 shadow-[0_0_20px_rgba(251,191,36,0.2)]">
+                        <Sparkles size={12} className="fill-amber-400" /> Spin Now
+                      </div>
+                    </div>
+                    <div className="w-18 h-18 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center relative z-10 shadow-[0_0_40px_rgba(245,158,11,0.3)] border border-amber-400/30 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
+                      <span className="text-4xl">🎡</span>
                     </div>
                   </div>
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/20 flex items-center justify-center relative z-10 shadow-[0_0_40px_rgba(245,158,11,0.3)] border border-amber-400/30 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
-                    <span className="text-5xl">🎡</span>
+                </Link>
+
+                {/* Daily Login Reward */}
+                <div 
+                  onClick={openDailyRewardModal}
+                  className="h-full bg-gradient-to-br from-cyan-950/60 to-blue-950/40 rounded-[2rem] p-6 border border-cyan-500/30 shadow-2xl flex items-center justify-between relative overflow-hidden group hover:border-cyan-400/60 transition-all backdrop-blur-md cursor-pointer"
+                >
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 blur-3xl rounded-full mix-blend-screen pointer-events-none group-hover:bg-cyan-400/20 transition-all duration-700"></div>
+                  <div className="relative z-10">
+                    <h3 className="font-black text-white text-lg tracking-wide">Daily Login Streak</h3>
+                    <p className="text-cyan-200/80 text-xs mt-1 font-medium">
+                      Streak: <span className="text-cyan-300 font-bold">{profile?.login_streak || 0} Days</span> • Up to 1,000 tokens
+                    </p>
+                    <div className="mt-4 inline-flex items-center gap-1.5 bg-cyan-400/20 text-cyan-300 text-[10px] font-black tracking-widest uppercase px-3.5 py-1.5 rounded-xl border border-cyan-400/30 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+                      <Gift size={12} className="text-cyan-300" /> Claim Reward
+                    </div>
+                  </div>
+                  <div className="w-18 h-18 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 flex items-center justify-center relative z-10 shadow-[0_0_40px_rgba(6,182,212,0.3)] border border-cyan-400/30 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700">
+                    <span className="text-4xl">🎁</span>
                   </div>
                 </div>
-              </Link>
+              </div>
             </motion.section>
             
           </motion.section>

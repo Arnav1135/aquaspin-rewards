@@ -179,6 +179,11 @@ const HoleSinkGame = lazy(() =>
     default: m.HoleSinkGame,
   })),
 );
+const HillClimbRacingGame = lazy(() =>
+  import("@/components/games/HillClimbRacingGame").then((m) => ({
+    default: m.HillClimbRacingGame,
+  })),
+);
 import { AGEA, GameGenre, VisualStyle } from "@/engine/AIGameEngineArchitect";
 import { AIGameEnginePanel } from "@/components/AIGameEnginePanel";
 import { useAuthStore } from "@/features/authStore";
@@ -302,6 +307,8 @@ export function MiniGames() {
         return <Poker3DGame {...p} />;
       case "holesink":
         return <HoleSinkGame {...p} />;
+      case "hillclimb":
+        return <HillClimbRacingGame {...p} />;
       case "flip":
         return <CoinFlipGame {...p} />;
       case "limbo":

@@ -1,5 +1,17 @@
 [
     {
+        "key": "hillclimb",
+        "title": "Hill Climb Racing Lite",
+        "emoji": "🚙",
+        "category": "Arcade",
+        "reward": "Coins & Tokens",
+        "difficulty": "Medium",
+        "color": "#EF4444",
+        "desc": "Conquer steep physics hills, collect fuel & coins, and upgrade your 4x4 offroad jeep!",
+        "thumbnail": "/thumbnails/hillclimb.jpg",
+        "thumbnailFit": "cover"
+    },
+    {
         "key": "holesink",
         "title": "Hole Sink 3D",
         "emoji": "🕳️",

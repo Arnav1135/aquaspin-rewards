@@ -837,7 +837,13 @@ function PropMesh({ prop }: { prop: PropItem }) {
   );
 }
 
-// Camera tracking controller with smooth dynamic altitude zoom
+// Global Trauma / Screen Shake State for AAA Impact
+let globalTrauma = 0;
+export function addHoleCameraTrauma(amount: number) {
+  globalTrauma = Math.min(1.0, globalTrauma + amount);
+}
+
+// Camera tracking controller with smooth dynamic altitude zoom & trauma shake
 function CameraController({ playerHole }: { playerHole: HoleEntity }) {
   const { camera } = useThree();
 
@@ -846,9 +852,15 @@ function CameraController({ playerHole }: { playerHole: HoleEntity }) {
     const camHeight = 13 + r * 2.2;
     const camDistance = 15 + r * 2.5;
 
+    // Decay trauma over time
+    globalTrauma = Math.max(0, globalTrauma - delta * 2.5);
+    const shakeIntensity = globalTrauma * globalTrauma;
+    const shakeOffsetX = (Math.random() - 0.5) * shakeIntensity * 1.8;
+    const shakeOffsetY = (Math.random() - 0.5) * shakeIntensity * 1.2;
+
     const targetPos = new THREE.Vector3(
-      playerHole.pos.x,
-      camHeight,
+      playerHole.pos.x + shakeOffsetX,
+      camHeight + shakeOffsetY,
       playerHole.pos.z + camDistance
     );
 
@@ -1262,6 +1274,8 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
             if (newY <= -3.2 && prop.pos.y > -3.2) {
               if (prop.eatenBy === 'player') {
                 const screenPan = Math.max(-1, Math.min(1, prop.pos.x / 40));
+                // Add proportional camera trauma based on swallowed mass
+                addHoleCameraTrauma(Math.min(0.65, prop.mass * 0.04));
                 audio.play3DSpatialChime(600 + Math.min(800, prop.points * 12), 0.35, screenPan, 0.4);
                 setPlayer((p) => ({
                   ...p,

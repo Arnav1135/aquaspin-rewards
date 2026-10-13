@@ -442,10 +442,26 @@ function HoleMesh({ entity }: { entity: HoleEntity }) {
         <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* Interior depth funnel */}
-      <mesh position={[0, -1.2, 0]}>
-        <cylinderGeometry args={[entity.radius * 0.95, entity.radius * 0.2, 2.4, 32, 1, true]} />
-        <meshBasicMaterial color="#020408" side={THREE.BackSide} />
+      {/* OPTION B: AAA Screen-Space Suction Funnel & Swirling Gravitational Distortion */}
+      <mesh position={[0, -1.8, 0]}>
+        <cylinderGeometry args={[entity.radius * 0.98, entity.radius * 0.08, 3.6, 36, 6, true]} />
+        <meshStandardMaterial
+          color="#020617"
+          roughness={0.1}
+          metalness={0.9}
+          side={THREE.DoubleSide}
+          wireframe={false}
+        />
+      </mesh>
+      {/* Dynamic Gravitational Accretion Disk (Inward Swirl) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.25, 0]}>
+        <ringGeometry args={[entity.radius * 0.4, entity.radius * 1.35, 32]} />
+        <meshBasicMaterial
+          color={entity.rimColor}
+          transparent
+          opacity={0.35}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
       {/* Floating Name & Score Label */}
@@ -1230,9 +1246,9 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               }
             }
           } else {
-            // Sucking down into the vortex
+            // Sucking down into the vortex with gravitational vortex spiral
             changed = true;
-            const newY = prop.pos.y - (prop.fallSpeed + 20.0 * delta) * delta;
+            const newY = prop.pos.y - (prop.fallSpeed + 26.0 * delta) * delta;
             const eater = holes.find((h) => h.id === prop.eatenBy);
 
             let newX = prop.pos.x;

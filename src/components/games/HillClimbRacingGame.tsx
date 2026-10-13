@@ -242,6 +242,17 @@ export function HillClimbRacingGame({ onClose }: Props) {
     totalCoins: parseInt(localStorage.getItem('hcr_wallet_coins') || '500', 10),
   });
 
+  // 1v1 Ghost Multiplayer Telemetry State
+  const [ghostMode, setGhostMode] = useState<boolean>(() => {
+    return localStorage.getItem('hcr_ghost_enabled') === 'true';
+  });
+  const ghostTrajectoryRef = useRef<Array<{ x: number; y: number; angle: number; time: number }>>([]);
+  const ghostRecordRef = useRef<Array<{ x: number; y: number; angle: number; time: number }>>([]);
+  const ghostTimeRef = useRef<number>(0);
+  const [ghostDistance, setGhostDistance] = useState<number>(0);
+
+
+
   // Touch controls state
   const touchGasRef = useRef(false);
   const touchBrakeRef = useRef(false);
@@ -394,6 +405,31 @@ export function HillClimbRacingGame({ onClose }: Props) {
     };
   }, [getTerrainHeight]);
 
+  // Load best ghost recording if exists
+  useEffect(() => {
+    try {
+      const savedGhost = localStorage.getItem(`hcr_ghost_${selectedStage}`);
+      if (savedGhost) {
+        ghostTrajectoryRef.current = JSON.parse(savedGhost);
+      } else {
+        // Generate high-skill rival ghost telemetry
+        const mockGhost: Array<{ x: number; y: number; angle: number; time: number }> = [];
+        let gx = 180;
+        let gvx = 180;
+        for (let t = 0; t < 120; t += 0.2) {
+          gx += gvx * 0.2;
+          gvx += (Math.random() - 0.45) * 15;
+          const gy = getTerrainHeight(gx) - 20;
+          const norm = getTerrainNormal(gx);
+          mockGhost.push({ x: gx, y: gy, angle: norm.angle, time: t });
+        }
+        ghostTrajectoryRef.current = mockGhost;
+      }
+    } catch {
+      ghostTrajectoryRef.current = [];
+    }
+  }, [selectedStage, getTerrainHeight, getTerrainNormal]);
+
   // Pre-generate procedural clouds
   useEffect(() => {
     const clouds = [];
@@ -413,6 +449,8 @@ export function HillClimbRacingGame({ onClose }: Props) {
   const startRace = useCallback(() => {
     const vConfig = VEHICLES[selectedVehicle] || VEHICLES.jeep;
     const initialY = getTerrainHeight(180) - 50;
+    ghostTimeRef.current = 0;
+    ghostRecordRef.current = [];
     simRef.current = {
       distance: 0,
       coinsCollected: 0,
@@ -426,13 +464,13 @@ export function HillClimbRacingGame({ onClose }: Props) {
       lastCoinSpawnDist: 100,
       lastGasSpawnDist: 350,
       gameOver: false,
-      deathReason: '',
+      deathReason: "",
       driver: {
         headAngle: 0,
         headAngularVel: 0,
         neckLength: 12,
         bodyAngle: 0,
-        expression: 'normal',
+        expression: "normal",
         blinkTimer: 0,
       },
       car: {
@@ -444,7 +482,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
         angularVel: 0,
         wheelDist: vConfig.wheelDist,
         bodyRadius: vConfig.bodyRadius,
-        driverHeadOffset: selectedVehicle === 'motocross' ? { x: -4, y: -26 } : { x: -8, y: -30 },
+        driverHeadOffset: selectedVehicle === "motocross" ? { x: -4, y: -26 } : { x: -8, y: -30 },
         wheelRadius: vConfig.wheelRadius,
         rearWheelY: initialY,
         frontWheelY: initialY,
@@ -841,6 +879,9 @@ export function HillClimbRacingGame({ onClose }: Props) {
         // 4. Distance Tracking & High Score
         const currDistMeters = Math.max(0, Math.floor((car.x - 180) / 10));
         sim.distance = Math.max(sim.distance, currDistMeters);
+        if (ghostMode && Math.random() < 0.2) {
+          ghostRecordRef.current.push({ x: car.x, y: car.y, angle: car.angle, time: ghostTimeRef.current });
+        }
         sim.speedKmh = Math.floor(Math.abs(car.vx) * 0.08);
         sim.rpm = Math.min(8500, Math.floor(800 + Math.abs(car.vx) * 12 + (isGas ? 2500 : 0)));
 
@@ -1661,6 +1702,55 @@ export function HillClimbRacingGame({ onClose }: Props) {
 
       ctx.restore(); // Exit Jeep transform
 
+      // --- OPTION A: 1V1 GHOST RACING TELEMETRY RENDER ---
+      if (ghostMode && ghostTrajectoryRef.current.length > 0) {
+        ghostTimeRef.current += dt;
+        const curGhostTime = ghostTimeRef.current;
+        // Find interpolated ghost position
+        const traj = ghostTrajectoryRef.current;
+        let ghostIdx = traj.findIndex(pt => pt.time >= curGhostTime);
+        if (ghostIdx === -1) ghostIdx = traj.length - 1;
+        const ghostPt = traj[ghostIdx];
+
+        if (ghostPt) {
+          ctx.save();
+          ctx.translate(ghostPt.x, ghostPt.y);
+          ctx.rotate(ghostPt.angle);
+          ctx.globalAlpha = 0.42; // Translucent holographic ghost
+
+          // Ghost holographic aura
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 12;
+
+          // Ghost Chassis (Neon Cyan Outline)
+          ctx.strokeStyle = "#38bdf8";
+          ctx.lineWidth = 3;
+          ctx.fillStyle = "rgba(14, 165, 233, 0.25)";
+          ctx.beginPath();
+          ctx.roundRect(-34, -16, 68, 20, 6);
+          ctx.fill();
+          ctx.stroke();
+
+          // Ghost Wheels
+          ctx.fillStyle = "rgba(15, 23, 42, 0.6)";
+          ctx.strokeStyle = "#38bdf8";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(-26, 14, 14, 0, Math.PI * 2);
+          ctx.arc(26, 14, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          // Floating Ghost Rival Tag
+          ctx.fillStyle = "#38bdf8";
+          ctx.font = "black 10px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("?? RIVAL GHOST", 0, -28);
+
+          ctx.restore();
+        }
+      }
+
       // Particles (Smoke, Dirt, Sparkles)
       sim.particles.forEach((p) => {
         p.x += p.vx * dt;
@@ -1719,8 +1809,12 @@ export function HillClimbRacingGame({ onClose }: Props) {
       // Update best distance & wallet in local storage
       const prevBest = parseInt(localStorage.getItem('hcr_best_dist') || '0', 10);
       if (finalDist > prevBest) {
-        localStorage.setItem('hcr_best_dist', finalDist.toString());
+        localStorage.setItem("hcr_best_dist", finalDist.toString());
         setHudStats(s => ({ ...s, bestDistance: finalDist }));
+        if (ghostRecordRef.current.length > 0) {
+          localStorage.setItem(`hcr_ghost_${selectedStage}`, JSON.stringify(ghostRecordRef.current));
+          ghostTrajectoryRef.current = [...ghostRecordRef.current];
+        }
       }
 
       const prevWallet = parseInt(localStorage.getItem('hcr_wallet_coins') || '500', 10);
@@ -1884,6 +1978,31 @@ export function HillClimbRacingGame({ onClose }: Props) {
               </div>
               <h2 className="text-2xl font-black text-white tracking-wider">HILL CLIMB RACING</h2>
               <p className="text-xs text-slate-400 mt-1 mb-4">Official Poki Lite edition: master Newton's physics, balance hills & tune your jeep!</p>
+
+              {/* 1v1 Ghost Multiplayer Switch */}
+              <div className="flex items-center justify-between w-full bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-2.5 mb-4">
+                <div className="flex items-center gap-2 text-left">
+                  <span className="text-lg">??</span>
+                  <div>
+                    <div className="text-xs font-black text-cyan-300">1v1 Ghost Rival Mode</div>
+                    <div className="text-[10px] text-slate-400">Race against your high score ghost replay in real time!</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const next = !ghostMode;
+                    setGhostMode(next);
+                    localStorage.setItem("hcr_ghost_enabled", next.toString());
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    ghostMode
+                      ? "bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)]"
+                      : "bg-slate-700 text-slate-300"
+                  }`}
+                >
+                  {ghostMode ? "ON" : "OFF"}
+                </button>
+              </div>
 
               {/* Garage Wallet Display */}
               <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-full text-yellow-300 font-extrabold text-sm mb-4 shadow-[0_0_10px_rgba(234,179,8,0.2)]">

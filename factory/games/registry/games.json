@@ -99,7 +99,7 @@
         "color": "#66bdf2",
         "desc": "Cash out before the rocket crashes to secure your multiplier!",
         "thumbnail": "/thumbnails/crash_premium.jpg",
-        "thumbnailFit": "contain"
+        "thumbnailFit": "cover"
     },
     {
         "key": "limbo",
@@ -110,8 +110,8 @@
         "difficulty": "Medium",
         "color": "#F97316",
         "desc": "Set your target multiplier and roll. High multiplier wins!",
-        "thumbnail": "/thumbnails/limbo_premium.jpg",
-        "thumbnailFit": "contain"
+        "thumbnail": "/thumbnails/limbo.jpg",
+        "thumbnailFit": "cover"
     },
     {
         "key": "roulette",

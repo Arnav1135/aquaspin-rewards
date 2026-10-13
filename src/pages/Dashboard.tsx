@@ -244,8 +244,8 @@ export function Dashboard() {
               </div>
               <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-6 px-6">
                 {trendingGames.map(game => (
-                  <div key={game.key} className="w-[280px] h-40 flex-shrink-0 snap-center">
-                    <GameCard game={game} onClick={handleGameClick} />
+                  <div key={game.key} className="w-[300px] sm:w-[320px] h-56 flex-shrink-0 snap-center">
+                    <GameCard game={game} onClick={handleGameClick} fullBlock={true} />
                   </div>
                 ))}
               </div>
@@ -259,9 +259,9 @@ export function Dashboard() {
                   Jump Back In
                 </h2>
               </div>
-              <div className="h-48 relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-500" />
-                <GameCard game={continueGame} onClick={handleGameClick} />
+              <div className="h-56 relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-[2.2rem] blur opacity-25 group-hover:opacity-45 transition duration-500" />
+                <GameCard game={continueGame} onClick={handleGameClick} fullBlock={true} />
               </div>
             </motion.section>
 

@@ -50,11 +50,17 @@ export function DailyRewardsModal() {
   };
 
   const handleClaim = async () => {
+    // If user already claimed today, immediately notify with the exact specified text
+    if (!canClaimToday) {
+      toast.error('You have already claimed the reward.');
+      return;
+    }
+
     setIsClaiming(true);
     try {
       const isGuestUser = !profile || profile.id === 'guest' || profile.id.startsWith('guest');
 
-      // Guest user bonus flow
+      // Guest user bonus flow (once per day)
       if (isGuestUser) {
         const guestReward = 100;
         confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
@@ -87,17 +93,41 @@ export function DailyRewardsModal() {
           newTokens = data.newTokens;
           newXP = data.newXP;
           newLevel = data.newLevel;
-        } else if (data?.error && data.error.includes('Already claimed')) {
-          toast.error('You already claimed your reward today!');
+        } else if (data?.error && (data.error.includes('Already claimed') || data.error.includes('Conflict'))) {
+          toast.error('You have already claimed the reward.');
+          updateProfile({
+            last_login_date: new Date().toISOString(),
+          });
           handleClose();
           return;
         }
       } catch (edgeErr) {
-        console.warn('[DailyRewards] Edge function invoke unavailable, switching to resilient fallback:', edgeErr);
+        console.warn('[DailyRewards] Edge function invoke unavailable, switching to resilient server fallback:', edgeErr);
       }
 
-      // 2. Resilient Fallback: If Edge function failed or is unconfigured
+      // 2. Resilient Server Fallback: If Edge function failed or is unconfigured
       if (!claimedViaEdge) {
+        // Double check on server table if already claimed today
+        try {
+          const todayDateOnly = new Date().toISOString().split('T')[0];
+          const { data: existingClaim } = await (supabase.from('daily_rewards') as any)
+            .select('id, claimed_at')
+            .eq('user_id', profile.id)
+            .gte('claimed_at', `${todayDateOnly}T00:00:00.000Z`)
+            .limit(1);
+
+          if (existingClaim && existingClaim.length > 0) {
+            toast.error('You have already claimed the reward.');
+            updateProfile({
+              last_login_date: new Date().toISOString(),
+            });
+            handleClose();
+            return;
+          }
+        } catch (checkErr) {
+          console.warn('[DailyRewards] Server check note:', checkErr);
+        }
+
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         
@@ -114,11 +144,12 @@ export function DailyRewardsModal() {
         newXP = (profile.xp || 0) + rewardXP;
         newLevel = Math.min(Math.floor(newXP / 500) + 1, 100);
 
-        // Attempt direct database update
+        // Store login and claim info on the server
         try {
           await (supabase.from('users') as any).update({
             login_streak: newStreak,
             last_login_date: today.toISOString(),
+            last_login: today.toISOString(),
             tokens: newTokens,
             xp: newXP,
             level: newLevel
@@ -127,18 +158,20 @@ export function DailyRewardsModal() {
           await (supabase.from('daily_rewards') as any).insert({
             user_id: profile.id,
             day_number: dayIdx + 1,
-            tokens: rewardTokens
+            tokens: rewardTokens,
+            claimed_at: today.toISOString()
           });
         } catch (dbErr) {
           console.warn('[DailyRewards] Fallback database record note:', dbErr);
         }
       }
 
-      // Update store and celebrate
+      // Update local profile state and celebrate
       updateProfile({
         tokens: newTokens,
         login_streak: newStreak,
         last_login_date: new Date().toISOString(),
+        last_login: new Date().toISOString(),
         xp: newXP,
         level: newLevel
       });
@@ -240,11 +273,11 @@ export function DailyRewardsModal() {
             </Button>
             <Button
               variant="primary"
-              className="flex-[2] py-3.5 font-black text-base shadow-lg shadow-cyan-500/30 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white disabled:opacity-50 cursor-pointer"
+              className="flex-[2] py-3.5 font-black text-base shadow-lg shadow-cyan-500/30 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white cursor-pointer disabled:opacity-50"
               onClick={handleClaim}
-              disabled={!canClaimToday || isClaiming}
+              disabled={isClaiming}
             >
-              {isClaiming ? 'Claiming Reward...' : canClaimToday ? 'Claim Daily Reward' : 'Come Back Tomorrow'}
+              {isClaiming ? 'Claiming Reward...' : canClaimToday ? 'Claim Daily Reward' : 'Already Claimed Today'}
             </Button>
           </div>
         </motion.div>

@@ -8,7 +8,7 @@ import confetti from 'canvas-confetti';
 import { Coins, Volume2, VolumeX, Palette, Play, Zap, Clock, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useGameStore, WHEEL_SEGMENTS, WHEEL_THEMES } from '@/features/gameStore';
-import { invokeEdgeFunction } from '@/lib/supabase';
+import { invokeEdgeFunction, supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TokenCounter } from '@/components/ui/TokenCounter';
@@ -48,10 +48,58 @@ export function WheelGame() {
   const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [pendingSpinType, setPendingSpinType] = useState<'paid' | 'ad_rewarded'>('paid');
   const [floatingReward, setFloatingReward] = useState<{ amount: number; show: boolean }>({ amount: 0, show: false });
+  const [hasSpunToday, setHasSpunToday] = useState(false);
+  const [isCheckingSpinStatus, setIsCheckingSpinStatus] = useState(true);
 
   const theme = WHEEL_THEMES[wheelTheme];
   const segmentCount = WHEEL_SEGMENTS.length;
   const segmentAngle = (2 * Math.PI) / segmentCount;
+
+  // ── Verify server & local daily spin status (once per day) ─────────────────
+  useEffect(() => {
+    let isMounted = true;
+    const checkDailySpin = async () => {
+      const todayDateStr = new Date().toISOString().split('T')[0];
+      const localKey = `daily_spin_claimed_${profile?.id || 'guest'}_${todayDateStr}`;
+      
+      if (localStorage.getItem(localKey) === 'true') {
+        if (isMounted) {
+          setHasSpunToday(true);
+          setIsCheckingSpinStatus(false);
+        }
+        return;
+      }
+
+      if (!profile || profile.id === 'guest' || profile.id.startsWith('guest')) {
+        if (isMounted) setIsCheckingSpinStatus(false);
+        return;
+      }
+
+      try {
+        const { data: serverSpins } = await (supabase.from('spin_history') as any)
+          .select('id, created_at')
+          .eq('user_id', profile.id)
+          .gte('created_at', `${todayDateStr}T00:00:00.000Z`)
+          .limit(1);
+
+        if (serverSpins && serverSpins.length > 0) {
+          if (isMounted) {
+            setHasSpunToday(true);
+            localStorage.setItem(localKey, 'true');
+          }
+        }
+      } catch (err) {
+        console.warn('[WheelGame] Error verifying server daily spin status:', err);
+      } finally {
+        if (isMounted) setIsCheckingSpinStatus(false);
+      }
+    };
+
+    checkDailySpin();
+    return () => {
+      isMounted = false;
+    };
+  }, [profile?.id]);
 
   // ── Cooldown ticker
   useEffect(() => {

@@ -1731,21 +1731,45 @@ export function HillClimbRacingGame({ onClose }: Props) {
           ctx.fill();
           ctx.stroke();
 
-          // Ghost Wheels
-          ctx.fillStyle = "rgba(15, 23, 42, 0.6)";
+          // Holographic Digital Scanlines across chassis
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+          ctx.lineWidth = 1;
+          for (let sl = -12; sl < 4; sl += 4) {
+            ctx.beginPath();
+            ctx.moveTo(-30, sl);
+            ctx.lineTo(30, sl);
+            ctx.stroke();
+          }
+
+          // Ghost Driver Silhouette Helmet
+          ctx.fillStyle = "rgba(56, 189, 248, 0.45)";
+          ctx.beginPath();
+          ctx.arc(-8, -24, 7, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Ghost Wheels with Neon Spokes
+          ctx.fillStyle = "rgba(15, 23, 42, 0.75)";
           ctx.strokeStyle = "#38bdf8";
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2.5;
           ctx.beginPath();
           ctx.arc(-26, 14, 14, 0, Math.PI * 2);
           ctx.arc(26, 14, 14, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
 
-          // Floating Ghost Rival Tag
+          // Inner spoke rings
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.6)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(-26, 14, 6, 0, Math.PI * 2);
+          ctx.arc(26, 14, 6, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Floating Ghost Rival Tag with Distance
           ctx.fillStyle = "#38bdf8";
-          ctx.font = "black 10px sans-serif";
+          ctx.font = "bold 10px sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("?? RIVAL GHOST", 0, -28);
+          ctx.fillText("👻 RIVAL GHOST", 0, -36);
 
           ctx.restore();
         }

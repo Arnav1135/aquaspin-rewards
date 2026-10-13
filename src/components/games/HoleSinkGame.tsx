@@ -413,10 +413,14 @@ function ArenaFloor({ onPointerMoveGround }: { onPointerMoveGround?: (pt: THREE.
 // 3D Hole representation with event horizon and neon rim
 function HoleMesh({ entity }: { entity: HoleEntity }) {
   const innerRef = useRef<THREE.Mesh>(null);
+  const accretionRef = useRef<THREE.Mesh>(null);
 
   useFrame((_, delta) => {
     if (innerRef.current) {
       innerRef.current.rotation.z += delta * 3.0;
+    }
+    if (accretionRef.current) {
+      accretionRef.current.rotation.z -= delta * 1.8;
     }
   });
 
@@ -454,12 +458,23 @@ function HoleMesh({ entity }: { entity: HoleEntity }) {
         />
       </mesh>
       {/* Dynamic Gravitational Accretion Disk (Inward Swirl) */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.25, 0]}>
-        <ringGeometry args={[entity.radius * 0.4, entity.radius * 1.35, 32]} />
+      <mesh ref={accretionRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.25, 0]}>
+        <ringGeometry args={[entity.radius * 0.35, entity.radius * 1.45, 36]} />
         <meshBasicMaterial
           color={entity.rimColor}
           transparent
-          opacity={0.35}
+          opacity={0.38}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Event Horizon Suction Shockwave Ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
+        <ringGeometry args={[entity.radius * 0.88, entity.radius * 1.05, 32]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.22}
           side={THREE.DoubleSide}
         />
       </mesh>

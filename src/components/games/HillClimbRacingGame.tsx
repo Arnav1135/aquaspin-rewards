@@ -1877,6 +1877,27 @@ export function HillClimbRacingGame({ onClose }: Props) {
         {/* ── AAA ARCADE HUD (Distance, Fuel Bar, Coins, Speed) ── */}
         <div className="absolute top-3 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
           {/* Distance & Record Badge */}
+          {ghostMode && (
+            <div className="hidden sm:flex items-center gap-2 bg-cyan-950/80 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-cyan-400/40 text-cyan-300 text-xs font-black shadow-lg">
+              <span>👻</span>
+              <span>1v1 RIVAL MATCH</span>
+              {ghostTrajectoryRef.current.length > 0 && (() => {
+                const curT = ghostTimeRef.current;
+                const traj = ghostTrajectoryRef.current;
+                let gIdx = traj.findIndex(pt => pt.time >= curT);
+                if (gIdx === -1) gIdx = traj.length - 1;
+                const gPt = traj[gIdx];
+                if (!gPt) return null;
+                const gDist = Math.max(0, Math.floor((gPt.x - 180) / 10));
+                const diff = hudStats.distance - gDist;
+                return (
+                  <span className={`ml-1 text-[11px] px-2 py-0.5 rounded-md font-mono font-bold ${diff >= 0 ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40' : 'bg-rose-500/25 text-rose-300 border border-rose-500/40'}`}>
+                    {diff >= 0 ? `+${diff}m` : `${diff}m`}
+                  </span>
+                );
+              })()}
+            </div>
+          )}
           <div className="flex items-center gap-3 bg-black/75 backdrop-blur-md px-4 py-2 rounded-2xl border-2 border-white/20 shadow-2xl text-white">
             <Trophy size={20} className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
             <div>

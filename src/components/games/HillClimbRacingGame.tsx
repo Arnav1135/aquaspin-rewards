@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { audio } from '@/lib/audioEngine';
 import { secureRecordGameResult, secureUpdateTokens } from '@/lib/secureEconomy';
 import { useAuthStore } from '@/features/authStore';
-import { Gauge, Fuel, Coins, Trophy, Wrench, Play, RotateCcw, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Gauge, Fuel, Coins, Trophy, Wrench, Play, RotateCcw, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Props {
@@ -54,6 +54,9 @@ export function HillClimbRacingGame({ onClose }: Props) {
   const touchGasRef = useRef(false);
   const touchBrakeRef = useRef(false);
 
+  // Offscreen pre-rendered textures (Dirt pattern & Rock noise)
+  const dirtPatternRef = useRef<CanvasPattern | null>(null);
+
   // Core physics & game simulation ref
   const simRef = useRef({
     distance: 0,
@@ -70,7 +73,17 @@ export function HillClimbRacingGame({ onClose }: Props) {
     gameOver: false,
     deathReason: '',
 
-    // Car State (Rigid Body with 2-Wheel Suspension)
+    // Ragdoll Driver Bill Newton
+    driver: {
+      headAngle: 0,
+      headAngularVel: 0,
+      neckLength: 12,
+      bodyAngle: 0,
+      expression: 'normal' as 'normal' | 'scared' | 'crashed' | 'air',
+      blinkTimer: 0,
+    },
+
+    // Vehicle State
     car: {
       x: 180,
       y: 200,
@@ -78,28 +91,29 @@ export function HillClimbRacingGame({ onClose }: Props) {
       vy: 0,
       angle: 0,        // chassis rotation radians
       angularVel: 0,   // angular velocity
-      wheelDist: 54,   // distance between front and rear axle
-      bodyRadius: 28,  // bounding circle radius for chassis
-      driverHeadOffset: { x: -6, y: -24 }, // Head location relative to center
-      wheelRadius: 15,
+      wheelDist: 60,   // distance between front and rear axle
+      bodyRadius: 30,  // bounding circle radius for chassis
+      driverHeadOffset: { x: -8, y: -30 }, // Head location relative to center
+      wheelRadius: 16,
       rearWheelY: 0,
       frontWheelY: 0,
-      rearSuspension: 0,
-      frontSuspension: 0,
+      rearSuspensionOffset: 0,
+      frontSuspensionOffset: 0,
       rearGrounded: false,
       frontGrounded: false,
       wheelSpinRear: 0,
       wheelSpinFront: 0,
     },
 
-    // Camera follow offset
-    camera: { x: 0, y: 0, targetX: 0, targetY: 0 },
+    // Camera follow offset & dynamic zoom
+    camera: { x: 0, y: 0, zoom: 1.0 },
 
     // Dynamic objects
-    coins: [] as Array<{ x: number; y: number; collected: boolean; value: number }>,
-    gasCans: [] as Array<{ x: number; y: number; collected: boolean }>,
+    coins: [] as Array<{ x: number; y: number; collected: boolean; value: number; rot: number }>,
+    gasCans: [] as Array<{ x: number; y: number; collected: boolean; floatOffset: number }>,
     particles: [] as Array<{ x: number; y: number; vx: number; vy: number; life: number; maxLife: number; color: string; size: number }>,
     floatingTexts: [] as Array<{ x: number; y: number; text: string; color: string; life: number }>,
+    clouds: [] as Array<{ x: number; y: number; speed: number; scale: number; opacity: number }>,
 
     // Controls
     gas: false,
@@ -142,14 +156,14 @@ export function HillClimbRacingGame({ onClose }: Props) {
 
   // Heightmap function for procedural terrain
   const getTerrainHeight = useCallback((worldX: number) => {
-    // Continuous multi-frequency hill waveform
+    // Exact Hill Climb countryside mathematical profile with rolling crests & dips
     const h1 = Math.sin(worldX * 0.0035) * 85;
     const h2 = Math.sin(worldX * 0.008 + 1.2) * 55;
     const h3 = Math.cos(worldX * 0.016 + 2.5) * 25;
     const h4 = Math.sin(worldX * 0.035) * 8; // Small bumps
     
-    // Add steep hill crests after 200m
-    const steep = worldX > 2000 ? Math.sin(worldX * 0.0018) * 60 : 0;
+    // Add steeper climbs after 1500m
+    const steep = worldX > 1500 ? Math.sin(worldX * 0.0018) * 60 : 0;
     
     return 360 + h1 + h2 + h3 + h4 + steep;
   }, []);
@@ -169,6 +183,21 @@ export function HillClimbRacingGame({ onClose }: Props) {
     };
   }, [getTerrainHeight]);
 
+  // Pre-generate procedural clouds
+  useEffect(() => {
+    const clouds = [];
+    for (let i = 0; i < 15; i++) {
+      clouds.push({
+        x: i * 220 + Math.random() * 80,
+        y: 40 + Math.random() * 90,
+        speed: 15 + Math.random() * 20,
+        scale: 0.7 + Math.random() * 0.6,
+        opacity: 0.65 + Math.random() * 0.3,
+      });
+    }
+    simRef.current.clouds = clouds;
+  }, []);
+
   // Reset or Start Run
   const startRace = useCallback(() => {
     const initialY = getTerrainHeight(180) - 50;
@@ -186,6 +215,14 @@ export function HillClimbRacingGame({ onClose }: Props) {
       lastGasSpawnDist: 350,
       gameOver: false,
       deathReason: '',
+      driver: {
+        headAngle: 0,
+        headAngularVel: 0,
+        neckLength: 12,
+        bodyAngle: 0,
+        expression: 'normal',
+        blinkTimer: 0,
+      },
       car: {
         x: 180,
         y: initialY,
@@ -193,24 +230,25 @@ export function HillClimbRacingGame({ onClose }: Props) {
         vy: 0,
         angle: 0,
         angularVel: 0,
-        wheelDist: 56,
-        bodyRadius: 28,
-        driverHeadOffset: { x: -6, y: -26 },
+        wheelDist: 60,
+        bodyRadius: 30,
+        driverHeadOffset: { x: -8, y: -30 },
         wheelRadius: 16,
         rearWheelY: initialY,
         frontWheelY: initialY,
-        rearSuspension: 0,
-        frontSuspension: 0,
+        rearSuspensionOffset: 0,
+        frontSuspensionOffset: 0,
         rearGrounded: false,
         frontGrounded: false,
         wheelSpinRear: 0,
         wheelSpinFront: 0,
       },
-      camera: { x: 180, y: initialY, targetX: 180, targetY: initialY },
+      camera: { x: 180, y: initialY, zoom: 1.0 },
       coins: [],
       gasCans: [],
       particles: [],
       floatingTexts: [],
+      clouds: simRef.current.clouds,
       gas: false,
       brake: false,
       upgrades: { ...upgrades },
@@ -218,20 +256,22 @@ export function HillClimbRacingGame({ onClose }: Props) {
 
     // Pre-populate initial coins & fuel cans
     for (let x = 300; x < 2500; x += 180) {
-      if (Math.random() > 0.3) {
+      if (Math.random() > 0.25) {
         simRef.current.coins.push({
           x,
           y: getTerrainHeight(x) - 45 - Math.sin(x * 0.05) * 20,
           collected: false,
           value: 25,
+          rot: Math.random() * Math.PI * 2,
         });
       }
     }
     for (let x = 600; x < 2500; x += 650) {
       simRef.current.gasCans.push({
         x,
-        y: getTerrainHeight(x) - 30,
+        y: getTerrainHeight(x) - 32,
         collected: false,
+        floatOffset: 0,
       });
     }
 
@@ -292,12 +332,40 @@ export function HillClimbRacingGame({ onClose }: Props) {
     };
   }, [gameState, startRace]);
 
-  // Main Loop & Canvas Rendering
+  // Main Loop & AAA Canvas Rendering
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Create high-res dirt & soil pattern once
+    if (!dirtPatternRef.current) {
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = 64;
+      pCanvas.height = 64;
+      const pCtx = pCanvas.getContext('2d');
+      if (pCtx) {
+        pCtx.fillStyle = '#653816'; // Deep earth base
+        pCtx.fillRect(0, 0, 64, 64);
+        // Add granular strata specks
+        for (let i = 0; i < 120; i++) {
+          const px = Math.random() * 64;
+          const py = Math.random() * 64;
+          const r = Math.random() * 2 + 0.5;
+          pCtx.fillStyle = i % 2 === 0 ? '#4e280c' : '#7b481f';
+          pCtx.beginPath();
+          pCtx.arc(px, py, r, 0, Math.PI * 2);
+          pCtx.fill();
+        }
+        // Small pebble rocks
+        pCtx.fillStyle = '#9c8163';
+        pCtx.fillRect(12, 14, 4, 3);
+        pCtx.fillRect(44, 38, 5, 3);
+        pCtx.fillRect(28, 52, 3, 3);
+        dirtPatternRef.current = ctx.createPattern(pCanvas, 'repeat');
+      }
+    }
 
     let animId = 0;
     let lastTime = performance.now();
@@ -306,22 +374,28 @@ export function HillClimbRacingGame({ onClose }: Props) {
       const dt = Math.min((now - lastTime) / 1000, 0.05); // Clamp dt to prevent tunneling
       lastTime = now;
 
-      // Handle Resize smoothly
+      // Handle High-DPI Resolution
+      const dpr = window.devicePixelRatio || 1;
       const width = canvas.parentElement ? canvas.parentElement.clientWidth : 800;
       const height = canvas.parentElement ? canvas.parentElement.clientHeight : 520;
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
+
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
       }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
 
       const sim = simRef.current;
       const car = sim.car;
+      const driver = sim.driver;
+
+      // Merge Touch Controls with Key Controls across frame
+      const isGas = (sim.gas || touchGasRef.current) && gameState === 'playing' && !sim.gameOver;
+      const isBrake = (sim.brake || touchBrakeRef.current) && gameState === 'playing' && !sim.gameOver;
 
       if (gameState === 'playing' && !sim.gameOver) {
-        // Merge Touch Controls with Key Controls
-        const isGas = sim.gas || touchGasRef.current;
-        const isBrake = sim.brake || touchBrakeRef.current;
-
         // Upgrade multipliers
         const enginePower = 340 + sim.upgrades.engine * 55;
         const suspensionStrength = 0.55 + sim.upgrades.suspension * 0.12;
@@ -361,9 +435,28 @@ export function HillClimbRacingGame({ onClose }: Props) {
         car.rearGrounded = rearDist <= restLen + car.wheelRadius;
         car.frontGrounded = frontDist <= restLen + car.wheelRadius;
 
+        // Suspension offsets for animation
+        car.rearSuspensionOffset = Math.max(-8, Math.min(8, (restLen + car.wheelRadius) - rearDist));
+        car.frontSuspensionOffset = Math.max(-8, Math.min(8, (restLen + car.wheelRadius) - frontDist));
+
         // Gravity
         const GRAVITY = 920;
         car.vy += GRAVITY * dt;
+
+        // Dynamic Driver Ragdoll Physics
+        // The head tilts opposite to chassis acceleration and reacts to airtime/drops
+        const targetHeadAngle = -car.angularVel * 0.35 + (isGas ? -0.15 : isBrake ? 0.25 : 0);
+        driver.headAngularVel += (targetHeadAngle - driver.headAngle) * 22 * dt;
+        driver.headAngularVel *= Math.pow(0.2, dt);
+        driver.headAngle += driver.headAngularVel * dt;
+
+        if (!car.rearGrounded && !car.frontGrounded) {
+          driver.expression = Math.abs(car.angularVel) > 2.0 ? 'scared' : 'air';
+        } else if (isGas && car.vx > 200) {
+          driver.expression = 'normal';
+        } else {
+          driver.expression = 'normal';
+        }
 
         // Air Tilt Control (Classic Hill Climb Mechanics: Gas tilts up/back, Brake tilts forward)
         if (!car.rearGrounded && !car.frontGrounded) {
@@ -380,7 +473,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
             sim.coinsCollected += 100;
             sim.floatingTexts.push({
               x: car.x,
-              y: car.y - 40,
+              y: car.y - 45,
               text: 'FLIP BONUS! +100',
               color: '#FBBF24',
               life: 1.5,
@@ -394,7 +487,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
             sim.coinsCollected += bonus;
             sim.floatingTexts.push({
               x: car.x,
-              y: car.y - 40,
+              y: car.y - 45,
               text: `AIR TIME! +${bonus}`,
               color: '#38BDF8',
               life: 1.2,
@@ -422,17 +515,28 @@ export function HillClimbRacingGame({ onClose }: Props) {
             car.angularVel += 1.8 * dt; // Wheelie torque
             car.wheelSpinRear += 25 * dt;
 
-            // Exhaust Smoke
-            if (Math.random() < 0.35) {
+            // Exhaust Smoke & Dirt Kickup
+            if (Math.random() < 0.45) {
               sim.particles.push({
-                x: rearAxleX - 10 * cosA,
-                y: rearAxleY - 10 * sinA,
-                vx: -car.vx * 0.2 + (Math.random() - 0.5) * 20,
-                vy: -30 + Math.random() * 10,
-                life: 0.6,
-                maxLife: 0.6,
-                color: 'rgba(160,170,185,0.7)',
+                x: rearAxleX - 12 * cosA,
+                y: rearAxleY - 12 * sinA,
+                vx: -car.vx * 0.25 + (Math.random() - 0.5) * 30,
+                vy: -35 + Math.random() * 15,
+                life: 0.65,
+                maxLife: 0.65,
+                color: 'rgba(200,210,225,0.7)',
                 size: 4 + Math.random() * 4,
+              });
+              // Ground dirt dust
+              sim.particles.push({
+                x: rearAxleX,
+                y: groundRearY - 2,
+                vx: -car.vx * 0.15 - Math.random() * 40,
+                vy: -20 - Math.random() * 20,
+                life: 0.5,
+                maxLife: 0.5,
+                color: '#7b481f',
+                size: 2 + Math.random() * 3,
               });
             }
           }
@@ -493,6 +597,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
         if (headWorldY >= headTerrainY - 3) {
           sim.gameOver = true;
           sim.deathReason = 'DRIVER DOWN! (NECK FLIP)';
+          driver.expression = 'crashed';
           setDeathReason('DRIVER DOWN! (NECK FLIP)');
           setGameState('gameover');
           playSfx('crash');
@@ -518,8 +623,9 @@ export function HillClimbRacingGame({ onClose }: Props) {
         sim.speedKmh = Math.floor(Math.abs(car.vx) * 0.08);
         sim.rpm = Math.min(8500, Math.floor(800 + Math.abs(car.vx) * 12 + (isGas ? 2500 : 0)));
 
-        // 5. Coin Pickups
+        // 5. Coin Pickups & Coin 3D Spin Animation
         sim.coins.forEach((coin) => {
+          coin.rot += 3.5 * dt;
           if (!coin.collected) {
             const dx = car.x - coin.x;
             const dy = car.y - coin.y;
@@ -534,12 +640,26 @@ export function HillClimbRacingGame({ onClose }: Props) {
                 color: '#FBBF24',
                 life: 0.8,
               });
+              // Sparkle particles
+              for (let s = 0; s < 6; s++) {
+                sim.particles.push({
+                  x: coin.x,
+                  y: coin.y,
+                  vx: (Math.random() - 0.5) * 100,
+                  vy: (Math.random() - 0.5) * 100,
+                  life: 0.4,
+                  maxLife: 0.4,
+                  color: '#FEF08A',
+                  size: 3,
+                });
+              }
             }
           }
         });
 
-        // 6. Fuel Can Pickups
+        // 6. Fuel Can Pickups & Floating bob
         sim.gasCans.forEach((gas) => {
+          gas.floatOffset += 4 * dt;
           if (!gas.collected) {
             const dx = car.x - gas.x;
             const dy = car.y - gas.y;
@@ -566,6 +686,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
             y: getTerrainHeight(spawnX) - 40 - Math.sin(spawnX * 0.04) * 25,
             collected: false,
             value: 25,
+            rot: 0,
           });
           sim.lastCoinSpawnDist = spawnX;
         }
@@ -576,48 +697,88 @@ export function HillClimbRacingGame({ onClose }: Props) {
             x: spawnX,
             y: getTerrainHeight(spawnX) - 30,
             collected: false,
+            floatOffset: 0,
           });
           sim.lastGasSpawnDist = spawnX;
         }
       }
 
-      // Smooth Camera Tracking
-      const camTargetX = car.x + 140;
-      const camTargetY = car.y - 60;
-      sim.camera.x += (camTargetX - sim.camera.x) * 0.08;
-      sim.camera.y += (camTargetY - sim.camera.y) * 0.08;
+      // Smooth Camera Tracking with Speed-based Lead
+      const camTargetX = car.x + Math.min(180, car.vx * 0.28) + 80;
+      const camTargetY = car.y - 40;
+      sim.camera.x += (camTargetX - sim.camera.x) * 0.1;
+      sim.camera.y += (camTargetY - sim.camera.y) * 0.1;
 
-      // ─── RENDERING ──────────────────────────────────────────
+      // ─── AAA GRAPHICS RENDERING PIPELINE ──────────────────
       ctx.clearRect(0, 0, width, height);
 
-      // Sky Gradient
+      // 1. Sky & Atmospheric Horizon Gradient
       const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
-      skyGrad.addColorStop(0, '#38BDF8'); // Vibrant Azure Blue
-      skyGrad.addColorStop(0.6, '#BAE6FD');
-      skyGrad.addColorStop(1, '#E0F2FE');
+      skyGrad.addColorStop(0, '#38a8e8');     // Crisp Poki Azure
+      skyGrad.addColorStop(0.55, '#82cbf7');  // Soft mid-sky
+      skyGrad.addColorStop(0.85, '#d8f1ff');  // Atmospheric haze
+      skyGrad.addColorStop(1, '#eaf7ff');
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // Distant Parallax Hills (Layer 1)
-      ctx.fillStyle = '#99E6B4';
+      // 2. Sun with Warm Radiance Glow
+      const sunScreenX = width * 0.82;
+      const sunScreenY = height * 0.18;
+      const sunGlow = ctx.createRadialGradient(sunScreenX, sunScreenY, 8, sunScreenX, sunScreenY, 90);
+      sunGlow.addColorStop(0, 'rgba(255, 255, 200, 0.95)');
+      sunGlow.addColorStop(0.3, 'rgba(255, 235, 120, 0.5)');
+      sunGlow.addColorStop(1, 'rgba(255, 235, 120, 0)');
+      ctx.fillStyle = sunGlow;
+      ctx.beginPath();
+      ctx.arc(sunScreenX, sunScreenY, 90, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff9d6';
+      ctx.beginPath();
+      ctx.arc(sunScreenX, sunScreenY, 26, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Parallax Fluffy Cartoon Clouds
+      sim.clouds.forEach((cloud) => {
+        cloud.x -= cloud.speed * dt * 0.1;
+        if (cloud.x < -150) cloud.x = width + 150;
+        const renderCloudX = ((cloud.x - sim.camera.x * 0.05) % (width + 300)) - 100;
+        
+        ctx.save();
+        ctx.translate(renderCloudX, cloud.y);
+        ctx.scale(cloud.scale, cloud.scale);
+        ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, 24, 0, Math.PI * 2);
+        ctx.arc(20, -10, 28, 0, Math.PI * 2);
+        ctx.arc(45, -5, 22, 0, Math.PI * 2);
+        ctx.arc(60, 5, 18, 0, Math.PI * 2);
+        ctx.arc(25, 10, 20, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 4. Parallax Mountain Backdrop (Layer 1 - Far Distant Blue-Green Mountains)
+      ctx.fillStyle = '#86c99c';
       ctx.beginPath();
       ctx.moveTo(0, height);
-      for (let sx = 0; sx <= width; sx += 20) {
-        const worldX = (sim.camera.x * 0.2) + sx;
-        const hillY = height * 0.55 + Math.sin(worldX * 0.002) * 45 + Math.cos(worldX * 0.004) * 25;
-        ctx.lineTo(sx, hillY);
+      for (let sx = 0; sx <= width; sx += 25) {
+        const worldX = (sim.camera.x * 0.12) + sx;
+        const peakY = height * 0.48 + Math.sin(worldX * 0.0015) * 55 + Math.cos(worldX * 0.003) * 35;
+        ctx.lineTo(sx, peakY);
       }
       ctx.lineTo(width, height);
       ctx.closePath();
       ctx.fill();
 
-      // Midground Parallax Hills (Layer 2)
-      ctx.fillStyle = '#68D391';
+      // 5. Parallax Rolling Hills (Layer 2 - Midground Countryside Hills)
+      ctx.fillStyle = '#5eb87a';
       ctx.beginPath();
       ctx.moveTo(0, height);
-      for (let sx = 0; sx <= width; sx += 15) {
-        const worldX = (sim.camera.x * 0.45) + sx;
-        const hillY = height * 0.65 + Math.sin(worldX * 0.004) * 55 + Math.cos(worldX * 0.007) * 30;
+      for (let sx = 0; sx <= width; sx += 18) {
+        const worldX = (sim.camera.x * 0.32) + sx;
+        const hillY = height * 0.60 + Math.sin(worldX * 0.0035) * 65 + Math.cos(worldX * 0.006) * 35;
         ctx.lineTo(sx, hillY);
       }
       ctx.lineTo(width, height);
@@ -631,176 +792,503 @@ export function HillClimbRacingGame({ onClose }: Props) {
       ctx.translate(originScreenX - sim.camera.x, originScreenY - sim.camera.y);
 
       // Render Foreground Terrain Mesh
-      const viewStartWorldX = sim.camera.x - originScreenX - 50;
-      const viewEndWorldX = sim.camera.x + (width - originScreenX) + 50;
-      const step = 8;
+      const viewStartWorldX = sim.camera.x - originScreenX - 60;
+      const viewEndWorldX = sim.camera.x + (width - originScreenX) + 60;
+      const step = 6;
 
       ctx.beginPath();
-      ctx.moveTo(viewStartWorldX, height + 800);
+      ctx.moveTo(viewStartWorldX, height + 900);
       for (let wx = viewStartWorldX; wx <= viewEndWorldX + step; wx += step) {
         ctx.lineTo(wx, getTerrainHeight(wx));
       }
-      ctx.lineTo(viewEndWorldX, height + 800);
+      ctx.lineTo(viewEndWorldX, height + 900);
       ctx.closePath();
 
-      // Earth Dirt Fill
-      const dirtGrad = ctx.createLinearGradient(0, height * 0.5, 0, height + 600);
-      dirtGrad.addColorStop(0, '#854D0E'); // Rich brown soil
-      dirtGrad.addColorStop(0.3, '#713F12');
-      dirtGrad.addColorStop(1, '#451A03');
-      ctx.fillStyle = dirtGrad;
+      // Deep Geological Earth Fill
+      if (dirtPatternRef.current) {
+        ctx.fillStyle = dirtPatternRef.current;
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#653816';
+        ctx.fill();
+      }
+
+      // Dark Sub-crust Gradient Overlay
+      const subCrustGrad = ctx.createLinearGradient(0, 300, 0, 1000);
+      subCrustGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      subCrustGrad.addColorStop(0.4, 'rgba(0,0,0,0.15)');
+      subCrustGrad.addColorStop(1, 'rgba(0,0,0,0.7)');
+      ctx.fillStyle = subCrustGrad;
       ctx.fill();
 
-      // Lush Grass Top Border
-      ctx.lineWidth = 14;
-      ctx.strokeStyle = '#22C55E'; // Vibrant classic hill climb grass
+      // Textured Dark Soil Horizon Layer (Underneath Grass)
+      ctx.lineWidth = 26;
+      ctx.strokeStyle = '#43220c';
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.stroke();
 
-      // Second lush grass inner accent line
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = '#86EFAC';
+      // Lush Countryside Grass Ribbon (Top Layer)
+      ctx.lineWidth = 14;
+      ctx.strokeStyle = '#32ab42';
       ctx.stroke();
 
-      // Render Coins
+      // Vibrant Sunlit Grass Highlight
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#61d84f';
+      ctx.stroke();
+
+      // Procedural Grass Tufts / Flowers on Hilltops
+      for (let wx = Math.floor(viewStartWorldX / 40) * 40; wx <= viewEndWorldX; wx += 40) {
+        const ty = getTerrainHeight(wx);
+        const norm = getTerrainNormal(wx);
+        if (Math.abs(norm.slope) < 0.6) {
+          ctx.save();
+          ctx.translate(wx, ty);
+          ctx.rotate(norm.angle);
+          // Grass Blade tuft
+          ctx.strokeStyle = '#42c038';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-4, 0); ctx.lineTo(-6, -8);
+          ctx.moveTo(0, 0); ctx.lineTo(0, -11);
+          ctx.moveTo(4, 0); ctx.lineTo(6, -8);
+          ctx.stroke();
+          // Occasional Yellow Country Flower
+          if ((wx % 120) === 0) {
+            ctx.fillStyle = '#FBBF24';
+            ctx.beginPath();
+            ctx.arc(0, -12, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
+
+      // Render 3D Gold Coins with Thickness & Specular Shimmer
       sim.coins.forEach((coin) => {
         if (!coin.collected && coin.x >= viewStartWorldX && coin.x <= viewEndWorldX) {
           ctx.save();
           ctx.translate(coin.x, coin.y);
-          // Golden coin circle with shimmer
-          ctx.fillStyle = '#F59E0B';
+          const spinScale = Math.cos(coin.rot);
+
+          // Drop shadow on ground
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
           ctx.beginPath();
-          ctx.arc(0, 0, 13, 0, Math.PI * 2);
+          ctx.ellipse(0, 36, 12, 4, 0, 0, Math.PI * 2);
           ctx.fill();
 
-          ctx.fillStyle = '#FCD34D';
+          // Outer Gold Rim with 3D projection
+          ctx.fillStyle = '#b45309'; // Dark bronze edge
           ctx.beginPath();
-          ctx.arc(0, 0, 9, 0, Math.PI * 2);
+          ctx.ellipse(0, 0, 14 * Math.abs(spinScale) + 1, 14, 0, 0, Math.PI * 2);
           ctx.fill();
 
-          ctx.fillStyle = '#78350F';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('$', 0, 1);
+          // Vibrant Metallic Gold Face
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 13 * Math.abs(spinScale), 13, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Inner Polished Crest
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 9 * Math.abs(spinScale), 9, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Star or Dollar symbol
+          if (Math.abs(spinScale) > 0.4) {
+            ctx.fillStyle = '#78350f';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$', 0, 1);
+          }
+
+          // Specular shine flash
+          if (Math.abs(spinScale) > 0.8) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.arc(-4 * spinScale, -4, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
           ctx.restore();
         }
       });
 
-      // Render Fuel Cans
+      // Render AAA Red Gas Jerry Can
       sim.gasCans.forEach((gas) => {
         if (!gas.collected && gas.x >= viewStartWorldX && gas.x <= viewEndWorldX) {
           ctx.save();
-          ctx.translate(gas.x, gas.y);
-          // Red Gas Jerry Can
-          ctx.fillStyle = '#DC2626';
-          ctx.fillRect(-12, -18, 24, 26);
-          // Jerry can handle
-          ctx.strokeStyle = '#991B1B';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(-8, -24, 16, 7);
-          // White GAS label
-          ctx.fillStyle = '#FFFFFF';
-          ctx.font = 'bold 8px sans-serif';
+          const bobY = gas.y + Math.sin(gas.floatOffset) * 4;
+          ctx.translate(gas.x, bobY);
+
+          // Drop shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.beginPath();
+          ctx.ellipse(0, 24, 14, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Red Jerry Can Main Body
+          ctx.fillStyle = '#dc2626';
+          ctx.strokeStyle = '#991b1b';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(-13, -16, 26, 28, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          // Side Cross Indentation (Iconic Jerry Can stamping)
+          ctx.strokeStyle = '#b91c1c';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-7, -10); ctx.lineTo(7, 6);
+          ctx.moveTo(7, -10); ctx.lineTo(-7, 6);
+          ctx.stroke();
+
+          // Triple Grip Handle on Top
+          ctx.fillStyle = '#991b1b';
+          ctx.beginPath();
+          ctx.roundRect(-10, -23, 20, 8, 2);
+          ctx.fill();
+
+          // Yellow Spout Cap
+          ctx.fillStyle = '#eab308';
+          ctx.fillRect(5, -25, 6, 5);
+
+          // Crisp White "GAS" badge
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'black 9px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('GAS', 0, -4);
+          ctx.fillText('GAS', 0, -1);
           ctx.restore();
         }
       });
 
-      // Render Vehicle (Red Hill Climber Jeep)
+      // ─── RENDER JEEP (FAITHFUL HILL CLIMB ICONIC DESIGN) ───
       ctx.save();
       ctx.translate(car.x, car.y);
       ctx.rotate(car.angle);
 
-      // Chassis Red Body
-      ctx.fillStyle = '#DC2626'; // Vibrant Red Jeep
+      // Chassis Drop Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
       ctx.beginPath();
-      ctx.moveTo(-32, -6);
-      ctx.lineTo(-30, -18);
-      ctx.lineTo(-6, -20);
-      ctx.lineTo(8, -10);
-      ctx.lineTo(28, -6);
-      ctx.lineTo(32, 4);
-      ctx.lineTo(-32, 4);
-      ctx.closePath();
+      ctx.ellipse(0, 20, 36, 8, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Rollcage Bars (Black/Silver)
-      ctx.strokeStyle = '#1E293B';
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.moveTo(-28, -18);
-      ctx.lineTo(-14, -34);
-      ctx.lineTo(6, -34);
-      ctx.lineTo(16, -10);
-      ctx.stroke();
+      // 1. Suspension Struts & Hydraulic Springs
+      const drawStrut = (axleX: number, offset: number) => {
+        const strutBaseY = 4;
+        const wheelCenterY = 16 + offset;
 
-      // Driver "Bill" (Avatar with helmet)
-      ctx.fillStyle = '#38BDF8'; // Blue shirt
-      ctx.beginPath();
-      ctx.arc(-8, -20, 9, 0, Math.PI * 2);
-      ctx.fill();
-      // Driver Face & Cap
-      ctx.fillStyle = '#FBBF24'; // Yellow safety helmet
-      ctx.beginPath();
-      ctx.arc(-8, -28, 7.5, 0, Math.PI * 2);
-      ctx.fill();
-      // Cap Visor
-      ctx.fillStyle = '#1E293B';
-      ctx.fillRect(-4, -29, 7, 3);
+        // Metallic Swing Arm
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(axleX > 0 ? axleX - 10 : axleX + 10, strutBaseY);
+        ctx.lineTo(axleX, wheelCenterY);
+        ctx.stroke();
 
-      // Headlights
-      ctx.fillStyle = '#FEF08A';
-      ctx.fillRect(30, -4, 4, 6);
+        // Chrome Coil Spring
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const coils = 4;
+        for (let i = 0; i <= coils; i++) {
+          const sy = strutBaseY + (i / coils) * (wheelCenterY - strutBaseY);
+          const sx = axleX + (i % 2 === 0 ? -4 : 4);
+          if (i === 0) ctx.moveTo(axleX, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      };
 
-      // Suspension Springs
-      ctx.strokeStyle = '#64748B';
-      ctx.lineWidth = 3;
-      // Rear Strut
-      ctx.beginPath();
-      ctx.moveTo(-car.wheelDist / 2, 4);
-      ctx.lineTo(-car.wheelDist / 2, 14);
-      ctx.stroke();
-      // Front Strut
-      ctx.beginPath();
-      ctx.moveTo(car.wheelDist / 2, 4);
-      ctx.lineTo(car.wheelDist / 2, 14);
-      ctx.stroke();
+      drawStrut(-car.wheelDist / 2, car.rearSuspensionOffset);
+      drawStrut(car.wheelDist / 2, car.frontSuspensionOffset);
 
-      // Wheels (Draw in relative space)
-      const renderWheel = (wx: number, spin: number) => {
+      // 2. Heavy-Duty Offroad Wheels
+      const renderDetailedWheel = (wx: number, wy: number, spin: number) => {
         ctx.save();
-        ctx.translate(wx, 15);
+        ctx.translate(wx, wy);
         ctx.rotate(spin);
-        // Outer Rubber Tire with Tread
-        ctx.fillStyle = '#1E293B';
+
+        // Deep Black Rubber Tire
+        ctx.fillStyle = '#1e293b';
         ctx.beginPath();
         ctx.arc(0, 0, car.wheelRadius, 0, Math.PI * 2);
         ctx.fill();
-        // Inner Chrome Rim
-        ctx.fillStyle = '#94A3B8';
+
+        // Rugged Outer Treads (8 Knobby Grips)
+        ctx.fillStyle = '#0f172a';
+        for (let i = 0; i < 8; i++) {
+          const ta = (i / 8) * Math.PI * 2;
+          ctx.save();
+          ctx.rotate(ta);
+          ctx.fillRect(-3, -car.wheelRadius - 2, 6, 4);
+          ctx.restore();
+        }
+
+        // Inner Steel Rim
+        const rimGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 9);
+        rimGrad.addColorStop(0, '#e2e8f0');
+        rimGrad.addColorStop(0.7, '#94a3b8');
+        rimGrad.addColorStop(1, '#475569');
+        ctx.fillStyle = rimGrad;
         ctx.beginPath();
-        ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
         ctx.fill();
-        // Rim Spokes
-        ctx.strokeStyle = '#0F172A';
+
+        // 5-Spoke Mag Wheel Hub
+        ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 2;
+        for (let s = 0; s < 5; s++) {
+          const sa = (s / 5) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(Math.cos(sa) * 8, Math.sin(sa) * 8);
+          ctx.stroke();
+        }
+
+        // Center Chrome Lug Nut
+        ctx.fillStyle = '#f8fafc';
         ctx.beginPath();
-        ctx.moveTo(-7, 0); ctx.lineTo(7, 0);
-        ctx.moveTo(0, -7); ctx.lineTo(0, 7);
-        ctx.stroke();
+        ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.restore();
       };
 
-      renderWheel(-car.wheelDist / 2, car.wheelSpinRear);
-      renderWheel(car.wheelDist / 2, car.wheelSpinFront);
+      renderDetailedWheel(-car.wheelDist / 2, 16 + car.rearSuspensionOffset, car.wheelSpinRear);
+      renderDetailedWheel(car.wheelDist / 2, 16 + car.frontSuspensionOffset, car.wheelSpinFront);
 
-      ctx.restore(); // Exit car transform
+      // 3. Driver: Bill Newton with Ragdoll Neck Pivot & Cap
+      ctx.save();
+      ctx.translate(-8, -12); // Bill's Seat position
 
-      // Particles
-      sim.particles.forEach((p, idx) => {
+      // Bill's Torso (Blue Overalls / Shirt)
+      ctx.fillStyle = '#0284c7';
+      ctx.strokeStyle = '#0369a1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(-8, -10, 16, 18, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      // Steering Wheel gripped by Bill's Arms
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(6, -6);
+      ctx.lineTo(14, -12);
+      ctx.stroke();
+
+      // Wheel Rim
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(15, -14, 7, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Bill's Arm
+      ctx.strokeStyle = '#f87171'; // Arm flesh tone
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(0, -6);
+      ctx.lineTo(12, -12);
+      ctx.stroke();
+
+      // Ragdoll Neck & Head (Rotates on G-force)
+      ctx.save();
+      ctx.translate(0, -14);
+      ctx.rotate(driver.headAngle);
+
+      // Neck
+      ctx.fillStyle = '#fca5a5';
+      ctx.fillRect(-3, -2, 6, 6);
+
+      // Head Base
+      ctx.fillStyle = '#fca5a5';
+      ctx.beginPath();
+      ctx.arc(0, -8, 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Big Characteristic Cartoon Nose
+      ctx.fillStyle = '#f87171';
+      ctx.beginPath();
+      ctx.arc(8, -8, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Expressive Eyes (Normal, Scared, or Dead-Crashed X)
+      if (driver.expression === 'crashed') {
+        // Crash X_X eyes
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(2, -11); ctx.lineTo(6, -7);
+        ctx.moveTo(6, -11); ctx.lineTo(2, -7);
+        ctx.stroke();
+      } else if (driver.expression === 'scared') {
+        // Wide open frightened pupils
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(4, -9, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(5, -9, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        // Open screaming mouth
+        ctx.fillStyle = '#881337';
+        ctx.beginPath();
+        ctx.ellipse(3, -4, 2.5, 3.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Confident grin & eye
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(4, -9, 2, 0, Math.PI * 2);
+        ctx.fill();
+        // Grin
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(3, -5, 3.5, 0.2, Math.PI * 0.9);
+        ctx.stroke();
+      }
+
+      // Bill's Signature Red Baseball Cap
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(0, -11, 9.5, Math.PI, Math.PI * 2);
+      ctx.lineTo(12, -11);
+      ctx.lineTo(0, -11);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cap Visor / Brim
+      ctx.fillStyle = '#b91c1c';
+      ctx.beginPath();
+      ctx.roundRect(4, -13, 9, 3.5, 1.5);
+      ctx.fill();
+
+      ctx.restore(); // Exit Head Pivot
+      ctx.restore(); // Exit Driver
+
+      // 4. Heavy Steel Roll Cage (Black Tubing)
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      // Rear diagonal bar
+      ctx.moveTo(-28, -8);
+      ctx.lineTo(-14, -34);
+      // Top horizontal roof bar
+      ctx.lineTo(8, -34);
+      // Front windshield diagonal
+      ctx.lineTo(18, -10);
+      ctx.stroke();
+
+      // Roll cage B-pillar center support
+      ctx.beginPath();
+      ctx.moveTo(-8, -8);
+      ctx.lineTo(-6, -34);
+      ctx.stroke();
+
+      // 5. Jeep Gloss Red Metal Body Panels
+      // Body Drop Shadow inside wheel arches
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(-car.wheelDist / 2, 6, 21, Math.PI, 0);
+      ctx.arc(car.wheelDist / 2, 6, 21, Math.PI, 0);
+      ctx.fill();
+
+      // Iconic Jeep Tub & Hood (Vibrant Red with Highlights)
+      const bodyGrad = ctx.createLinearGradient(0, -20, 0, 10);
+      bodyGrad.addColorStop(0, '#ef4444');  // Bright sunlit red
+      bodyGrad.addColorStop(0.6, '#dc2626');
+      bodyGrad.addColorStop(1, '#991b1b');  // Deep shadow red
+
+      ctx.fillStyle = bodyGrad;
+      ctx.strokeStyle = '#7f1d1d';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-36, -8);  // Rear tailgate corner
+      ctx.lineTo(-34, -18); // Spare tire bracket
+      ctx.lineTo(-8, -18);  // Door opening edge
+      ctx.lineTo(6, -10);   // Windshield cowl
+      ctx.lineTo(34, -10);  // Hood top front
+      ctx.lineTo(38, 2);    // Front grille bumper
+      ctx.lineTo(30, 8);    // Wheel well front
+      ctx.lineTo(14, 8);
+      ctx.lineTo(4, 2);
+      ctx.lineTo(-18, 2);
+      ctx.lineTo(-26, 8);
+      ctx.lineTo(-36, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Engine Hood Vent Louvers
+      ctx.strokeStyle = '#7f1d1d';
+      ctx.lineWidth = 1.5;
+      for (let lv = 14; lv <= 28; lv += 4) {
+        ctx.beginPath();
+        ctx.moveTo(lv, -8);
+        ctx.lineTo(lv, -4);
+        ctx.stroke();
+      }
+
+      // Yellow Fog/Headlights with Radiant Beam
+      ctx.fillStyle = '#fef08a';
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(36, -3, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Front Headlight Beam (Subtle light cone)
+      const lightCone = ctx.createLinearGradient(38, -3, 160, -3);
+      lightCone.addColorStop(0, 'rgba(254, 240, 138, 0.45)');
+      lightCone.addColorStop(1, 'rgba(254, 240, 138, 0)');
+      ctx.fillStyle = lightCone;
+      ctx.beginPath();
+      ctx.moveTo(38, -5);
+      ctx.lineTo(160, -35);
+      ctx.lineTo(160, 25);
+      ctx.lineTo(38, -1);
+      ctx.closePath();
+      ctx.fill();
+
+      // Rear Exhaust Pipe with Active Nitro Glow
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(-38, 0, 7, 5);
+
+      if (isGas) {
+        // Exhaust Flame Pop
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.moveTo(-38, 2);
+        ctx.lineTo(-48 - Math.random() * 8, 2 + (Math.random() - 0.5) * 4);
+        ctx.lineTo(-38, 5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.moveTo(-38, 2.5);
+        ctx.lineTo(-44, 3);
+        ctx.lineTo(-38, 4.5);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.restore(); // Exit Jeep transform
+
+      // Particles (Smoke, Dirt, Sparkles)
+      sim.particles.forEach((p) => {
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.life -= dt;
@@ -811,18 +1299,25 @@ export function HillClimbRacingGame({ onClose }: Props) {
       });
       sim.particles = sim.particles.filter((p) => p.life > 0);
 
-      // Floating Score Texts
+      // Floating Score & Combo Texts with Outlines
       sim.floatingTexts.forEach((ft) => {
         ft.y -= 25 * dt;
         ft.life -= dt;
-        ctx.fillStyle = ft.color;
-        ctx.font = 'bold 15px sans-serif';
+        ctx.save();
+        ctx.font = '900 16px sans-serif';
         ctx.textAlign = 'center';
+        // Black drop outline
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillStyle = ft.color;
         ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
       });
       sim.floatingTexts = sim.floatingTexts.filter((ft) => ft.life > 0);
 
       ctx.restore(); // Exit world transform
+      ctx.restore(); // Exit high-DPI scaling
 
       // Update React HUD state throttled
       setHudStats((prev) => ({
@@ -883,38 +1378,38 @@ export function HillClimbRacingGame({ onClose }: Props) {
     >
       <div className="relative w-full h-full flex flex-col overflow-hidden bg-slate-900">
         
-        {/* ── TOP HUD (Distance, Fuel Bar, Coins, Speed) ── */}
+        {/* ── AAA ARCADE HUD (Distance, Fuel Bar, Coins, Speed) ── */}
         <div className="absolute top-3 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-          {/* Distance & Record */}
-          <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 shadow-lg text-white">
-            <Trophy size={18} className="text-amber-400" />
+          {/* Distance & Record Badge */}
+          <div className="flex items-center gap-3 bg-black/75 backdrop-blur-md px-4 py-2 rounded-2xl border-2 border-white/20 shadow-2xl text-white">
+            <Trophy size={20} className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
             <div>
-              <div className="text-[10px] tracking-widest uppercase text-slate-300 font-bold">Distance</div>
-              <div className="text-base font-black text-amber-300">{hudStats.distance} m</div>
+              <div className="text-[10px] tracking-widest uppercase text-slate-300 font-black">DISTANCE</div>
+              <div className="text-lg font-black text-amber-300 tracking-tight">{hudStats.distance} m</div>
             </div>
-            <div className="h-6 w-px bg-white/20 mx-1" />
+            <div className="h-7 w-px bg-white/20 mx-1" />
             <div className="text-right">
-              <div className="text-[9px] uppercase text-slate-400 font-bold">Best</div>
+              <div className="text-[9px] uppercase text-slate-400 font-bold">BEST</div>
               <div className="text-xs font-bold text-slate-200">{hudStats.bestDistance} m</div>
             </div>
           </div>
 
-          {/* Fuel Gauge Bar */}
-          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 shadow-lg">
-            <Fuel size={18} className={hudStats.fuel < 25 ? 'text-red-500 animate-pulse' : 'text-emerald-400'} />
-            <div className="w-28 sm:w-36">
-              <div className="flex justify-between text-[10px] font-bold text-slate-300 mb-1">
+          {/* Glowing Fuel Gauge Bar */}
+          <div className="flex items-center gap-3 bg-black/75 backdrop-blur-md px-4 py-2 rounded-2xl border-2 border-white/20 shadow-2xl">
+            <Fuel size={20} className={hudStats.fuel < 25 ? 'text-red-500 animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'text-emerald-400'} />
+            <div className="w-28 sm:w-40">
+              <div className="flex justify-between text-[10px] font-black tracking-wider text-slate-200 mb-1">
                 <span>FUEL</span>
                 <span>{hudStats.fuel}%</span>
               </div>
-              <div className="w-full h-2.5 bg-slate-700/80 rounded-full overflow-hidden p-0.5 border border-white/10">
+              <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-white/20">
                 <div
                   className={`h-full rounded-full transition-all duration-100 ${
                     hudStats.fuel < 25
-                      ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                      ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)] animate-pulse'
                       : hudStats.fuel < 50
-                      ? 'bg-amber-400'
-                      : 'bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'
+                      ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                      : 'bg-emerald-500 shadow-[0_0_10px_rgba(34,197,94,0.7)]'
                   }`}
                   style={{ width: `${hudStats.fuel}%` }}
                 />
@@ -922,28 +1417,28 @@ export function HillClimbRacingGame({ onClose }: Props) {
             </div>
           </div>
 
-          {/* Coins Collected */}
-          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 shadow-lg text-amber-300">
-            <Coins size={18} className="text-yellow-400" />
+          {/* 3D Shiny Coins Collected */}
+          <div className="flex items-center gap-2.5 bg-black/75 backdrop-blur-md px-4 py-2 rounded-2xl border-2 border-amber-400/30 shadow-2xl text-amber-300">
+            <Coins size={20} className="text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
             <div>
-              <div className="text-[10px] tracking-widest uppercase text-slate-300 font-bold">Coins</div>
-              <div className="text-base font-black text-yellow-400">+{hudStats.coins}</div>
+              <div className="text-[10px] tracking-widest uppercase text-slate-300 font-black">COINS</div>
+              <div className="text-lg font-black text-yellow-300 tracking-tight">+{hudStats.coins}</div>
             </div>
           </div>
         </div>
 
         {/* ── TACHOMETER / SPEEDOMETER OVERLAY (Bottom Center) ── */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 hidden sm:flex items-center gap-4 pointer-events-none">
-          <div className="bg-black/70 backdrop-blur-md px-4 py-1.5 rounded-2xl border border-white/10 flex items-center gap-3">
-            <Gauge size={18} className="text-cyan-400" />
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 hidden sm:flex items-center gap-4 pointer-events-none">
+          <div className="bg-black/80 backdrop-blur-md px-5 py-2 rounded-2xl border-2 border-white/20 shadow-2xl flex items-center gap-4">
+            <Gauge size={20} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
             <div className="text-center">
               <div className="text-[9px] font-black uppercase text-slate-400">SPEED</div>
-              <div className="text-sm font-black text-cyan-300">{hudStats.speed} <span className="text-[9px]">KM/H</span></div>
+              <div className="text-base font-black text-cyan-300 tracking-tight">{hudStats.speed} <span className="text-[10px]">KM/H</span></div>
             </div>
-            <div className="h-6 w-px bg-white/20" />
+            <div className="h-7 w-px bg-white/20" />
             <div className="text-center">
               <div className="text-[9px] font-black uppercase text-slate-400">RPM</div>
-              <div className="text-sm font-black text-rose-400">{hudStats.rpm}</div>
+              <div className="text-base font-black text-rose-400 tracking-tight">{hudStats.rpm}</div>
             </div>
           </div>
         </div>
@@ -951,17 +1446,17 @@ export function HillClimbRacingGame({ onClose }: Props) {
         {/* ── MAIN CANVAS ── */}
         <canvas ref={canvasRef} className="w-full h-full block touch-none" />
 
-        {/* ── ON-SCREEN TOUCH PEDALS (Mobile / Tablet Friendly) ── */}
+        {/* ── ON-SCREEN TOUCH PEDALS (Mobile / Tablet Responsive) ── */}
         {gameState === 'playing' && (
-          <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between pointer-events-auto">
+          <div className="absolute bottom-5 left-5 right-5 z-20 flex justify-between pointer-events-auto">
             {/* Brake / Reverse Pedal */}
             <button
               onPointerDown={() => { touchBrakeRef.current = true; }}
               onPointerUp={() => { touchBrakeRef.current = false; }}
               onPointerLeave={() => { touchBrakeRef.current = false; }}
-              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-t from-red-600 to-rose-500 active:scale-95 text-white font-black text-lg border-2 border-red-400/50 shadow-xl shadow-red-900/40 flex flex-col items-center justify-center select-none cursor-pointer"
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-t from-red-700 via-red-600 to-rose-500 active:scale-95 text-white font-black text-lg border-2 border-red-400/60 shadow-2xl shadow-red-900/50 flex flex-col items-center justify-center select-none cursor-pointer"
             >
-              <span>BRAKE</span>
+              <span className="drop-shadow-md">BRAKE</span>
               <span className="text-[10px] font-bold text-red-200 mt-1">[A / ◀]</span>
             </button>
 
@@ -970,31 +1465,31 @@ export function HillClimbRacingGame({ onClose }: Props) {
               onPointerDown={() => { touchGasRef.current = true; }}
               onPointerUp={() => { touchGasRef.current = false; }}
               onPointerLeave={() => { touchGasRef.current = false; }}
-              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-t from-emerald-600 to-green-500 active:scale-95 text-white font-black text-lg border-2 border-emerald-400/50 shadow-xl shadow-emerald-900/40 flex flex-col items-center justify-center select-none cursor-pointer"
+              className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-t from-emerald-700 via-emerald-600 to-green-500 active:scale-95 text-white font-black text-lg border-2 border-emerald-400/60 shadow-2xl shadow-emerald-900/50 flex flex-col items-center justify-center select-none cursor-pointer"
             >
-              <span>GAS</span>
+              <span className="drop-shadow-md">GAS</span>
               <span className="text-[10px] font-bold text-emerald-200 mt-1">[D / ▶]</span>
             </button>
           </div>
         )}
 
-        {/* ── START MENU & GARAGE UPGRADES ── */}
+        {/* ── START MENU & GARAGE UPGRADES (AAA Glassmorphism) ── */}
         {gameState === 'menu' && (
           <div className="absolute inset-0 z-30 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-4">
-            <div className="max-w-md w-full bg-slate-900 border border-cyan-500/30 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center">
-              <div className="inline-flex p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-3">
-                <Gauge size={36} />
+            <div className="max-w-md w-full bg-slate-900/95 border-2 border-cyan-500/40 rounded-3xl p-6 shadow-2xl shadow-cyan-950/50 flex flex-col items-center text-center">
+              <div className="inline-flex p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-3 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                <Gauge size={38} />
               </div>
-              <h2 className="text-2xl font-black text-white tracking-wide">HILL CLIMB RACING</h2>
-              <p className="text-xs text-slate-400 mt-1 mb-4">Master Newton's physics, balance steep hills & upgrade your jeep!</p>
+              <h2 className="text-2xl font-black text-white tracking-wider">HILL CLIMB RACING</h2>
+              <p className="text-xs text-slate-400 mt-1 mb-4">Official Poki Lite edition: master Newton's physics, balance hills & tune your jeep!</p>
 
-              {/* Wallet display */}
-              <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 px-4 py-1.5 rounded-full text-yellow-300 font-extrabold text-sm mb-5">
-                <Coins size={16} /> Total Garage Wallet: {hudStats.totalCoins} Coins
+              {/* Garage Wallet Display */}
+              <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-full text-yellow-300 font-extrabold text-sm mb-5 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                <Coins size={18} className="text-yellow-400" /> Total Garage Wallet: {hudStats.totalCoins} Coins
               </div>
 
               {/* Vehicle Upgrade Matrix */}
-              <div className="w-full grid grid-cols-2 gap-2.5 mb-6 text-left">
+              <div className="w-full grid grid-cols-2 gap-3 mb-6 text-left">
                 {(['engine', 'suspension', 'tires', 'fourWheel'] as Array<keyof Upgrades>).map((part) => {
                   const lvl = upgrades[part];
                   const cost = UPGRADE_COSTS[lvl] || 0;
@@ -1007,15 +1502,15 @@ export function HillClimbRacingGame({ onClose }: Props) {
                   };
 
                   return (
-                    <div key={part} className="bg-slate-800/80 border border-white/5 rounded-2xl p-2.5 flex flex-col justify-between">
+                    <div key={part} className="bg-slate-800/90 border border-white/10 rounded-2xl p-3 flex flex-col justify-between shadow-lg">
                       <div>
-                        <div className="text-[11px] font-black text-slate-200">{labels[part]}</div>
-                        <div className="flex gap-1 mt-1">
+                        <div className="text-xs font-black text-slate-200">{labels[part]}</div>
+                        <div className="flex gap-1 mt-1.5">
                           {[0, 1, 2, 3, 4].map((i) => (
                             <div
                               key={i}
-                              className={`h-1.5 flex-1 rounded-full ${
-                                i < lvl ? 'bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]' : 'bg-slate-700'
+                              className={`h-2 flex-1 rounded-full ${
+                                i < lvl ? 'bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]' : 'bg-slate-700'
                               }`}
                             />
                           ))}
@@ -1024,10 +1519,10 @@ export function HillClimbRacingGame({ onClose }: Props) {
                       <button
                         onClick={() => handleBuyUpgrade(part)}
                         disabled={isMax}
-                        className={`mt-2.5 py-1 px-2 rounded-xl text-[10px] font-black flex items-center justify-between ${
+                        className={`mt-3 py-1.5 px-2.5 rounded-xl text-[10px] font-black flex items-center justify-between transition-all ${
                           isMax
                             ? 'bg-slate-700/50 text-slate-400 cursor-not-allowed'
-                            : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/40 cursor-pointer'
+                            : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 active:scale-95 border border-cyan-500/40 cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                         }`}
                       >
                         <span>{isMax ? 'MAX' : `LVL ${lvl + 1}`}</span>
@@ -1040,7 +1535,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
 
               <Button
                 onClick={startRace}
-                className="w-full py-4 text-base font-black rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/30 flex items-center justify-center gap-2"
+                className="w-full py-4 text-base font-black rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-xl shadow-cyan-500/30 flex items-center justify-center gap-2"
               >
                 <Play size={20} /> START CLIMB
               </Button>
@@ -1051,8 +1546,8 @@ export function HillClimbRacingGame({ onClose }: Props) {
         {/* ── GAME OVER MODAL ── */}
         {gameState === 'gameover' && (
           <div className="absolute inset-0 z-30 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4">
-            <div className="max-w-sm w-full bg-slate-900 border border-red-500/30 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center">
-              <div className="inline-flex p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 mb-2">
+            <div className="max-w-sm w-full bg-slate-900 border-2 border-red-500/40 rounded-3xl p-6 shadow-2xl shadow-red-950/50 flex flex-col items-center text-center">
+              <div className="inline-flex p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 mb-2 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
                 <RotateCcw size={32} />
               </div>
               <h3 className="text-xl font-black text-red-400 tracking-wide uppercase">{deathReason || 'CRASHED!'}</h3>
@@ -1082,7 +1577,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
                 </Button>
                 <Button
                   onClick={startRace}
-                  className="flex-1 py-3 text-xs font-extrabold rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-3 text-xs font-extrabold rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-1.5"
                 >
                   <RotateCcw size={16} /> RETRY [R]
                 </Button>

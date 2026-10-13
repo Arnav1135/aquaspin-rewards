@@ -2208,6 +2208,18 @@ export function HillClimbRacingGame({ onClose }: Props) {
                   <span>Best Distance Record:</span>
                   <span className="text-cyan-400 font-extrabold">{hudStats.bestDistance} m</span>
                 </div>
+                {ghostMode && ghostTrajectoryRef.current.length > 0 && (() => {
+                  const gMaxDist = Math.max(...ghostTrajectoryRef.current.map(p => Math.floor((p.x - 180) / 10)));
+                  const beatGhost = hudStats.distance >= gMaxDist;
+                  return (
+                    <div className="flex justify-between items-center font-bold border-t border-white/10 pt-2 text-xs">
+                      <span className="text-cyan-300 flex items-center gap-1">👻 1v1 Rival Ghost:</span>
+                      <span className={`px-2 py-0.5 rounded-md font-mono ${beatGhost ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
+                        {beatGhost ? `NEW RECORD! (+${hudStats.distance - gMaxDist}m)` : `OUTPACED (${gMaxDist}m)`}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="w-full flex gap-3">

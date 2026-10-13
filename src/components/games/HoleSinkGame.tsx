@@ -414,13 +414,18 @@ function ArenaFloor({ onPointerMoveGround }: { onPointerMoveGround?: (pt: THREE.
 function HoleMesh({ entity }: { entity: HoleEntity }) {
   const innerRef = useRef<THREE.Mesh>(null);
   const accretionRef = useRef<THREE.Mesh>(null);
+  const pulseRef = useRef<THREE.Mesh>(null);
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     if (innerRef.current) {
       innerRef.current.rotation.z += delta * 3.0;
     }
     if (accretionRef.current) {
       accretionRef.current.rotation.z -= delta * 1.8;
+    }
+    if (pulseRef.current) {
+      const pulse = 1.0 + Math.sin(clock.getElapsedTime() * 4.5) * 0.08;
+      pulseRef.current.scale.set(pulse, pulse, 1);
     }
   });
 
@@ -469,12 +474,12 @@ function HoleMesh({ entity }: { entity: HoleEntity }) {
       </mesh>
 
       {/* Event Horizon Suction Shockwave Ring */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
+      <mesh ref={pulseRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
         <ringGeometry args={[entity.radius * 0.88, entity.radius * 1.05, 32]} />
         <meshBasicMaterial
           color="#ffffff"
           transparent
-          opacity={0.22}
+          opacity={0.25}
           side={THREE.DoubleSide}
         />
       </mesh>

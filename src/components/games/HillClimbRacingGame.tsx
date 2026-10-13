@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameFrame } from './GameFrame';
 import { Button } from '@/components/ui/Button';
+import { DedicatedCloseButton } from '@/components/ui/DedicatedCloseButton';
 import { audio } from '@/lib/audioEngine';
 import { secureRecordGameResult, secureUpdateTokens } from '@/lib/secureEconomy';
 import { useAuthStore } from '@/features/authStore';
@@ -10,6 +11,178 @@ import toast from 'react-hot-toast';
 interface Props {
   onClose: () => void;
 }
+
+// Vehicle Types & Abilities
+export type VehicleType = 'jeep' | 'monster' | 'motocross' | 'racecar';
+export type StageType = 'countryside' | 'desert' | 'moon' | 'arctic';
+
+export interface VehicleConfig {
+  id: VehicleType;
+  name: string;
+  icon: string;
+  cost: number;
+  ability: string;
+  wheelRadius: number;
+  wheelDist: number;
+  bodyRadius: number;
+  engineMultiplier: number;
+  gravityFactor: number;
+  airControlFactor: number;
+  fuelEfficiency: number; // lower means drains slower
+  suspensionDamp: number;
+  primaryColor: string;
+  secondaryColor: string;
+}
+
+export interface StageConfig {
+  id: StageType;
+  name: string;
+  icon: string;
+  desc: string;
+  gravity: number;
+  surfaceFriction: number;
+  skyColors: [string, string, string, string];
+  sunColor: string;
+  groundSurfaceColor: string;
+  groundSubColor: string;
+  groundFillColor: string;
+  mountainColor1: string;
+  mountainColor2: string;
+}
+
+export const VEHICLES: Record<VehicleType, VehicleConfig> = {
+  jeep: {
+    id: 'jeep',
+    name: 'Hill Climber Jeep',
+    icon: '🚙',
+    cost: 0,
+    ability: 'All-Terrain 4WD: Balanced climbing, sturdy roll cage, reliable torque.',
+    wheelRadius: 16,
+    wheelDist: 60,
+    bodyRadius: 30,
+    engineMultiplier: 1.0,
+    gravityFactor: 1.0,
+    airControlFactor: 1.0,
+    fuelEfficiency: 1.0,
+    suspensionDamp: 1.0,
+    primaryColor: '#ef4444',
+    secondaryColor: '#dc2626',
+  },
+  monster: {
+    id: 'monster',
+    name: 'Monster Truck',
+    icon: '🛻',
+    cost: 1500,
+    ability: 'Colossal Wheels: 26px tires roll over boulders & steep ledges with huge suspension.',
+    wheelRadius: 24,
+    wheelDist: 72,
+    bodyRadius: 36,
+    engineMultiplier: 1.35,
+    gravityFactor: 1.1,
+    airControlFactor: 0.85,
+    fuelEfficiency: 1.25,
+    suspensionDamp: 1.4,
+    primaryColor: '#8b5cf6',
+    secondaryColor: '#6d28d9',
+  },
+  motocross: {
+    id: 'motocross',
+    name: 'Motocross Bike',
+    icon: '🏍️',
+    cost: 2800,
+    ability: 'Agile Air Acrobat: 2x faster air flips, lightweight chassis, nitro speed.',
+    wheelRadius: 14,
+    wheelDist: 48,
+    bodyRadius: 22,
+    engineMultiplier: 1.25,
+    gravityFactor: 0.95,
+    airControlFactor: 1.9,
+    fuelEfficiency: 0.85,
+    suspensionDamp: 0.85,
+    primaryColor: '#f59e0b',
+    secondaryColor: '#d97706',
+  },
+  racecar: {
+    id: 'racecar',
+    name: 'Super Race Car',
+    icon: '🏎️',
+    cost: 5000,
+    ability: 'Downforce Boost: Extreme top speed, ultra-low center of gravity & grip.',
+    wheelRadius: 13,
+    wheelDist: 66,
+    bodyRadius: 26,
+    engineMultiplier: 1.6,
+    gravityFactor: 1.05,
+    airControlFactor: 1.1,
+    fuelEfficiency: 1.1,
+    suspensionDamp: 0.7,
+    primaryColor: '#06b6d4',
+    secondaryColor: '#0284c7',
+  },
+};
+
+export const STAGES: Record<StageType, StageConfig> = {
+  countryside: {
+    id: 'countryside',
+    name: 'Countryside',
+    icon: '🌲',
+    desc: 'Lush green rolling hills with pleasant breezes and smooth dips.',
+    gravity: 920,
+    surfaceFriction: 1.0,
+    skyColors: ['#38a8e8', '#82cbf7', '#d8f1ff', '#eaf7ff'],
+    sunColor: '#fff9d6',
+    groundSurfaceColor: '#32ab42',
+    groundSubColor: '#43220c',
+    groundFillColor: '#653816',
+    mountainColor1: '#86c99c',
+    mountainColor2: '#5eb87a',
+  },
+  desert: {
+    id: 'desert',
+    name: 'Desert Dunes',
+    icon: '🏜️',
+    desc: 'Steep shifting sand dunes, scorching sun, and loose gravel friction.',
+    gravity: 900,
+    surfaceFriction: 0.88,
+    skyColors: ['#f59e0b', '#fbbf24', '#fed7aa', '#ffedd5'],
+    sunColor: '#fffbeb',
+    groundSurfaceColor: '#facc15',
+    groundSubColor: '#ca8a04',
+    groundFillColor: '#854d0e',
+    mountainColor1: '#d97706',
+    mountainColor2: '#b45309',
+  },
+  moon: {
+    id: 'moon',
+    name: 'The Moon',
+    icon: '🌑',
+    desc: 'Ultra-low gravity (1/3rd Earth)! Massive lunar craters and giant floaty air flips.',
+    gravity: 340,
+    surfaceFriction: 1.15,
+    skyColors: ['#030712', '#0f172a', '#1e293b', '#090d16'],
+    sunColor: '#e2e8f0',
+    groundSurfaceColor: '#94a3b8',
+    groundSubColor: '#475569',
+    groundFillColor: '#1e293b',
+    mountainColor1: '#334155',
+    mountainColor2: '#1e293b',
+  },
+  arctic: {
+    id: 'arctic',
+    name: 'Arctic Ice',
+    icon: '❄️',
+    desc: 'Slippery glacier crests with low tire grip and icy ramps.',
+    gravity: 920,
+    surfaceFriction: 0.65,
+    skyColors: ['#0284c7', '#38bdf8', '#bae6fd', '#e0f2fe'],
+    sunColor: '#ffffff',
+    groundSurfaceColor: '#e0f2fe',
+    groundSubColor: '#7dd3fc',
+    groundFillColor: '#0369a1',
+    mountainColor1: '#38bdf8',
+    mountainColor2: '#0284c7',
+  },
+};
 
 // Vehicle Upgrade levels (Engine, Suspension, Tires, 4WD)
 interface Upgrades {
@@ -24,6 +197,25 @@ const UPGRADE_COSTS = [150, 300, 600, 1200, 2500, 5000];
 export function HillClimbRacingGame({ onClose }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const profile = useAuthStore((s) => s.profile);
+
+  // Selected vehicle & unlocked vehicles
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>(() => {
+    return (localStorage.getItem('hcr_selected_veh') as VehicleType) || 'jeep';
+  });
+
+  const [unlockedVehicles, setUnlockedVehicles] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('hcr_unlocked_veh');
+      return saved ? JSON.parse(saved) : ['jeep'];
+    } catch {
+      return ['jeep'];
+    }
+  });
+
+  // Selected stage
+  const [selectedStage, setSelectedStage] = useState<StageType>(() => {
+    return (localStorage.getItem('hcr_selected_stage') as StageType) || 'countryside';
+  });
 
   // Upgrade state persisted in local storage
   const [upgrades, setUpgrades] = useState<Upgrades>(() => {
@@ -154,19 +346,38 @@ export function HillClimbRacingGame({ onClose }: Props) {
     }
   }, [soundEnabled]);
 
-  // Heightmap function for procedural terrain
+  // Heightmap function for procedural terrain based on selected map/stage
   const getTerrainHeight = useCallback((worldX: number) => {
-    // Exact Hill Climb countryside mathematical profile with rolling crests & dips
-    const h1 = Math.sin(worldX * 0.0035) * 85;
-    const h2 = Math.sin(worldX * 0.008 + 1.2) * 55;
-    const h3 = Math.cos(worldX * 0.016 + 2.5) * 25;
-    const h4 = Math.sin(worldX * 0.035) * 8; // Small bumps
-    
-    // Add steeper climbs after 1500m
-    const steep = worldX > 1500 ? Math.sin(worldX * 0.0018) * 60 : 0;
-    
-    return 360 + h1 + h2 + h3 + h4 + steep;
-  }, []);
+    if (selectedStage === 'moon') {
+      // Moon: Vast low craters, huge soaring peaks, and low undulating plains
+      const crater = Math.sin(worldX * 0.002) * 110;
+      const ridges = Math.cos(worldX * 0.006 + 1.5) * 45;
+      const ripple = Math.sin(worldX * 0.018) * 15;
+      return 370 + crater + ridges + ripple;
+    } else if (selectedStage === 'desert') {
+      // Desert: Steep shifting razor dunes and long sandy downhill slides
+      const dune1 = Math.sin(worldX * 0.004) * 95;
+      const dune2 = Math.sin(worldX * 0.009 + 2.0) * 65;
+      const ripple = Math.sin(worldX * 0.04) * 6;
+      const steepClimb = worldX > 1000 ? Math.sin(worldX * 0.0015) * 70 : 0;
+      return 360 + dune1 + dune2 + ripple + steepClimb;
+    } else if (selectedStage === 'arctic') {
+      // Arctic: Slippery glacier steps, jagged ice cliffs, and ramp crests
+      const glacier = Math.sin(worldX * 0.003) * 80;
+      const iceCrags = Math.cos(worldX * 0.012 + 0.8) * 40;
+      const crevasse = Math.sin(worldX * 0.025) * 18;
+      const mountainRamp = worldX > 800 ? Math.sin(worldX * 0.002) * 60 : 0;
+      return 365 + glacier + iceCrags + crevasse + mountainRamp;
+    } else {
+      // Countryside: Classic rolling hills and pleasant dips
+      const h1 = Math.sin(worldX * 0.0035) * 85;
+      const h2 = Math.sin(worldX * 0.008 + 1.2) * 55;
+      const h3 = Math.cos(worldX * 0.016 + 2.5) * 25;
+      const h4 = Math.sin(worldX * 0.035) * 8; // Small bumps
+      const steep = worldX > 1500 ? Math.sin(worldX * 0.0018) * 60 : 0;
+      return 360 + h1 + h2 + h3 + h4 + steep;
+    }
+  }, [selectedStage]);
 
   // Normal vector & tangent of terrain at worldX
   const getTerrainNormal = useCallback((worldX: number) => {
@@ -200,6 +411,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
 
   // Reset or Start Run
   const startRace = useCallback(() => {
+    const vConfig = VEHICLES[selectedVehicle] || VEHICLES.jeep;
     const initialY = getTerrainHeight(180) - 50;
     simRef.current = {
       distance: 0,
@@ -230,10 +442,10 @@ export function HillClimbRacingGame({ onClose }: Props) {
         vy: 0,
         angle: 0,
         angularVel: 0,
-        wheelDist: 60,
-        bodyRadius: 30,
-        driverHeadOffset: { x: -8, y: -30 },
-        wheelRadius: 16,
+        wheelDist: vConfig.wheelDist,
+        bodyRadius: vConfig.bodyRadius,
+        driverHeadOffset: selectedVehicle === 'motocross' ? { x: -4, y: -26 } : { x: -8, y: -30 },
+        wheelRadius: vConfig.wheelRadius,
         rearWheelY: initialY,
         frontWheelY: initialY,
         rearSuspensionOffset: 0,
@@ -396,14 +608,17 @@ export function HillClimbRacingGame({ onClose }: Props) {
       const isBrake = (sim.brake || touchBrakeRef.current) && gameState === 'playing' && !sim.gameOver;
 
       if (gameState === 'playing' && !sim.gameOver) {
-        // Upgrade multipliers
-        const enginePower = 340 + sim.upgrades.engine * 55;
-        const suspensionStrength = 0.55 + sim.upgrades.suspension * 0.12;
-        const tireGrip = 1.0 + sim.upgrades.tires * 0.22;
+        const vConfig = VEHICLES[selectedVehicle] || VEHICLES.jeep;
+        const stageConfig = STAGES[selectedStage] || STAGES.countryside;
+
+        // Upgrade multipliers coupled with vehicle abilities
+        const enginePower = (340 + sim.upgrades.engine * 55) * vConfig.engineMultiplier;
+        const suspensionStrength = (0.55 + sim.upgrades.suspension * 0.12) * vConfig.suspensionDamp;
+        const tireGrip = (1.0 + sim.upgrades.tires * 0.22) * stageConfig.surfaceFriction;
         const frontPowerRatio = 0.35 + sim.upgrades.fourWheel * 0.13;
 
-        // 1. Fuel Depletion
-        const fuelDrainRate = isGas ? 4.8 : 1.2;
+        // 1. Fuel Depletion (Modulated by Vehicle Fuel Efficiency)
+        const fuelDrainRate = (isGas ? 4.8 : 1.2) * vConfig.fuelEfficiency;
         sim.fuel = Math.max(0, sim.fuel - fuelDrainRate * dt);
         if (sim.fuel <= 0) {
           sim.gameOver = true;
@@ -439,8 +654,8 @@ export function HillClimbRacingGame({ onClose }: Props) {
         car.rearSuspensionOffset = Math.max(-8, Math.min(8, (restLen + car.wheelRadius) - rearDist));
         car.frontSuspensionOffset = Math.max(-8, Math.min(8, (restLen + car.wheelRadius) - frontDist));
 
-        // Gravity
-        const GRAVITY = 920;
+        // Gravity (Stage Dependent)
+        const GRAVITY = stageConfig.gravity * vConfig.gravityFactor;
         car.vy += GRAVITY * dt;
 
         // Dynamic Driver Ragdoll Physics
@@ -458,11 +673,11 @@ export function HillClimbRacingGame({ onClose }: Props) {
           driver.expression = 'normal';
         }
 
-        // Air Tilt Control (Classic Hill Climb Mechanics: Gas tilts up/back, Brake tilts forward)
+        // Air Tilt Control (Modulated by Vehicle Air Control Factor)
         if (!car.rearGrounded && !car.frontGrounded) {
           sim.airTime += dt;
-          if (isGas) car.angularVel += 4.8 * dt;   // Pitch up / back
-          if (isBrake) car.angularVel -= 4.8 * dt; // Pitch down / forward
+          if (isGas) car.angularVel += (4.8 * vConfig.airControlFactor) * dt;   // Pitch up / back
+          if (isBrake) car.angularVel -= (4.8 * vConfig.airControlFactor) * dt; // Pitch down / forward
 
           // Track Flips
           const deltaAngle = car.angle - sim.prevAngle;
@@ -590,11 +805,17 @@ export function HillClimbRacingGame({ onClose }: Props) {
         }
 
         // 3. Driver Neck Snap / Head Ground Strike Detection (Classic HCR Crash Rule)
+        // Only trigger if car is significantly tilted/inverted (upside down) and head hits terrain
         const headWorldX = car.x + car.driverHeadOffset.x * cosA - car.driverHeadOffset.y * sinA;
         const headWorldY = car.y + car.driverHeadOffset.x * sinA + car.driverHeadOffset.y * cosA;
         const headTerrainY = getTerrainHeight(headWorldX);
 
-        if (headWorldY >= headTerrainY - 3) {
+        // Normalize car angle between -PI and PI
+        let normalizedAngle = ((car.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        if (normalizedAngle > Math.PI) normalizedAngle -= Math.PI * 2;
+        const isCarInverted = Math.abs(normalizedAngle) > 1.25;
+
+        if (isCarInverted && headWorldY >= headTerrainY - 1) {
           sim.gameOver = true;
           sim.deathReason = 'DRIVER DOWN! (NECK FLIP)';
           driver.expression = 'crashed';
@@ -712,12 +933,14 @@ export function HillClimbRacingGame({ onClose }: Props) {
       // ─── AAA GRAPHICS RENDERING PIPELINE ──────────────────
       ctx.clearRect(0, 0, width, height);
 
-      // 1. Sky & Atmospheric Horizon Gradient
+      const stageConfig = STAGES[selectedStage] || STAGES.countryside;
+
+      // 1. Sky & Atmospheric Horizon Gradient (Stage Palette)
       const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
-      skyGrad.addColorStop(0, '#38a8e8');     // Crisp Poki Azure
-      skyGrad.addColorStop(0.55, '#82cbf7');  // Soft mid-sky
-      skyGrad.addColorStop(0.85, '#d8f1ff');  // Atmospheric haze
-      skyGrad.addColorStop(1, '#eaf7ff');
+      skyGrad.addColorStop(0, stageConfig.skyColors[0]);
+      skyGrad.addColorStop(0.55, stageConfig.skyColors[1]);
+      skyGrad.addColorStop(0.85, stageConfig.skyColors[2]);
+      skyGrad.addColorStop(1, stageConfig.skyColors[3]);
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, width, height);
 
@@ -733,12 +956,12 @@ export function HillClimbRacingGame({ onClose }: Props) {
       ctx.arc(sunScreenX, sunScreenY, 90, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#fff9d6';
+      ctx.fillStyle = stageConfig.sunColor;
       ctx.beginPath();
       ctx.arc(sunScreenX, sunScreenY, 26, 0, Math.PI * 2);
       ctx.fill();
 
-      // 3. Parallax Fluffy Cartoon Clouds
+      // 3. Parallax Fluffy Cartoon Clouds / Lunar Stars
       sim.clouds.forEach((cloud) => {
         cloud.x -= cloud.speed * dt * 0.1;
         if (cloud.x < -150) cloud.x = width + 150;
@@ -747,20 +970,27 @@ export function HillClimbRacingGame({ onClose }: Props) {
         ctx.save();
         ctx.translate(renderCloudX, cloud.y);
         ctx.scale(cloud.scale, cloud.scale);
-        ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
+        ctx.fillStyle = selectedStage === 'moon' ? 'rgba(255, 255, 255, 0.45)' : `rgba(255, 255, 255, ${cloud.opacity})`;
         ctx.beginPath();
-        ctx.arc(0, 0, 24, 0, Math.PI * 2);
-        ctx.arc(20, -10, 28, 0, Math.PI * 2);
-        ctx.arc(45, -5, 22, 0, Math.PI * 2);
-        ctx.arc(60, 5, 18, 0, Math.PI * 2);
-        ctx.arc(25, 10, 20, 0, Math.PI * 2);
+        if (selectedStage === 'moon') {
+          // Stars in space
+          ctx.arc(0, 0, 2, 0, Math.PI * 2);
+          ctx.arc(15, 12, 1.5, 0, Math.PI * 2);
+          ctx.arc(-10, 8, 2, 0, Math.PI * 2);
+        } else {
+          ctx.arc(0, 0, 24, 0, Math.PI * 2);
+          ctx.arc(20, -10, 28, 0, Math.PI * 2);
+          ctx.arc(45, -5, 22, 0, Math.PI * 2);
+          ctx.arc(60, 5, 18, 0, Math.PI * 2);
+          ctx.arc(25, 10, 20, 0, Math.PI * 2);
+        }
         ctx.closePath();
         ctx.fill();
         ctx.restore();
       });
 
-      // 4. Parallax Mountain Backdrop (Layer 1 - Far Distant Blue-Green Mountains)
-      ctx.fillStyle = '#86c99c';
+      // 4. Parallax Mountain Backdrop (Layer 1 - Far Distant Mountains)
+      ctx.fillStyle = stageConfig.mountainColor1;
       ctx.beginPath();
       ctx.moveTo(0, height);
       for (let sx = 0; sx <= width; sx += 25) {
@@ -772,8 +1002,8 @@ export function HillClimbRacingGame({ onClose }: Props) {
       ctx.closePath();
       ctx.fill();
 
-      // 5. Parallax Rolling Hills (Layer 2 - Midground Countryside Hills)
-      ctx.fillStyle = '#5eb87a';
+      // 5. Parallax Rolling Hills (Layer 2 - Midground Hills)
+      ctx.fillStyle = stageConfig.mountainColor2;
       ctx.beginPath();
       ctx.moveTo(0, height);
       for (let sx = 0; sx <= width; sx += 18) {
@@ -805,11 +1035,11 @@ export function HillClimbRacingGame({ onClose }: Props) {
       ctx.closePath();
 
       // Deep Geological Earth Fill
-      if (dirtPatternRef.current) {
+      if (selectedStage === 'countryside' && dirtPatternRef.current) {
         ctx.fillStyle = dirtPatternRef.current;
         ctx.fill();
       } else {
-        ctx.fillStyle = '#653816';
+        ctx.fillStyle = stageConfig.groundFillColor;
         ctx.fill();
       }
 
@@ -821,21 +1051,21 @@ export function HillClimbRacingGame({ onClose }: Props) {
       ctx.fillStyle = subCrustGrad;
       ctx.fill();
 
-      // Textured Dark Soil Horizon Layer (Underneath Grass)
+      // Textured Dark Soil Horizon Layer (Underneath Surface)
       ctx.lineWidth = 26;
-      ctx.strokeStyle = '#43220c';
+      ctx.strokeStyle = stageConfig.groundSubColor;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.stroke();
 
-      // Lush Countryside Grass Ribbon (Top Layer)
+      // Terrain Surface Ribbon (Top Layer)
       ctx.lineWidth = 14;
-      ctx.strokeStyle = '#32ab42';
+      ctx.strokeStyle = stageConfig.groundSurfaceColor;
       ctx.stroke();
 
-      // Vibrant Sunlit Grass Highlight
+      // Vibrant Sunlit Surface Highlight
       ctx.lineWidth = 5;
-      ctx.strokeStyle = '#61d84f';
+      ctx.strokeStyle = stageConfig.groundSurfaceColor;
       ctx.stroke();
 
       // Procedural Grass Tufts / Flowers on Hilltops
@@ -1182,62 +1412,206 @@ export function HillClimbRacingGame({ onClose }: Props) {
       ctx.lineJoin = 'round';
       ctx.beginPath();
       // Rear diagonal bar
-      ctx.moveTo(-28, -8);
-      ctx.lineTo(-14, -34);
-      // Top horizontal roof bar
-      ctx.lineTo(8, -34);
-      // Front windshield diagonal
-      ctx.lineTo(18, -10);
-      ctx.stroke();
+      // 4. Vehicle Body & Chassis (Custom Graphics per Selected Vehicle)
+      const vConfig = VEHICLES[selectedVehicle] || VEHICLES.jeep;
 
-      // Roll cage B-pillar center support
-      ctx.beginPath();
-      ctx.moveTo(-8, -8);
-      ctx.lineTo(-6, -34);
-      ctx.stroke();
-
-      // 5. Jeep Gloss Red Metal Body Panels
-      // Body Drop Shadow inside wheel arches
-      ctx.fillStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.arc(-car.wheelDist / 2, 6, 21, Math.PI, 0);
-      ctx.arc(car.wheelDist / 2, 6, 21, Math.PI, 0);
-      ctx.fill();
-
-      // Iconic Jeep Tub & Hood (Vibrant Red with Highlights)
-      const bodyGrad = ctx.createLinearGradient(0, -20, 0, 10);
-      bodyGrad.addColorStop(0, '#ef4444');  // Bright sunlit red
-      bodyGrad.addColorStop(0.6, '#dc2626');
-      bodyGrad.addColorStop(1, '#991b1b');  // Deep shadow red
-
-      ctx.fillStyle = bodyGrad;
-      ctx.strokeStyle = '#7f1d1d';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(-36, -8);  // Rear tailgate corner
-      ctx.lineTo(-34, -18); // Spare tire bracket
-      ctx.lineTo(-8, -18);  // Door opening edge
-      ctx.lineTo(6, -10);   // Windshield cowl
-      ctx.lineTo(34, -10);  // Hood top front
-      ctx.lineTo(38, 2);    // Front grille bumper
-      ctx.lineTo(30, 8);    // Wheel well front
-      ctx.lineTo(14, 8);
-      ctx.lineTo(4, 2);
-      ctx.lineTo(-18, 2);
-      ctx.lineTo(-26, 8);
-      ctx.lineTo(-36, 8);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Engine Hood Vent Louvers
-      ctx.strokeStyle = '#7f1d1d';
-      ctx.lineWidth = 1.5;
-      for (let lv = 14; lv <= 28; lv += 4) {
+      if (selectedVehicle === 'monster') {
+        // ─── MONSTER TRUCK CHASSIS ───
+        // Heavy Lift Roll Cage
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(lv, -8);
-        ctx.lineTo(lv, -4);
+        ctx.moveTo(-32, -10);
+        ctx.lineTo(-18, -42);
+        ctx.lineTo(14, -42);
+        ctx.lineTo(24, -14);
         ctx.stroke();
+
+        // Monster Truck Raised Body
+        const monsterGrad = ctx.createLinearGradient(0, -30, 0, 10);
+        monsterGrad.addColorStop(0, vConfig.primaryColor);
+        monsterGrad.addColorStop(1, vConfig.secondaryColor);
+        ctx.fillStyle = monsterGrad;
+        ctx.strokeStyle = '#3b0764';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-42, -10);
+        ctx.lineTo(-38, -24);
+        ctx.lineTo(-12, -24);
+        ctx.lineTo(10, -18);
+        ctx.lineTo(40, -18);
+        ctx.lineTo(44, 0);
+        ctx.lineTo(34, 6);
+        ctx.lineTo(-40, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Monster Flame Decal
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(8, -10);
+        ctx.lineTo(28, -14);
+        ctx.lineTo(20, -6);
+        ctx.lineTo(36, -10);
+        ctx.lineTo(14, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        // High Fog Lights Roof Bar
+        ctx.fillStyle = '#fde047';
+        for (let fl = -10; fl <= 10; fl += 10) {
+          ctx.beginPath();
+          ctx.arc(fl, -44, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (selectedVehicle === 'motocross') {
+        // ─── MOTOCROSS BIKE CHASSIS ───
+        // Steel Dirt Bike Frame
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-car.wheelDist / 2, 14); // Rear axle
+        ctx.lineTo(-6, -6);                 // Frame center
+        ctx.lineTo(car.wheelDist / 2, 14);  // Front axle
+        ctx.moveTo(-6, -6);
+        ctx.lineTo(10, -18);                // Fork head
+        ctx.stroke();
+
+        // Angular Tank & Tail Plastics
+        const motoGrad = ctx.createLinearGradient(0, -20, 0, 5);
+        motoGrad.addColorStop(0, vConfig.primaryColor);
+        motoGrad.addColorStop(1, vConfig.secondaryColor);
+        ctx.fillStyle = motoGrad;
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-28, -14); // Rear fender
+        ctx.lineTo(-8, -18);  // Seat base
+        ctx.lineTo(6, -20);   // Fuel tank
+        ctx.lineTo(16, -16);  // Shroud
+        ctx.lineTo(0, -6);
+        ctx.lineTo(-20, -6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // High Front Fender / Beak
+        ctx.fillStyle = vConfig.primaryColor;
+        ctx.beginPath();
+        ctx.moveTo(10, -16);
+        ctx.lineTo(24, -18);
+        ctx.lineTo(20, -14);
+        ctx.closePath();
+        ctx.fill();
+
+        // Dirt Exhaust Pipe
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-4, -4);
+        ctx.lineTo(-26, -10);
+        ctx.stroke();
+      } else if (selectedVehicle === 'racecar') {
+        // ─── SUPER RACE CAR CHASSIS ───
+        // High Downforce Rear Carbon Wing
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-36, -6);
+        ctx.lineTo(-34, -26);
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-44, -28, 18, 4);
+
+        // Aerodynamic Low-slung Body Shell
+        const raceGrad = ctx.createLinearGradient(0, -22, 0, 8);
+        raceGrad.addColorStop(0, vConfig.primaryColor);
+        raceGrad.addColorStop(1, vConfig.secondaryColor);
+        ctx.fillStyle = raceGrad;
+        ctx.strokeStyle = '#0e7490';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-40, 2);
+        ctx.lineTo(-36, -8);
+        ctx.lineTo(-18, -12);
+        ctx.lineTo(0, -20); // Low windshield
+        ctx.lineTo(22, -12);
+        ctx.lineTo(44, 2);  // Front splitter
+        ctx.lineTo(36, 6);
+        ctx.lineTo(-36, 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Cockpit Tinted Canopy
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.moveTo(-16, -10);
+        ctx.lineTo(2, -18);
+        ctx.lineTo(16, -10);
+        ctx.closePath();
+        ctx.fill();
+
+        // Racing Stripe
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(8, -12, 4, 16);
+      } else {
+        // ─── CLASSIC JEEP CHASSIS (Default) ───
+        // Roll Cage
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-28, -8);
+        ctx.lineTo(-14, -34);
+        ctx.lineTo(8, -34);
+        ctx.lineTo(18, -10);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-8, -8);
+        ctx.lineTo(-6, -34);
+        ctx.stroke();
+
+        // Jeep Red Tub & Hood
+        const bodyGrad = ctx.createLinearGradient(0, -20, 0, 10);
+        bodyGrad.addColorStop(0, vConfig.primaryColor);
+        bodyGrad.addColorStop(0.6, vConfig.secondaryColor);
+        bodyGrad.addColorStop(1, '#991b1b');
+
+        ctx.fillStyle = bodyGrad;
+        ctx.strokeStyle = '#7f1d1d';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-36, -8);
+        ctx.lineTo(-34, -18);
+        ctx.lineTo(-8, -18);
+        ctx.lineTo(6, -10);
+        ctx.lineTo(34, -10);
+        ctx.lineTo(38, 2);
+        ctx.lineTo(30, 8);
+        ctx.lineTo(14, 8);
+        ctx.lineTo(4, 2);
+        ctx.lineTo(-18, 2);
+        ctx.lineTo(-26, 8);
+        ctx.lineTo(-36, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Hood vents
+        ctx.strokeStyle = '#7f1d1d';
+        ctx.lineWidth = 1.5;
+        for (let lv = 14; lv <= 28; lv += 4) {
+          ctx.beginPath();
+          ctx.moveTo(lv, -8);
+          ctx.lineTo(lv, -4);
+          ctx.stroke();
+        }
       }
 
       // Yellow Fog/Headlights with Radiant Beam
@@ -1368,14 +1742,42 @@ export function HillClimbRacingGame({ onClose }: Props) {
     }
   }, [gameState, profile?.id]);
 
+  // Detect orientation for mobile landscape optimization
+  const [isPortrait, setIsPortrait] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? window.innerHeight > window.innerWidth : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
+
   return (
-    <GameFrame
-      title="Hill Climb Racing Lite"
-      onClose={onClose}
-      soundEnabled={soundEnabled}
-      onToggleSound={() => setSoundEnabled(!soundEnabled)}
-      className="max-w-[1000px] h-[640px] flex flex-col bg-[#0f172a] select-none"
-    >
+    <div className="relative w-full h-[100dvh] min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden">
+      <DedicatedCloseButton onClose={onClose} label="Exit Race" position="top-right" />
+      
+      {/* Mobile Landscape Recommendation Pill */}
+      {isPortrait && gameState === 'playing' && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-indigo-950/90 border border-indigo-400/40 text-cyan-300 px-4 py-1.5 rounded-full text-xs font-bold shadow-xl backdrop-blur-md flex items-center gap-2 pointer-events-none animate-bounce">
+          <span>🔄</span>
+          <span>Tip: Rotate device to Landscape for optimal view!</span>
+        </div>
+      )}
+
+      <GameFrame
+        title="Hill Climb Racing Lite"
+        onClose={onClose}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        className="w-full h-full flex flex-col bg-[#0f172a] select-none"
+      >
       <div className="relative w-full h-full flex flex-col overflow-hidden bg-slate-900">
         
         {/* ── AAA ARCADE HUD (Distance, Fuel Bar, Coins, Speed) ── */}
@@ -1484,12 +1886,112 @@ export function HillClimbRacingGame({ onClose }: Props) {
               <p className="text-xs text-slate-400 mt-1 mb-4">Official Poki Lite edition: master Newton's physics, balance hills & tune your jeep!</p>
 
               {/* Garage Wallet Display */}
-              <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-full text-yellow-300 font-extrabold text-sm mb-5 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+              <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 px-4 py-2 rounded-full text-yellow-300 font-extrabold text-sm mb-4 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
                 <Coins size={18} className="text-yellow-400" /> Total Garage Wallet: {hudStats.totalCoins} Coins
               </div>
 
-              {/* Vehicle Upgrade Matrix */}
-              <div className="w-full grid grid-cols-2 gap-3 mb-6 text-left">
+              {/* 1. SELECT VEHICLE (Jeep, Monster Truck, Motocross, Super Racecar) */}
+              <div className="w-full mb-4 text-left">
+                <div className="text-xs font-black text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+                  <span>Choose Vehicle</span>
+                  <span className="text-[10px] text-cyan-400 font-bold">{VEHICLES[selectedVehicle].name}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {(Object.keys(VEHICLES) as VehicleType[]).map((vKey) => {
+                    const v = VEHICLES[vKey];
+                    const isUnlocked = unlockedVehicles.includes(vKey);
+                    const isSelected = selectedVehicle === vKey;
+
+                    return (
+                      <button
+                        key={vKey}
+                        onClick={() => {
+                          if (isUnlocked) {
+                            setSelectedVehicle(vKey);
+                            localStorage.setItem('hcr_selected_veh', vKey);
+                          } else {
+                            // Try purchasing vehicle
+                            if (hudStats.totalCoins >= v.cost) {
+                              const newWallet = hudStats.totalCoins - v.cost;
+                              const updatedUnlocked = [...unlockedVehicles, vKey];
+                              setUnlockedVehicles(updatedUnlocked);
+                              setSelectedVehicle(vKey);
+                              setHudStats((s) => ({ ...s, totalCoins: newWallet }));
+                              localStorage.setItem('hcr_wallet_coins', newWallet.toString());
+                              localStorage.setItem('hcr_unlocked_veh', JSON.stringify(updatedUnlocked));
+                              localStorage.setItem('hcr_selected_veh', vKey);
+                              playSfx('upgrade');
+                              toast.success(`Unlocked ${v.name}!`);
+                            } else {
+                              toast.error(`Need ${v.cost} Coins to unlock ${v.name}!`);
+                            }
+                          }
+                        }}
+                        className={`p-2 rounded-2xl flex flex-col items-center justify-center border transition-all ${
+                          isSelected
+                            ? 'bg-cyan-500/20 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] ring-2 ring-cyan-400/50'
+                            : isUnlocked
+                            ? 'bg-slate-800/80 border-white/10 hover:border-white/30 text-slate-300'
+                            : 'bg-slate-900/50 border-white/5 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <span className="text-2xl mb-1">{v.icon}</span>
+                        <span className="text-[10px] font-black truncate w-full text-center text-slate-200">{v.name.split(' ')[0]}</span>
+                        <span className="text-[9px] font-extrabold text-amber-300 mt-0.5">
+                          {isUnlocked ? (isSelected ? 'EQUIPPED' : 'SELECT') : `${v.cost} 🪙`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Vehicle Ability Card */}
+                <div className="mt-2 p-2.5 rounded-xl bg-slate-800/60 border border-white/10 text-[11px] text-cyan-300 flex items-center gap-2">
+                  <Sparkles size={14} className="text-cyan-400 shrink-0" />
+                  <span>{VEHICLES[selectedVehicle].ability}</span>
+                </div>
+              </div>
+
+              {/* 2. SELECT STAGE / MAP (Countryside, Desert Dunes, The Moon, Arctic Ice) */}
+              <div className="w-full mb-4 text-left">
+                <div className="text-xs font-black text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+                  <span>Select Map</span>
+                  <span className="text-[10px] text-emerald-400 font-bold">{STAGES[selectedStage].name}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {(Object.keys(STAGES) as StageType[]).map((sKey) => {
+                    const st = STAGES[sKey];
+                    const isSelected = selectedStage === sKey;
+
+                    return (
+                      <button
+                        key={sKey}
+                        onClick={() => {
+                          setSelectedStage(sKey);
+                          localStorage.setItem('hcr_selected_stage', sKey);
+                        }}
+                        className={`p-2 rounded-2xl flex flex-col items-center justify-center border transition-all ${
+                          isSelected
+                            ? 'bg-emerald-500/20 border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/50'
+                            : 'bg-slate-800/80 border-white/10 hover:border-white/30 text-slate-300'
+                        }`}
+                      >
+                        <span className="text-2xl mb-1">{st.icon}</span>
+                        <span className="text-[10px] font-black truncate w-full text-center text-slate-200">{st.name.split(' ')[0]}</span>
+                        <span className="text-[9px] font-bold text-slate-400 mt-0.5">
+                          {isSelected ? 'ACTIVE' : 'CHOOSE'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Stage Info Card */}
+                <div className="mt-2 p-2 rounded-xl bg-slate-800/60 border border-white/10 text-[11px] text-emerald-300">
+                  {STAGES[selectedStage].desc}
+                </div>
+              </div>
+
+              {/* 3. Vehicle Upgrade Matrix */}
+              <div className="w-full grid grid-cols-2 gap-2.5 mb-5 text-left">
                 {(['engine', 'suspension', 'tires', 'fourWheel'] as Array<keyof Upgrades>).map((part) => {
                   const lvl = upgrades[part];
                   const cost = UPGRADE_COSTS[lvl] || 0;
@@ -1502,14 +2004,14 @@ export function HillClimbRacingGame({ onClose }: Props) {
                   };
 
                   return (
-                    <div key={part} className="bg-slate-800/90 border border-white/10 rounded-2xl p-3 flex flex-col justify-between shadow-lg">
+                    <div key={part} className="bg-slate-800/90 border border-white/10 rounded-2xl p-2.5 flex flex-col justify-between shadow-lg">
                       <div>
                         <div className="text-xs font-black text-slate-200">{labels[part]}</div>
-                        <div className="flex gap-1 mt-1.5">
+                        <div className="flex gap-1 mt-1">
                           {[0, 1, 2, 3, 4].map((i) => (
                             <div
                               key={i}
-                              className={`h-2 flex-1 rounded-full ${
+                              className={`h-1.5 flex-1 rounded-full ${
                                 i < lvl ? 'bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]' : 'bg-slate-700'
                               }`}
                             />
@@ -1519,7 +2021,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
                       <button
                         onClick={() => handleBuyUpgrade(part)}
                         disabled={isMax}
-                        className={`mt-3 py-1.5 px-2.5 rounded-xl text-[10px] font-black flex items-center justify-between transition-all ${
+                        className={`mt-2 py-1 px-2 rounded-xl text-[10px] font-black flex items-center justify-between transition-all ${
                           isMax
                             ? 'bg-slate-700/50 text-slate-400 cursor-not-allowed'
                             : 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 active:scale-95 border border-cyan-500/40 cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.2)]'
@@ -1588,5 +2090,6 @@ export function HillClimbRacingGame({ onClose }: Props) {
 
       </div>
     </GameFrame>
+  </div>
   );
 }

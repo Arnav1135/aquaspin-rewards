@@ -21,11 +21,15 @@ import toast from 'react-hot-toast';
 import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
 import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import { RealisticWheel2D } from '@/components/wheel/RealisticWheel2D';
+import { useNavigate } from 'react-router-dom';
+import { DedicatedCloseButton } from '@/components/ui/DedicatedCloseButton';
+import { secureRecordGameResult } from '@/lib/secureEconomy';
 
 const SPIN_COST = 10;
 
 // ── Main UI Component ────────────────────────────────────────────────────────
 export function WheelGame() {
+  const navigate = useNavigate();
   const animationRef = useRef<number>(0);
   const currentAngleRef = useRef(0);
   const isSpinningRef = useRef(false);
@@ -285,6 +289,16 @@ export function WheelGame() {
             spin_type: serverResult.spin_type || 'daily_free',
             created_at: new Date().toISOString()
           });
+          // Synchronize token balance via secure server RPC
+          const { data: updatedTokens } = await secureRecordGameResult({
+            userId: profile.id,
+            betAmount: serverResult.spin_type === 'paid' ? SPIN_COST : 0,
+            earnedAmount: serverResult.reward,
+            xpEarned: Math.max(10, Math.floor(serverResult.reward * 0.1))
+          });
+          if (updatedTokens !== null && updatedTokens !== undefined) {
+            updateProfile({ tokens: updatedTokens });
+          }
         } catch (dbErr) {
           console.warn('[WheelGame] Server spin recording note:', dbErr);
         }
@@ -344,9 +358,15 @@ export function WheelGame() {
   };
 
   return (
-    <GameShell onClose={() => window.history.back()}>
+    <GameShell onClose={() => navigate('/dashboard')}>
       <div className="min-h-screen bg-[#070d18] pt-16 pb-24 px-4 overflow-hidden relative font-sans">
         
+        {/* Dedicated Close Button for Spin Wheel */}
+        <DedicatedCloseButton 
+          onClose={() => navigate('/dashboard')} 
+          label="Exit Wheel"
+        />
+
         {/* Subtle Ambient Background Gradients */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-gradient-to-b from-cyan-900/15 via-blue-900/5 to-transparent blur-3xl pointer-events-none" />
 

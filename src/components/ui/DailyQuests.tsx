@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Gamepad2, Coins, Trophy, Gift } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useAuthStore } from "@/features/authStore";
-import { supabase } from "@/lib/supabase";
+import { supabase } from '@/lib/supabase';
+import { secureRecordGameResult } from '@/lib/secureEconomy';
 import { audio } from "@/lib/audioEngine";
 import toast from "react-hot-toast";
 
@@ -74,9 +75,11 @@ export function DailyQuests({ totalGamesPlayed, totalEarned, totalWins }: DailyQ
 
     // Secure token insertion
     try {
-      const { data, error } = await (supabase as any).rpc("update_user_tokens", {
-        p_user_id: profile.id,
-        p_amount_change: reward
+      const { data, error } = await secureRecordGameResult({
+        userId: profile.id,
+        betAmount: 0,
+        earnedAmount: reward,
+        xpEarned: Math.floor(reward * 0.1)
       });
       if (!error && data !== undefined) {
         updateProfile({ tokens: data });

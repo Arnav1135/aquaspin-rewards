@@ -12,8 +12,9 @@ interface GameShellProps extends GameLifecycle {
   children: React.ReactNode;
 }
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: React.ReactNode }) {
+interface ErrorBoundaryProps { children: React.ReactNode; onClose?: () => void; }
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, { hasError: boolean }> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
@@ -22,10 +23,20 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   render() {
     if (this.state.hasError) {
       return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-navy-900 text-white p-8">
-          <h2 className="text-2xl font-bold text-red-500 mb-4">Renderer Crashed</h2>
-          <p className="text-white/60 mb-8 text-center max-w-md">The WebGL Context was lost or the game encountered a fatal exception.</p>
-          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-red-500 rounded-xl font-bold">Reload Engine</button>
+        <div className="w-full h-full flex flex-col items-center justify-center bg-navy-950 text-white p-8 select-none">
+          <div className="max-w-md w-full bg-slate-900 border border-red-500/30 rounded-3xl p-6 text-center shadow-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 mx-auto flex items-center justify-center text-3xl mb-4">
+              ??
+            </div>
+            <h2 className="text-xl font-black text-white mb-2">Graphics Renderer Interrupted</h2>
+            <p className="text-xs text-slate-400 mb-6 leading-relaxed">The WebGL graphics pipeline encountered an unexpected exception or device context pause.</p>
+            <div className="flex gap-3">
+              <button onClick={() => this.setState({ hasError: false })} className="flex-1 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-extrabold text-xs uppercase tracking-wider text-white shadow-lg transition-transform active:scale-95">Restart Game</button>
+              {this.props.onClose && (
+                <button onClick={this.props.onClose} className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold text-xs uppercase tracking-wider text-slate-300 transition-colors">Exit to Lobby</button>
+              )}
+            </div>
+          </div>
         </div>
       );
     }
@@ -110,57 +121,69 @@ export const GameShell: React.FC<GameShellProps> = ({ children, onClose }) => {
       */}
       <div 
         style={{
-          position: "absolute",
-          top: "env(safe-area-inset-top, 1rem)",
-          right: "env(safe-area-inset-right, 1rem)",
+          position: "fixed",
+          top: "max(0.75rem, env(safe-area-inset-top, 1rem))",
+          right: "max(0.75rem, env(safe-area-inset-right, 1rem))",
           display: "flex",
+          alignItems: "center",
           gap: "0.5rem",
-          zIndex: 999999 
+          zIndex: 999999,
+          pointerEvents: "auto"
         }}
       >
         <button
+          type="button"
           onClick={() => fullscreenManager.toggleFullscreen()}
           style={{
             padding: "0.5rem",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "rgba(15, 23, 42, 0.8)",
             color: "white",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: "0.5rem",
-            backdropFilter: "blur(4px)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+            borderRadius: "0.75rem",
+            backdropFilter: "blur(12px)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
+            justifyContent: "center",
+            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.4)",
+            transition: "all 0.2s ease"
           }}
           title="Toggle Fullscreen"
+          aria-label="Toggle Fullscreen"
         >
-          {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+          {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
         </button>
 
         <button
+          type="button"
           onClick={handleExit}
           style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "rgba(220, 38, 38, 0.9)",
+            padding: "0.55rem 1.1rem",
+            background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)",
             color: "white",
-            border: "1px solid rgba(255, 255, 255, 0.2)",
-            borderRadius: "0.5rem",
-            fontWeight: "bold",
+            border: "1px solid rgba(254, 202, 202, 0.4)",
+            borderRadius: "0.85rem",
+            fontWeight: 800,
+            fontSize: "0.85rem",
+            letterSpacing: "0.05em",
             cursor: "pointer",
-            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-            backdropFilter: "blur(4px)",
+            boxShadow: "0 6px 20px rgba(220, 38, 38, 0.45)",
+            backdropFilter: "blur(12px)",
             textTransform: "uppercase",
             display: "flex",
             alignItems: "center",
-            gap: "0.5rem"
+            gap: "0.45rem",
+            transition: "all 0.2s ease"
           }}
+          title="Exit Game (ESC)"
+          aria-label="Exit Game"
         >
-          <X size={18} /> Exit
+          <X size={16} strokeWidth={3} /> Exit
         </button>
       </div>
 
       <div style={{ width: "100%", height: "100%", position: "relative", zIndex: 10 }}>
-        <ErrorBoundary>
+        <ErrorBoundary onClose={handleExit}>
           <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-white">Loading Engine...</div>}>
             {children}
           </Suspense>

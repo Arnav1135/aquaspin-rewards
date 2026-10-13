@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Shield, ShieldCheck, RefreshCw, CheckCircle, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
@@ -6,6 +7,13 @@ import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import toast from 'react-hot-toast';
 
 export function ProvablyFairWidget() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isGameActive = (location.pathname.includes('/games/') && location.pathname !== '/games') 
+    || (location.pathname === '/games' && !!searchParams.get('game'))
+    || location.pathname === '/wheel'
+    || location.pathname === '/crash';
+
   const [isOpen, setIsOpen] = useState(false);
   const [verifyResult, setVerifyResult] = useState<string | null>(null);
   
@@ -46,6 +54,8 @@ export function ProvablyFairWidget() {
       Float Outcome: ${floatResult.toFixed(8)}
     `);
   };
+
+  if (isGameActive) return null;
 
   return (
     <div className="fixed bottom-4 left-4 z-50">

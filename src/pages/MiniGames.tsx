@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { DedicatedCloseButton } from "@/components/ui/DedicatedCloseButton";
 import {
   Gamepad2,
   X,
@@ -224,13 +225,25 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 };
 
 export function MiniGames() {
-  const [activeGame, setActiveGame] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const gameFromQuery = searchParams.get("game");
+  const [activeGame, setActiveGame] = useState<string | null>(gameFromQuery);
   const [category, setCategory] = useState<Category>("All");
   const [search, setSearch] = useState("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const isOwner = useAuthStore((s) => s.isOwner);
+
+  // Sync state when URL search params change
+  useEffect(() => {
+    const q = searchParams.get("game");
+    if (q !== activeGame) {
+      setActiveGame(q);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     document.body.style.overflow = activeGame ? "hidden" : "";
     return () => {
@@ -272,6 +285,11 @@ export function MiniGames() {
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     clearGameTimers();
     setActiveGame(null);
+    if (searchParams.get("game")) {
+      searchParams.delete("game");
+      searchParams.delete("matchId");
+      setSearchParams(searchParams, { replace: true });
+    }
   };
   const filtered = GAMES.filter(
     (g) =>
@@ -385,11 +403,16 @@ export function MiniGames() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="min-h-screen pt-20 pb-28 px-4"
+            className="min-h-screen pt-20 pb-28 px-4 relative"
             style={{
               background: "linear-gradient(160deg,#e1eff8 0%,#cfe5f5 100%)",
             }}
           >
+            <DedicatedCloseButton
+              onClose={() => navigate("/dashboard")}
+              label="Close Library"
+              position="top-right"
+            />
             <div className="max-w-6xl mx-auto">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Radio, Play, Pause, FastForward, Volume2, VolumeX, Music2 } from 'lucide-react';
 import { useUIStore } from '@/features/uiStore';
@@ -10,6 +11,14 @@ const STATIONS = [
 ];
 
 export function RadioPlayer() {
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const isGameActive = 
+    (location.pathname.startsWith('/games/') && location.pathname !== '/games') ||
+    (location.pathname === '/games' && Boolean(searchParams.get('game'))) ||
+    location.pathname === '/wheel' ||
+    location.pathname === '/crash';
+
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [stationIdx, setStationIdx] = useState(0);
@@ -17,6 +26,8 @@ export function RadioPlayer() {
   const [isMuted, setIsMuted] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  if (isGameActive) return null;
 
   useEffect(() => {
     if (!audioRef.current) {

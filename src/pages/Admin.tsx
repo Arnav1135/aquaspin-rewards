@@ -14,15 +14,19 @@ export default function Admin() {
 
   useEffect(() => {
     async function loadStats() {
-      // Very basic aggregate pull
+      // Validate session directly with Supabase Auth before querying data
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || session.user.email !== "vermaarnav113@gmail.com") {
+        return;
+      }
+
       const { data, count } = await supabase.from("users").select("*", { count: "exact" }) as { data: any[] | null, count: number | null, error: any };
       if (data) {
         setStats({
           totalUsers: count || data.length,
           totalTokens: data.reduce((acc, row) => acc + (row.tokens || 0), 0),
-          activeUsers: data.filter(d => d.tokens > 100).length // Rough metric
+          activeUsers: data.filter(d => d.tokens > 100).length
         });
-        // Get newest 10 users
         setUserList(data.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, 10));
       }
     }

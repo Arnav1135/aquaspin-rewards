@@ -65,7 +65,7 @@ export function GameFrame({
     >
       {/* ── Top Scrim Bar ── */}
       {showTopScrim && (
-        <div className="z-50 absolute top-0 left-0 right-0 h-[50px] flex items-center justify-between px-4 bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div className="z-50 absolute top-0 left-0 right-0 h-[50px] flex items-center justify-between px-4 bg-white/10 backdrop-blur-md border-b border-white/20" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="text-sm font-extrabold tracking-wide truncate text-white drop-shadow-md">
               {title}

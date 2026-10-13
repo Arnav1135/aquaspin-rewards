@@ -13,7 +13,11 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
-  const isGameActive = location.pathname.includes('/games/') && location.pathname !== '/games';
+  const searchParams = new URLSearchParams(location.search);
+  const isGameActive = (location.pathname.includes('/games/') && location.pathname !== '/games') 
+    || (location.pathname === '/games' && !!searchParams.get('game'))
+    || location.pathname === '/wheel'
+    || location.pathname === '/crash';
 
   if (isGameActive) return null;
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Sparkles, TrendingUp, Trophy } from "lucide-react";
 
@@ -6,6 +7,13 @@ const NAMES = ["Arnav", "Luna", "Zoe", "Kai", "Raj", "Mia", "Leo", "Priya", "Max
 const GAMES = ["Crash", "Plinko", "Mines", "Slots", "Roulette", "Video Poker", "Dragon Tiger", "Blackjack"];
 
 export function LiveWinnersMarquee() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isGameActive = (location.pathname.includes('/games/') && location.pathname !== '/games') 
+    || (location.pathname === '/games' && !!searchParams.get('game'))
+    || location.pathname === '/wheel'
+    || location.pathname === '/crash';
+
   const [wins, setWins] = useState<{ id: number; text: string; amount: number; game: string }[]>([]);
 
   useEffect(() => {
@@ -21,7 +29,7 @@ export function LiveWinnersMarquee() {
     setWins(initialWins);
   }, []);
 
-  if (wins.length === 0) return null;
+  if (isGameActive || wins.length === 0) return null;
 
   return (
     <div className="w-full bg-[#0a0f1d] border-y border-white/5 overflow-hidden flex items-center h-10 fixed top-16 lg:top-auto lg:bottom-0 left-0 right-0 z-40">

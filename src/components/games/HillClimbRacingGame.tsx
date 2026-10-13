@@ -788,7 +788,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
                 vy: -20 - Math.random() * 20,
                 life: 0.5,
                 maxLife: 0.5,
-                color: '#7b481f',
+                color: stageConfig.id === 'moon' ? '#94a3b8' : stageConfig.id === 'desert' ? '#ca8a04' : stageConfig.id === 'arctic' ? '#e0f2fe' : '#7b481f',
                 size: 2 + Math.random() * 3,
               });
             }

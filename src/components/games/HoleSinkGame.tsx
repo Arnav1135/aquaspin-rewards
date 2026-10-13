@@ -1261,7 +1261,8 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
             // Swallow point reached
             if (newY <= -3.2 && prop.pos.y > -3.2) {
               if (prop.eatenBy === 'player') {
-                audio.play('ui', 'chip');
+                const screenPan = Math.max(-1, Math.min(1, prop.pos.x / 40));
+                audio.play3DSpatialChime(600 + Math.min(800, prop.points * 12), 0.35, screenPan, 0.4);
                 setPlayer((p) => ({
                   ...p,
                   score: p.score + prop.points,

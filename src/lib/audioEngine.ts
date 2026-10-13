@@ -181,6 +181,39 @@ export class AudioEngine {
     noise.start(t);
   }
 
+  /**
+   * Spatial 3D Stereo Positional Audio Playback
+   * Uses Web Audio PannerNode to dynamically pan sound effects based on game world coordinates.
+   */
+  public play3DSpatialChime(freq = 1200, decay = 0.5, panX = 0, volume = 0.3) {
+    if (!this.context || !this.buses.sfx) return;
+    this.resume();
+    const t = this.context.currentTime + 0.030;
+
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, t);
+
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + decay);
+
+    // Stereo Panner (-1.0 Left to +1.0 Right)
+    if (typeof StereoPannerNode !== "undefined") {
+      const panner = new StereoPannerNode(this.context, { pan: Math.max(-1, Math.min(1, panX)) });
+      osc.connect(gain);
+      gain.connect(panner);
+      panner.connect(this.buses.sfx);
+    } else {
+      osc.connect(gain);
+      gain.connect(this.buses.sfx);
+    }
+
+    osc.start(t);
+    osc.stop(t + decay);
+  }
+
   // --- Specific Game Sound Definitions ---
   // Using pure synthesis to avoid 404s on missing files, generating hyper-realistic layered tones.
   

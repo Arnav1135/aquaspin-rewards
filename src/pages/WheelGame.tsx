@@ -46,7 +46,7 @@ export function WheelGame() {
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [cooldownSecs, setCooldownSecs] = useState(0);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
-  const [pendingSpinType, setPendingSpinType] = useState<'paid' | 'ad_rewarded'>('paid');
+  const [pendingSpinType, setPendingSpinType] = useState<'paid' | 'ad_rewarded' | 'daily_free'>('daily_free');
   const [floatingReward, setFloatingReward] = useState<{ amount: number; show: boolean }>({ amount: 0, show: false });
   const [hasSpunToday, setHasSpunToday] = useState(false);
   const [isCheckingSpinStatus, setIsCheckingSpinStatus] = useState(true);
@@ -127,7 +127,7 @@ export function WheelGame() {
   }, []);
 
   // ── Execute spin animation + server result ─────────────────────────────────
-  const executeSpin = useCallback(async (spinType: 'paid' | 'ad_rewarded') => {
+  const executeSpin = useCallback(async (spinType: 'paid' | 'ad_rewarded' | 'daily_free') => {
     if (isSpinningRef.current) return;
 
     if (Math.random() < 0.3 && spinType === 'paid') {
@@ -268,7 +268,29 @@ export function WheelGame() {
 
     setFloatingReward({ amount: serverResult.reward, show: true });
     setTimeout(() => setFloatingReward({ amount: 0, show: false }), 2200);
-  }, [soundEnabled, setSpinning, addSpinToHistory, setCooldown, refreshProfile]);
+
+    // Save daily spin claim info on server and locally
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    const localKey = `daily_spin_claimed_${profile?.id || 'guest'}_${todayDateStr}`;
+    localStorage.setItem(localKey, 'true');
+    setHasSpunToday(true);
+
+    if (profile && profile.id !== 'guest' && !profile.id.startsWith('guest')) {
+      (async () => {
+        try {
+          await (supabase.from('spin_history') as any).insert({
+            user_id: profile.id,
+            reward: serverResult.reward,
+            segment: serverResult.segment || 'Daily Spin',
+            spin_type: serverResult.spin_type || 'daily_free',
+            created_at: new Date().toISOString()
+          });
+        } catch (dbErr) {
+          console.warn('[WheelGame] Server spin recording note:', dbErr);
+        }
+      })();
+    }
+  }, [soundEnabled, setSpinning, addSpinToHistory, setCooldown, refreshProfile, profile]);
 
   const fireNormalConfetti = () => {
     confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 }, colors: ['#00F0FF', '#00C8D4', '#E8F4FD', '#FFD700'] });
@@ -290,14 +312,22 @@ export function WheelGame() {
   };
 
   const handleSpinClick = () => {
+    // If the user has already spun the wheel for the day, notify with exact prompt requirement
+    if (hasSpunToday) {
+      toast.error('You have already claimed the reward.');
+      return;
+    }
     if (isCoolingDown()) return toast.error(`Wait ${cooldownSecs}s before spinning again`);
     if (isSpinning) return;
     if (!profile) return toast.error('Please sign in to spin!');
-    if (profile.tokens < SPIN_COST) return toast.error('Not enough tokens! Watch an ad for a free spin.');
-    executeSpin('paid');
+    executeSpin('daily_free');
   };
 
   const handleFreeSpinAd = () => {
+    if (hasSpunToday) {
+      toast.error('You have already claimed the reward.');
+      return;
+    }
     if (isSpinning) return;
     setRewardedAdOpen(true);
     setPendingSpinType('ad_rewarded');
@@ -325,10 +355,10 @@ export function WheelGame() {
           {/* Header */}
           <div className="text-center pt-2">
             <h1 className="font-display text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-amber-300 drop-shadow-md tracking-tight mb-1">
-              Wheel of Fortune
+              Daily Wheel of Fortune
             </h1>
             <p className="text-white/60 text-xs sm:text-sm font-medium">
-              Spin costs <span className="text-amber-400 font-bold">{SPIN_COST} tokens</span> • Win up to <span className="text-yellow-300 font-extrabold">500 Tokens!</span>
+              Daily Free Spin • 1 claim per day • Win up to <span className="text-yellow-300 font-extrabold">500 Tokens!</span>
             </p>
           </div>
 
@@ -348,7 +378,7 @@ export function WheelGame() {
               isSpinning={isSpinning}
               themeName={wheelTheme}
               onCenterClick={handleSpinClick}
-              canSpin={!isCoolingDown()}
+              canSpin={!isSpinning}
             />
 
             {/* Spin Result Announcement Modal */}
@@ -401,10 +431,17 @@ export function WheelGame() {
               fullWidth
               onClick={handleSpinClick}
               loading={isSpinning}
-              disabled={isCoolingDown() || isSpinning}
+              disabled={isSpinning}
               className="py-4 text-base font-black shadow-lg shadow-cyan-500/20"
             >
-              {isCoolingDown() ? (
+              {isSpinning ? (
+                'Spinning...'
+              ) : hasSpunToday ? (
+                <>
+                  <Sparkles size={18} className="text-cyan-400" />
+                  Already Claimed Today
+                </>
+              ) : isCoolingDown() ? (
                 <>
                   <Clock size={18} className="animate-spin" />
                   Wait {cooldownSecs}s
@@ -412,7 +449,7 @@ export function WheelGame() {
               ) : (
                 <>
                   <Coins size={18} />
-                  Spin Now ({SPIN_COST} Tokens)
+                  Daily Spin (Free)
                 </>
               )}
             </Button>
@@ -425,7 +462,7 @@ export function WheelGame() {
               className="py-3 font-bold"
             >
               <Play size={16} />
-              Free Spin (Watch Video Ad)
+              {hasSpunToday ? 'Claimed for Today' : 'Bonus Spin (Watch Video Ad)'}
             </Button>
           </div>
 

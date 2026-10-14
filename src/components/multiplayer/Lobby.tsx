@@ -49,7 +49,7 @@ export function Lobby() {
         <Users className="text-[#66bdf2]" size={32} />
       </div>
       
-      <h2 className="text-2xl font-bold mb-2">Multiplayer Lobby</h2>
+      <div className="flex items-center justify-center gap-2 mb-2"><h2 className="text-2xl font-bold">Multiplayer Lobby</h2><span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span></div>
       <p className="text-white/60 mb-8 max-w-md">
         Queue up to find an opponent. You will be matched with someone near your skill level.
       </p>

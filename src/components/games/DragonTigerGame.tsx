@@ -1,11 +1,13 @@
-// src/components/games/DragonTigerGame.tsx
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, Sparkles } from 'lucide-react';
+import { HelpCircle, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -102,6 +104,7 @@ export function DragonTigerGame({ onClose }: any) {
   const [outcome, setOutcome] = useState<'dragon' | 'tiger' | 'tie' | null>(null);
   const [history, setHistory] = useState<string[]>(['D', 'T', 'D', 'Tie', 'T', 'D']);
   const [payoutResult, setPayoutResult] = useState<number | null>(null);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   const balance = profile?.tokens ?? 0;
   const profileRef = useRef(profile);
@@ -228,8 +231,27 @@ export function DragonTigerGame({ onClose }: any) {
       audio.play('dragontiger', 'card-deal');
       vibrate(50);
 
-      const dCard = getRandomCard();
-      const tCard = getRandomCard();
+      // Provably Fair outcome calculation for Dragon & Tiger cards
+      const pfState = useProvablyFairStore.getState();
+      let serverSeed = pfState.activeServerSeed;
+      if (!serverSeed) {
+        await pfState.rotateServerSeed();
+        serverSeed = useProvablyFairStore.getState().activeServerSeed;
+      }
+      const clientSeed = pfState.clientSeed || 'aquaspin_dragontiger';
+      const nonce1 = pfState.getAndIncrementNonce();
+      const nonce2 = pfState.getAndIncrementNonce();
+
+      const float1 = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce1);
+      const float2 = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce2);
+
+      const dSuit = Math.floor(float1 * 4) % 4;
+      const dVal = Math.floor((float1 * 52) % 13);
+      const dCard: CardData = { suit: SUITS[dSuit], value: dVal + 1, label: LABELS[dVal] };
+
+      const tSuit = Math.floor(float2 * 4) % 4;
+      const tVal = Math.floor((float2 * 52) % 13);
+      const tCard: CardData = { suit: SUITS[tSuit], value: tVal + 1, label: LABELS[tVal] };
 
       // Card draw sequence (Heavy drops)
       setSafeTimeout(() => {
@@ -409,9 +431,19 @@ export function DragonTigerGame({ onClose }: any) {
 
         {/* Floating ancient altar view */}
         <Card className="flex-1 min-w-0 w-full flex flex-col gap-4 relative min-h-[440px] temple-felt rounded-2xl p-5 overflow-hidden">
-          <div className="absolute top-4 right-4 flex items-center gap-1 text-[10px] text-slate-400 font-mono tracking-wider z-10">
-            <HelpCircle size={10} className="text-yellow-500" />
-            <span>ALTAR DECAY: 3.73%</span>
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+            <button
+              onClick={() => setProvablyFairOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+              title="Provably Fair Verification"
+            >
+              <ShieldCheck size={12} className="text-emerald-400" />
+              <span>Provably Fair</span>
+            </button>
+            <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono tracking-wider">
+              <HelpCircle size={10} className="text-yellow-500" />
+              <span>ALTAR DECAY: 3.73%</span>
+            </div>
           </div>
 
           {/* Win history scroll */}
@@ -523,6 +555,11 @@ export function DragonTigerGame({ onClose }: any) {
           </div>
         </Card>
       </div>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+      />
     </ErrorBoundary>
   );
 }

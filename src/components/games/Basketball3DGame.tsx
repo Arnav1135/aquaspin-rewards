@@ -6,6 +6,7 @@ import { Text, RoundedBox } from '@react-three/drei';
 import { RigidBody, RapierRigidBody, CuboidCollider, CylinderCollider, useRevoluteJoint } from '@react-three/rapier';
 import { AquaSpinEngine } from '../../engine/3d';
 import { GameFrame } from './GameFrame';
+import { audio } from '@/lib/audioEngine';
 import { gsap } from 'gsap';
 
 
@@ -28,7 +29,22 @@ const GEO_FLOOR = new THREE.PlaneGeometry(20, 20);
 const MAT_FLOOR = new THREE.MeshStandardMaterial({ color: "#aa6633", metalness: 0.1, roughness: 0.4 });
 
 
-function Hoop() {
+function Hoop({ isScored }: { isScored: boolean }) {
+  const netRef = useRef<THREE.Mesh>(null);
+
+  useFrame((_, delta) => {
+    if (!netRef.current) return;
+    if (isScored) {
+      // Swish ripple effect
+      netRef.current.scale.x = 1.0 + Math.sin(Date.now() * 0.02) * 0.25;
+      netRef.current.scale.z = 1.0 + Math.cos(Date.now() * 0.02) * 0.25;
+      netRef.current.scale.y = 1.0 - Math.abs(Math.sin(Date.now() * 0.02)) * 0.2;
+    } else {
+      // Smoothly return to rest position
+      netRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 8);
+    }
+  });
+
   return (
     <group position={[0, 3.5, -4.5]}>
       {/* Backboard */}
@@ -52,13 +68,25 @@ function Hoop() {
         </mesh>
       </RigidBody>
 
-      {/* Rim (Simplified as a torus but physics is a torus-like collider if needed, we'll use fixed colliders) */}
+      {/* Rim */}
       <RigidBody type="fixed" restitution={0.4} colliders="trimesh">
         <mesh position={[0, 0, 0.7]} rotation={[Math.PI / 2, 0, 0]} castShadow>
           <torusGeometry args={[0.7, 0.05, 16, 32]} />
           <meshStandardMaterial color="#ff4400" metalness={0.5} roughness={0.2} />
         </mesh>
       </RigidBody>
+
+      {/* AAA Swish Net */}
+      <mesh ref={netRef} position={[0, -0.5, 0.7]} castShadow>
+        <cylinderGeometry args={[0.65, 0.45, 1.0, 16, 4, true]} />
+        <meshStandardMaterial 
+          color="#ffffff" 
+          wireframe={true} 
+          roughness={0.7} 
+          metalness={0.1} 
+          side={THREE.DoubleSide} 
+        />
+      </mesh>
     </group>
   );
 }
@@ -134,13 +162,17 @@ export function Basketball3DGame({ onClose }: { onClose: () => void }) {
     if (shooting) return;
     setResult(null);
     setShooting(true);
+    audio.playClick(320, 0.15, 'sine');
   };
 
   const handleResult = useCallback((scored: boolean) => {
     if (scored) {
       setScore(s => s + 1);
       setCameraMode('impact');
+      audio.playChime(1500, 0.6, 0.4);
       setTimeout(() => setCameraMode('default'), 500);
+    } else {
+      audio.playNoiseBurst(0.18, 400);
     }
     setResult(scored ? 'score' : 'miss');
     
@@ -175,7 +207,7 @@ export function Basketball3DGame({ onClose }: { onClose: () => void }) {
           </mesh>
         </RigidBody>
 
-        <Hoop />
+        <Hoop isScored={result === 'score'} />
         
         <Basketball 
           key={`ball-${shotKey}`}
@@ -189,8 +221,11 @@ export function Basketball3DGame({ onClose }: { onClose: () => void }) {
       
       {/* HUD */}
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 w-[min(92%,460px)] rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur-xl">
-        <div className="mb-2 flex justify-between text-xs font-bold text-white/80">
-          <span>SHOT POWER</span>
+        <div className="mb-2 flex justify-between items-center text-xs font-bold text-white/80">
+          <div className="flex items-center gap-2">
+            <span>SHOT POWER</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/30">v2.5 AAA</span>
+          </div>
           <span>{Math.round(power * 100)}%</span>
         </div>
         <input 

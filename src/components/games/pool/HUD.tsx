@@ -30,8 +30,11 @@ export function HUD() {
       <div className="flex justify-between items-center max-w-2xl mx-auto w-full">
         <PlayerBadge player="PLAYER_1" isActive={currentPlayer === 'PLAYER_1'} group={p1Group} />
         
-        <div className="text-white/50 text-xs font-bold uppercase tracking-widest px-4">
-          VS
+        <div className="flex flex-col items-center gap-1">
+          <div className="text-white/50 text-xs font-bold uppercase tracking-widest px-4">
+            VS
+          </div>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">v2.5 AAA</span>
         </div>
 
         <PlayerBadge player="PLAYER_2" isActive={currentPlayer === 'PLAYER_2'} group={p2Group} />

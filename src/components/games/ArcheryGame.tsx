@@ -242,9 +242,15 @@ export function ArcheryGame({ onClose }: Props) {
     
     if (pts > 0) {
       setScore(s => s + pts);
-      if (pts === 10) toast.success('🎯 BULLSEYE! +10');
-      else toast.success(`Hit! +${pts}`);
+      if (pts === 10) {
+        audio.play('archery', 'hit', { bullseye: true });
+        toast.success('🎯 BULLSEYE! +10');
+      } else {
+        audio.play('archery', 'hit', { bullseye: false });
+        toast.success(`Hit! +${pts}`);
+      }
     } else {
+      audio.playNoiseBurst(0.15, 400);
       toast.error('Miss!');
     }
   };
@@ -253,9 +259,14 @@ export function ArcheryGame({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
       {gameState === 'menu' && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
-          <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-emerald-600 mb-8">
-            3D ARCHERY
-          </h1>
+          <div className="flex flex-col items-center mb-8">
+            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-emerald-600 mb-2">
+              3D ARCHERY
+            </h1>
+            <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+              v2.5 AAA
+            </span>
+          </div>
           <Button variant="neon" size="lg" className="px-12 py-6 text-xl" onClick={() => { setGameState('playing'); setScore(0); setShotsLeft(5); setArrows([]); }}>
             ENTER RANGE
           </Button>
@@ -294,7 +305,10 @@ export function ArcheryGame({ onClose }: Props) {
           )}
           
           <div className="absolute top-8 left-8 bg-slate-900/80 p-4 rounded-xl border border-slate-700 pointer-events-none">
-            <p className="text-slate-400 text-xs uppercase font-bold">Score</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-slate-400 text-xs uppercase font-bold">Score</p>
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">v2.5 AAA</span>
+            </div>
             <p className="text-3xl font-black text-white">{score}</p>
           </div>
           

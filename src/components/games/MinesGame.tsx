@@ -8,7 +8,8 @@ import { VFXManager } from '@/engine/aaa/VFXManager';
 import { ParticleManager } from '@/engine/aaa/ParticleManager';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, AlertTriangle, Trophy, HelpCircle } from 'lucide-react';
+import { Shield, AlertTriangle, Trophy, HelpCircle, ShieldCheck } from 'lucide-react';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
@@ -192,6 +193,7 @@ export function MinesGame({ onClose }: MinesGameProps) {
   
   const [vinnitusActive, setVinnitusActive] = useState(false);
   const [screenJolt, setScreenJolt] = useState<{ x: number; y: number } | null>(null);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   // Anti-Cheat: Private encrypted ref to prevent client-side DevTools / DOM state inspection
   const secretMinesRef = useRef<Set<number>>(new Set());
@@ -417,6 +419,14 @@ export function MinesGame({ onClose }: MinesGameProps) {
               <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
                 v2.5 AAA
               </span>
+              <button
+                onClick={() => setProvablyFairOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                title="Provably Fair Verification"
+              >
+                <ShieldCheck size={12} className="text-emerald-400" />
+                <span>Fair</span>
+              </button>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/60 border border-red-500/30">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
@@ -615,6 +625,12 @@ export function MinesGame({ onClose }: MinesGameProps) {
 </Canvas>
         </div>
       </Card>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+        gameName="Mines 3D Core"
+      />
     </div>
   );
 }

@@ -556,7 +556,12 @@ export function LudoGame({ onClose }: Props) {
     <div className="flex flex-col items-center gap-4 p-4 min-h-screen relative select-none" style={{ background: 'linear-gradient(135deg,#0a1224 0%,#20325d 100%)' }}>
       {/* Top HUD */}
       <div className="flex justify-between items-center w-full max-w-4xl px-4 mt-2">
-        <span className="text-white text-xl font-bold tracking-wider">🎲 LUDO KING 3D</span>
+        <div className="flex items-center gap-2">
+          <span className="text-white text-xl font-bold tracking-wider">🎲 LUDO KING 3D</span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+            v2.5 AAA
+          </span>
+        </div>
         <div className="flex gap-2">
           {['classic', 'marble', 'neon'].map((t) => (
             <button

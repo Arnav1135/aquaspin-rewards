@@ -903,6 +903,8 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
   const [lastWin, setLastWin] = useState(0);
   const [playerRank, setPlayerRank] = useState(1);
+  const [combo, setCombo] = useState({ count: 0, mult: 1 });
+  const comboTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const isMountedRef = useRef(true);
   const keysRef = useRef<{ [k: string]: boolean }>({});
@@ -1297,9 +1299,21 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                 // Add proportional camera trauma based on swallowed mass
                 addHoleCameraTrauma(Math.min(0.65, prop.mass * 0.04));
                 audio.play3DSpatialChime(600 + Math.min(800, prop.points * 12), 0.35, screenPan, 0.4);
+
+                // Update combo streak & multiplier
+                setCombo((c) => {
+                  const nextCount = c.count + 1;
+                  const nextMult = nextCount >= 10 ? 3 : nextCount >= 5 ? 2 : 1;
+                  return { count: nextCount, mult: nextMult };
+                });
+                if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+                comboTimerRef.current = setTimeout(() => {
+                  setCombo({ count: 0, mult: 1 });
+                }, 2200);
+
                 setPlayer((p) => ({
                   ...p,
-                  score: p.score + prop.points,
+                  score: p.score + Math.floor(prop.points * (combo.mult || 1)),
                   mass: p.mass + prop.mass * 0.25
                 }));
               } else if (prop.eatenBy) {
@@ -1418,6 +1432,11 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/70 border border-yellow-500/30 backdrop-blur-md">
                 <Zap size={18} className="text-yellow-400" />
                 <span className="text-lg font-black text-yellow-300">{Math.floor(player.score)} PTS</span>
+                {combo.mult > 1 && (
+                  <span className="text-xs bg-rose-500/30 text-rose-300 border border-rose-500/50 font-black px-2 py-0.5 rounded-full animate-bounce">
+                    {combo.mult}x COMBO! ({combo.count})
+                  </span>
+                )}
                 <span className="text-xs bg-yellow-400/20 text-yellow-300 font-bold px-2 py-0.5 rounded-full ml-1">
                   Size: {player.radius.toFixed(1)}m
                 </span>

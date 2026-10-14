@@ -369,9 +369,14 @@ export function SolitaireGame({ onClose }: SolitaireGameProps) {
       <UICard className="w-full lg:w-64 xl:w-72 flex flex-col justify-between p-5 space-y-5 bg-slate-950/80 backdrop-blur-xl border border-emerald-900/50 rounded-2xl shrink-0 z-20 text-white shadow-xl">
         <div className="space-y-6">
           <div className="flex justify-between items-center border-b border-emerald-900/50 pb-4">
-            <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300 uppercase tracking-widest flex items-center gap-2">
-              <span className="text-2xl">♠</span> Solitaire
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300 uppercase tracking-widest flex items-center gap-2">
+                <span className="text-2xl">♠</span> Solitaire
+              </h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                v2.5 AAA
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

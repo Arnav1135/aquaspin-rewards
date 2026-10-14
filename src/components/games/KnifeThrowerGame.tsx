@@ -539,9 +539,14 @@ export function KnifeThrowerGame({ onClose }: Props) {
               <span className="text-red-500 font-bold text-lg leading-none">🍎</span>
               <span className="text-white font-mono font-bold">{disp.apples}</span>
             </div>
-            <span className="text-white/80 font-bold text-sm bg-black/50 px-2 py-0.5 rounded backdrop-blur mt-1">
-              {disp.isBoss ? <span className="text-red-400 animate-pulse">BOSS</span> : `STAGE ${disp.stage}`}
-            </span>
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-white/80 font-bold text-sm bg-black/50 px-2 py-0.5 rounded backdrop-blur">
+                {disp.isBoss ? <span className="text-red-400 animate-pulse">BOSS</span> : `STAGE ${disp.stage}`}
+              </span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                v2.5 AAA
+              </span>
+            </div>
           </div>
         </div>
 

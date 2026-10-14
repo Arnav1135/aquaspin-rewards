@@ -413,7 +413,7 @@ export function FlappyBirdGame({ onClose }: Props) {
 
   return (
     <GameFrame 
-      title="4D Flappy Bird" 
+      title="4D Flappy Bird [v2.5 AAA]" 
       onClose={onClose} 
       score={display.score} 
       level={display.level}

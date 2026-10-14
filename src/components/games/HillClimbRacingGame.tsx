@@ -2068,7 +2068,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
               {/* 1v1 Ghost Multiplayer Switch */}
               <div className="flex items-center justify-between w-full bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-2.5 mb-4">
                 <div className="flex items-center gap-2 text-left">
-                  <span className="text-lg">??</span>
+                  <span className="text-lg">👻</span>
                   <div>
                     <div className="text-xs font-black text-cyan-300">1v1 Ghost Rival Mode</div>
                     <div className="text-[10px] text-slate-400">Race against your high score ghost replay in real time!</div>

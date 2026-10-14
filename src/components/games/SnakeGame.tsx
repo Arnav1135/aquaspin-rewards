@@ -349,9 +349,14 @@ export default function SnakeGame({ onClose }: Props) {
         <button onClick={onClose} className="text-white/40 hover:text-white text-sm font-bold uppercase tracking-widest transition-colors">
           ← Back
         </button>
-        <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-widest uppercase">
-          Neon Snake
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-widest uppercase">
+            Neon Snake
+          </h1>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+            v2.5 AAA
+          </span>
+        </div>
         <button onClick={startGame} className="text-white/40 hover:text-cyan-400 transition-colors">
           <RotateCcw size={20} />
         </button>

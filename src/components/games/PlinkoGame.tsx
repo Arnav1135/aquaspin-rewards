@@ -1,12 +1,13 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, Coins, Play, Square } from 'lucide-react';
+import { X, Coins, Play, Square, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { secureRecordGameResult } from '@/lib/secureEconomy';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { RigidBody, Physics, RapierRigidBody, InstancedRigidBodies, BallCollider, CuboidCollider, interactionGroups } from '@react-three/rapier';
 import { generateOutcome } from './plinko/outcomeEngine';
 import { MockBackend } from '@/lib/api';
@@ -317,6 +318,7 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
   const [clientSeed, setClientSeed] = useState(() => Math.random().toString(36).substring(2));
   const [serverSeedHash, setServerSeedHash] = useState('');
   const [serverSeed, setServerSeed] = useState<string | null>(null);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
   
   // Track settled rounds to ensure idempotency
   const settledRoundsRef = useRef<Set<string>>(new Set());
@@ -616,7 +618,17 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
         <div className="w-full md:w-80 p-6 flex flex-col bg-white border-l border-slate-200 h-[35vh] md:h-full overflow-y-auto">
           
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2"><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-indigo-500/40 bg-indigo-500/10 text-indigo-600">v2.5 AAA</span></div>
+            <div className="flex items-center gap-1.5">
+              <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-indigo-500/40 bg-indigo-500/10 text-indigo-600">v2.5 AAA</span>
+              <button
+                onClick={() => setProvablyFairOpen(true)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold transition-all shadow-sm"
+                title="Provably Fair Verification"
+              >
+                <ShieldCheck size={12} className="text-emerald-600" />
+                <span>Fair</span>
+              </button>
+            </div>
             <div className="flex space-x-1 bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => !autoRunning && setAutobetMode(false)}
@@ -808,6 +820,11 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
         </div>
 
       </Card>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+      />
     </div>
   );
 }

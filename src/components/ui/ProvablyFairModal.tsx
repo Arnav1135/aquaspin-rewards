@@ -9,9 +9,10 @@ import toast from 'react-hot-toast';
 interface ProvablyFairModalProps {
   isOpen: boolean;
   onClose: () => void;
+  gameName?: string;
 }
 
-export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
+export function ProvablyFairModal({ isOpen, onClose, gameName }: ProvablyFairModalProps) {
   const {
     clientSeed,
     serverSeedHash,
@@ -74,7 +75,7 @@ export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
                   <Shield className="text-cyan-400" size={20} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">Provably Fair</h2>
+                  <h2 className="text-xl font-bold text-white">Provably Fair {gameName ? `• ${gameName}` : ''}</h2>
                   <p className="text-xs text-white/50">Cryptographic SHA-256 verification of game rolls</p>
                 </div>
               </div>

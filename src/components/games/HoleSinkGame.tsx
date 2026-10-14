@@ -1543,7 +1543,10 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                   <span className="text-3xl">🕳️</span>
                 </div>
 
-                <h1 className="text-3xl font-black text-white tracking-wider mb-2">HOLE SINK 3D</h1>
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-3xl font-black text-white tracking-wider">HOLE SINK 3D</h1>
+                  <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full">v2.5 WEBGL</span>
+                </div>
                 <p className="text-xs text-slate-400 mb-4 max-w-xs">
                   Devour the expanded metropolis, streetlights, traffic & rival holes. Grow to infinite proportions!
                 </p>

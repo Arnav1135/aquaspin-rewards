@@ -2062,8 +2062,11 @@ export function HillClimbRacingGame({ onClose }: Props) {
               <div className="inline-flex p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-3 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
                 <Gauge size={38} />
               </div>
-              <h2 className="text-2xl font-black text-white tracking-wider">HILL CLIMB RACING</h2>
-              <p className="text-xs text-slate-400 mt-1 mb-4">Official Poki Lite edition: master Newton's physics, balance hills & tune your jeep!</p>
+              <div className="flex items-center gap-2 mb-1">
+                <h2 className="text-2xl font-black text-white tracking-wider">HILL CLIMB RACING</h2>
+                <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full">v2.5 POKI</span>
+              </div>
+              <p className="text-xs text-slate-400 mb-4">Official Poki Lite edition: master Newton's physics, balance hills & tune your jeep!</p>
 
               {/* 1v1 Ghost Multiplayer Switch */}
               <div className="flex items-center justify-between w-full bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-2.5 mb-4">

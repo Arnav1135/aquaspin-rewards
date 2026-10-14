@@ -1,9 +1,12 @@
 import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { Button } from '@/components/ui/Button';
 import { BetControl } from '@/components/ui/BetControl';
 import { vibrate } from '@/lib/utils';
@@ -29,6 +32,7 @@ export function Keno3DGame() {
   const [risk, setRisk] = useState<'classic' | 'high'>('classic');
   const [winAmount, setWinAmount] = useState(0);
   const [multiplier, setMultiplier] = useState(0);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   const toggleNumber = (num: number) => {
     if (gameState !== 'IDLE') return;
@@ -84,14 +88,26 @@ export function Keno3DGame() {
 
     audio.play('keno-3d', 'spin');
 
-    // Generate 10 winning numbers securely
-    const winners: number[] = [];
-    const pool = Array.from({ length: 40 }, (_, i) => i + 1);
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+    // Provably Fair SHA-256 derivation of winning numbers
+    const pfState = useProvablyFairStore.getState();
+    let serverSeed = pfState.activeServerSeed;
+    if (!serverSeed) {
+      await pfState.rotateServerSeed();
+      serverSeed = useProvablyFairStore.getState().activeServerSeed;
     }
-    winners.push(...pool.slice(0, 10));
+    const clientSeed = pfState.clientSeed || 'aquaspin_keno';
+
+    const pool = Array.from({ length: 40 }, (_, i) => i + 1);
+    const winners: number[] = [];
+
+    // Fisher-Yates with provably fair floats for 10 draws
+    for (let draw = 0; draw < 10; draw++) {
+      const nonce = pfState.getAndIncrementNonce();
+      const floatVal = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+      const chosenIdx = Math.floor(floatVal * pool.length);
+      winners.push(pool[chosenIdx]);
+      pool.splice(chosenIdx, 1);
+    }
 
     // Draw one by one
     for (let i = 0; i < 10; i++) {
@@ -185,9 +201,19 @@ export function Keno3DGame() {
             3D Keno
             <HelpCircle size={16} className="text-white/40 cursor-help" />
           </h2>
-          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-400/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]">
-            v2.5 AAA
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-400/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]">
+              v2.5 AAA
+            </span>
+            <button
+              onClick={() => setProvablyFairOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+              title="Provably Fair Verification"
+            >
+              <ShieldCheck size={12} className="text-emerald-400" />
+              <span>Provably Fair</span>
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-2 bg-black/40 p-1 rounded-xl">
@@ -261,6 +287,11 @@ export function Keno3DGame() {
           </Button>
         </div>
       </div>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+      />
     </div>
   );
 }

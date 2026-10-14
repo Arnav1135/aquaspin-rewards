@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/features/authStore';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { Button } from '@/components/ui/Button';
 import { BetControl } from '@/components/ui/BetControl';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
 import { useFrame } from '@react-three/fiber';;
@@ -46,6 +49,7 @@ export function SicBo3DGame() {
   
   const [results, setResults] = useState<[number, number, number]>([1, 1, 1]);
   const [winAmount, setWinAmount] = useState(0);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   const diceRefs = [
     useRef<RapierRigidBody>(null),
@@ -67,6 +71,28 @@ export function SicBo3DGame() {
     setGameState('ROLLING');
     audio.play('sicbo', 'click-spin');
     vibrate(20);
+
+    // Provably Fair SHA-256 derivation for 3 dice
+    const pfState = useProvablyFairStore.getState();
+    let serverSeed = pfState.activeServerSeed;
+    if (!serverSeed) {
+      await pfState.rotateServerSeed();
+      serverSeed = useProvablyFairStore.getState().activeServerSeed;
+    }
+    const clientSeed = pfState.clientSeed || 'aquaspin_sicbo';
+    const n1 = pfState.getAndIncrementNonce();
+    const n2 = pfState.getAndIncrementNonce();
+    const n3 = pfState.getAndIncrementNonce();
+
+    const f1 = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, n1);
+    const f2 = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, n2);
+    const f3 = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, n3);
+
+    const targetFaces: [number, number, number] = [
+      Math.floor(f1 * 6) + 1,
+      Math.floor(f2 * 6) + 1,
+      Math.floor(f3 * 6) + 1,
+    ];
 
     // Toss dice
     diceRefs.forEach((ref) => {
@@ -117,11 +143,18 @@ export function SicBo3DGame() {
       }
     });
 
-    setResults(finalFaces);
+    // Use cryptographically verified target faces derived from Provably Fair SHA-256
+    const provablyFairFaces: [number, number, number] = [
+      targetFaces[0],
+      targetFaces[1],
+      targetFaces[2]
+    ];
+
+    setResults(provablyFairFaces);
 
     // Calculate win
-    const sum = finalFaces[0] + finalFaces[1] + finalFaces[2];
-    const isTriple = finalFaces[0] === finalFaces[1] && finalFaces[1] === finalFaces[2];
+    const sum = provablyFairFaces[0] + provablyFairFaces[1] + provablyFairFaces[2];
+    const isTriple = provablyFairFaces[0] === provablyFairFaces[1] && provablyFairFaces[1] === provablyFairFaces[2];
     
     let won = false;
     let multiplier = 0;
@@ -239,9 +272,19 @@ export function SicBo3DGame() {
             3D Sic Bo
             <HelpCircle size={16} className="text-white/40 cursor-help" />
           </h2>
-          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-            v2.5 AAA
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+              v2.5 AAA
+            </span>
+            <button
+              onClick={() => setProvablyFairOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+              title="Provably Fair Verification"
+            >
+              <ShieldCheck size={12} className="text-emerald-400" />
+              <span>Provably Fair</span>
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -306,6 +349,11 @@ export function SicBo3DGame() {
           </Button>
         </div>
       </div>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+      />
     </div>
   );
 }

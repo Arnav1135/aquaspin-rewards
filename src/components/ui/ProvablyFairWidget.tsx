@@ -58,7 +58,7 @@ export function ProvablyFairWidget() {
   if (isGameActive) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50">
+    <div className="fixed bottom-20 lg:bottom-4 left-4 z-50">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-emerald-500/30 text-emerald-400 rounded-full text-sm font-bold shadow-lg hover:bg-slate-800 transition-colors"
@@ -77,6 +77,7 @@ export function ProvablyFairWidget() {
             <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
               <div className="flex items-center gap-2 text-emerald-400 font-bold">
                 <Shield size={18} /> Provably Fair
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">v2.5 AAA</span>
               </div>
               <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>

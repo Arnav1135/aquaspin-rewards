@@ -1931,7 +1931,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
       )}
 
       <GameFrame
-        title="Hill Climb Racing Lite"
+        title="Hill Climb Racing Lite [v2.5 AAA]"
         onClose={onClose}
         soundEnabled={soundEnabled}
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
@@ -2064,7 +2064,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
               </div>
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-2xl font-black text-white tracking-wider">HILL CLIMB RACING</h2>
-                <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full">v2.5 POKI</span>
+                <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full">v2.5 AAA</span>
               </div>
               <p className="text-xs text-slate-400 mb-4">Official Poki Lite edition: master Newton's physics, balance hills & tune your jeep!</p>
 

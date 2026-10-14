@@ -1054,7 +1054,6 @@ export function CrashGame({ onClose }: CrashGameProps) {
       <ProvablyFairModal
         isOpen={provablyFairOpen}
         onClose={() => setProvablyFairOpen(false)}
-        gameName="Crash 3D Rocket"
       />
     </div>
   );

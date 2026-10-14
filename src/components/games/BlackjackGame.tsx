@@ -2,11 +2,14 @@ import { useAIGameEngine } from '@/hooks/useAIGameEngine';
 // src/components/games/BlackjackGame.tsx
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -113,11 +116,32 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
   const [dealerHand, setDealerHand] = useState<PlayingCard[]>([]);
   const [resultMessage, setResultMessage] = useState<string>('');
   const [payoutResult, setPayoutResult] = useState<number | null>(null);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
   
   const balance = profile?.tokens ?? 0;
   const profileRef = useRef(profile);
   const balanceRef = useRef(balance);
   const dealerHoleCardRef = useRef<PlayingCard | null>(null);
+
+  const drawCardProvablyFair = async (): Promise<PlayingCard> => {
+    const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const ranks: Rank[] = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+
+    const pfState = useProvablyFairStore.getState();
+    let serverSeed = pfState.activeServerSeed;
+    if (!serverSeed) {
+      await pfState.rotateServerSeed();
+      serverSeed = useProvablyFairStore.getState().activeServerSeed;
+    }
+    const clientSeed = pfState.clientSeed || 'aquaspin_blackjack';
+    const nonce = pfState.getAndIncrementNonce();
+
+    const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+    const cardIdx = Math.floor(outcomeFloat * 52) % 52;
+    const suit = suits[Math.floor(cardIdx / 13)];
+    const rank = ranks[cardIdx % 13];
+    return { suit, rank };
+  };
 
   const updateUserBalance = useCallback(
     withErrorHandling(
@@ -206,15 +230,18 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
 
     audio.play('cards', 'shuffle');
     
-    const dUp = getRandomCard();
-    const dHole = getRandomCard();
+    const dUp = await drawCardProvablyFair();
+    const dHole = await drawCardProvablyFair();
     dealerHoleCardRef.current = dHole;
-    setPlayerHand([getRandomCard(), getRandomCard()]);
+    const p1 = await drawCardProvablyFair();
+    const p2 = await drawCardProvablyFair();
+    setPlayerHand([p1, p2]);
     setDealerHand([dUp, { suit: 'spades', rank: 'A', hidden: true }]);
   };
 
-  const handleHit = () => {
-    const newHand = [...playerHand, getRandomCard()];
+  const handleHit = async () => {
+    const card = await drawCardProvablyFair();
+    const newHand = [...playerHand, card];
     setPlayerHand(newHand);
     audio.play('cards', 'deal');
     
@@ -243,7 +270,8 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
     setBetAmount(betAmount * 2);
     updateProfile({ tokens: balanceRef.current });
     
-    const newHand = [...playerHand, getRandomCard()];
+    const card = await drawCardProvablyFair();
+    const newHand = [...playerHand, card];
     setPlayerHand(newHand);
     audio.play('cards', 'deal');
     
@@ -254,17 +282,18 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
     }
   };
 
-  const handleStand = (customPlayerHand?: PlayingCard[]) => {
+  const handleStand = async (customPlayerHand?: PlayingCard[]) => {
     const finalPlayerHand = customPlayerHand || playerHand;
     setGameState('dealerTurn');
-    const revealedHole = dealerHoleCardRef.current || getRandomCard();
+    const revealedHole = dealerHoleCardRef.current || await drawCardProvablyFair();
     let currentDealerHand = [dealerHand[0], { ...revealedHole, hidden: false }];
     setDealerHand(currentDealerHand);
     
-    const playDealer = () => {
+    const playDealer = async () => {
       const dealerVal = calculateHandValue(currentDealerHand);
       if (dealerVal < 17) {
-        currentDealerHand = [...currentDealerHand, getRandomCard()];
+        const dealerCard = await drawCardProvablyFair();
+        currentDealerHand = [...currentDealerHand, dealerCard];
         setDealerHand(currentDealerHand);
         audio.play('cards', 'deal');
         setSafeTimeout(playDealer, 1000);
@@ -332,7 +361,20 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
       <div className="flex flex-col-reverse lg:flex-row gap-6 p-4 max-w-5xl mx-auto w-full min-h-[calc(100dvh-120px)] items-stretch border border-cyan-400/40 shadow-[0_0_15px_rgba(34,211,238,0.15)] rounded-2xl" style={{ background: 'linear-gradient(135deg, #0e0b2e 0%, #12082a 50%, #0a1040 100%)' }}>
         <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shrink-0 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-white/10"><span className="font-black text-cyan-300 tracking-wider text-sm uppercase">Blackjack VIP</span><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-cyan-400/40 bg-cyan-400/10 text-cyan-300">v2.5 AAA</span></div>
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <span className="font-black text-cyan-300 tracking-wider text-sm uppercase">Blackjack VIP</span>
+              <div className="flex items-center gap-1.5">
+                <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-cyan-400/40 bg-cyan-400/10 text-cyan-300">v2.5 AAA</span>
+                <button
+                  onClick={() => setProvablyFairOpen(true)}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                  title="Provably Fair Verification"
+                >
+                  <ShieldCheck size={12} className="text-emerald-400" />
+                  <span>Fair</span>
+                </button>
+              </div>
+            </div>
             <BetControl betAmount={betAmount} setBetAmount={setBetAmount} disabled={gameState !== 'idle' && gameState !== 'gameOver'} />
           </div>
           <div className="space-y-2">
@@ -395,6 +437,11 @@ export function BlackjackGame({ onClose }: BlackjackGameProps) {
           </div>
         </Card>
       </div>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+      />
     </ErrorBoundary>
   );
 }

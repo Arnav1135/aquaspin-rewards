@@ -307,9 +307,14 @@ export function LimboGame({ onClose }: any) {
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl shrink-0 z-20 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-400 to-orange-300 tracking-widest uppercase">
-              Star Core
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-400 to-orange-300 tracking-widest uppercase">
+                Star Core
+              </h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-400/30 shadow-[0_0_10px_rgba(168,85,247,0.2)]">
+                v2.5 AAA
+              </span>
+            </div>
             <Sparkles size={16} className="text-purple-400 animate-pulse" />
           </div>
 

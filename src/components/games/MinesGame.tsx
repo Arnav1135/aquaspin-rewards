@@ -410,9 +410,14 @@ export function MinesGame({ onClose }: MinesGameProps) {
       <Card className="w-full lg:w-96 flex flex-col justify-between p-6 space-y-6 bg-slate-900/90 border-2 border-cyan-500/20 rounded-3xl shrink-0 backdrop-blur-md z-20">
         <div className="space-y-4">
           <motion.div className="flex justify-between items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-200 uppercase tracking-wider">
-              MINES 3D
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-200 uppercase tracking-wider">
+                MINES 3D
+              </h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+                v2.5 AAA
+              </span>
+            </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/60 border border-red-500/30">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
               <span className="font-mono text-xs font-bold text-red-500 tracking-widest shadow-red-500/50">

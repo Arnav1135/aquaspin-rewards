@@ -1,7 +1,8 @@
 // src/components/games/LimboGame.tsx
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertCircle, Sparkles, Navigation, Gauge } from 'lucide-react';
+import { AlertCircle, Sparkles, Navigation, Gauge, ShieldCheck } from 'lucide-react';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
@@ -39,6 +40,7 @@ export function LimboGame({ onClose }: any) {
     { id: 2, mult: 4.8, hit: false },
     { id: 3, mult: 12.0, hit: true },
   ]);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
@@ -314,6 +316,14 @@ export function LimboGame({ onClose }: any) {
               <span className="px-2 py-0.5 rounded text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-400/30 shadow-[0_0_10px_rgba(168,85,247,0.2)]">
                 v2.5 AAA
               </span>
+              <button
+                onClick={() => setProvablyFairOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                title="Provably Fair Verification"
+              >
+                <ShieldCheck size={12} className="text-emerald-400" />
+                <span>Fair</span>
+              </button>
             </div>
             <Sparkles size={16} className="text-purple-400 animate-pulse" />
           </div>
@@ -444,6 +454,12 @@ export function LimboGame({ onClose }: any) {
           </div>
         </div>
       </motion.div>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+        gameName="Star Core Limbo"
+      />
     </div>
   );
 }

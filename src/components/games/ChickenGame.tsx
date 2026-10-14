@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle, Shield, CloudSun } from 'lucide-react';
+import { HelpCircle, Shield, CloudSun, ShieldCheck } from 'lucide-react';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
@@ -42,6 +45,7 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
   // Custom Visual Themes
   const [activeTheme, setActiveTheme] = useState<HazardTheme>('farm');
   const [chickenPosition, setChickenPosition] = useState<number | null>(null);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   // Anti-Cheat: Private encrypted ref to prevent client-side DevTools / DOM state inspection
   const secretBonesRef = useRef<Set<number>>(new Set());
@@ -97,7 +101,18 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     
     const boneIdx = new Set<number>();
-    while (boneIdx.size < boneCount) boneIdx.add(Math.floor(Math.random() * 25));
+    const pfState = useProvablyFairStore.getState();
+    let serverSeed = pfState.activeServerSeed;
+    if (!serverSeed) {
+      await pfState.rotateServerSeed();
+      serverSeed = useProvablyFairStore.getState().activeServerSeed;
+    }
+    const clientSeed = pfState.clientSeed || 'aquaspin_chicken';
+    while (boneIdx.size < boneCount) {
+      const nonce = pfState.getAndIncrementNonce();
+      const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+      boneIdx.add(Math.floor(outcomeFloat * 25) % 25);
+    }
     
     // Store in private ref so unclicked tiles never expose isBone: true to DOM or React State
     secretBonesRef.current = boneIdx;
@@ -258,7 +273,15 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
       <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2"><h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-yellow-300 to-amber-200 tracking-wider">HIGH WIRE</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-amber-500/40 bg-amber-500/10 text-amber-300">v2.5 AAA</span></div>
+            <div className="flex items-center gap-2"><h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-yellow-300 to-amber-200 tracking-wider">HIGH WIRE</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-amber-500/40 bg-amber-500/10 text-amber-300">v2.5 AAA</span>
+            <button
+              onClick={() => setProvablyFairOpen(true)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+              title="Provably Fair Verification"
+            >
+              <ShieldCheck size={12} className="text-emerald-400" />
+              <span>Fair</span>
+            </button></div>
             <CloudSun size={16} className="text-orange-400 animate-pulse" />
           </div>
 
@@ -448,6 +471,10 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
           </AnimatePresence>
         </div>
       </Card>
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+      />
     </div>
   );
 }

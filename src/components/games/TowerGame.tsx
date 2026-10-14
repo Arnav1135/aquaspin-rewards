@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Sparkles, AlertTriangle, ArrowUp } from 'lucide-react';
+import { Shield, Sparkles, AlertTriangle, ArrowUp, ShieldCheck } from 'lucide-react';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
@@ -26,7 +29,8 @@ export default function TowerGame({ onClose }: TowerGameProps) {
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [betAmount, setBetAmount] = useState(10);
   
-  const [currentRow, setCurrentRow] = useState(0); // 0 is bottom, ROWS - 1 is top
+  const [currentRow, setCurrentRow] = useState(0);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false); // 0 is bottom, ROWS - 1 is top
   
   // Track which columns the user clicked per row
   const [clicks, setClicks] = useState<number[]>([]);
@@ -56,8 +60,20 @@ export default function TowerGame({ onClose }: TowerGameProps) {
       const { error } = await secureUpdateTokens(pr.id, -betAmount);
       if (error) throw error;
       
-      // Generate mines for this round and protect in private ref
-      const newMines = Array.from({ length: ROWS }).map(() => Math.floor(Math.random() * COLS));
+      // Cryptographically generate mines via Provably Fair SHA-256
+      const pfState = useProvablyFairStore.getState();
+      let serverSeed = pfState.activeServerSeed;
+      if (!serverSeed) {
+        await pfState.rotateServerSeed();
+        serverSeed = useProvablyFairStore.getState().activeServerSeed;
+      }
+      const clientSeed = pfState.clientSeed || 'aquaspin_tower';
+      const newMines: number[] = [];
+      for (let r = 0; r < ROWS; r++) {
+        const nonce = pfState.getAndIncrementNonce();
+        const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+        newMines.push(Math.floor(outcomeFloat * COLS) % COLS);
+      }
       secretMinesRef.current = newMines;
       setMineCols([]); // masked from client state
       setClicks([]);
@@ -146,6 +162,14 @@ export default function TowerGame({ onClose }: TowerGameProps) {
           <div className="flex items-center gap-3 mb-2">
             <ArrowUp className="text-emerald-400" size={24} />
             <h2 className="text-2xl font-black">TOWER</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-300">v2.5 AAA</span>
+            <button
+              onClick={() => setProvablyFairOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)] ml-auto"
+              title="Provably Fair Verification"
+            >
+              <ShieldCheck size={12} className="text-emerald-400" />
+              <span>Fair</span>
+            </button>
           </div>
           
           <BetControl
@@ -277,6 +301,10 @@ export default function TowerGame({ onClose }: TowerGameProps) {
           </div>
         </div>
       </div>
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+      />
     </div>
   );
 }

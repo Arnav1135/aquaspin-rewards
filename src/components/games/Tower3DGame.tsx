@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/features/authStore';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { Button } from '@/components/ui/Button';
 import { BetControl } from '@/components/ui/BetControl';
 import { vibrate } from '@/lib/utils';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
+import { ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
 import { useFrame } from '@react-three/fiber';;
@@ -37,16 +41,28 @@ export function Tower3DGame() {
   const [activeRow, setActiveRow] = useState(0);
   const [blocks, setBlocks] = useState<BlockData[]>([]);
   const [winAmount, setWinAmount] = useState(0);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   // Anti-Cheat: Private ref to prevent client inspection of bomb locations
   const secretBombsRef = useRef<Map<number, number>>(new Map());
   const blockRefs = useRef<(RapierRigidBody | null)[]>([]);
 
-  const initTower = () => {
+  const initTower = async () => {
     const newBlocks: BlockData[] = [];
     const secretBombs = new Map<number, number>();
+
+    const pfState = useProvablyFairStore.getState();
+    let serverSeed = pfState.activeServerSeed;
+    if (!serverSeed) {
+      await pfState.rotateServerSeed();
+      serverSeed = useProvablyFairStore.getState().activeServerSeed;
+    }
+    const clientSeed = pfState.clientSeed || 'aquaspin_tower';
+
     for (let r = 0; r < TOWER_ROWS; r++) {
-      const bombCol = Math.floor(Math.random() * COLS);
+      const nonce = pfState.getAndIncrementNonce();
+      const outcomeFloat = await ProvablyFair.calculateOutcome(serverSeed, clientSeed, nonce);
+      const bombCol = Math.floor(outcomeFloat * COLS) % COLS;
       secretBombs.set(r, bombCol);
       for (let c = 0; c < COLS; c++) {
         newBlocks.push({
@@ -74,7 +90,7 @@ export function Tower3DGame() {
     if (!success) return toast.error("Transaction failed.");
 
     audio.play('tower', 'click');
-    initTower();
+    await initTower();
   };
 
   const cashout = async () => {
@@ -239,9 +255,19 @@ export function Tower3DGame() {
       <div className="w-full lg:w-96 bg-[#1e293b] p-4 lg:p-6 flex flex-col gap-4 z-10 border-l border-white/5 shadow-2xl relative overflow-y-auto custom-scrollbar h-[50vh] lg:h-full">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-white">3D Towers</h2>
-          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
-            v2.5 AAA
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+              v2.5 AAA
+            </span>
+            <button
+              onClick={() => setProvablyFairOpen(true)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+              title="Provably Fair Verification"
+            >
+              <ShieldCheck size={12} className="text-emerald-400" />
+              <span>Fair</span>
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -282,6 +308,12 @@ export function Tower3DGame() {
           </Button>
         </div>
       </div>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+        gameName="3D Towers"
+      />
     </div>
   );
 }

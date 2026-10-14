@@ -50,9 +50,14 @@ export const HeaderHUD: React.FC<HeaderHUDProps> = ({
             <span className="hidden sm:inline">LVL {levelNumber}</span>
           </button>
           <div className="flex flex-col">
-            <span className="text-xs font-black tracking-wide text-amber-300 uppercase">
-              {levelTitle}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black tracking-wide text-amber-300 uppercase">
+                {levelTitle}
+              </span>
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_8px_rgba(34,211,238,0.2)]">
+                v2.5 AAA
+              </span>
+            </div>
             <span className="text-[10px] text-slate-300 font-medium">
               Goal: {objectiveType === 'jelly' ? `${jellyCount} Jelly Left` : objectiveType === 'ingredients' ? `${ingredientCount} Ingredients` : `${targetScore} PTS`}
             </span>

@@ -219,9 +219,12 @@ export function DailyRewardsModal() {
             <div className="w-16 h-16 bg-gradient-to-tr from-cyan-500/30 to-blue-600/30 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-cyan-400/40 shadow-lg shadow-cyan-500/20">
               <Gift className="text-cyan-400" size={32} />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-wide flex items-center justify-center gap-2">
-              Daily Rewards <Sparkles size={20} className="text-amber-400" />
-            </h2>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-wide flex items-center justify-center gap-2">
+                Daily Rewards <Sparkles size={20} className="text-amber-400" />
+              </h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
             <p className="text-slate-400 text-sm font-medium flex items-center justify-center gap-2 mt-1">
               <Calendar size={15} className="text-cyan-400" /> Current Streak: <span className="text-cyan-300 font-bold">{streak} Days</span>
             </p>

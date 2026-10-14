@@ -374,9 +374,12 @@ export function WheelGame() {
 
           {/* Header */}
           <div className="text-center pt-2">
-            <h1 className="font-display text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-amber-300 drop-shadow-md tracking-tight mb-1">
-              Daily Wheel of Fortune
-            </h1>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <h1 className="font-display text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-amber-300 drop-shadow-md tracking-tight">
+                Daily Wheel of Fortune
+              </h1>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
             <p className="text-white/60 text-xs sm:text-sm font-medium">
               Daily Free Spin • 1 claim per day • Win up to <span className="text-yellow-300 font-extrabold">500 Tokens!</span>
             </p>

@@ -9,6 +9,8 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watersort": "npx tsx src/components/games/water-sort-pro/qa/AutomatedTestLab.ts",
     "type-check": "tsc --noEmit",
     "qa:visual": "npx tsx factory/qa/AIVisualCritic.ts"

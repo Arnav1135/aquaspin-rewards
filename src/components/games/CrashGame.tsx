@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
 import { useAuthStore } from '@/features/authStore';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
@@ -552,6 +553,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
   
   const crashTimeRef = useRef(0);
   const serverSeedRef = useRef<string | null>(null);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   useEffect(() => { autoCashOutRef.current = autoCashOut; }, [autoCashOut]);
   useEffect(() => { cashedOutRef.current = cashedOut; }, [cashedOut]);
@@ -836,7 +838,18 @@ export function CrashGame({ onClose }: CrashGameProps) {
       <Card className="w-full xl:w-96 flex flex-col justify-between p-5 space-y-5 bg-slate-900/95 border border-slate-800 rounded-2xl shrink-0 z-20">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2"><h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 to-yellow-300 uppercase tracking-widest">MISSION CONTROL 3D</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-orange-500/40 bg-orange-500/10 text-orange-400">v2.5 AAA</span></div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 to-yellow-300 uppercase tracking-widest">MISSION CONTROL 3D</h2>
+              <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-orange-500/40 bg-orange-500/10 text-orange-400">v2.5 AAA</span>
+              <button
+                onClick={() => setProvablyFairOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                title="Provably Fair Verification"
+              >
+                <ShieldCheck size={12} className="text-emerald-400" />
+                <span>Fair</span>
+              </button>
+            </div>
             <ShieldAlert size={16} className="text-red-500 animate-pulse" />
           </div>
 
@@ -1037,6 +1050,12 @@ export function CrashGame({ onClose }: CrashGameProps) {
           </AnimatePresence>
         </div>
       </Card>
+
+      <ProvablyFairModal
+        isOpen={provablyFairOpen}
+        onClose={() => setProvablyFairOpen(false)}
+        gameName="Crash 3D Rocket"
+      />
     </div>
   );
 }

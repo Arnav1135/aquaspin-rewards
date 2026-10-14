@@ -458,9 +458,14 @@ export function CoinFlipGame({ onClose }: any) {
         </Card>
 
         <Card className="flex-1 min-w-0 w-full flex flex-col gap-4 relative min-h-[440px] bg-slate-950/40 backdrop-blur-2xl border border-slate-700/50 rounded-2xl p-5 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-          <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted">
-            <HelpCircle size={10} />
-            <span>1% edge</span>
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+              v2.5 AAA
+            </span>
+            <div className="flex items-center gap-1 text-2xs text-muted">
+              <HelpCircle size={10} />
+              <span>1% edge</span>
+            </div>
           </div>
 
           {/* History board */}

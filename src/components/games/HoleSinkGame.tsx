@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Text, Sparkles } from '@react-three/drei';
+import { Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/features/authStore';
@@ -12,15 +12,15 @@ import { DedicatedCloseButton } from '@/components/ui/DedicatedCloseButton';
 import { audio } from '@/lib/audioEngine';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import toast from 'react-hot-toast';
-import { Trophy, Timer, Zap, Play, RotateCcw, Shield, Crown } from 'lucide-react';
+import { Trophy, Timer, Zap, Play, RotateCcw, Shield, Crown, HelpCircle } from 'lucide-react';
 
 // ==========================================
 // CONSTANTS & GAME DEFINITIONS
 // ==========================================
 
-const ARENA_RADIUS = 260; // Huge endless metropolis
+const ARENA_RADIUS = 160; // Vibrant metropolis arena
 const ROUND_TIME = 90; // 90 seconds for Battle Royale
-const BASE_RADIUS = 1.3;
+const BASE_RADIUS = 1.35; // Initial starting hole radius
 
 type GameMode = 'BATTLE_ROYALE' | 'ENDLESS';
 type GameState = 'BETTING' | 'PLAYING' | 'GAME_OVER';
@@ -36,12 +36,9 @@ interface PropItem {
     | 'truck'
     | 'building'
     | 'streetlight'
-    | 'parkinglot'
     | 'hotdog'
-    | 'ferris'
     | 'fountain'
     | 'bus'
-    | 'helipad'
     | 'billboard';
   pos: THREE.Vector3;
   rot: number;
@@ -72,218 +69,176 @@ interface HoleEntity {
 }
 
 const AI_BOTS: { name: string; color: string; rimColor: string }[] = [
-  { name: 'TitanVoid', color: '#ff2d55', rimColor: '#ff0033' },
-  { name: 'EmeraldSink', color: '#00e676', rimColor: '#00ff88' },
-  { name: 'AbyssReaper', color: '#b388ff', rimColor: '#7c4dff' },
-  { name: 'SolarVortex', color: '#ff9100', rimColor: '#ff6d00' },
-  { name: 'NebulaCrush', color: '#00e5ff', rimColor: '#00b0ff' },
-  { name: 'PhantomMaw', color: '#d500f9', rimColor: '#aa00ff' },
-  { name: 'CosmicDrain', color: '#ffd600', rimColor: '#ffab00' },
-  { name: 'QuantumGulp', color: '#ff1744', rimColor: '#d50000' }
+  { name: 'ApexVortex', color: '#000000', rimColor: '#ef4444' },
+  { name: 'CyberGulp', color: '#000000', rimColor: '#06b6d4' },
+  { name: 'AbyssReaper', color: '#000000', rimColor: '#a855f7' },
+  { name: 'SolarFlare', color: '#000000', rimColor: '#f97316' },
+  { name: 'NeonPulse', color: '#000000', rimColor: '#10b981' },
+  { name: 'PhantomMaw', color: '#000000', rimColor: '#ec4899' },
+  { name: 'TitanDrain', color: '#000000', rimColor: '#eab308' },
+  { name: 'QuantumZero', color: '#000000', rimColor: '#3b82f6' }
 ];
 
-// Generate city props covering the endless 260m arena with extensive variety of urban props
+// Generate dense, colorful city props distributed from near center out to perimeter
 function createCityProps(): PropItem[] {
   const list: PropItem[] = [];
   let id = 1;
 
-  // 1. Streetlights on sidewalks along multiple concentric city avenues (250 streetlights)
-  for (let i = 0; i < 250; i++) {
-    const angle = (i / 250) * Math.PI * 2;
-    const dist = 14 + (i % 8) * 30;
-    list.push({
-      id: id++,
-      type: 'streetlight',
-      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
-      rot: angle + Math.PI / 2,
-      radius: 0.5,
-      height: 4.8,
-      mass: 8,
-      points: 15,
-      color: '#e2e8f0',
-      isFalling: false,
-      fallSpeed: 0
-    });
-  }
-
-  // 2. Parking Plazas with marked spaces & cars (50 parking plazas)
-  for (let i = 0; i < 50; i++) {
-    const angle = (i / 50) * Math.PI * 2 + 0.15;
-    const dist = 22 + (i % 6) * 38;
-    list.push({
-      id: id++,
-      type: 'parkinglot',
-      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
-      rot: angle,
-      radius: 2.4,
-      height: 0.1,
-      mass: 12,
-      points: 20,
-      color: '#1e293b',
-      isFalling: false,
-      fallSpeed: 0
-    });
-  }
-
-  // 3. Small props (Cones, Hydrants) (300 items)
-  for (let i = 0; i < 300; i++) {
+  // 1. Cones & Hydrants (Small Tier 1: rad 0.3 - 0.45, mass 1 - 2, points 5 - 10)
+  for (let i = 0; i < 280; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 4 + Math.random() * (ARENA_RADIUS - 10);
-    const isCone = Math.random() > 0.45;
+    const dist = 3 + Math.random() * (ARENA_RADIUS - 12);
+    const isCone = i % 2 === 0;
     list.push({
       id: id++,
       type: isCone ? 'cone' : 'hydrant',
       pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
       rot: Math.random() * Math.PI * 2,
-      radius: 0.35,
-      height: 0.7,
-      mass: 1.5,
-      points: 5,
-      color: '#f97316',
+      radius: isCone ? 0.35 : 0.42,
+      height: 0.8,
+      mass: isCone ? 1.2 : 2.0,
+      points: isCone ? 5 : 10,
+      color: isCone ? '#f97316' : '#ef4444',
       isFalling: false,
       fallSpeed: 0
     });
   }
 
-  // 4. Street Hot Dog & Food Carts (45 items)
-  for (let i = 0; i < 45; i++) {
+  // 2. Streetlights on sidewalks (Tier 1: rad 0.5, mass 3, points 15)
+  for (let i = 0; i < 180; i++) {
+    const angle = (i / 180) * Math.PI * 2;
+    const dist = 8 + (i % 6) * 24;
+    list.push({
+      id: id++,
+      type: 'streetlight',
+      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
+      rot: angle + Math.PI / 2,
+      radius: 0.55,
+      height: 4.8,
+      mass: 3.5,
+      points: 15,
+      color: '#64748b',
+      isFalling: false,
+      fallSpeed: 0
+    });
+  }
+
+  // 3. Hot Dog Carts & Food Vendors (Tier 1-2: rad 0.85, mass 6, points 25)
+  for (let i = 0; i < 60; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 10 + Math.random() * (ARENA_RADIUS - 15);
+    const dist = 6 + Math.random() * (ARENA_RADIUS - 18);
     list.push({
       id: id++,
       type: 'hotdog',
       pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
       rot: Math.random() * Math.PI * 2,
-      radius: 0.8,
+      radius: 0.85,
       height: 1.8,
-      mass: 8,
-      points: 20,
+      mass: 6,
+      points: 25,
       color: '#ef4444',
       isFalling: false,
       fallSpeed: 0
     });
   }
 
-  // 5. Medium props (Park Benches, Trees, City Sedans & Sports Cars) (350 props)
-  for (let i = 0; i < 350; i++) {
+  // 4. Benches & Trees (Tier 2: rad 0.75 - 1.1, mass 5 - 12, points 20 - 35)
+  for (let i = 0; i < 260; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 6 + Math.random() * (ARENA_RADIUS - 12);
-    const rand = Math.random();
-    const type: 'bench' | 'tree' | 'car' = rand < 0.3 ? 'bench' : rand < 0.65 ? 'tree' : 'car';
-    const rad = type === 'bench' ? 0.7 : type === 'tree' ? 1.0 : 1.35;
-    const pts = type === 'bench' ? 15 : type === 'tree' ? 25 : 45;
-    const carColors = ['#2563eb', '#dc2626', '#eab308', '#0284c7', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
+    const dist = 5 + Math.random() * (ARENA_RADIUS - 14);
+    const isTree = i % 2 === 0;
     list.push({
       id: id++,
-      type,
+      type: isTree ? 'tree' : 'bench',
       pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
       rot: Math.random() * Math.PI * 2,
-      radius: rad,
-      height: type === 'car' ? 1.2 : 2.2,
-      mass: pts,
-      points: pts,
-      color: type === 'car' ? carColors[i % carColors.length] : '#15803d',
+      radius: isTree ? 1.05 : 0.75,
+      height: isTree ? 2.8 : 0.8,
+      mass: isTree ? 12 : 5,
+      points: isTree ? 35 : 20,
+      color: isTree ? '#16a34a' : '#92400e',
       isFalling: false,
       fallSpeed: 0
     });
   }
 
-  // 6. City Transit Double-Decker & Metro Buses (60 buses)
-  for (let i = 0; i < 60; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 15 + Math.random() * (ARENA_RADIUS - 18);
-    list.push({
-      id: id++,
-      type: 'bus',
-      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
-      rot: Math.random() * Math.PI * 2,
-      radius: 2.2,
-      height: 2.8,
-      mass: 140,
-      points: 120,
-      color: i % 2 === 0 ? '#eab308' : '#3b82f6',
-      isFalling: false,
-      fallSpeed: 0
-    });
-  }
-
-  // 7. City Public Fountains (30 grand fountains)
-  for (let i = 0; i < 30; i++) {
-    const angle = (i / 30) * Math.PI * 2 + 0.3;
-    const dist = 28 + (i % 5) * 45;
-    list.push({
-      id: id++,
-      type: 'fountain',
-      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
-      rot: angle,
-      radius: 2.6,
-      height: 2.2,
-      mass: 160,
-      points: 150,
-      color: '#38bdf8',
-      isFalling: false,
-      fallSpeed: 0
-    });
-  }
-
-  // 8. Commercial Highway Billboards (40 billboards)
-  for (let i = 0; i < 40; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 20 + Math.random() * (ARENA_RADIUS - 20);
-    list.push({
-      id: id++,
-      type: 'billboard',
-      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
-      rot: Math.random() * Math.PI * 2,
-      radius: 2.0,
-      height: 6.5,
-      mass: 80,
-      points: 80,
-      color: '#f43f5e',
-      isFalling: false,
-      fallSpeed: 0
-    });
-  }
-
-  // 9. Large props (Delivery Trucks, Commercial Towers & High-Rises) (200 skyscrapers & trucks)
+  // 5. Sedans & Sports Cars (Tier 2-3: rad 1.35, mass 25, points 60)
+  const carColors = ['#ef4444', '#3b82f6', '#eab308', '#10b981', '#a855f7', '#f97316', '#06b6d4', '#f43f5e'];
   for (let i = 0; i < 200; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 16 + Math.random() * (ARENA_RADIUS - 22);
-    const isTruck = Math.random() > 0.7;
-    const type: 'truck' | 'building' = isTruck ? 'truck' : 'building';
-    const rad = isTruck ? 1.9 : 2.5 + Math.random() * 2.2;
-    const pts = isTruck ? 90 : 250;
-    const bldgColors = ['#1e293b', '#334155', '#1e1b4b', '#0f172a', '#18181b', '#0284c7', '#047857'];
+    const dist = 8 + Math.random() * (ARENA_RADIUS - 16);
     list.push({
       id: id++,
-      type,
+      type: 'car',
       pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
       rot: Math.random() * Math.PI * 2,
-      radius: rad,
-      height: isTruck ? 2.2 : 9 + Math.random() * 16,
-      mass: pts,
-      points: pts,
-      color: isTruck ? '#94a3b8' : bldgColors[i % bldgColors.length],
+      radius: 1.35,
+      height: 1.2,
+      mass: 25,
+      points: 60,
+      color: carColors[i % carColors.length],
       isFalling: false,
       fallSpeed: 0
     });
   }
 
-  // 10. Giant Skyline Landmarks (Ferris Wheels & Rooftop Helipads) (20 iconic landmarks)
-  for (let i = 0; i < 20; i++) {
-    const angle = (i / 20) * Math.PI * 2 + 0.45;
-    const dist = 35 + (i % 4) * 55;
-    const isFerris = i % 2 === 0;
+  // 6. City Buses & Delivery Trucks (Tier 3: rad 1.9 - 2.2, mass 60 - 90, points 120 - 180)
+  for (let i = 0; i < 80; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 12 + Math.random() * (ARENA_RADIUS - 20);
+    const isBus = i % 2 === 0;
     list.push({
       id: id++,
-      type: isFerris ? 'ferris' : 'helipad',
+      type: isBus ? 'bus' : 'truck',
+      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
+      rot: Math.random() * Math.PI * 2,
+      radius: isBus ? 2.2 : 1.9,
+      height: isBus ? 2.6 : 2.2,
+      mass: isBus ? 90 : 60,
+      points: isBus ? 180 : 120,
+      color: isBus ? '#eab308' : '#38bdf8',
+      isFalling: false,
+      fallSpeed: 0
+    });
+  }
+
+  // 7. Public Fountains & Billboards (Tier 3: rad 2.1 - 2.5, mass 80, points 150)
+  for (let i = 0; i < 40; i++) {
+    const angle = (i / 40) * Math.PI * 2 + 0.2;
+    const dist = 15 + (i % 5) * 28;
+    const isFountain = i % 2 === 0;
+    list.push({
+      id: id++,
+      type: isFountain ? 'fountain' : 'billboard',
       pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
       rot: angle,
-      radius: isFerris ? 4.5 : 3.8,
-      height: isFerris ? 10.0 : 1.2,
-      mass: 450,
-      points: 500,
-      color: isFerris ? '#f59e0b' : '#334155',
+      radius: isFountain ? 2.5 : 2.0,
+      height: isFountain ? 2.2 : 6.0,
+      mass: 80,
+      points: 150,
+      color: isFountain ? '#38bdf8' : '#ec4899',
+      isFalling: false,
+      fallSpeed: 0
+    });
+  }
+
+  // 8. Skyscrapers & Commercial Buildings (Tier 4: rad 2.8 - 4.2, mass 180 - 320, points 350 - 600)
+  const bldgColors = ['#1e293b', '#334155', '#1e3a8a', '#065f46', '#4c1d95', '#0f766e', '#701a75'];
+  for (let i = 0; i < 120; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 18 + Math.random() * (ARENA_RADIUS - 22);
+    const rad = 2.8 + Math.random() * 1.5;
+    const pts = Math.floor(rad * 110);
+    list.push({
+      id: id++,
+      type: 'building',
+      pos: new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist),
+      rot: Math.random() * Math.PI * 2,
+      radius: rad,
+      height: 10 + Math.random() * 16,
+      mass: pts,
+      points: pts,
+      color: bldgColors[i % bldgColors.length],
       isFalling: false,
       fallSpeed: 0
     });
@@ -296,219 +251,189 @@ function createCityProps(): PropItem[] {
 // 3D SCENE MESH COMPONENTS
 // ==========================================
 
+// High-contrast, vibrant city ground with procedural streets and sidewalks
 function ArenaFloor({ onPointerMoveGround }: { onPointerMoveGround?: (pt: THREE.Vector3) => void }) {
-  const cityGroundTexture = useMemo(() => {
+  const groundTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d')!;
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
 
-    // 1. Asphalt Roadway Base
-    ctx.fillStyle = '#1e2430';
-    ctx.fillRect(0, 0, 1024, 1024);
+    // Rich dark slate road surface
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 0, 512, 512);
 
-    // Fine asphalt texture grain
-    for (let i = 0; i < 3500; i++) {
-      const rx = Math.random() * 1024;
-      const ry = Math.random() * 1024;
-      ctx.fillStyle = i % 2 === 0 ? '#161a24' : '#283142';
-      ctx.fillRect(rx, ry, 2, 2);
-    }
-
-    // 2. Concrete Sidewalk Curbs
+    // Sidewalk border curbs
     ctx.fillStyle = '#475569';
-    ctx.fillRect(0, 0, 1024, 60);
-    ctx.fillRect(0, 460, 1024, 100);
-    ctx.fillRect(0, 964, 1024, 60);
-    ctx.fillRect(0, 0, 60, 1024);
-    ctx.fillRect(460, 0, 100, 1024);
-    ctx.fillRect(964, 0, 60, 1024);
+    ctx.fillRect(0, 0, 512, 40);
+    ctx.fillRect(0, 472, 512, 40);
+    ctx.fillRect(0, 0, 40, 512);
+    ctx.fillRect(472, 0, 40, 512);
 
-    // 3. Double Yellow Central Dividing Lines
-    ctx.strokeStyle = '#eab308';
+    // Sidewalk inner paving tiles
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(4, 4, 32, 504);
+    ctx.fillRect(476, 4, 32, 504);
+    ctx.fillRect(4, 4, 504, 32);
+    ctx.fillRect(4, 476, 504, 32);
+
+    // Bright yellow centerline
+    ctx.strokeStyle = '#facc15';
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(250, 0); ctx.lineTo(250, 1024);
-    ctx.moveTo(260, 0); ctx.lineTo(260, 1024);
-    ctx.moveTo(760, 0); ctx.lineTo(760, 1024);
-    ctx.moveTo(770, 0); ctx.lineTo(770, 1024);
+    ctx.moveTo(256, 40);
+    ctx.lineTo(256, 472);
     ctx.stroke();
 
-    // Horizontal Yellow Lines
     ctx.beginPath();
-    ctx.moveTo(0, 250); ctx.lineTo(1024, 250);
-    ctx.moveTo(0, 260); ctx.lineTo(1024, 260);
-    ctx.moveTo(0, 760); ctx.lineTo(1024, 760);
-    ctx.moveTo(0, 770); ctx.lineTo(1024, 770);
+    ctx.moveTo(40, 256);
+    ctx.lineTo(472, 256);
     ctx.stroke();
 
-    // 4. White Dashed Lane Markers
+    // White dashed lane markers
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 4;
-    ctx.setLineDash([24, 24]);
+    ctx.setLineDash([16, 16]);
     ctx.beginPath();
-    ctx.moveTo(150, 0); ctx.lineTo(150, 1024);
-    ctx.moveTo(370, 0); ctx.lineTo(370, 1024);
-    ctx.moveTo(650, 0); ctx.lineTo(650, 1024);
-    ctx.moveTo(870, 0); ctx.lineTo(870, 1024);
+    ctx.moveTo(148, 40);
+    ctx.lineTo(148, 472);
+    ctx.moveTo(364, 40);
+    ctx.lineTo(364, 472);
+    ctx.moveTo(40, 148);
+    ctx.lineTo(472, 148);
+    ctx.moveTo(40, 364);
+    ctx.lineTo(472, 364);
     ctx.stroke();
-    ctx.setLineDash([]);
 
-    // 5. White Pedestrian Crosswalks at Intersections
-    ctx.fillStyle = '#f8fafc';
-    for (let c = 0; c < 12; c++) {
-      ctx.fillRect(470, 80 + c * 30, 80, 14);
-      ctx.fillRect(470, 580 + c * 30, 80, 14);
-      ctx.fillRect(80 + c * 30, 470, 14, 80);
-      ctx.fillRect(580 + c * 30, 470, 14, 80);
-    }
-
-    // 6. Demarcated White Parking Lot Bays
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    for (let b = 0; b < 6; b++) {
-      // Top Parking bay
-      ctx.strokeRect(600 + b * 45, 120, 35, 70);
-      // Bottom Parking bay
-      ctx.strokeRect(600 + b * 45, 830, 35, 70);
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(42, 42);
-    return texture;
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(32, 32);
+    return tex;
   }, []);
 
   return (
     <group>
-      {/* Endless City Ground plane with direct Raycast capture */}
+      {/* Ground plane with raycasting */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.01, 0]}
+        position={[0, 0, 0]}
         receiveShadow
         onPointerMove={(e) => {
+          e.stopPropagation();
           if (onPointerMoveGround) {
             onPointerMoveGround(e.point);
           }
         }}
       >
-        <circleGeometry args={[ARENA_RADIUS, 96]} />
-        <meshStandardMaterial map={cityGroundTexture} roughness={0.65} metalness={0.15} />
+        <circleGeometry args={[ARENA_RADIUS, 64]} />
+        {groundTexture ? (
+          <meshStandardMaterial map={groundTexture} roughness={0.6} metalness={0.1} />
+        ) : (
+          <meshStandardMaterial color="#1e293b" roughness={0.6} metalness={0.1} />
+        )}
       </mesh>
 
-      {/* Outer Luxury City Perimeter Barrier with Glowing Amber Guardrails */}
-      <mesh position={[0, 1.0, 0]}>
-        <cylinderGeometry args={[ARENA_RADIUS, ARENA_RADIUS, 2.0, 96, 1, true]} />
-        <meshStandardMaterial color="#0f172a" roughness={0.3} metalness={0.8} />
+      {/* Decorative Arena Boundary Railing */}
+      <mesh position={[0, 1.2, 0]}>
+        <cylinderGeometry args={[ARENA_RADIUS, ARENA_RADIUS, 2.4, 64, 1, true]} />
+        <meshStandardMaterial color="#0f172a" roughness={0.4} metalness={0.8} />
       </mesh>
-      <mesh position={[0, 2.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[ARENA_RADIUS, 0.35, 16, 96]} />
-        <meshStandardMaterial color="#38bdf8" roughness={0.1} metalness={0.9} emissive="#0284c7" emissiveIntensity={0.6} />
+      {/* Glowing Neon Cyan Arena Rim */}
+      <mesh position={[0, 2.45, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[ARENA_RADIUS, 0.4, 12, 64]} />
+        <meshStandardMaterial
+          color="#38bdf8"
+          emissive="#0284c7"
+          emissiveIntensity={1.2}
+          roughness={0.2}
+          metalness={0.8}
+        />
       </mesh>
     </group>
   );
 }
 
-// 3D Hole representation with event horizon and neon rim
+// 3D Hole with glowing neon rim, event horizon vortex, and clear name tags
 function HoleMesh({ entity }: { entity: HoleEntity }) {
-  const innerRef = useRef<THREE.Mesh>(null);
   const accretionRef = useRef<THREE.Mesh>(null);
   const pulseRef = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }, delta) => {
-    if (innerRef.current) {
-      innerRef.current.rotation.z += delta * 3.0;
-    }
     if (accretionRef.current) {
-      accretionRef.current.rotation.z -= delta * 1.8;
+      accretionRef.current.rotation.z -= delta * 2.2;
     }
     if (pulseRef.current) {
-      const pulse = 1.0 + Math.sin(clock.getElapsedTime() * 4.5) * 0.08;
-      pulseRef.current.scale.set(pulse, pulse, 1);
+      const p = 1.0 + Math.sin(clock.getElapsedTime() * 5.0) * 0.08;
+      pulseRef.current.scale.set(p, p, 1);
     }
   });
 
   if (entity.respawnTimer > 0) return null;
 
   return (
-    <group position={[entity.pos.x, 0.02, entity.pos.z]}>
-      {/* Glowing Neon Rim */}
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-        <torusGeometry args={[entity.radius, 0.16 + entity.radius * 0.04, 24, 48]} />
+    <group position={[entity.pos.x, 0.03, entity.pos.z]}>
+      {/* Glowing Neon Torus Rim */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+        <torusGeometry args={[entity.radius, 0.16 + entity.radius * 0.035, 16, 40]} />
         <meshStandardMaterial
           color={entity.rimColor}
           emissive={entity.rimColor}
-          emissiveIntensity={2.0}
-          roughness={0.1}
-          metalness={0.9}
+          emissiveIntensity={2.5}
+          roughness={0.15}
+          metalness={0.85}
         />
       </mesh>
 
-      {/* Dark Vortex Event Horizon */}
-      <mesh ref={innerRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+      {/* Deep Black Hole Void (Sits cleanly on ground plane) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <circleGeometry args={[entity.radius * 0.96, 32]} />
         <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* OPTION B: AAA Screen-Space Suction Funnel & Swirling Gravitational Distortion */}
-      <mesh position={[0, -1.8, 0]}>
-        <cylinderGeometry args={[entity.radius * 0.98, entity.radius * 0.08, 3.6, 36, 6, true]} />
-        <meshStandardMaterial
-          color="#020617"
-          roughness={0.1}
-          metalness={0.9}
-          side={THREE.DoubleSide}
-          wireframe={false}
-        />
-      </mesh>
-      {/* Dynamic Gravitational Accretion Disk (Inward Swirl) */}
-      <mesh ref={accretionRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.25, 0]}>
-        <ringGeometry args={[entity.radius * 0.35, entity.radius * 1.45, 36]} />
+      {/* Swirling Neon Accretion Disk */}
+      <mesh ref={accretionRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.025, 0]}>
+        <ringGeometry args={[entity.radius * 0.65, entity.radius * 0.94, 32]} />
         <meshBasicMaterial
           color={entity.rimColor}
           transparent
-          opacity={0.38}
+          opacity={0.55}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Event Horizon Suction Shockwave Ring */}
-      <mesh ref={pulseRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-        <ringGeometry args={[entity.radius * 0.88, entity.radius * 1.05, 32]} />
-        <meshBasicMaterial
-          color="#ffffff"
-          transparent
-          opacity={0.25}
-          side={THREE.DoubleSide}
-        />
+      {/* Inner Suction Ring */}
+      <mesh ref={pulseRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.028, 0]}>
+        <ringGeometry args={[entity.radius * 0.25, entity.radius * 0.5, 24]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.3} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Floating Name & Score Label */}
+      {/* Name & Score Text Badge */}
       <Text
-        position={[0, 2.4 + entity.radius * 0.35, 0]}
-        fontSize={Math.max(0.65, entity.radius * 0.35)}
-        color={entity.isAI ? '#cbd5e1' : '#facc15'}
+        position={[0, 2.0 + entity.radius * 0.35, 0]}
+        fontSize={Math.max(0.7, entity.radius * 0.36)}
+        color={entity.isAI ? '#f1f5f9' : '#facc15'}
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.06}
+        outlineWidth={0.08}
         outlineColor="#000000"
       >
         {entity.name} ({Math.floor(entity.score)})
       </Text>
 
-      {/* Invulnerability Shield Bubble */}
+      {/* Invulnerability Shield */}
       {entity.invulnerable > 0 && (
-        <mesh position={[0, 1.0, 0]}>
-          <sphereGeometry args={[entity.radius * 1.3, 24, 24]} />
-          <meshStandardMaterial color="#38bdf8" transparent opacity={0.35} roughness={0.1} metalness={0.9} />
+        <mesh position={[0, 0.8, 0]}>
+          <sphereGeometry args={[entity.radius * 1.25, 20, 20]} />
+          <meshStandardMaterial color="#38bdf8" transparent opacity={0.3} roughness={0.1} metalness={0.9} />
         </mesh>
       )}
     </group>
   );
 }
 
-// 3D City Props
+// 3D City Props with vibrant, high-contrast, fully lit low-poly shapes
 function PropMesh({ prop }: { prop: PropItem }) {
   if (prop.pos.y < -4.0) return null;
 
@@ -517,25 +442,25 @@ function PropMesh({ prop }: { prop: PropItem }) {
       case 'cone':
         return (
           <group position={[0, 0.35, 0]}>
-            <mesh>
-              <coneGeometry args={[0.25, 0.7, 16]} />
-              <meshStandardMaterial color="#f97316" roughness={0.4} />
+            <mesh castShadow>
+              <coneGeometry args={[0.3, 0.7, 12]} />
+              <meshStandardMaterial color="#f97316" roughness={0.3} />
             </mesh>
             <mesh position={[0, -0.3, 0]}>
-              <boxGeometry args={[0.45, 0.1, 0.45]} />
-              <meshStandardMaterial color="#111827" />
+              <boxGeometry args={[0.5, 0.1, 0.5]} />
+              <meshStandardMaterial color="#1e293b" />
             </mesh>
           </group>
         );
       case 'hydrant':
         return (
           <group position={[0, 0.45, 0]}>
-            <mesh>
-              <cylinderGeometry args={[0.2, 0.25, 0.8, 16]} />
+            <mesh castShadow>
+              <cylinderGeometry args={[0.22, 0.26, 0.8, 12]} />
               <meshStandardMaterial color="#ef4444" roughness={0.3} metalness={0.4} />
             </mesh>
-            <mesh position={[0, 0.45, 0]}>
-              <sphereGeometry args={[0.2, 16, 16]} />
+            <mesh position={[0, 0.42, 0]}>
+              <sphereGeometry args={[0.22, 12, 12]} />
               <meshStandardMaterial color="#dc2626" />
             </mesh>
           </group>
@@ -543,124 +468,160 @@ function PropMesh({ prop }: { prop: PropItem }) {
       case 'bench':
         return (
           <group position={[0, 0.35, 0]}>
-            <mesh>
-              <boxGeometry args={[1.4, 0.15, 0.6]} />
-              <meshStandardMaterial color="#78350f" roughness={0.6} />
+            <mesh castShadow>
+              <boxGeometry args={[1.5, 0.15, 0.6]} />
+              <meshStandardMaterial color="#92400e" roughness={0.5} />
             </mesh>
             <mesh position={[0, 0.4, -0.25]}>
-              <boxGeometry args={[1.4, 0.6, 0.1]} />
-              <meshStandardMaterial color="#78350f" roughness={0.6} />
+              <boxGeometry args={[1.5, 0.6, 0.1]} />
+              <meshStandardMaterial color="#92400e" roughness={0.5} />
             </mesh>
           </group>
         );
       case 'tree':
         return (
           <group position={[0, 1.4, 0]}>
-            <mesh position={[0, -0.6, 0]}>
-              <cylinderGeometry args={[0.2, 0.3, 1.4, 8]} />
-              <meshStandardMaterial color="#451a03" roughness={0.9} />
+            <mesh position={[0, -0.6, 0]} castShadow>
+              <cylinderGeometry args={[0.25, 0.35, 1.4, 8]} />
+              <meshStandardMaterial color="#582f0e" roughness={0.8} />
             </mesh>
-            <mesh position={[0, 0.5, 0]}>
-              <coneGeometry args={[1.2, 2.2, 8]} />
-              <meshStandardMaterial color="#15803d" roughness={0.8} />
+            <mesh position={[0, 0.6, 0]} castShadow>
+              <coneGeometry args={[1.3, 2.4, 8]} />
+              <meshStandardMaterial color="#16a34a" roughness={0.7} />
             </mesh>
           </group>
         );
       case 'car':
         return (
           <group position={[0, 0.6, 0]}>
-            <mesh position={[0, 0, 0]}>
-              <boxGeometry args={[1.6, 0.65, 3.2]} />
+            <mesh position={[0, 0, 0]} castShadow>
+              <boxGeometry args={[1.7, 0.7, 3.4]} />
               <meshStandardMaterial color={prop.color} metalness={0.6} roughness={0.3} />
             </mesh>
-            <mesh position={[0, 0.5, -0.2]}>
-              <boxGeometry args={[1.3, 0.5, 1.8]} />
-              <meshStandardMaterial color="#1e293b" roughness={0.1} />
+            <mesh position={[0, 0.55, -0.2]} castShadow>
+              <boxGeometry args={[1.4, 0.5, 1.9]} />
+              <meshStandardMaterial color="#0f172a" roughness={0.1} metalness={0.9} />
+            </mesh>
+            {/* Front Headlights */}
+            <mesh position={[0.55, 0, 1.72]}>
+              <boxGeometry args={[0.3, 0.2, 0.05]} />
+              <meshStandardMaterial color="#fef08a" emissive="#facc15" emissiveIntensity={2.0} />
+            </mesh>
+            <mesh position={[-0.55, 0, 1.72]}>
+              <boxGeometry args={[0.3, 0.2, 0.05]} />
+              <meshStandardMaterial color="#fef08a" emissive="#facc15" emissiveIntensity={2.0} />
             </mesh>
           </group>
         );
       case 'truck':
         return (
           <group position={[0, 1.1, 0]}>
-            <mesh position={[0, -0.2, 0]}>
-              <boxGeometry args={[2.0, 1.4, 4.8]} />
-              <meshStandardMaterial color="#e2e8f0" roughness={0.4} />
+            <mesh position={[0, 0.2, -0.6]} castShadow>
+              <boxGeometry args={[2.1, 1.6, 4.6]} />
+              <meshStandardMaterial color="#f8fafc" roughness={0.3} metalness={0.2} />
             </mesh>
-            <mesh position={[0, 0.1, 1.8]}>
-              <boxGeometry args={[1.9, 1.2, 1.6]} />
+            <mesh position={[0, 0.0, 2.0]} castShadow>
+              <boxGeometry args={[2.0, 1.3, 1.8]} />
               <meshStandardMaterial color={prop.color} metalness={0.5} roughness={0.3} />
+            </mesh>
+          </group>
+        );
+      case 'bus':
+        return (
+          <group position={[0, 1.35, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[2.3, 2.5, 7.6]} />
+              <meshStandardMaterial color={prop.color} metalness={0.4} roughness={0.3} />
+            </mesh>
+            <mesh position={[0, 0.45, 0]}>
+              <boxGeometry args={[2.35, 0.75, 7.1]} />
+              <meshStandardMaterial color="#0284c7" metalness={0.9} roughness={0.1} />
             </mesh>
           </group>
         );
       case 'streetlight':
         return (
-          <group position={[0, 2.25, 0]}>
-            {/* Vertical Steel Mast */}
-            <mesh position={[0, 0, 0]}>
-              <cylinderGeometry args={[0.08, 0.12, 4.5, 12]} />
-              <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.8} />
+          <group position={[0, 2.4, 0]}>
+            <mesh position={[0, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.1, 0.14, 4.8, 8]} />
+              <meshStandardMaterial color="#64748b" metalness={0.7} roughness={0.3} />
             </mesh>
-            {/* Horizontal Lamp Arm */}
-            <mesh position={[0.4, 2.1, 0]} rotation={[0, 0, Math.PI / 12]}>
-              <cylinderGeometry args={[0.06, 0.06, 1.0, 8]} />
-              <meshStandardMaterial color="#475569" metalness={0.8} />
+            <mesh position={[0.4, 2.3, 0]} rotation={[0, 0, Math.PI / 10]}>
+              <cylinderGeometry args={[0.07, 0.07, 1.0, 8]} />
+              <meshStandardMaterial color="#64748b" metalness={0.7} />
             </mesh>
-            {/* Glowing Lamp Head */}
-            <mesh position={[0.8, 2.2, 0]}>
-              <boxGeometry args={[0.35, 0.15, 0.25]} />
-              <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={1.8} roughness={0.1} />
+            <mesh position={[0.8, 2.4, 0]}>
+              <boxGeometry args={[0.4, 0.15, 0.3]} />
+              <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={2.0} />
             </mesh>
-            {/* Downward Streetlight Glow Spot */}
-            <pointLight position={[0.8, 1.9, 0]} intensity={1.5} distance={12} color="#bae6fd" />
           </group>
         );
-      case 'parkinglot':
+      case 'hotdog':
         return (
-          <group position={[0, 0.05, 0]}>
-            {/* Asphalt pad */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[5.2, 3.4]} />
-              <meshStandardMaterial color="#1e293b" roughness={0.8} />
+          <group position={[0, 0.65, 0]}>
+            <mesh castShadow>
+              <boxGeometry args={[1.3, 0.85, 0.9]} />
+              <meshStandardMaterial color="#ef4444" roughness={0.3} />
             </mesh>
-            {/* Yellow Curb Edging */}
-            <mesh position={[0, 0.06, 1.7]}>
-              <boxGeometry args={[5.2, 0.12, 0.2]} />
-              <meshStandardMaterial color="#eab308" roughness={0.4} />
+            <mesh position={[0, 0.48, 0]}>
+              <boxGeometry args={[1.4, 0.1, 1.0]} />
+              <meshStandardMaterial color="#e2e8f0" metalness={0.8} roughness={0.2} />
             </mesh>
-            <mesh position={[0, 0.06, -1.7]}>
-              <boxGeometry args={[5.2, 0.12, 0.2]} />
-              <meshStandardMaterial color="#eab308" roughness={0.4} />
+            <mesh position={[0.3, 1.6, 0]}>
+              <coneGeometry args={[0.95, 0.45, 8]} />
+              <meshStandardMaterial color="#facc15" roughness={0.4} />
             </mesh>
-            {/* Static Parked Sedan in Lot */}
-            <group position={[0, 0.5, 0]}>
-              <mesh>
-                <boxGeometry args={[1.5, 0.6, 2.8]} />
-                <meshStandardMaterial color="#0284c7" metalness={0.7} roughness={0.2} />
-              </mesh>
-              <mesh position={[0, 0.45, -0.2]}>
-                <boxGeometry args={[1.3, 0.45, 1.6]} />
-                <meshStandardMaterial color="#0f172a" roughness={0.1} />
-              </mesh>
-            </group>
+          </group>
+        );
+      case 'fountain':
+        return (
+          <group position={[0, 0.5, 0]}>
+            <mesh castShadow>
+              <cylinderGeometry args={[2.5, 2.7, 0.9, 18]} />
+              <meshStandardMaterial color="#94a3b8" roughness={0.4} />
+            </mesh>
+            <mesh position={[0, 0.4, 0]}>
+              <cylinderGeometry args={[2.2, 2.2, 0.15, 18]} />
+              <meshStandardMaterial color="#38bdf8" emissive="#0284c7" emissiveIntensity={0.8} />
+            </mesh>
+            <mesh position={[0, 1.2, 0]}>
+              <sphereGeometry args={[0.5, 12, 12]} />
+              <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={1.5} />
+            </mesh>
+          </group>
+        );
+      case 'billboard':
+        return (
+          <group position={[0, 3.2, 0]}>
+            <mesh position={[0, -1.6, 0]} castShadow>
+              <cylinderGeometry args={[0.2, 0.25, 3.2, 8]} />
+              <meshStandardMaterial color="#475569" metalness={0.8} />
+            </mesh>
+            <mesh position={[0, 0.8, 0]} castShadow>
+              <boxGeometry args={[4.4, 2.2, 0.25]} />
+              <meshStandardMaterial color="#1e293b" />
+            </mesh>
+            <mesh position={[0, 0.8, 0.14]}>
+              <planeGeometry args={[4.2, 2.0]} />
+              <meshStandardMaterial color="#ec4899" emissive="#db2777" emissiveIntensity={1.0} />
+            </mesh>
           </group>
         );
       case 'building':
         return (
           <group position={[0, prop.height / 2, 0]}>
-            {/* Main Skyscraper / Building Tower */}
             <mesh castShadow receiveShadow>
               <boxGeometry args={[prop.radius * 1.8, prop.height, prop.radius * 1.8]} />
-              <meshStandardMaterial color={prop.color} roughness={0.25} metalness={0.8} />
+              <meshStandardMaterial color={prop.color} roughness={0.25} metalness={0.7} />
             </mesh>
-            {/* Architectural Glowing Window Grid Patterns */}
+            {/* Glowing Window Planes */}
             <mesh position={[0, 0, prop.radius * 0.91]}>
               <planeGeometry args={[prop.radius * 1.5, prop.height * 0.85]} />
               <meshStandardMaterial
                 color="#bae6fd"
                 emissive="#38bdf8"
-                emissiveIntensity={0.65}
+                emissiveIntensity={0.8}
                 roughness={0.1}
-                metalness={0.9}
               />
             </mesh>
             <mesh position={[0, 0, -prop.radius * 0.91]} rotation={[0, Math.PI, 0]}>
@@ -668,180 +629,14 @@ function PropMesh({ prop }: { prop: PropItem }) {
               <meshStandardMaterial
                 color="#fef08a"
                 emissive="#eab308"
-                emissiveIntensity={0.5}
+                emissiveIntensity={0.7}
                 roughness={0.1}
-                metalness={0.9}
               />
             </mesh>
-            {/* Rooftop Helipad / AC Mech Unit */}
-            <mesh position={[0, prop.height / 2 + 0.3, 0]}>
-              <boxGeometry args={[prop.radius * 0.9, 0.6, prop.radius * 0.9]} />
-              <meshStandardMaterial color="#334155" metalness={0.7} roughness={0.4} />
-            </mesh>
-            {/* Rooftop Warning Beacon Light */}
-            <mesh position={[0, prop.height / 2 + 0.8, 0]}>
-              <sphereGeometry args={[0.18, 12, 12]} />
-              <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={3.0} />
-            </mesh>
-          </group>
-        );
-      case 'hotdog':
-        return (
-          <group position={[0, 0.6, 0]}>
-            {/* Red & White Food Cart Base */}
-            <mesh>
-              <boxGeometry args={[1.2, 0.8, 0.8]} />
-              <meshStandardMaterial color="#ef4444" roughness={0.3} />
-            </mesh>
-            {/* Stainless Steel Prep Counter */}
-            <mesh position={[0, 0.45, 0]}>
-              <boxGeometry args={[1.3, 0.1, 0.9]} />
-              <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.2} />
-            </mesh>
-            {/* Cart Wheels */}
-            <mesh position={[-0.4, -0.25, 0.42]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.22, 0.22, 0.08, 16]} />
-              <meshStandardMaterial color="#0f172a" />
-            </mesh>
-            <mesh position={[0.4, -0.25, 0.42]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.22, 0.22, 0.08, 16]} />
-              <meshStandardMaterial color="#0f172a" />
-            </mesh>
-            {/* Umbrella Pole & Canopy */}
-            <mesh position={[0.3, 1.0, 0]}>
-              <cylinderGeometry args={[0.03, 0.03, 1.2, 8]} />
-              <meshStandardMaterial color="#94a3b8" metalness={0.8} />
-            </mesh>
-            <mesh position={[0.3, 1.6, 0]}>
-              <coneGeometry args={[0.9, 0.4, 8]} />
-              <meshStandardMaterial color="#facc15" roughness={0.4} />
-            </mesh>
-          </group>
-        );
-      case 'bus':
-        return (
-          <group position={[0, 1.4, 0]}>
-            {/* Bus Body Chassis */}
-            <mesh castShadow>
-              <boxGeometry args={[2.2, 2.4, 7.5]} />
-              <meshStandardMaterial color={prop.color} metalness={0.4} roughness={0.3} />
-            </mesh>
-            {/* Glass Window Strips */}
-            <mesh position={[0, 0.4, 0]}>
-              <boxGeometry args={[2.24, 0.7, 7.0]} />
-              <meshStandardMaterial color="#0284c7" metalness={0.9} roughness={0.1} />
-            </mesh>
-            {/* Front Destination Neon Screen */}
-            <mesh position={[0, 0.95, 3.76]}>
-              <planeGeometry args={[1.8, 0.35]} />
-              <meshStandardMaterial color="#fef08a" emissive="#eab308" emissiveIntensity={1.5} />
-            </mesh>
-            {/* Wheels */}
-            {[-2.2, 2.2].map((wz, wi) => (
-              <group key={wi}>
-                <mesh position={[-1.12, -0.9, wz]} rotation={[0, 0, Math.PI / 2]}>
-                  <cylinderGeometry args={[0.5, 0.5, 0.25, 16]} />
-                  <meshStandardMaterial color="#0f172a" />
-                </mesh>
-                <mesh position={[1.12, -0.9, wz]} rotation={[0, 0, Math.PI / 2]}>
-                  <cylinderGeometry args={[0.5, 0.5, 0.25, 16]} />
-                  <meshStandardMaterial color="#0f172a" />
-                </mesh>
-              </group>
-            ))}
-          </group>
-        );
-      case 'fountain':
-        return (
-          <group position={[0, 0.4, 0]}>
-            {/* Circular Stone Basin */}
-            <mesh>
-              <cylinderGeometry args={[2.6, 2.8, 0.8, 24]} />
-              <meshStandardMaterial color="#cbd5e1" roughness={0.4} />
-            </mesh>
-            {/* Shimmering Aqua Water Pool */}
-            <mesh position={[0, 0.35, 0]}>
-              <cylinderGeometry args={[2.3, 2.3, 0.15, 24]} />
-              <meshStandardMaterial color="#38bdf8" roughness={0.1} metalness={0.8} />
-            </mesh>
-            {/* Tiered Center Spire */}
-            <mesh position={[0, 1.0, 0]}>
-              <cylinderGeometry args={[0.8, 1.1, 1.2, 16]} />
-              <meshStandardMaterial color="#94a3b8" />
-            </mesh>
-            <mesh position={[0, 1.8, 0]}>
-              <sphereGeometry args={[0.4, 16, 16]} />
-              <meshStandardMaterial color="#38bdf8" emissive="#38bdf8" emissiveIntensity={1.2} />
-            </mesh>
-          </group>
-        );
-      case 'billboard':
-        return (
-          <group position={[0, 3.2, 0]}>
-            {/* Steel Column Support */}
-            <mesh position={[0, -1.6, 0]}>
-              <cylinderGeometry args={[0.2, 0.25, 3.2, 12]} />
-              <meshStandardMaterial color="#475569" metalness={0.8} />
-            </mesh>
-            {/* Large Glowing Display Board */}
-            <mesh position={[0, 0.8, 0]}>
-              <boxGeometry args={[4.2, 2.2, 0.25]} />
-              <meshStandardMaterial color="#1e293b" metalness={0.6} />
-            </mesh>
-            <mesh position={[0, 0.8, 0.14]}>
-              <planeGeometry args={[4.0, 2.0]} />
-              <meshStandardMaterial color="#ec4899" emissive="#db2777" emissiveIntensity={0.8} />
-            </mesh>
-          </group>
-        );
-      case 'helipad':
-        return (
-          <group position={[0, 0.1, 0]}>
-            {/* Octagonal landing pad */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <circleGeometry args={[3.6, 8]} />
-              <meshStandardMaterial color="#334155" roughness={0.7} />
-            </mesh>
-            {/* Yellow Border Ring */}
-            <mesh position={[0, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[3.4, 0.15, 12, 32]} />
-              <meshStandardMaterial color="#eab308" emissive="#eab308" emissiveIntensity={0.8} />
-            </mesh>
-            {/* White Helipad 'H' Emblem */}
-            <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[1.6, 1.85, 32]} />
-              <meshStandardMaterial color="#ffffff" />
-            </mesh>
-          </group>
-        );
-      case 'ferris':
-        return (
-          <group position={[0, 5.0, 0]}>
-            {/* Dual A-Frame Ground Supports */}
-            <mesh position={[-2.2, -2.5, 0]} rotation={[0, 0, 0.25]}>
-              <cylinderGeometry args={[0.15, 0.2, 5.5, 8]} />
-              <meshStandardMaterial color="#0284c7" metalness={0.8} />
-            </mesh>
-            <mesh position={[2.2, -2.5, 0]} rotation={[0, 0, -0.25]}>
-              <cylinderGeometry args={[0.15, 0.2, 5.5, 8]} />
-              <meshStandardMaterial color="#0284c7" metalness={0.8} />
-            </mesh>
-            {/* Giant Outer Wheel Ring */}
-            <mesh rotation={[0, 0, 0]}>
-              <torusGeometry args={[4.2, 0.15, 16, 48]} />
-              <meshStandardMaterial color="#f59e0b" emissive="#f59e0b" emissiveIntensity={0.6} />
-            </mesh>
-            {/* Wheel Spokes */}
-            {[0, 1, 2, 3].map((sp) => (
-              <mesh key={sp} rotation={[0, 0, (sp * Math.PI) / 4]}>
-                <cylinderGeometry args={[0.06, 0.06, 8.4, 8]} />
-                <meshStandardMaterial color="#cbd5e1" metalness={0.9} />
-              </mesh>
-            ))}
-            {/* Center Axle Hub */}
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[0.5, 0.5, 0.6, 16]} />
-              <meshStandardMaterial color="#e2e8f0" metalness={0.9} />
+            {/* Rooftop Unit */}
+            <mesh position={[0, prop.height / 2 + 0.35, 0]}>
+              <boxGeometry args={[prop.radius * 0.9, 0.7, prop.radius * 0.9]} />
+              <meshStandardMaterial color="#334155" metalness={0.6} />
             </mesh>
           </group>
         );
@@ -857,35 +652,20 @@ function PropMesh({ prop }: { prop: PropItem }) {
   );
 }
 
-// Global Trauma / Screen Shake State for AAA Impact
-let globalTrauma = 0;
-export function addHoleCameraTrauma(amount: number) {
-  globalTrauma = Math.min(1.0, globalTrauma + amount);
-}
-
-// Camera tracking controller with smooth dynamic altitude zoom & trauma shake
+// Camera tracking controller with smooth dynamic altitude zoom
 function CameraController({ playerHole }: { playerHole: HoleEntity }) {
   const { camera } = useThree();
 
   useFrame((_, delta) => {
     const r = playerHole.radius;
-    const camHeight = 13 + r * 2.2;
-    const camDistance = 15 + r * 2.5;
+    // Camera smoothly pulls back as the hole grows
+    const camHeight = 14 + r * 2.3;
+    const camDistance = 16 + r * 2.6;
 
-    // Decay trauma over time
-    globalTrauma = Math.max(0, globalTrauma - delta * 2.5);
-    const shakeIntensity = globalTrauma * globalTrauma;
-    const shakeOffsetX = (Math.random() - 0.5) * shakeIntensity * 1.8;
-    const shakeOffsetY = (Math.random() - 0.5) * shakeIntensity * 1.2;
+    const targetPos = new THREE.Vector3(playerHole.pos.x, camHeight, playerHole.pos.z + camDistance);
 
-    const targetPos = new THREE.Vector3(
-      playerHole.pos.x + shakeOffsetX,
-      camHeight + shakeOffsetY,
-      playerHole.pos.z + camDistance
-    );
-
-    camera.position.lerp(targetPos, Math.min(1, delta * 4.0));
-    camera.lookAt(playerHole.pos.x, 0.5, playerHole.pos.z);
+    camera.position.lerp(targetPos, Math.min(1, delta * 5.0));
+    camera.lookAt(playerHole.pos.x, 0.4, playerHole.pos.z);
   });
 
   return null;
@@ -904,12 +684,13 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
   const [lastWin, setLastWin] = useState(0);
   const [playerRank, setPlayerRank] = useState(1);
   const [combo, setCombo] = useState({ count: 0, mult: 1 });
+  const [showRules, setShowRules] = useState(false);
   const comboTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const isMountedRef = useRef(true);
   const keysRef = useRef<{ [k: string]: boolean }>({});
   const groundTargetRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
-  const pointerActiveRef = useRef(false);
+  const isPointerDownRef = useRef(false);
 
   // Entities state
   const [player, setPlayer] = useState<HoleEntity>(() => ({
@@ -930,8 +711,8 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
 
   const [aiHoles, setAiHoles] = useState<HoleEntity[]>(() => {
     return AI_BOTS.map((bot, idx) => {
-      const angle = (idx * Math.PI) / 2 + Math.PI / 4;
-      const dist = 18 + idx * 4;
+      const angle = (idx * Math.PI) / 4;
+      const dist = 16 + idx * 4;
       const pos = new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
       return {
         id: `ai-${idx}`,
@@ -980,7 +761,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
   // Match countdown timer (Only active for Battle Royale mode)
   useEffect(() => {
     if (gameState !== 'PLAYING') return;
-    if (gameMode === 'ENDLESS') return; // Endless mode never ends!
+    if (gameMode === 'ENDLESS') return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -1035,8 +816,8 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
 
     // Reset AI Rivals
     const spawnedAI: HoleEntity[] = AI_BOTS.map((bot, idx) => {
-      const angle = (idx * Math.PI) / 2 + Math.PI / 4;
-      const dist = 18 + Math.random() * 8;
+      const angle = (idx * Math.PI) / 4;
+      const dist = 16 + idx * 4;
       const pos = new THREE.Vector3(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
       return {
         id: `ai-${idx}`,
@@ -1057,6 +838,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
 
     setAiHoles(spawnedAI);
     setTimeLeft(ROUND_TIME);
+    isPointerDownRef.current = false;
     setGameState('PLAYING');
   };
 
@@ -1105,25 +887,12 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
     [betAmount, profile, isGuest]
   );
 
-  // Directional tracking from ground pointer or screen drag
+  // Ground raycast tracking: only moves when user is holding mouse or touch
   const handleGroundPointerMove = (groundPoint: THREE.Vector3) => {
     if (gameState !== 'PLAYING') return;
-    groundTargetRef.current.copy(groundPoint);
-    pointerActiveRef.current = true;
-  };
-
-  // Screen-level pointer fallback for touch / mobile drag
-  const handleScreenPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (gameState !== 'PLAYING') return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = e.clientX - cx;
-    const dy = e.clientY - cy;
-
-    // Vector relative to screen center
-    groundTargetRef.current.set(player.pos.x + dx * 0.04, 0, player.pos.z + dy * 0.04);
-    pointerActiveRef.current = true;
+    if (isPointerDownRef.current) {
+      groundTargetRef.current.copy(groundPoint);
+    }
   };
 
   // Continuous 60FPS Game Physics Loop
@@ -1137,7 +906,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
       const delta = Math.min((time - lastTime) / 1000, 0.04);
       lastTime = time;
 
-      // 1. Move Player
+      // 1. Move Player Hole
       setPlayer((prev) => {
         if (prev.respawnTimer > 0) {
           const nextTimer = prev.respawnTimer - delta;
@@ -1146,7 +915,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               ...prev,
               respawnTimer: 0,
               invulnerable: 3.0,
-              pos: new THREE.Vector3((Math.random() - 0.5) * 20, 0, (Math.random() - 0.5) * 20)
+              pos: new THREE.Vector3((Math.random() - 0.5) * 16, 0, (Math.random() - 0.5) * 16)
             };
           }
           return { ...prev, respawnTimer: nextTimer };
@@ -1166,19 +935,18 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
         if (isLeft) moveDir.x -= 1;
         if (isRight) moveDir.x += 1;
 
-        const speed = Math.max(10.0, 16.0 - prev.radius * 0.55);
+        const speed = Math.max(10.0, 16.5 - prev.radius * 0.5);
 
         if (moveDir.lengthSq() > 0) {
-          // Keyboard actively steering: clear pointer active to prevent mouse dragging conflict
-          pointerActiveRef.current = false;
           moveDir.normalize();
           prev.pos.x += moveDir.x * speed * delta;
           prev.pos.z += moveDir.z * speed * delta;
-        } else if (pointerActiveRef.current) {
+        } else if (isPointerDownRef.current) {
+          // Responsive mouse/touch dragging
           const dx = groundTargetRef.current.x - prev.pos.x;
           const dz = groundTargetRef.current.z - prev.pos.z;
           const dist = Math.hypot(dx, dz);
-          if (dist > 0.3) {
+          if (dist > 0.4) {
             prev.pos.x += (dx / dist) * speed * delta;
             prev.pos.z += (dz / dist) * speed * delta;
           }
@@ -1211,21 +979,21 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                 ...ai,
                 respawnTimer: 0,
                 invulnerable: 3.0,
-                pos: new THREE.Vector3(Math.cos(angle) * 25, 0, Math.sin(angle) * 25)
+                pos: new THREE.Vector3(Math.cos(angle) * 22, 0, Math.sin(angle) * 22)
               };
             }
             return { ...ai, respawnTimer: nextT };
           }
 
           const invul = Math.max(0, ai.invulnerable - delta);
-          const speed = Math.max(8.0, 13.0 - ai.radius * 0.5);
+          const speed = Math.max(8.5, 13.5 - ai.radius * 0.45);
 
           // AI target pick
           const dx = ai.targetPos.x - ai.pos.x;
           const dz = ai.targetPos.z - ai.pos.z;
-          if (Math.hypot(dx, dz) < 2.0 || Math.random() < 0.02) {
+          if (Math.hypot(dx, dz) < 2.5 || Math.random() < 0.02) {
             const randomAngle = Math.random() * Math.PI * 2;
-            const randomDist = Math.random() * (ARENA_RADIUS - 10);
+            const randomDist = Math.random() * (ARENA_RADIUS - 12);
             ai.targetPos.set(Math.cos(randomAngle) * randomDist, 0, Math.sin(randomAngle) * randomDist);
           }
 
@@ -1268,21 +1036,21 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               if (h.respawnTimer > 0) continue;
               const dist = Math.hypot(prop.pos.x - h.pos.x, prop.pos.z - h.pos.z);
 
-              // Must fit inside hole opening
-              if (dist < h.radius * 0.95 && prop.radius <= h.radius * 0.9) {
+              // Hole.io Rule: Object must fit within hole radius
+              if (dist < h.radius * 0.95 && prop.radius <= h.radius * 0.92) {
                 changed = true;
                 return {
                   ...prop,
                   isFalling: true,
-                  fallSpeed: 2.0,
+                  fallSpeed: 2.2,
                   eatenBy: h.id
                 };
               }
             }
           } else {
-            // Sucking down into the vortex with gravitational vortex spiral
+            // Sucking down into hole vortex
             changed = true;
-            const newY = prop.pos.y - (prop.fallSpeed + 26.0 * delta) * delta;
+            const newY = prop.pos.y - (prop.fallSpeed + 24.0 * delta) * delta;
             const eater = holes.find((h) => h.id === prop.eatenBy);
 
             let newX = prop.pos.x;
@@ -1292,15 +1060,12 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               newZ += (eater.pos.z - prop.pos.z) * delta * 7.0;
             }
 
-            // Swallow point reached
-            if (newY <= -3.2 && prop.pos.y > -3.2) {
+            // Object fully swallowed point reached
+            if (newY <= -3.0 && prop.pos.y > -3.0) {
               if (prop.eatenBy === 'player') {
-                const screenPan = Math.max(-1, Math.min(1, prop.pos.x / 40));
-                // Add proportional camera trauma based on swallowed mass
-                addHoleCameraTrauma(Math.min(0.65, prop.mass * 0.04));
-                audio.play3DSpatialChime(600 + Math.min(800, prop.points * 12), 0.35, screenPan, 0.4);
+                audio.play('slots', 'win');
 
-                // Update combo streak & multiplier
+                // Combo streak
                 setCombo((c) => {
                   const nextCount = c.count + 1;
                   const nextMult = nextCount >= 10 ? 3 : nextCount >= 5 ? 2 : 1;
@@ -1314,22 +1079,22 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                 setPlayer((p) => ({
                   ...p,
                   score: p.score + Math.floor(prop.points * (combo.mult || 1)),
-                  mass: p.mass + prop.mass * 0.25
+                  mass: p.mass + prop.mass * 0.28
                 }));
               } else if (prop.eatenBy) {
                 const eaterId = prop.eatenBy;
                 setAiHoles((ais) =>
                   ais.map((ai) =>
                     ai.id === eaterId
-                      ? { ...ai, score: ai.score + prop.points, mass: ai.mass + prop.mass * 0.25 }
+                      ? { ...ai, score: ai.score + prop.points, mass: ai.mass + prop.mass * 0.28 }
                       : ai
                   )
                 );
               }
 
-              // Infinite Dynamic City Respawn: Teleport swallowed prop to a new random location in city
+              // Continuous Respawn: Teleport swallowed prop elsewhere in city
               const respawnAngle = Math.random() * Math.PI * 2;
-              const respawnDist = 10 + Math.random() * (ARENA_RADIUS - 15);
+              const respawnDist = 8 + Math.random() * (ARENA_RADIUS - 16);
               return {
                 ...prop,
                 pos: new THREE.Vector3(Math.cos(respawnAngle) * respawnDist, 0, Math.sin(respawnAngle) * respawnDist),
@@ -1353,13 +1118,13 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
         return changed ? updated : prevProps;
       });
 
-      // 4. Hole-on-Hole PvP Swallowing
+      // 4. Hole-on-Hole Swallowing (Rules: Larger hole swallows smaller hole if > 1.15x size)
       if (player.respawnTimer <= 0 && player.invulnerable <= 0) {
         aiHoles.forEach((ai) => {
           if (ai.respawnTimer > 0 || ai.invulnerable > 0) return;
           const dist = Math.hypot(player.pos.x - ai.pos.x, player.pos.z - ai.pos.z);
 
-          // Player swallows AI
+          // Player swallows AI rival
           if (dist < player.radius && player.radius > ai.radius * 1.15) {
             audio.play('ui', 'win');
             toast.success(`Devoured ${ai.name}! (+100 PTS)`);
@@ -1367,13 +1132,13 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               ...p,
               score: p.score + 100,
               kills: p.kills + 1,
-              mass: p.mass + 15
+              mass: p.mass + 18
             }));
             setAiHoles((ais) =>
               ais.map((a) => (a.id === ai.id ? { ...a, respawnTimer: 4.0, mass: Math.max(1, a.mass * 0.7) } : a))
             );
           }
-          // AI swallows Player
+          // AI rival swallows Player
           else if (dist < ai.radius && ai.radius > player.radius * 1.15) {
             audio.play('ui', 'lose');
             toast.error(`Swallowed by ${ai.name}! Respawning...`);
@@ -1383,7 +1148,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               mass: Math.max(1, p.mass * 0.75)
             }));
             setAiHoles((ais) =>
-              ais.map((a) => (a.id === ai.id ? { ...a, score: a.score + 100, kills: a.kills + 1, mass: a.mass + 15 } : a))
+              ais.map((a) => (a.id === ai.id ? { ...a, score: a.score + 100, kills: a.kills + 1, mass: a.mass + 18 } : a))
             );
           }
         });
@@ -1403,25 +1168,48 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
 
   return (
     <ErrorBoundary name="HoleSink3D">
-      <div className="relative w-full h-[100dvh] min-h-[100dvh] bg-[#05070d] flex flex-col font-sans overflow-hidden select-none"
-        onPointerMove={handleScreenPointerMove}
+      <div
+        className="relative w-full h-[100dvh] min-h-[100dvh] bg-[#020617] flex flex-col font-sans overflow-hidden select-none"
+        onPointerDown={() => {
+          isPointerDownRef.current = true;
+        }}
+        onPointerUp={() => {
+          isPointerDownRef.current = false;
+        }}
+        onPointerLeave={() => {
+          isPointerDownRef.current = false;
+        }}
       >
         {/* Top Navigation Bar */}
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-auto" style={{ paddingTop: 'env(safe-area-inset-top, 1rem)' }}>
+        <div
+          className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-auto"
+          style={{ paddingTop: 'env(safe-area-inset-top, 1rem)' }}
+        >
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/10 rounded-xl px-4 py-2 text-xs font-bold tracking-wider">
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="text-white hover:bg-white/10 rounded-xl px-4 py-2 text-xs font-bold tracking-wider"
+            >
               EXIT
             </Button>
-            <div className="px-4 py-1.5 rounded-xl bg-black/60 border border-white/10 backdrop-blur-md flex items-center gap-2">
+            <div className="px-4 py-1.5 rounded-xl bg-black/70 border border-white/10 backdrop-blur-md flex items-center gap-2">
               <span className="text-xs uppercase font-extrabold tracking-widest text-white/60">Balance:</span>
               <span className="text-sm font-black text-yellow-400">{profile?.tokens?.toLocaleString() || 0} 🪙</span>
             </div>
+            <button
+              onClick={() => setShowRules(true)}
+              className="p-2 rounded-xl bg-black/60 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              title="Game Rules"
+            >
+              <HelpCircle size={18} />
+            </button>
           </div>
 
           {gameState === 'PLAYING' && (
             <div className="flex items-center gap-4">
               {/* Game Mode / Timer Badge */}
-              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/70 border border-cyan-500/30 backdrop-blur-md">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/80 border border-cyan-500/40 backdrop-blur-md shadow-lg shadow-cyan-500/10">
                 <Timer size={18} className="text-cyan-400" />
                 <span className="text-xl font-black text-white tracking-widest">
                   {gameMode === 'ENDLESS' ? '∞ ENDLESS' : `${timeLeft}s`}
@@ -1429,7 +1217,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               </div>
 
               {/* Player Score & Size Tier */}
-              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/70 border border-yellow-500/30 backdrop-blur-md">
+              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-2xl bg-black/80 border border-yellow-500/40 backdrop-blur-md shadow-lg">
                 <Zap size={18} className="text-yellow-400" />
                 <span className="text-lg font-black text-yellow-300">{Math.floor(player.score)} PTS</span>
                 {combo.mult > 1 && (
@@ -1447,7 +1235,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
 
         {/* Live Leaderboard Overlay (Top-Right) */}
         {gameState === 'PLAYING' && (
-          <div className="absolute top-16 right-4 z-20 w-44 bg-black/70 border border-white/10 backdrop-blur-md rounded-2xl p-3 shadow-2xl pointer-events-none">
+          <div className="absolute top-16 right-4 z-20 w-44 bg-black/80 border border-white/10 backdrop-blur-md rounded-2xl p-3 shadow-2xl pointer-events-none">
             <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-white/10">
               <Trophy size={14} className="text-yellow-400" />
               <span className="text-xs font-black uppercase tracking-wider text-white/80">Leaderboard</span>
@@ -1474,41 +1262,48 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
         {/* Dedicated Close Button always accessible */}
         <DedicatedCloseButton onClose={onClose} label="Exit Game" position="top-right" />
 
-        {/* On-Screen Touch / Mouse Steering Assist Hint */}
+        {/* Steering Instruction Badge */}
         {gameState === 'PLAYING' && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none opacity-60 flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 text-[11px] font-bold text-slate-300">
-            <span>🖱️ Click & Drag / WASD to Steer</span>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none opacity-80 flex items-center gap-2 bg-black/75 backdrop-blur-md px-5 py-2 rounded-full border border-cyan-500/30 text-xs font-bold text-slate-200 shadow-xl">
+            <span>🖱️ Hold & Drag Mouse or use WASD / Arrows to steer your hole!</span>
           </div>
         )}
 
-        {/* 3D Native Arena Canvas */}
+        {/* 3D Native Arena Canvas with High-Contrast Vibrant Lighting */}
         <div className="flex-1 w-full h-full relative z-0">
-          <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
+          <Canvas
+            shadows
+            dpr={[1, 1.5]}
+            camera={{ position: [0, 18, 20], fov: 50, near: 0.1, far: 800 }}
+            gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+          >
             {/* Atmospheric Skybox Dome */}
-            <color attach="background" args={['#07101e']} />
-            <fog attach="fog" args={['#07101e', 60, 320]} />
+            <color attach="background" args={['#090d16']} />
 
-            {/* High-Dynamic AAA Sunlight & Hemisphere Fill */}
-            <ambientLight intensity={0.7} />
-            <hemisphereLight args={['#38bdf8', '#0f172a', 0.8]} />
+            {/* Vibrant Ambient & Directional Sunlight */}
+            <ambientLight intensity={1.1} />
+            <hemisphereLight args={['#38bdf8', '#1e293b', 0.9]} />
             <directionalLight
-              position={[60, 80, 40]}
-              intensity={2.2}
+              position={[50, 75, 40]}
+              intensity={2.4}
               castShadow
               shadow-mapSize={[2048, 2048]}
               shadow-camera-near={10}
-              shadow-camera-far={320}
+              shadow-camera-far={300}
               shadow-camera-left={-ARENA_RADIUS}
               shadow-camera-right={ARENA_RADIUS}
               shadow-camera-top={ARENA_RADIUS}
               shadow-camera-bottom={-ARENA_RADIUS}
             />
-            {/* Neon Cyan Center Spotlight */}
-            <pointLight position={[0, 30, 0]} intensity={3.5} color="#38bdf8" distance={200} />
+            {/* Fill Point Lights */}
+            <pointLight position={[0, 30, 0]} intensity={2.5} color="#38bdf8" distance={250} />
+            <pointLight position={[60, 20, 60]} intensity={1.8} color="#eab308" distance={150} />
+            <pointLight position={[-60, 20, -60]} intensity={1.8} color="#06b6d4" distance={150} />
 
-            {/* Arena Floor & Props */}
+            {/* Arena Floor */}
             <ArenaFloor onPointerMoveGround={handleGroundPointerMove} />
 
+            {/* City Props */}
             {propsList.map((prop) => (
               <PropMesh key={prop.id} prop={prop} />
             ))}
@@ -1521,11 +1316,8 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               <HoleMesh key={ai.id} entity={ai} />
             ))}
 
-            {/* Camera follow */}
+            {/* Dynamic Camera tracking */}
             <CameraController playerHole={player} />
-
-            {/* Ambient Atmosphere Particles */}
-            <Sparkles count={180} scale={60} size={2.5} speed={0.5} opacity={0.35} color="#38bdf8" />
           </Canvas>
         </div>
 
@@ -1536,23 +1328,25 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+              className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
             >
-              <div className="w-full max-w-md bg-[#0b1220]/90 border border-cyan-500/30 rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center">
+              <div className="w-full max-w-md bg-[#0b1220]/95 border border-cyan-500/40 rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600 to-yellow-500 flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(6,182,212,0.4)]">
                   <span className="text-3xl">🕳️</span>
                 </div>
 
                 <div className="flex items-center gap-2 mb-2">
                   <h1 className="text-3xl font-black text-white tracking-wider">HOLE SINK 3D</h1>
-                  <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full">v2.5 WEBGL</span>
+                  <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full">
+                    OFFICIAL RULES
+                  </span>
                 </div>
-                <p className="text-xs text-slate-400 mb-4 max-w-xs">
-                  Devour the expanded metropolis, streetlights, traffic & rival holes. Grow to infinite proportions!
+                <p className="text-xs text-slate-300 mb-4 max-w-xs">
+                  Steer your hole across the 3D metropolis. Eat small objects to grow, devour larger city props, and swallow smaller rival holes!
                 </p>
 
-                {/* Game Mode Selector (Battle Royale vs Endless Free Roam) */}
-                <div className="flex gap-2 w-full p-1 bg-black/50 border border-white/10 rounded-2xl mb-5">
+                {/* Game Mode Selector */}
+                <div className="flex gap-2 w-full p-1 bg-black/60 border border-white/10 rounded-2xl mb-5">
                   <button
                     onClick={() => setGameMode('BATTLE_ROYALE')}
                     className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
@@ -1575,7 +1369,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                   </button>
                 </div>
 
-                {/* Reward Tier Guide (Active in Battle Royale) */}
+                {/* Reward Tier Guide (Battle Royale) */}
                 {gameMode === 'BATTLE_ROYALE' ? (
                   <div className="grid grid-cols-3 gap-2 w-full mb-6">
                     <div className="p-2.5 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
@@ -1593,7 +1387,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                   </div>
                 ) : (
                   <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold w-full mb-5">
-                    🌟 Endless Mode: No timer! Props & rival holes respawn infinitely. Grow endlessly without match limits.
+                    🌟 Free Roam: Props & rival holes respawn continuously. Practice your steering and size growth!
                   </div>
                 )}
 
@@ -1614,6 +1408,60 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
           )}
         </AnimatePresence>
 
+        {/* Rules Modal */}
+        <AnimatePresence>
+          {showRules && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            >
+              <div className="w-full max-w-md bg-[#0b1220] border border-cyan-500/40 rounded-3xl p-6 text-left shadow-2xl flex flex-col gap-4">
+                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                  <h3 className="text-xl font-black text-white flex items-center gap-2">
+                    <Trophy className="text-yellow-400" size={20} /> HOLE.IO RULES
+                  </h3>
+                  <button
+                    onClick={() => setShowRules(false)}
+                    className="text-white/60 hover:text-white font-bold text-sm px-2 py-1 rounded-lg bg-white/5"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-3 text-xs text-slate-300">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="font-bold text-yellow-400 text-sm mb-1">1. Size Progression Tiers</p>
+                    <p>• <strong>Tier 1 (Size 1.3m - 2.0m):</strong> Cones, hydrants, streetlights, hot dog carts.</p>
+                    <p>• <strong>Tier 2 (Size 2.0m - 3.2m):</strong> Park benches, trees, sports cars & sedans.</p>
+                    <p>• <strong>Tier 3 (Size 3.2m - 5.0m):</strong> City buses, delivery trucks, fountains, billboards.</p>
+                    <p>• <strong>Tier 4 (Size 5.0m+):</strong> Multi-story skyscrapers & larger rival holes!</p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="font-bold text-cyan-400 text-sm mb-1">2. Hole vs Hole Devouring</p>
+                    <p>If your hole is at least <strong>15% larger</strong> than a rival hole, drive over them to swallow them for +100 PTS and rapid size increase! If a rival is larger, avoid them or get swallowed.</p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="font-bold text-emerald-400 text-sm mb-1">3. Direct Steering Controls</p>
+                    <p>• <strong>Mouse/Touch:</strong> Click / touch and drag anywhere to guide the hole direction.</p>
+                    <p>• <strong>Keyboard:</strong> Use <strong>W, A, S, D</strong> or Arrow keys for instant steering.</p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => setShowRules(false)}
+                  className="w-full py-3 rounded-xl font-bold bg-cyan-600 hover:bg-cyan-500 text-white"
+                >
+                  GOT IT!
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Game Over / Results Modal */}
         <AnimatePresence>
           {gameState === 'GAME_OVER' && (
@@ -1621,7 +1469,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+              className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
             >
               <div
                 className={`w-full max-w-sm rounded-3xl p-6 border-2 text-center shadow-2xl flex flex-col items-center ${

@@ -616,6 +616,7 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
         <div className="w-full md:w-80 p-6 flex flex-col bg-white border-l border-slate-200 h-[35vh] md:h-full overflow-y-auto">
           
           <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2"><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-indigo-500/40 bg-indigo-500/10 text-indigo-600">v2.5 AAA</span></div>
             <div className="flex space-x-1 bg-slate-100 p-1 rounded-xl">
               <button 
                 onClick={() => !autoRunning && setAutobetMode(false)}

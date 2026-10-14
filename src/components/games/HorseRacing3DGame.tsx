@@ -233,7 +233,7 @@ export default function HorseRacing3DGame({ onClose }: { onClose?: () => void })
       
       <div className="w-full lg:w-96 bg-gray-900 border-t lg:border-t-0 lg:border-l border-gray-800 p-6 flex flex-col gap-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white uppercase tracking-wider">3D Horse Racing</h2>
+          <div className="flex items-center gap-2"><h2 className="text-2xl font-bold text-white uppercase tracking-wider">3D Horse Racing</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-amber-500/40 bg-amber-500/10 text-amber-300">v2.5 AAA</span></div>
           {onClose && (
             <button onClick={onClose} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-white">
               ✕

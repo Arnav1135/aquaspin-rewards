@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, RefreshCw, CheckCircle2, Copy, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import toast from 'react-hot-toast';
 
 interface ProvablyFairModalProps {
@@ -10,28 +12,44 @@ interface ProvablyFairModalProps {
 }
 
 export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
-  const [clientSeed, setClientSeed] = useState(generateRandomSeed(16));
-  const [serverSeedHash, setServerSeedHash] = useState(generateRandomSeed(64));
-  const [nonce, setNonce] = useState(0);
+  const {
+    clientSeed,
+    serverSeedHash,
+    nonce,
+    previousServerSeed,
+    previousClientSeed,
+    previousNonce,
+    generateNewClientSeed,
+    rotateServerSeed
+  } = useProvablyFairStore();
 
-  function generateRandomSeed(length: number) {
-    const chars = 'abcdef0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+  const [verifyResult, setVerifyResult] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!serverSeedHash) {
+      rotateServerSeed();
+      generateNewClientSeed();
     }
-    return result;
-  }
-
-  const handleRotateSeed = () => {
-    setServerSeedHash(generateRandomSeed(64));
-    setNonce(0);
-    toast.success('Server seed pair rotated successfully!');
-  };
+  }, [serverSeedHash, rotateServerSeed, generateNewClientSeed]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
+  };
+
+  const handleVerify = async () => {
+    if (!previousServerSeed || !previousClientSeed || previousNonce === null) {
+      toast.error('No previous game session data to verify yet. Rotate seeds to finalize and verify past outcomes.');
+      return;
+    }
+
+    const expectedHash = await ProvablyFair.hashServerSeed(previousServerSeed);
+    const floatResult = await ProvablyFair.calculateOutcome(previousServerSeed, previousClientSeed, previousNonce);
+
+    setVerifyResult(
+      `Calculated Hash: ${expectedHash.substring(0, 24)}...\n` +
+      `Float Outcome: ${floatResult.toFixed(8)}`
+    );
   };
 
   return (
@@ -57,7 +75,7 @@ export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">Provably Fair</h2>
-                  <p className="text-xs text-white/50">Verify the integrity of your rolls</p>
+                  <p className="text-xs text-white/50">Cryptographic SHA-256 verification of game rolls</p>
                 </div>
               </div>
               <button 
@@ -69,26 +87,30 @@ export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 block">
-                    Active Server Seed (Hashed)
+                    Active Server Seed (Hashed SHA-256)
                   </label>
                   <div className="flex items-center gap-2">
                     <input 
                       type="text" 
                       readOnly 
-                      value={serverSeedHash}
-                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white/70 font-mono"
+                      value={serverSeedHash || 'Generating cryptographic hash...'}
+                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white/70 font-mono select-all"
                     />
                     <button 
                       onClick={() => copyToClipboard(serverSeedHash)}
                       className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 text-white transition-colors"
+                      title="Copy Hash"
                     >
                       <Copy size={18} />
                     </button>
                   </div>
+                  <p className="text-[10px] text-white/40 mt-1">
+                    This commitment hash is established prior to any roll. The server cannot alter outcomes without modifying this hash.
+                  </p>
                 </div>
 
                 <div>
@@ -98,13 +120,14 @@ export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
                   <div className="flex items-center gap-2">
                     <input 
                       type="text" 
+                      readOnly
                       value={clientSeed}
-                      onChange={(e) => setClientSeed(e.target.value)}
-                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:border-cyan-500/50 outline-none"
+                      className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-white font-mono"
                     />
                     <button 
-                      onClick={() => setClientSeed(generateRandomSeed(16))}
+                      onClick={generateNewClientSeed}
                       className="p-3 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 text-white transition-colors"
+                      title="Generate New Seed"
                     >
                       <RefreshCw size={18} />
                     </button>
@@ -113,7 +136,7 @@ export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
 
                 <div>
                   <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 block">
-                    Current Nonce
+                    Current Nonce (Bets Executed)
                   </label>
                   <input 
                     type="number" 
@@ -124,12 +147,35 @@ export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
                 </div>
               </div>
 
+              {/* Past verification panel */}
+              {previousServerSeed && (
+                <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-xl space-y-2">
+                  <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
+                    Revealed Previous Server Seed
+                  </label>
+                  <div className="text-xs text-emerald-300 font-mono break-all bg-black/40 p-2.5 rounded-lg border border-emerald-500/20">
+                    {previousServerSeed}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/30 text-xs mt-2"
+                    onClick={handleVerify}
+                  >
+                    <CheckCircle2 size={14} className="mr-1.5" /> Verify Mathematical Fairness
+                  </Button>
+                  {verifyResult && (
+                    <div className="mt-2 p-2.5 bg-black/60 rounded border border-emerald-500/40 text-[11px] font-mono text-emerald-300 whitespace-pre-wrap">
+                      {verifyResult}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="p-4 bg-cyan-900/20 border border-cyan-500/30 rounded-xl flex items-start gap-3">
                 <CheckCircle2 className="text-cyan-400 shrink-0 mt-0.5" size={18} />
                 <p className="text-xs text-cyan-100/70 leading-relaxed">
-                  Games use a cryptographic hash of the server seed and your client seed to generate results. 
-                  Because you control the client seed, the server cannot rig the outcome. 
-                  Rotate the server seed to verify past results.
+                  Games compute outcomes through an HMAC-SHA256 signature pairing the unrevealed server seed, your client seed, and the sequential nonce. Rotate the seed pair at any time to inspect and verify previous outcomes.
                 </p>
               </div>
             </div>
@@ -139,7 +185,7 @@ export function ProvablyFairModal({ isOpen, onClose }: ProvablyFairModalProps) {
               <Button 
                 variant="ghost" 
                 className="flex-1"
-                onClick={handleRotateSeed}
+                onClick={rotateServerSeed}
               >
                 Rotate Seed Pair
               </Button>

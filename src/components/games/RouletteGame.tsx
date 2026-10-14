@@ -476,9 +476,14 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
           <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/10 backdrop-blur-md rounded-xl">
             EXIT
           </Button>
-          <div className="bg-black/40 backdrop-blur-md border border-white/10 px-6 py-2 rounded-xl">
-            <p className="text-white/60 text-xs font-bold tracking-widest uppercase">Balance</p>
-            <p className="text-yellow-400 font-black text-lg">{profile?.tokens?.toLocaleString() || 0} 🪙</p>
+          <div className="bg-black/40 backdrop-blur-md border border-white/10 px-6 py-2 rounded-xl flex items-center gap-3">
+            <div>
+              <p className="text-white/60 text-xs font-bold tracking-widest uppercase">Balance</p>
+              <p className="text-yellow-400 font-black text-lg">{profile?.tokens?.toLocaleString() || 0} 🪙</p>
+            </div>
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-400/30 shadow-[0_0_10px_rgba(250,204,21,0.2)]">
+              v2.5 AAA
+            </span>
           </div>
         </div>
         

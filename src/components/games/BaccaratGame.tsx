@@ -5,6 +5,7 @@ import { Shield, Info, ArrowLeft, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/authStore';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import { audio } from '@/lib/audioEngine';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
 
@@ -81,6 +82,7 @@ export default function BaccaratGame() {
       if (!success) throw new Error('Transaction failed');
 
       setGameState('dealing');
+      audio.play('cards', 'shuffle');
       
       const p1 = getRandomCard();
       const b1 = getRandomCard();
@@ -88,6 +90,7 @@ export default function BaccaratGame() {
       const b2 = getRandomCard();
 
       setPlayerCards([p1]);
+      audio.play('cards', 'deal');
       setTimeout(() => setBankerCards([b1]), 500);
       setTimeout(() => setPlayerCards([p1, p2]), 1000);
       setTimeout(() => {
@@ -177,6 +180,7 @@ export default function BaccaratGame() {
     
     setPayout(winAmount);
     setGameState('result');
+    audio.play('cards', 'flip');
   };
 
   const resetGame = () => {
@@ -218,7 +222,7 @@ export default function BaccaratGame() {
         </button>
 
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-white mb-4">Baccarat</h1>
+          <div className="flex items-center justify-center gap-3 mb-4"><h1 className="text-4xl font-black text-white">Baccarat VIP</h1><span className="px-2.5 py-1 text-xs font-black uppercase tracking-wider rounded-md border border-amber-500/40 bg-amber-500/10 text-amber-300">v2.5 AAA</span></div>
         </div>
 
         <div className="bg-navy-800/50 border border-navy-700 rounded-3xl p-8 mb-8 backdrop-blur-xl">

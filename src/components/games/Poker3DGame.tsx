@@ -5,6 +5,7 @@ import { Card as CardType, PokerEngine } from '@/lib/pokerEngine';
 import { Button } from '@/components/ui/Button';
 import { EnvironmentManager, QualityManager, VFXManager, PostFXManager } from '@/engine/aaa';
 import { OrbitControls, Text } from '@react-three/drei';
+import { audio } from '@/lib/audioEngine';
 
 function CardMesh({ card, position, rotation }: { card: CardType, position: [number, number, number], rotation: [number, number, number] }) {
   const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
@@ -56,6 +57,7 @@ export function Poker3DGame({ onClose }: { onClose: () => void }) {
     const card2 = newDeck.pop()!;
     deckRef.current = newDeck;
     setPlayerHand([card1, card2]);
+    audio.play('cards', 'shuffle');
     setCommunityCards([]);
     setPhase('PREFLOP');
   };
@@ -67,16 +69,20 @@ export function Poker3DGame({ onClose }: { onClose: () => void }) {
       const c3 = deckRef.current.pop()!;
       setCommunityCards([c1, c2, c3]);
       setPhase('FLOP');
+      audio.play('cards', 'deal');
     } else if (phase === 'FLOP') {
       const c = deckRef.current.pop()!;
       setCommunityCards(prev => [...prev, c]);
       setPhase('TURN');
+      audio.play('cards', 'deal');
     } else if (phase === 'TURN') {
       const c = deckRef.current.pop()!;
       setCommunityCards(prev => [...prev, c]);
       setPhase('RIVER');
+      audio.play('cards', 'deal');
     } else if (phase === 'RIVER') {
       setPhase('SHOWDOWN');
+      audio.play('cards', 'flip');
     }
   };
 
@@ -89,6 +95,7 @@ export function Poker3DGame({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/90 backdrop-blur-md">
       <div className="relative w-full max-w-6xl h-[90vh] flex flex-col gap-0 overflow-hidden shadow-2xl border border-navy-600 bg-navy-900 rounded-2xl">
+        <div className="absolute top-4 left-4 z-50 flex items-center gap-2"><span className="text-lg font-black text-white tracking-widest uppercase">3D Texas Hold'em</span><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-300">v2.5 AAA</span></div>
         <div className="absolute top-4 right-4 z-50">
           <Button variant="ghost" onClick={onClose} className="text-slate-400 hover:text-white bg-black/20">Close</Button>
         </div>

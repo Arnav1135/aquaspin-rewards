@@ -836,9 +836,7 @@ export function CrashGame({ onClose }: CrashGameProps) {
       <Card className="w-full xl:w-96 flex flex-col justify-between p-5 space-y-5 bg-slate-900/95 border border-slate-800 rounded-2xl shrink-0 z-20">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 to-yellow-300 uppercase tracking-widest">
-              MISSION CONTROL 3D
-            </h2>
+            <div className="flex items-center gap-2"><h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-400 to-yellow-300 uppercase tracking-widest">MISSION CONTROL 3D</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-orange-500/40 bg-orange-500/10 text-orange-400">v2.5 AAA</span></div>
             <ShieldAlert size={16} className="text-red-500 animate-pulse" />
           </div>
 

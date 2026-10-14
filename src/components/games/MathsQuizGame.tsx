@@ -125,7 +125,10 @@ export function MathsQuizGame({ onClose }: Props) {
       {/* Header */}
       <div className="flex w-full max-w-sm justify-between items-center">
         <div className="flex flex-col">
-          <span className="text-white/50 text-xs">Level {level}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-white/50 text-xs">Level {level}</span>
+            <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+          </div>
           <span className="text-white font-bold text-xl">{score}pts</span>
         </div>
         <div className="flex flex-col items-center">

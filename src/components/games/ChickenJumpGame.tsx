@@ -299,8 +299,11 @@ export function ChickenJumpGame({ onClose }: Props) {
 
           {disp.phase === 'idle' && (
             <Html center position={[0, 4, 0]} className="pointer-events-none">
-              <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-yellow-500/30 text-center w-[300px]">
-                <h2 className="text-3xl font-black text-yellow-400 mb-2">CHICKEN JUMP 3D</h2>
+              <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-yellow-500/30 text-center w-[320px] shadow-2xl">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <h2 className="text-3xl font-black text-yellow-400">CHICKEN JUMP 3D</h2>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-yellow-500/20 text-yellow-300 border border-yellow-400/30">v2.5 AAA</span>
+                </div>
                 <p className="text-white text-sm">Tap / Space to jump<br/><span className="text-cyan-300 font-bold">Double Jump available!</span></p>
                 <p className="text-slate-400 mt-3 font-mono">Best: {disp.best}</p>
               </div>
@@ -312,8 +315,9 @@ export function ChickenJumpGame({ onClose }: Props) {
 </Canvas>
       </div>
 
-      <div className="absolute top-4 left-6 bg-slate-900/80 backdrop-blur px-4 py-2 rounded-xl border border-slate-700 pointer-events-none">
+      <div className="absolute top-4 left-6 bg-slate-900/80 backdrop-blur px-4 py-2 rounded-xl border border-slate-700 pointer-events-none flex items-center gap-2">
         <p className="text-xl font-bold text-white font-mono">🏃 {disp.score}</p>
+        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
       </div>
       <div className="absolute top-4 right-6 bg-slate-900/80 backdrop-blur px-4 py-2 rounded-xl border border-slate-700 pointer-events-none">
         <p className="text-xl font-bold text-yellow-400 font-mono">⭐ {disp.best}</p>

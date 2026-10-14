@@ -8,6 +8,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
+    include: ['src/**/__tests__/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
+    exclude: ['node_modules', 'dist', 'odysseus', 'ludo-royale', 'casino-games', 'TempModels'],
   },
   resolve: {
     alias: {

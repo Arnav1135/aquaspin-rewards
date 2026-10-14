@@ -108,7 +108,10 @@ export function QuizGame({ onClose }: QuizGameProps) {
         <motion.div className="text-center space-y-6 mt-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <div className="text-7xl">🎯</div>
           <div>
-            <h2 className="font-display text-2xl font-bold text-[#7b8bc1] mb-2">Trivia Quiz</h2>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h2 className="font-display text-2xl font-bold text-[#7b8bc1]">Trivia Quiz</h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-500 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
             <p className="text-[#66bdf2]">Answer {QUESTIONS.length} questions correctly.</p>
             <p className="text-[#66bdf2] font-semibold mt-1">+{TOKENS_PER_CORRECT} tokens per correct answer!</p>
           </div>

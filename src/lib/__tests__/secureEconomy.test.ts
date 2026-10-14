@@ -5,6 +5,9 @@ import { supabase } from '../supabase';
 // Mock supabase
 vi.mock('../supabase', () => ({
   supabase: {
+    auth: {
+      getSession: vi.fn(),
+    },
     rpc: vi.fn(),
   },
 }));
@@ -12,6 +15,14 @@ vi.mock('../supabase', () => ({
 describe('secureEconomy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(supabase.auth.getSession as any).mockResolvedValue({
+      data: {
+        session: {
+          user: { id: 'user-1', email: 'user@example.com' },
+        },
+      },
+      error: null,
+    });
   });
 
   describe('secureRecordGameResult', () => {
@@ -38,9 +49,13 @@ describe('secureEconomy', () => {
 
     it('should handle missing xpEarned by defaulting to 0', async () => {
       vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: { success: true }, error: null });
+      vi.mocked(supabase.auth.getSession as any).mockResolvedValue({
+        data: { session: { user: { id: 'user-2', email: 'user2@example.com' } } },
+        error: null,
+      });
 
       const payload = {
-        userId: 'user-1',
+        userId: 'user-2',
         betAmount: 10,
         earnedAmount: 20,
       };
@@ -48,7 +63,7 @@ describe('secureEconomy', () => {
       const result = await secureRecordGameResult(payload);
 
       expect(supabase.rpc).toHaveBeenCalledWith('record_game_result', {
-        p_user_id: 'user-1',
+        p_user_id: 'user-2',
         p_bet_amount: 10,
         p_earned_amount: 20,
         p_xp_earned: 0,
@@ -57,14 +72,18 @@ describe('secureEconomy', () => {
 
     it('should throw an error if RPC fails', async () => {
       vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: null, error: new Error('RPC Error') });
+      vi.mocked(supabase.auth.getSession as any).mockResolvedValue({
+        data: { session: { user: { id: 'user-3', email: 'user3@example.com' } } },
+        error: null,
+      });
 
       const payload = {
-        userId: 'user-1',
+        userId: 'user-3',
         betAmount: 10,
         earnedAmount: 20,
       };
 
-      await expect(secureRecordGameResult(payload)).rejects.toThrow('Transaction failed due to security policies.');
+      await expect(secureRecordGameResult(payload)).rejects.toThrow('Transaction rejected by server security policies.');
     });
   });
 
@@ -84,7 +103,7 @@ describe('secureEconomy', () => {
     it('should throw an error if RPC fails', async () => {
       vi.mocked(supabase.rpc as any).mockResolvedValueOnce({ data: null, error: new Error('RPC Error') });
 
-      await expect(secureUpdateTokens('user-1', -10)).rejects.toThrow('Transaction failed due to security policies.');
+      await expect(secureUpdateTokens('user-1', -10)).rejects.toThrow('Transaction rejected by server security policies.');
     });
   });
 });

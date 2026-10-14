@@ -123,7 +123,10 @@ export function ClickerGame({ onClose }: ClickerGameProps) {
         >
           <div className="text-7xl animate-bounce-gentle">👆</div>
           <div>
-            <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Clicker Rush!</h2>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h2 className="font-display text-2xl font-bold text-text-primary">Clicker Rush!</h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
             <p className="text-text-secondary">Click as many times as you can in <strong className="text-cyan-neon">10 seconds</strong>!</p>
             <p className="text-text-secondary mt-1">More clicks = more tokens (up to 50)</p>
           </div>

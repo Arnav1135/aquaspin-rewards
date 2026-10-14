@@ -1,4 +1,4 @@
-// src/engine/tests/math.test.ts
+import { describe, it, expect } from 'vitest';
 import { ObjectPool } from '../core/ObjectPoolManager';
 import { SaveSystem } from '../storage/SaveSystem';
 
@@ -22,3 +22,9 @@ export function runEngineTests() {
 
   return true;
 }
+
+describe('Engine Core', () => {
+  it('passes ObjectPool and SaveSystem verification', () => {
+    expect(runEngineTests()).toBe(true);
+  });
+});

@@ -130,16 +130,19 @@ export function DotsAndBoxesGame({ onClose }: Props) {
   return (
     <div className="flex flex-col items-center gap-4 p-4 min-h-screen" style={{ background:'linear-gradient(135deg,#0a1628 0%,#7b8bc1 100%)' }}>
       {/* Scores */}
-      <div className="flex gap-5 mt-2">
-        {[{label:'You',val:scores.player,color:PLAYER_COLOR},{label:'AI',val:scores.ai,color:AI_COLOR}].map(s=>(
-          <div key={s.label} className="flex flex-col items-center px-5 py-2 rounded-2xl" style={{background:'rgba(255,255,255,0.07)'}}>
-            <span className="text-2xl font-bold" style={{color:s.color}}>{s.val}</span>
-            <span className="text-xs text-white/50">{s.label}</span>
+      <div className="flex items-center gap-3 mt-2">
+        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+        <div className="flex gap-4">
+          {[{label:'You',val:scores.player,color:PLAYER_COLOR},{label:'AI',val:scores.ai,color:AI_COLOR}].map(s=>(
+            <div key={s.label} className="flex flex-col items-center px-4 py-1.5 rounded-2xl" style={{background:'rgba(255,255,255,0.07)'}}>
+              <span className="text-xl font-bold" style={{color:s.color}}>{s.val}</span>
+              <span className="text-xs text-white/50">{s.label}</span>
+            </div>
+          ))}
+          <div className="flex flex-col items-center px-4 py-1.5 rounded-2xl" style={{background:'rgba(255,255,255,0.07)'}}>
+            <span className="text-sm font-bold text-white">{(GRID-1)*(GRID-1)-scores.player-scores.ai}</span>
+            <span className="text-xs text-white/50">Left</span>
           </div>
-        ))}
-        <div className="flex flex-col items-center px-5 py-2 rounded-2xl" style={{background:'rgba(255,255,255,0.07)'}}>
-          <span className="text-sm font-bold text-white">{(GRID-1)*(GRID-1)-scores.player-scores.ai}</span>
-          <span className="text-xs text-white/50">Left</span>
         </div>
       </div>
       <div className="text-white/70 text-sm">{phase==='playing'?(isPlayer?'Your turn':'🤖 AI thinking...'):(winner||'')}</div>

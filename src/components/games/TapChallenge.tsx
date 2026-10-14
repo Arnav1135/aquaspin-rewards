@@ -142,7 +142,10 @@ export function TapChallenge({ onClose }: TapChallengeProps) {
         <div className="flex flex-col items-center justify-center flex-1 p-6 text-center space-y-6">
           <div className="text-7xl animate-float">✨</div>
           <div>
-            <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Tap Challenge</h2>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h2 className="font-display text-2xl font-bold text-text-primary">Tap Challenge</h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
             <p className="text-text-secondary">Tap the glowing circles before they disappear!</p>
             <p className="text-text-secondary mt-1">{GAME_DURATION} seconds • Build combos for bonus tokens!</p>
           </div>

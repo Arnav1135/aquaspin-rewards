@@ -130,7 +130,10 @@ export function MemoryGame({ onClose }: MemoryGameProps) {
         >
           <div className="text-7xl">🧠</div>
           <div>
-            <h2 className="font-display text-2xl font-bold text-text-primary mb-2">Memory Match</h2>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h2 className="font-display text-2xl font-bold text-text-primary">Memory Match</h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
             <p className="text-text-secondary">Flip cards to find all {totalPairs} matching pairs.</p>
             <p className="text-text-secondary mt-1">Fewer moves = more tokens (25–100)</p>
           </div>

@@ -28,7 +28,12 @@ export default function App_CarromApp() {
               exit={{ opacity: 0, y: -50 }}
               className="absolute z-10 flex flex-col items-center p-8 bg-[#1a1a1a]/80 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl"
             >
-              <h1 className="text-4xl font-black text-white mb-2 tracking-wider">CARROM <span className="text-[#00bcd4]">3D</span></h1>
+              <div className="flex items-center gap-2 mb-2">
+                <h1 className="text-4xl font-black text-white tracking-wider">CARROM <span className="text-[#00bcd4]">3D</span></h1>
+                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+                  v2.5 AAA
+                </span>
+              </div>
               <p className="text-white/60 mb-8">Select Game Mode</p>
               
               <div className="flex flex-col gap-4 w-64">

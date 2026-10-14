@@ -5,6 +5,7 @@ import { RoundedBox, Text, useCursor, PerspectiveCamera } from '@react-three/dre
 import { RigidBody, CuboidCollider, CylinderCollider, InstancedRigidBodies, RapierRigidBody } from '@react-three/rapier';
 import { AquaSpinEngine } from '../../engine/3d';
 import { GameFrame } from './GameFrame';
+import { audio } from '@/lib/audioEngine';
 import { gsap } from 'gsap';
 
 const TABLE_W = 10;
@@ -146,6 +147,9 @@ function Puck({ onGoal }: { onGoal: (isPlayer: boolean) => void }) {
       mass={0.5}
       lockRotations
       userData={{ isPuck: true }}
+      onCollisionEnter={() => {
+        audio.playClick(900, 0.04, 'triangle');
+      }}
     >
       <mesh castShadow receiveShadow position={[0, 0.1, 0]} geometry={puckGeo} material={puckMat}>
         <pointLight color="#ffffff" intensity={3} distance={5} decay={2} />
@@ -169,6 +173,11 @@ export function AirHockey3DGame({ onClose }: { onClose: () => void }) {
   const handleScore = useCallback((isPlayer: boolean) => {
     setScore(s => isPlayer ? [s[0] + 1, s[1]] : [s[0], s[1] + 1]);
     setCameraMode('impact');
+    if (isPlayer) {
+      audio.playChime(1400, 0.6, 0.4);
+    } else {
+      audio.playNoiseBurst(0.2, 500);
+    }
     setTimeout(() => setCameraMode('default'), 400);
   }, []);
 
@@ -194,7 +203,7 @@ export function AirHockey3DGame({ onClose }: { onClose: () => void }) {
 
   return (
     <GameFrame 
-      title="3D Neon Air Hockey" 
+      title="3D Neon Air Hockey [v2.5 AAA]" 
       onClose={onClose} 
       score={`${score[0]} - ${score[1]}`} 
       onRestart={() => { setScore([0,0]); setKey(k => k + 1); }}

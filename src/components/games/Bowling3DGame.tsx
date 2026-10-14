@@ -6,6 +6,7 @@ import { Text, RoundedBox } from '@react-three/drei';
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { AquaSpinEngine } from '../../engine/3d';
 import { GameFrame } from './GameFrame';
+import { audio } from '@/lib/audioEngine';
 
 
 // --- GLOBAL CACHED GEOMETRIES AND MATERIALS ---
@@ -131,13 +132,18 @@ export function Bowling3DGame({ onClose }: { onClose: () => void }) {
     if (rolling) return;
     setRolling(true);
     setCameraMode('cinematic'); // Camera zooms in slightly
+    audio.playClick(240, 0.25, 'triangle');
   };
 
   const handleFinish = useCallback(() => {
-    // In a real implementation we would count fallen pins by checking their rotation in useFrame
-    // For now we simulate score based on throw
     const knocked = Math.max(1, Math.min(10, Math.round(power * 10 - Math.abs(spin) * 2)));
     setScore(s => s + knocked);
+    
+    if (knocked >= 8) {
+      audio.playChime(1600, 0.7, 0.5);
+    } else {
+      audio.playNoiseBurst(0.25, 600);
+    }
     
     setTimeout(() => {
       setCameraMode('default');
@@ -161,7 +167,7 @@ export function Bowling3DGame({ onClose }: { onClose: () => void }) {
 
   return (
     <GameFrame 
-      title="3D Bowling Arcade" 
+      title="3D Bowling Arcade [v2.5 AAA]" 
       onClose={onClose} 
       score={score} 
       level={`Round ${round}`} 

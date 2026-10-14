@@ -217,6 +217,9 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
             <div>
               <h1 className="text-xs sm:text-base font-black tracking-wider text-white flex items-center gap-2">
                 3D CHESS
+                <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_8px_rgba(34,211,238,0.2)]">
+                  v2.5 AAA
+                </span>
                 {onClose && (
                   <button
                     onClick={onClose}

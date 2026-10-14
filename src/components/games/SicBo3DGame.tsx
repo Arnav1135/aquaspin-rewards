@@ -234,10 +234,15 @@ export function SicBo3DGame() {
       </div>
 
       <div className="w-full lg:w-96 bg-[#1e293b] p-4 lg:p-6 flex flex-col gap-4 z-10 border-l border-white/5 shadow-2xl relative overflow-y-auto custom-scrollbar h-[50vh] lg:h-full">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          3D Sic Bo
-          <HelpCircle size={16} className="text-white/40 cursor-help" />
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            3D Sic Bo
+            <HelpCircle size={16} className="text-white/40 cursor-help" />
+          </h2>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+            v2.5 AAA
+          </span>
+        </div>
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">

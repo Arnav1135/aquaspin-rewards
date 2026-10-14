@@ -237,7 +237,12 @@ export function Tower3DGame() {
 
       {/* Control Panel */}
       <div className="w-full lg:w-96 bg-[#1e293b] p-4 lg:p-6 flex flex-col gap-4 z-10 border-l border-white/5 shadow-2xl relative overflow-y-auto custom-scrollbar h-[50vh] lg:h-full">
-        <h2 className="text-xl font-bold text-white mb-4">3D Towers</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">3D Towers</h2>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+            v2.5 AAA
+          </span>
+        </div>
 
         <div className="space-y-4">
           <div className="bg-slate-800/50 p-4 rounded-xl border border-white/10 text-center">

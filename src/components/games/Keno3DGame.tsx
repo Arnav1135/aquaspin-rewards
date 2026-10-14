@@ -185,6 +185,9 @@ export function Keno3DGame() {
             3D Keno
             <HelpCircle size={16} className="text-white/40 cursor-help" />
           </h2>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-400/30 shadow-[0_0_10px_rgba(244,63,94,0.2)]">
+            v2.5 AAA
+          </span>
         </div>
 
         <div className="flex gap-2 bg-black/40 p-1 rounded-xl">

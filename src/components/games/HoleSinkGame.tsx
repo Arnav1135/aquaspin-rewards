@@ -1455,6 +1455,13 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
         {/* Dedicated Close Button always accessible */}
         <DedicatedCloseButton onClose={onClose} label="Exit Game" position="top-right" />
 
+        {/* On-Screen Touch / Mouse Steering Assist Hint */}
+        {gameState === 'PLAYING' && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none opacity-60 flex items-center gap-2 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10 text-[11px] font-bold text-slate-300">
+            <span>🖱️ Click & Drag / WASD to Steer</span>
+          </div>
+        )}
+
         {/* 3D Native Arena Canvas */}
         <div className="flex-1 w-full h-full relative z-0">
           <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>

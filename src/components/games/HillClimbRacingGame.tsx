@@ -1109,7 +1109,7 @@ export function HillClimbRacingGame({ onClose }: Props) {
       ctx.strokeStyle = stageConfig.groundSurfaceColor;
       ctx.stroke();
 
-      // Procedural Grass Tufts / Flowers on Hilltops
+      // Procedural Stage Foliage, Crystals & Rocks on Hilltops
       for (let wx = Math.floor(viewStartWorldX / 40) * 40; wx <= viewEndWorldX; wx += 40) {
         const ty = getTerrainHeight(wx);
         const norm = getTerrainNormal(wx);
@@ -1117,21 +1117,62 @@ export function HillClimbRacingGame({ onClose }: Props) {
           ctx.save();
           ctx.translate(wx, ty);
           ctx.rotate(norm.angle);
-          // Grass Blade tuft
-          ctx.strokeStyle = '#42c038';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(-4, 0); ctx.lineTo(-6, -8);
-          ctx.moveTo(0, 0); ctx.lineTo(0, -11);
-          ctx.moveTo(4, 0); ctx.lineTo(6, -8);
-          ctx.stroke();
-          // Occasional Yellow Country Flower
-          if ((wx % 120) === 0) {
-            ctx.fillStyle = '#FBBF24';
+
+          if (stageConfig.id === 'countryside') {
+            // Grass Blade tuft
+            ctx.strokeStyle = '#42c038';
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(0, -12, 3, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.moveTo(-4, 0); ctx.lineTo(-6, -8);
+            ctx.moveTo(0, 0); ctx.lineTo(0, -11);
+            ctx.moveTo(4, 0); ctx.lineTo(6, -8);
+            ctx.stroke();
+            // Occasional Yellow Country Flower
+            if ((wx % 120) === 0) {
+              ctx.fillStyle = '#FBBF24';
+              ctx.beginPath();
+              ctx.arc(0, -12, 3, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else if (stageConfig.id === 'desert') {
+            // Desert Shrub & Pebbles
+            if ((wx % 80) === 0) {
+              ctx.strokeStyle = '#a16207';
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.moveTo(0, 0); ctx.lineTo(-4, -7);
+              ctx.moveTo(0, 0); ctx.lineTo(4, -8);
+              ctx.stroke();
+            } else if ((wx % 120) === 0) {
+              ctx.fillStyle = '#78350f';
+              ctx.beginPath();
+              ctx.arc(0, -2, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else if (stageConfig.id === 'arctic') {
+            // Jagged Ice Crystal Spire
+            if ((wx % 80) === 0) {
+              ctx.fillStyle = 'rgba(224, 242, 254, 0.85)';
+              ctx.strokeStyle = '#38bdf8';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(-3, 0);
+              ctx.lineTo(0, -10);
+              ctx.lineTo(3, 0);
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+            }
+          } else if (stageConfig.id === 'moon') {
+            // Lunar Crater Ridge Rock
+            if ((wx % 120) === 0) {
+              ctx.fillStyle = '#475569';
+              ctx.beginPath();
+              ctx.arc(0, -3, 3, 0, Math.PI * 2);
+              ctx.fill();
+            }
           }
+
           ctx.restore();
         }
       }

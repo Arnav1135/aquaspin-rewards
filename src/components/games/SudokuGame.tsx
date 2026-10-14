@@ -179,10 +179,15 @@ export function SudokuGame({ onClose }: Props) {
       {phase !== 'idle' && (
         <>
           {/* Stats bar */}
-          <div className="flex gap-4 w-full max-w-sm justify-between">
+          <div className="flex gap-3 w-full max-w-sm justify-between items-center">
             <span className="text-white font-mono">{formatTime(timer)}</span>
             <span className="text-red-400">❌ {mistakes}</span>
-            <span className="text-yellow-400 text-sm">{difficulty}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-yellow-400 text-sm">{difficulty}</span>
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                v2.5 AAA
+              </span>
+            </div>
             {best > 0 && <span className="text-white/50 font-mono text-sm">Best: {formatTime(best)}</span>}
           </div>
 
@@ -260,7 +265,12 @@ export function SudokuGame({ onClose }: Props) {
       {phase === 'idle' && (
         <div className="flex flex-col items-center gap-5 mt-8">
           <div className="text-5xl">🔢</div>
-          <h2 className="text-white font-bold text-3xl">Sudoku</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-white font-bold text-3xl">Sudoku</h2>
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+              v2.5 AAA
+            </span>
+          </div>
           <p className="text-white/60 text-sm text-center max-w-xs">Fill the 9×9 grid so every row, column and 3×3 box contains 1-9.</p>
           <div className="flex gap-2">
             {(['Easy','Medium','Hard'] as const).map(d=>(

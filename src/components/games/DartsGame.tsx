@@ -215,9 +215,16 @@ export function DartsGame({ onClose }: Props) {
     setScore(s => s + pts);
     setFlyingDartPos(null); // Return camera
     
-    if (pts === 50) toast.success('🎯 BULLSEYE! 50 Points!');
-    else if (pts > 0) toast.success(`Hit! ${pts} Points!`);
-    else toast.error('Miss!');
+    if (pts === 50) {
+      audio.play('darts', 'hit', { bullseye: true });
+      toast.success('🎯 BULLSEYE! 50 Points!');
+    } else if (pts > 0) {
+      audio.play('darts', 'hit', { bullseye: false });
+      toast.success(`Hit! ${pts} Points!`);
+    } else {
+      audio.playNoiseBurst(0.12, 300);
+      toast.error('Miss!');
+    }
     
     if (throwsLeft - 1 === 0) {
       setTimeout(() => {
@@ -230,9 +237,14 @@ export function DartsGame({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black select-none touch-none" {...(gameState === 'playing' ? bind() : {})}>
       {gameState === 'menu' && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
-          <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-red-600 mb-8">
-            PRO 3D DARTS
-          </h1>
+          <div className="flex flex-col items-center mb-8">
+            <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-red-600 mb-2">
+              PRO 3D DARTS
+            </h1>
+            <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+              v2.5 AAA
+            </span>
+          </div>
           <Button variant="neon" size="lg" className="px-12 py-6 text-xl" onClick={() => { setGameState('playing'); setScore(0); setThrowsLeft(3); setDarts([]); }}>
             PLAY MATCH
           </Button>
@@ -260,7 +272,10 @@ export function DartsGame({ onClose }: Props) {
           )}
           
           <div className="absolute top-8 left-8 bg-slate-900/80 p-4 rounded-xl border border-slate-700 pointer-events-none">
-            <p className="text-slate-400 text-xs uppercase font-bold">Total Score</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-slate-400 text-xs uppercase font-bold">Total Score</p>
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-500/20 text-rose-400 border border-rose-500/30">v2.5 AAA</span>
+            </div>
             <p className="text-3xl font-black text-white">{score}</p>
           </div>
           

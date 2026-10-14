@@ -184,8 +184,11 @@ export function WaterSortUI({ onUndo, onRedo, onHint, onAddTube, onRestart, onNe
       {/* Top HUD */}
       <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-10 pointer-events-none">
         <div className="pointer-events-auto flex flex-col gap-1">
-          <div className="text-white font-extrabold text-3xl tracking-widest uppercase drop-shadow-md flex items-center gap-2">
-            Level {level}
+          <div className="text-white font-extrabold text-3xl tracking-widest uppercase drop-shadow-md flex items-center gap-3">
+            <span>Level {level}</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)] tracking-normal">
+              v2.5 AAA
+            </span>
             {isWon && (
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}

@@ -8,13 +8,14 @@ import { EnvironmentManager } from '@/engine/aaa/EnvironmentManager';
 // src/components/games/CoinFlipGame.tsx
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HelpCircle } from 'lucide-react';
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
+import { ShieldCheck, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useSafeTimeout } from '@/hooks/useSafeTimeout';
 import { supabase } from '@/lib/supabase';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
-import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
-import { ProvablyFair } from '@/lib/crypto/provablyFair';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BetControl } from '@/components/ui/BetControl';
@@ -140,6 +141,7 @@ export function CoinFlipGame({ onClose }: any) {
   const [result, setResult] = useState<CoinSide>(null);
   const [payoutResult, setPayoutResult] = useState<number | null>(null);
   const [history, setHistory] = useState<CoinSide[]>(['heads', 'tails', 'heads', 'heads', 'tails']);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
 
   const balance = profile?.tokens ?? 0;
   const profileRef = useRef(profile);
@@ -462,6 +464,14 @@ export function CoinFlipGame({ onClose }: any) {
             <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
               v2.5 AAA
             </span>
+            <button
+              onClick={() => setProvablyFairOpen(true)}
+              className="flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+              title="Provably Fair Verification"
+            >
+              <ShieldCheck size={12} className="text-emerald-400" />
+              <span>Provably Fair</span>
+            </button>
             <div className="flex items-center gap-1 text-2xs text-muted">
               <HelpCircle size={10} />
               <span>1% edge</span>
@@ -540,6 +550,9 @@ export function CoinFlipGame({ onClose }: any) {
             </div>
           </div>
         </Card>
+
+        {/* Provably Fair Modal */}
+        <ProvablyFairModal isOpen={provablyFairOpen} onClose={() => setProvablyFairOpen(false)} />
       </div>
     </ErrorBoundary>
   );

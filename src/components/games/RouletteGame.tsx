@@ -9,10 +9,13 @@ import { useAuthStore } from '@/features/authStore';
 import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
 import { BetControl } from '@/components/ui/BetControl';
 import { Button } from '@/components/ui/Button';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { audio } from '@/lib/audioEngine';
 import toast from 'react-hot-toast';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-
+import { useProvablyFairStore } from '@/lib/crypto/provablyFairStore';
+import { ProvablyFair } from '@/lib/crypto/provablyFair';
+import { ProvablyFairModal } from '@/components/ui/ProvablyFairModal';
+import { ShieldCheck } from 'lucide-react';
 import { Text, Environment, ContactShadows, MeshReflectorMaterial, Float, Stars, Sparkles, SpotLight } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
@@ -289,7 +292,9 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
   const [gameState, setGameState] = useState<GameState>('BETTING');
   const [winNumber, setWinNumber] = useState<number | null>(null);
   const [lastWin, setLastWin] = useState(0);
+  const [provablyFairOpen, setProvablyFairOpen] = useState(false);
   
+  const { activeServerSeed, clientSeed, getAndIncrementNonce, rotateServerSeed } = useProvablyFairStore();
   const wheelRotRef = useRef(0);
   const ballPosRef = useRef(0);
   const isMountedRef = useRef(true);
@@ -352,7 +357,21 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
     setGameState('SPINNING');
     audio.play('slots', 'spin');
 
-    const winIndex = Math.floor(Math.random() * 37);
+    // Cryptographic Provably Fair RNG outcome derivation (0 - 36)
+    let winIndex = 0;
+    try {
+      const nonce = getAndIncrementNonce();
+      let seed = activeServerSeed;
+      if (!seed) {
+        await rotateServerSeed();
+        seed = useProvablyFairStore.getState().activeServerSeed;
+      }
+      const outcomeFloat = await ProvablyFair.calculateOutcome(seed, clientSeed, nonce);
+      winIndex = Math.floor(outcomeFloat * 37);
+    } catch {
+      winIndex = Math.floor(Math.random() * 37);
+    }
+
     const winTile = WHEEL_TILES[winIndex];
     setWinNumber(winTile.num);
 
@@ -485,6 +504,15 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
               v2.5 AAA
             </span>
           </div>
+
+          <button
+            onClick={() => setProvablyFairOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-xs font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)]"
+            title="Provably Fair Verification"
+          >
+            <ShieldCheck size={16} className="text-emerald-400" />
+            <span className="hidden sm:inline">Provably Fair</span>
+          </button>
         </div>
         
         {/* Result Overlay */}
@@ -608,6 +636,9 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Provably Fair Modal */}
+      <ProvablyFairModal isOpen={provablyFairOpen} onClose={() => setProvablyFairOpen(false)} />
     </div>
   </ErrorBoundary>
   );

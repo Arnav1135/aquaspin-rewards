@@ -70,6 +70,7 @@ export function GameFrame({
             <span className="text-sm font-extrabold tracking-wide truncate text-white drop-shadow-md">
               {title}
             </span>
+            <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded border border-[#5AB8EA]/40 bg-[#5AB8EA]/10 text-[#C7E9F7]">v2.5 AAA</span>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-bold text-white/80">

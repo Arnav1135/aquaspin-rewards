@@ -345,9 +345,7 @@ export function DragonTigerGame({ onClose }: any) {
         <Card className="w-full lg:w-80 flex flex-col justify-between p-5 space-y-5 bg-slate-900/90 border border-slate-800 rounded-2xl shrink-0 z-20">
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-yellow-200 to-cyan-300 tracking-wider">
-                SACRED DUEL
-              </h2>
+              <div className="flex items-center gap-2"><h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-yellow-200 to-cyan-300 tracking-wider">SACRED DUEL</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-orange-500/40 bg-orange-500/10 text-orange-400">v2.5 AAA</span></div>
               <Sparkles size={16} className="text-yellow-400 animate-pulse" />
             </div>
 

@@ -145,7 +145,7 @@ export default function TowerGame({ onClose }: TowerGameProps) {
         <div className="glass-panel p-6 rounded-3xl flex flex-col gap-6">
           <div className="flex items-center gap-3 mb-2">
             <ArrowUp className="text-emerald-400" size={24} />
-            <h2 className="text-2xl font-black">TOWER</h2>
+            <h2 className="text-2xl font-black">TOWER</h2><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-emerald-500/40 bg-emerald-500/10 text-emerald-300">v2.5 AAA</span>
           </div>
           
           <BetControl

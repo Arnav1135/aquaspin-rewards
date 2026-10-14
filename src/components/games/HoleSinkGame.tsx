@@ -1336,7 +1336,7 @@ export function HoleSinkGame({ onClose }: { onClose: () => void }) {
                 </div>
 
                 <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-3xl font-black text-white tracking-wider">HOLE SINK 3D</h1>
+                  <div className="flex items-center gap-2"><h1 className="text-3xl font-black text-white tracking-wider">HOLE SINK 3D</h1><span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-cyan-400/40 bg-cyan-400/10 text-cyan-300">v2.5 AAA</span></div>
                   <span className="text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 px-2 py-0.5 rounded-full">
                     OFFICIAL RULES
                   </span>

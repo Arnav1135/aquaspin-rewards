@@ -52,7 +52,7 @@ export function PoolGame({ onClose }: Props) {
             <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-blue-600 mb-2 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]">
               PRO 8-BALL
             </h1>
-            <p className="text-slate-400 mb-12 tracking-widest uppercase font-bold text-sm">Hyper-Realistic 3D Simulation</p>
+            <div className="flex items-center gap-2 mb-12"><p className="text-slate-400 tracking-widest uppercase font-bold text-sm">Hyper-Realistic 3D Simulation</p><span className="px-2.5 py-0.5 text-xs font-black uppercase tracking-wider rounded border border-cyan-500/40 bg-cyan-500/10 text-cyan-300">v2.5 AAA</span></div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full px-8">
               {TABLE_TIERS.slice(0,3).map(tier => (

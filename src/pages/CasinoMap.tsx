@@ -118,10 +118,13 @@ export function CasinoMap() {
   return (
     <div className="w-full h-screen bg-[#050b14] relative overflow-hidden flex flex-col">
       <div className="absolute top-24 left-8 z-10 pointer-events-none">
-        <h1 className="text-4xl font-black text-white flex items-center gap-3 drop-shadow-[0_0_20px_rgba(102,189,242,0.5)]">
-          <MapIcon className="text-[#66bdf2]" size={40} />
-          AquaSpin Resort
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-4xl font-black text-white flex items-center gap-3 drop-shadow-[0_0_20px_rgba(102,189,242,0.5)]">
+            <MapIcon className="text-[#66bdf2]" size={40} />
+            AquaSpin Resort
+          </h1>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+        </div>
         <p className="text-white/60 font-medium mt-2 max-w-sm">
           Welcome to the immersive 3D Island. Click on any sector to travel instantly.
         </p>

@@ -69,10 +69,13 @@ export function Header() {
               <Gamepad2 size={16} strokeWidth={2} style={{ color: 'var(--text-main)' }} />
             </div>
             <span
-              className="font-bold text-sm tracking-tight hidden sm:block"
+              className="font-bold text-sm tracking-tight hidden sm:flex items-center gap-1.5"
               style={{ color: '#FFFFFF' }}
             >
               AquaSpin
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                v2.5 AAA
+              </span>
             </span>
           </Link>
 

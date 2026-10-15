@@ -59,10 +59,13 @@ export function VIP() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-white mb-2 flex items-center gap-3">
-          <Crown className="text-yellow-400" size={32} />
-          VIP Club
-        </h1>
+        <div className="flex items-center gap-3 mb-2">
+          <h1 className="text-3xl font-display font-bold text-white flex items-center gap-3">
+            <Crown className="text-yellow-400" size={32} />
+            VIP Club
+          </h1>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+        </div>
         <p className="text-text-secondary">Level up to unlock exclusive perks, higher rakeback, and luxury rewards.</p>
       </header>
 

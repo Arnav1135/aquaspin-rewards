@@ -48,7 +48,10 @@ export function Leaderboard() {
           {/* Header */}
           <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-2xl font-bold text-gradient-cyan">Leaderboard</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-2xl font-bold text-gradient-cyan">Leaderboard</h1>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
             <p className="text-sm text-muted mt-1">
               Top earners • Updates in realtime
             </p>

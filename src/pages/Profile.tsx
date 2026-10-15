@@ -101,7 +101,10 @@ export function Profile() {
             )}
           </div>
 
-          <h1 className="font-display text-xl font-bold text-text-primary">{profile.username ?? 'Player'}</h1>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="font-display text-xl font-bold text-text-primary">{profile.username ?? 'Player'}</h1>
+            <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+          </div>
           <p className="text-sm text-muted mb-1">{profile.email}</p>
           {isGuest && (
             <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-warn/20 text-warn border border-warn/30">

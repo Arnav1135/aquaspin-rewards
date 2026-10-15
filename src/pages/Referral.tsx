@@ -94,7 +94,10 @@ export function Referral() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#66bdf2] to-[#7b8bc1] mb-4 shadow-lg shadow-[#66bdf2]/20">
           <Gift size={32} className="text-white" />
         </div>
-        <h1 className="text-3xl font-black text-white mb-2">Invite & Earn</h1>
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <h1 className="text-3xl font-black text-white">Invite & Earn</h1>
+          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+        </div>
         <p className="text-[#c2e7fa] text-sm">
           Get <span className="font-bold text-[#66bdf2]">500 tokens</span> for every friend who joins and plays their first game!
         </p>

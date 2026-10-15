@@ -97,8 +97,11 @@ export function Sidebar() {
                   >
                     <Gamepad size={16} strokeWidth={2} style={{ color: '#7b8bc1' }} />
                   </div>
-                  <span className="font-bold text-sm" style={{ color: '#FFFFFF' }}>
+                  <span className="font-bold text-sm flex items-center gap-1.5" style={{ color: '#FFFFFF' }}>
                     AquaSpin
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
+                      v2.5 AAA
+                    </span>
                   </span>
                 </div>
                 <button

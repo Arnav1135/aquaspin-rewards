@@ -107,6 +107,9 @@ export function Landing() {
             <span className="text-xs font-semibold" style={{ color: '#7b8bc1' }}>
               1000 Tokens = $1 USD • Cashout via UPI / PayPal
             </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-600 border border-cyan-400/40">
+              v2.5 AAA
+            </span>
           </motion.div>
 
           {/* Headline */}

@@ -424,6 +424,9 @@ export function MiniGames() {
                     >
                       Game Library
                     </h1>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-600 border border-cyan-400/40">
+                      v2.5 AAA
+                    </span>
                   </div>
                   <p className="text-sm text-slate-500">
                     {GAMES.length} games including a premium 3D arcade

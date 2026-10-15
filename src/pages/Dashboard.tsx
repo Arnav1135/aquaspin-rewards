@@ -116,7 +116,10 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <p className="text-cyan-400/90 text-[10px] font-black tracking-[0.2em] uppercase">VIP Player</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-cyan-400/90 text-[10px] font-black tracking-[0.2em] uppercase">VIP Player</p>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">v2.5 AAA</span>
+                </div>
                 <p className="text-white font-black tracking-wide text-base shadow-black/50 drop-shadow-md">{profile?.username || 'Guest Player'}</p>
               </div>
             </div>

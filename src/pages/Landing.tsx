@@ -392,6 +392,9 @@ export function Landing() {
             <span className="font-bold text-xs" style={{ color: '#7b8bc1' }}>
               AquaSpin Rewards
             </span>
+            <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-700 border border-cyan-400/30 uppercase tracking-widest">
+              v2.5 AAA
+            </span>
           </div>
           <div className="flex items-center gap-4 text-xs font-semibold" style={{ color: 'rgba(22,33,62,0.50)' }}>
             <Link to="/legal" className="hover:text-[#66bdf2] transition-colors">Privacy Policy</Link>
@@ -399,7 +402,7 @@ export function Landing() {
             <a href="mailto:support@aquaspin.app" className="hover:text-[#66bdf2] transition-colors">Support</a>
           </div>
           <p className="text-3xs" style={{ color: 'rgba(22,33,62,0.40)' }}>
-            © 2024 AquaSpin Rewards. All rights reserved.
+            © 2026 AquaSpin Rewards. All rights reserved.
           </p>
         </div>
       </footer>

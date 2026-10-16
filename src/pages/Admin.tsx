@@ -56,9 +56,19 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] pt-24 px-6 text-white pb-20">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-center gap-3">
-          <Shield className="text-red-500 w-10 h-10" />
-          <h1 className="text-4xl font-black tracking-wider">God Mode Admin</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Shield className="text-red-500 w-10 h-10" />
+            <div>
+              <h1 className="text-4xl font-black tracking-wider flex items-center gap-3">
+                God Mode Admin
+                <span className="text-[10px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.3)]">
+                  v2.5 AAA
+                </span>
+              </h1>
+              <p className="text-xs text-white/50 tracking-wide font-medium mt-0.5">Enterprise Live Telemetry & Economy Control</p>
+            </div>
+          </div>
         </div>
 
         {/* STATS */}

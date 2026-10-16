@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, Settings, LogOut, User, Volume2, VolumeX, ChevronDown, Gamepad2, Sun, Moon, MessageSquare
+  Menu, Settings, LogOut, User, Volume2, VolumeX, ChevronDown, Gamepad2, Sun, Moon, MessageSquare, Shield
 } from 'lucide-react';
 import { useAuthStore } from '@/features/authStore';
 import { useUIStore } from '@/features/uiStore';
@@ -230,6 +230,22 @@ export function Header() {
                           {label}
                         </Link>
                       ))}
+
+                      {profile?.email === "vermaarnav113@gmail.com" && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center justify-between px-3 py-2.5 text-sm transition-colors duration-150 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-semibold"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Shield size={14} strokeWidth={2} className="text-red-400" />
+                            God Mode
+                          </div>
+                          <span className="text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30">
+                            ADMIN
+                          </span>
+                        </Link>
+                      )}
 
                       <button
                         className="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm transition-colors duration-150 text-white/80 hover:bg-white/10 hover:text-white"

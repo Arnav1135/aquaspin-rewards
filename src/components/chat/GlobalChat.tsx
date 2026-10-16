@@ -108,7 +108,12 @@ export function GlobalChat() {
             <div className="flex items-center justify-between p-4 border-b border-white/10 bg-[#16213e]">
               <div className="flex items-center gap-2">
                 <MessageCircle className="text-[#66bdf2]" size={20} />
-                <h2 className="font-bold text-white tracking-wide">Global Chat</h2>
+                <h2 className="font-bold text-white tracking-wide flex items-center gap-2">
+                  Global Chat
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 uppercase tracking-widest shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+                    v2.5 AAA
+                  </span>
+                </h2>
               </div>
               <button onClick={toggleChat} className="text-white/50 hover:text-white transition-colors p-2 bg-white/5 rounded-lg hover:bg-white/10">
                 <X size={20} />

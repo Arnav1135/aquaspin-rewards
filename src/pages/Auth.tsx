@@ -87,7 +87,10 @@ export function Auth() {
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#5AB8EA] to-[#7682B9] flex items-center justify-center shadow-xl shadow-[#7682B9]/20">
               <Disc3 size={32} className="text-white" />
             </div>
-            <span className="font-display text-2xl font-extrabold text-[#7682B9] tracking-tight">AquaSpin Rewards</span>
+            <div className="flex items-center gap-2">
+              <span className="font-display text-2xl font-extrabold text-[#7682B9] tracking-tight">AquaSpin Rewards</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-cyan-500/20 text-cyan-600 border border-cyan-400/30">v2.5 AAA</span>
+            </div>
           </Link>
           <p className="text-[#7682B9]/80 text-sm mt-2 font-medium">
             {mode === 'login' ? 'Welcome back! Log in to continue.' : 'Join 50,000+ players earning real cash'}

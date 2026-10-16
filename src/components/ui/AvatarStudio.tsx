@@ -70,10 +70,15 @@ export function AvatarStudio({ onClose }: AvatarStudioProps) {
         >
           {/* Header */}
           <div className="p-5 flex items-center justify-between border-b border-white/10">
-            <h2 className="text-xl font-display font-bold text-white flex items-center gap-2">
-              <Palette className="text-cyan-400" />
-              Avatar Studio
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-display font-bold text-white flex items-center gap-2">
+                <Palette className="text-cyan-400" />
+                Avatar Studio
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 uppercase tracking-widest shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                v2.5 AAA
+              </span>
+            </div>
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"

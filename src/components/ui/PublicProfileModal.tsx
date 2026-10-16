@@ -60,10 +60,13 @@ export function PublicProfileModal() {
           className="relative w-full max-w-sm bg-[#16213e] rounded-3xl border border-[#66bdf2]/20 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden"
         >
           {/* Header Banner */}
-          <div className="h-24 bg-gradient-to-br from-[#66bdf2] to-blue-700 relative">
+          <div className="h-24 bg-gradient-to-br from-[#66bdf2] to-blue-700 relative flex items-center justify-between px-4">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-black/40 text-cyan-200 border border-white/20 uppercase tracking-widest shadow-md backdrop-blur-md">
+              v2.5 AAA
+            </span>
             <button
               onClick={() => setPublicProfileId(null)}
-              className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors backdrop-blur-md"
+              className="p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors backdrop-blur-md"
             >
               <X size={18} />
             </button>

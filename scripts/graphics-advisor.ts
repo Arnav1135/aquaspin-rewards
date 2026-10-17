@@ -333,6 +333,55 @@ export function inspectAndGenerateRecommendations(): GraphicsRecommendation[] {
       dependencies: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-QUIZ-HOLOGRAPHIC-HUD-PBR',
+      targetGame: 'Quiz',
+      componentPath: 'src/components/games/QuizGame.tsx',
+      title: 'Cyberpunk Holographic Trivia Terminal, Neon Streak Timers & Prismatic Particle Bursts for Quiz Game',
+      defectOrLimitation: 'Quiz interface uses standard flat cards and basic progress bars without tactile cyberpunk HUD elements, question transitions, or radiant visual feedback.',
+      proposedImprovement: 'Implement an interactive holographic trivia console with glassmorphic scanlines, glowing cyan-to-violet selection states, particle spark bursts on correct answers, and dynamic pulse meters.',
+      observableBenefit: 'Elevates trivia into an immersive sci-fi terminal experience with tactile feedback, neon response glows, and engaging gamified particle visual effects.',
+      implementationApproach: 'Upgrade QuizGame layout with glowing HUD frames, animated scanline overlays, dynamic answer card sheen, and reactive streak bonus particle animations.',
+      complexity: 'MEDIUM',
+      priority: 13,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Trivia options feature cyberpunk glassmorphism and neon hover glows',
+        'Correct answers produce dynamic celebratory particle bursts',
+        'Progress bar renders with neon energy pulse styling'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-WHEEL-PHYSICAL-PBR-CABINET',
+      targetGame: 'Wheel',
+      componentPath: 'src/pages/WheelGame.tsx',
+      title: 'Physical Casino PBR Outer Bevel Rim, Metallic Chrome Pegs, Dynamic Motion-Blur Shading & Holographic Aqua-Core for Wheel Game',
+      defectOrLimitation: 'Wheel canvas rendering uses flat 2D radial fills with static border colors, lacking realistic metallic bevel reflections, physical 3D chrome pegs, velocity-based motion blur, or kinetic pointer flapper physics with particle sparks.',
+      proposedImprovement: 'Implement procedural multi-stop metallic brushed rim with specular bevels, 3D extruded chrome divider pegs with specular glints, velocity-stretched canvas motion blur during high-speed spins, dynamic kinetic pointer deflection with tick-chime particles, and pulsating holographic aqua core reactor with rotating runes.',
+      observableBenefit: 'Transforms the flagship spinning wheel into an authentic luxury casino cabinet centerpiece with physical depth, electrifying high-speed spin feedback, and dazzling win celebrations.',
+      implementationApproach: 'Upgrade WheelGame 2D canvas draw loop: render multi-stop brass/platinum radial rim shaders, procedural chrome pegs with 3D drop shadows, dynamic angular motion blur during spins, spring-deflected flapper tick physics, and glowing holographic core.',
+      complexity: 'MEDIUM',
+      priority: 14,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Wheel rim renders with luxury metallic PBR bevel and chrome pegs',
+        'High-speed spins feature velocity-based motion blur and kinetic pointer deflection',
+        'Center hub displays pulsating holographic Aqua-Core reactor',
+        '60fps animation performance preserved on mobile and desktop'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ];
 

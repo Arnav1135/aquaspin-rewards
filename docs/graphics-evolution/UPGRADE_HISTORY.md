@@ -17,3 +17,4 @@
 | `REC-CLICKER-CYBER-CORE-PULSE` | **Clicker** | Cybernetic Plasma Power Core, Overdrive Arc Discharges & Volumetric Heat Distortion for Clicker Game | **NEEDS_REPAIR** | 2026-10-17 |
 | `REC-CLICKER-CYBER-CORE-PULSE` | **Clicker** | Cybernetic Plasma Power Core, Overdrive Arc Discharges & Volumetric Heat Distortion for Clicker Game | **ACCEPTED** | 2026-10-17 |
 | `REC-MEMORY-HOLOGRAPHIC-CARD-FLIP` | **Memory** | Prismatic Holographic Card Foiling, 3D Depth Tilting & Particle Match Synapses for Memory Game | **ACCEPTED** | 2026-10-17 |
+| `REC-QUIZ-HOLOGRAPHIC-HUD-PBR` | **Quiz** | Cyberpunk Holographic Trivia Terminal, Neon Streak Timers & Prismatic Particle Bursts for Quiz Game | **ACCEPTED** | 2026-10-17 |

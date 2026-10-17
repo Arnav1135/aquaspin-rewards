@@ -12,3 +12,4 @@
 | 2026-10-17 | `REC-TAP-NEON-TARGET-PARTICLE-BURST` | `d4885ac` | Preview | https://aquaspin-rewards-b2pj1yugd-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-CLICKER-CYBER-CORE-PULSE` | `2f5868f` | Preview | https://aquaspin-rewards-ri1vbqmh8-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-MEMORY-HOLOGRAPHIC-CARD-FLIP` | `15f8c9b` | Preview | https://aquaspin-rewards-o9s36dfom-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-17 | `REC-QUIZ-HOLOGRAPHIC-HUD-PBR` | `1c0a80f` | Production | N/A | **BLOCKED** | 1 |

@@ -30,10 +30,11 @@ export function getBiasImpulse(
   
   const direction = state.path[logicalRow];
   
-  // Smooth bounded steering with decisive momentum so balls roll cleanly off pegs
+  // Smooth bounded steering with decisive downward momentum so balls roll cleanly off pegs without lingering or sticking
   const magnitude = 0.18 + (logicalRow / state.totalRows) * 0.05;
   
   const impulseX = direction === 'R' ? magnitude : -magnitude;
   
-  return { x: impulseX, y: -0.05, z: 0 };
+  return { x: impulseX, y: -0.16, z: 0 };
 }
+

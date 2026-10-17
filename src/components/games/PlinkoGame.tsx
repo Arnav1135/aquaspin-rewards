@@ -59,16 +59,21 @@ const pegMatLow = new THREE.MeshStandardMaterial({ color: "#94A3B8", roughness: 
 const ballGeo = new THREE.SphereGeometry(0.25, 16, 16);
 const ballMat = new THREE.MeshStandardMaterial({ color: "#FF6B6B", emissive: "#FF6B6B", emissiveIntensity: 3.5, metalness: 0.2, roughness: 0.1 });
 
-function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, onBallLanded }: { style: any, x: number, bucketY: number, i: number, hitCount: number, isBigWin: boolean, numBuckets: number, onBallLanded: (idx: number, ballId: string) => void }) {
+function PlinkoBucket({ style, x, bucketY, i, lastHitTimestamp, isBigWin, numBuckets, onBallLanded }: { style: any, x: number, bucketY: number, i: number, lastHitTimestamp: number, isBigWin: boolean, numBuckets: number, onBallLanded: (idx: number, ballId: string) => void }) {
   const [blinking, setBlinking] = useState(false);
   
   useEffect(() => {
-    if (hitCount > 0) {
+    if (lastHitTimestamp > 0) {
       setBlinking(true);
-      const timer = setTimeout(() => setBlinking(false), 500);
+      const timer = setTimeout(() => setBlinking(false), 550);
       return () => clearTimeout(timer);
     }
-  }, [hitCount]);
+  }, [lastHitTimestamp]);
+
+  // Dynamically compute max label width and typography so multipliers never exceed or overlay neighboring buckets
+  // With PEG_SPACING_X = 1.2, spacing scales inversely with bucket count
+  const badgeWidth = numBuckets >= 15 ? 28 : numBuckets >= 13 ? 32 : numBuckets >= 11 ? 38 : 44;
+  const fontSize = numBuckets >= 15 ? '7px' : numBuckets >= 13 ? '8.5px' : numBuckets >= 11 ? '10px' : '11px';
 
   return (
     <group position={[x, bucketY, 0]}>
@@ -81,22 +86,25 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, on
           }
         }}
       >
-        <CuboidCollider args={[PEG_SPACING_X / 2 - 0.1, 0.4, 0.5]} position={[0, -0.2, 0]} />
+        <CuboidCollider args={[PEG_SPACING_X / 2 - 0.05, 0.4, 0.5]} position={[0, -0.2, 0]} />
       </RigidBody>
-      <Html center position={[0, -0.3, 0]} className="pointer-events-none" style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>
-        <div className="relative">
+      <Html center position={[0, -0.3, 0]} className="pointer-events-none" style={{ width: `${badgeWidth}px`, display: 'flex', justifyContent: 'center' }}>
+        <div className="relative flex items-center justify-center w-full">
           {isBigWin && (
-            <div className="absolute inset-0 z-0 animate-ping rounded-full bg-yellow-400 opacity-75 blur-md" style={{ transform: 'scale(3)' }}></div>
+            <div className="absolute inset-0 z-0 animate-ping rounded-full bg-yellow-400 opacity-75 blur-md" style={{ transform: 'scale(2.5)' }}></div>
           )}
           <div 
-            className={`relative rounded font-bold whitespace-nowrap shadow-lg transition-all duration-300 ${blinking ? 'scale-125 ring-2 ring-yellow-400 brightness-110 z-10' : 'scale-100 z-0'} ${isBigWin ? 'animate-bounce shadow-[0_0_30px_rgba(250,204,21,0.8)]' : ''}`}
+            className={`relative rounded-md font-bold whitespace-nowrap text-center transition-all duration-200 select-none ${
+              blinking ? 'scale-125 ring-2 ring-yellow-400 brightness-125 shadow-[0_0_15px_rgba(250,204,21,0.9)] z-20' : 'scale-100 z-0'
+            } ${isBigWin ? 'animate-bounce shadow-[0_0_25px_rgba(250,204,21,0.8)]' : 'shadow-md'}`}
             style={{ 
               backgroundColor: style.backgroundColor, 
               color: style.color, 
-              boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3)',
-              fontSize: numBuckets >= 15 ? '7px' : numBuckets > 12 ? '9px' : '12px',
-              padding: numBuckets >= 15 ? '2px 2px' : numBuckets > 12 ? '4px 4px' : '5px 8px',
-              transform: numBuckets >= 15 ? 'scale(0.85)' : 'none'
+              boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4)',
+              fontSize,
+              padding: numBuckets >= 14 ? '2px 3px' : '3px 5px',
+              maxWidth: `${badgeWidth}px`,
+              lineHeight: 1.1,
             }}
           >
             {style.multiplier}x
@@ -105,7 +113,7 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, on
       </Html>
       
       {/* Visible divider wall perfectly aligned under the peg above it to cleanly separate buckets */}
-      <RigidBody type="fixed" position={[PEG_SPACING_X/2, -0.2, 0]} restitution={0.4} friction={0}>
+      <RigidBody type="fixed" position={[PEG_SPACING_X/2, -0.2, 0]} restitution={0.2} friction={0.05}>
          <CuboidCollider args={[0.02, 0.5, 0.25]} />
          <BallCollider args={[0.04]} position={[0, 0.5, 0]} />
          <mesh position={[0, 0, 0]} geometry={dividerBoxGeo} material={dividerMat} />
@@ -115,7 +123,7 @@ function PlinkoBucket({ style, x, bucketY, i, hitCount, isBigWin, numBuckets, on
   );
 }
 
-function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: { rows: Rows, difficulty: Difficulty, onBallLanded: (idx: number, ballId: string) => void, bucketHits: Record<number, number>, bigWinIdx?: number | null }) {
+function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHitTimes, bigWinIdx }: { rows: Rows, difficulty: Difficulty, onBallLanded: (idx: number, ballId: string) => void, bucketHitTimes: Record<number, number>, bigWinIdx?: number | null }) {
   const multipliers = useMemo(() => getMultiplierTable(difficulty, rows), [difficulty, rows]);
   const colors = useMemo(() => generateColors(difficulty, multipliers), [difficulty, multipliers]);
 
@@ -138,16 +146,16 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
   return (
     <group position={[0, rows * 0.4, 0]}>
       {/* Background board (No RigidBody to prevent ball scraping against it) */}
-      <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} scale={[(rows + 2) * PEG_SPACING_X + 4, (rows + 2) * PEG_SPACING_Y + 4, 0.5]} receiveShadow geometry={boardBgGeo} material={boardBgMat} />
+      <mesh position={[0, -rows/2 * PEG_SPACING_Y, -0.5]} scale={[(rows + 2) * PEG_SPACING_X + 8, (rows + 2) * PEG_SPACING_Y + 4, 0.5]} receiveShadow geometry={boardBgGeo} material={boardBgMat} />
 
-      {/* Individual Pegs */}
+      {/* Individual Pegs - reduced restitution prevents crazy pinging and sticking */}
       {pegPositions.map((peg) => (
         <RigidBody 
           key={peg.id} 
           type="fixed" 
           position={peg.pos}
-          restitution={0.65}
-          friction={0.01}
+          restitution={0.35}
+          friction={0.02}
           userData={{ isPeg: true }}
         >
           <BallCollider args={[PEG_RADIUS]} />
@@ -164,12 +172,12 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
         </RigidBody>
       ))}
 
-      {/* Side Walls to funnel balls inside */}
-      <RigidBody type="fixed" position={[-((numBuckets * PEG_SPACING_X) / 2 + 0.5), -rows/2 * PEG_SPACING_Y, 0]} restitution={0.2} friction={0.1}>
-        <CuboidCollider args={[0.5, rows * PEG_SPACING_Y, 1]} />
+      {/* Generously wide outer catch boundaries so the ball follows natural deflections without being artificially boxed into a narrow frame */}
+      <RigidBody type="fixed" position={[-((numBuckets * PEG_SPACING_X) / 2 + 2.0), -rows/2 * PEG_SPACING_Y, 0]} restitution={0.15} friction={0.1}>
+        <CuboidCollider args={[0.5, (rows + 4) * PEG_SPACING_Y, 1]} />
       </RigidBody>
-      <RigidBody type="fixed" position={[((numBuckets * PEG_SPACING_X) / 2 + 0.5), -rows/2 * PEG_SPACING_Y, 0]} restitution={0.2} friction={0.1}>
-        <CuboidCollider args={[0.5, rows * PEG_SPACING_Y, 1]} />
+      <RigidBody type="fixed" position={[((numBuckets * PEG_SPACING_X) / 2 + 2.0), -rows/2 * PEG_SPACING_Y, 0]} restitution={0.15} friction={0.1}>
+        <CuboidCollider args={[0.5, (rows + 4) * PEG_SPACING_Y, 1]} />
       </RigidBody>
 
       {/* Buckets/Sensors */}
@@ -182,7 +190,7 @@ function PlinkoBoard({ rows, difficulty, onBallLanded, bucketHits, bigWinIdx }: 
             x={x} 
             bucketY={bucketY} 
             i={i} 
-            hitCount={bucketHits[i] || 0}
+            lastHitTimestamp={bucketHitTimes[i] || 0}
             isBigWin={bigWinIdx === i}
             numBuckets={numBuckets}
             onBallLanded={onBallLanded}
@@ -237,16 +245,17 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
     const fieldBottom = boardOriginY - (steerRef.current.totalRows + 0.5) * 0.8;
     if (pos.y > fieldBottom) {
       const speedSq = vel.x * vel.x + vel.y * vel.y;
-      // If speed drops significantly while perched on a peg or divider
-      if (speedSq < 0.15) {
+      // If speed drops significantly while perched or balanced on a peg or divider
+      if (speedSq < 0.25 || vel.y > -0.05) {
         stuckTimer.current += delta;
-        if (stuckTimer.current > 0.12) {
+        if (stuckTimer.current > 0.08) {
           stuckTimer.current = 0;
           const targetRow = Math.min(Math.max(0, steerRef.current.currentRow), steerRef.current.totalRows - 1);
           const dir = steerRef.current.path[targetRow] === 'R' ? 1 : -1;
           rbRef.current.wakeUp();
-          rbRef.current.applyImpulse({ x: dir * 0.25, y: -0.2, z: 0 }, true);
-          rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: -dir * 0.1 }, true);
+          // Decisive downward push with slight sideways nudge so it immediately rolls off any peg
+          rbRef.current.applyImpulse({ x: dir * 0.22, y: -0.32, z: 0 }, true);
+          rbRef.current.applyTorqueImpulse({ x: 0, y: 0, z: -dir * 0.12 }, true);
         }
       } else {
         stuckTimer.current = 0;
@@ -258,7 +267,7 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
     if (e.other.rigidBodyObject?.userData?.isPeg) {
       const now = Date.now();
       // debounce multiple collisions on the same peg slightly
-      if (now - lastHitTime.current < 50) return;
+      if (now - lastHitTime.current < 40) return;
       lastHitTime.current = now;
 
       if (rbRef.current) {
@@ -280,10 +289,10 @@ function PlinkoBall({ id, position, steeringState, boardOriginY, onDespawn }: { 
       ref={rbRef} 
       position={position} 
       colliders="ball" 
-      restitution={0.65} 
-      friction={0.01}
-      linearDamping={0.05}
-      angularDamping={0.05}
+      restitution={0.35} 
+      friction={0.02}
+      linearDamping={0.02}
+      angularDamping={0.02}
       canSleep={false}
       ccd={true}
       userData={{ isBall: true }}
@@ -311,7 +320,7 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
   
   // Active State
   const [balls, setBalls] = useState<{ id: string, bet: number, startX: number, steer: PathSteeringState, payout: number, finalBalance: number }[]>([]);
-  const [bucketHits, setBucketHits] = useState<Record<number, number>>({});
+  const [bucketHitTimes, setBucketHitTimes] = useState<Record<number, number>>({});
   const [bigWinIdx, setBigWinIdx] = useState<number | null>(null);
 
   // Provably Fair State
@@ -521,9 +530,10 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
       setServerSeed(ball.steer.serverSeed);
     }
     
-    setBucketHits(prev => ({ ...prev, [authoritativeBucket]: (prev[authoritativeBucket] || 0) + 1 }));
+    // Always trigger visual blinking using unique high-res timestamp for the landing bucket
+    setBucketHitTimes(prev => ({ ...prev, [authoritativeBucket]: Date.now() }));
     
-    // Use the authoritative payout from the server!
+    // Authoritative payout from the server calculation
     const winAmount = ball.payout;
     const mult = (ball.bet > 0) ? (winAmount / ball.bet) : 0;
     
@@ -552,7 +562,7 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
     
     if (winAmount > 0) {
       if (mult >= 10) {
-        setBigWinIdx(bucketIdx);
+        setBigWinIdx(authoritativeBucket);
         setTimeout(() => setBigWinIdx(null), 1500);
         // Dynamic sound scaling for huge wins
         audio.play('plinko', 'big-win-low');
@@ -566,13 +576,32 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
       
       if (mult >= 5) vibrate(100);
       
-      // Update UI balance securely to the final balance provided by the server initially
-      secureRecordGameResult({ userId: profile!.id, betAmount: ball.bet, earnedAmount: winAmount, xpEarned: Math.floor(ball.bet * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
+      // Update UI balance: Add winAmount to live current tokens so concurrent balls never overwrite balance
+      const currentLiveTokens = useAuthStore.getState().profile?.tokens ?? (profile?.tokens || 0);
+      const updatedBalance = currentLiveTokens + winAmount;
+      updateProfile({ tokens: updatedBalance } as any);
+
+      // Persist to backend / RPC
+      if (profile?.id) {
+        secureRecordGameResult({ 
+          userId: profile.id, 
+          betAmount: 0, // Bet was already deducted upfront at spawnBall
+          earnedAmount: winAmount, 
+          xpEarned: Math.floor(ball.bet * 0.1) 
+        }).catch(err => console.error('[Plinko] Record game result error:', err));
+      }
     } else {
-      // Even if 0 win, ensure UI syncs to the final server balance
-      secureRecordGameResult({ userId: profile!.id, betAmount: ball.bet, earnedAmount: winAmount, xpEarned: Math.floor(ball.bet * 0.1) }).then((res) => { if (res.data) { updateProfile({ tokens: res.data }); } else { updateProfile({ tokens: ball.finalBalance }); } });
+      // 0 multiplier - bet was already deducted at spawn, just record loss for stats/xp
+      if (profile?.id) {
+        secureRecordGameResult({ 
+          userId: profile.id, 
+          betAmount: 0, 
+          earnedAmount: 0, 
+          xpEarned: Math.floor(ball.bet * 0.05) 
+        }).catch(err => console.error('[Plinko] Record game result error:', err));
+      }
     }
-  }, [balls, profile, updateProfile, removeBall, stopAutobet, stopOnProfit, stopOnLoss]);
+  }, [balls, profile, updateProfile, removeBall, stopAutobet, stopOnProfit, stopOnLoss, betAmount, onWinRule, onWinPct, onLossRule, onLossPct]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/40 backdrop-blur-3xl">
@@ -586,7 +615,7 @@ export default function PlinkoGame({ onClose }: { onClose: () => void }) {
                 <VFXManager>
                   <Physics>
                     <CameraAdjuster rows={rows} />
-                    <PlinkoBoard key={`${rows}-${risk}`} rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHits={bucketHits} bigWinIdx={bigWinIdx} />
+                    <PlinkoBoard key={`${rows}-${risk}`} rows={rows} difficulty={risk} onBallLanded={handleBallLanded} bucketHitTimes={bucketHitTimes} bigWinIdx={bigWinIdx} />
                     
                     {balls.map(ball => (
                       <PlinkoBall 

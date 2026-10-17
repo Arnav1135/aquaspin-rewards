@@ -8,3 +8,4 @@
 | 2026-10-17 | `REC-DRAGONTIGER-FELT-LIGHTING-PBR` | `7a33ba7` | Preview | https://aquaspin-rewards-fpm1quq0p-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-LIMBO-QUANTUM-REACTOR-PBR` | `256c8ed` | Preview | https://aquaspin-rewards-6zg5ma880-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-CHICKEN-PBR-SILVER-CLOCHE` | `98fa1fd` | Preview | https://aquaspin-rewards-it4a2g7og-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-17 | `REC-FLIP-DUAL-METALLIC-COIN-PBR` | `abfa581` | Preview | https://aquaspin-rewards-83ylu54mr-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |

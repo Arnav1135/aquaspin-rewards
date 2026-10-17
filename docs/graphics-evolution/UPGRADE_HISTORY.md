@@ -10,3 +10,4 @@
 | `REC-MINES-VOLUMETRIC-TILE-REVEAL` | **Mines** | Volumetric Depth, Glassmorphism & Crystal Gem Glow in Mines | **ACCEPTED** | 2026-10-17 |
 | `REC-CRASH-CYBERPUNK-VOLUMETRIC-GRAPH` | **Crash** | Cyberpunk Volumetric Neon Flight Curve, Exhaust Plume & Procedural Vector Interceptor Craft for Crash | **ACCEPTED** | 2026-10-17 |
 | `REC-DRAGONTIGER-FELT-LIGHTING-PBR` | **DragonTiger** | Luxury Casino Felt Shading, Dynamic Spotlight PBR & Holographic Card Deal FX for Dragon Tiger | **ACCEPTED** | 2026-10-17 |
+| `REC-LIMBO-QUANTUM-REACTOR-PBR` | **Limbo** | Quantum Reactor Holographic HUD, High-Voltage Plasma Arc & Cybernetic Speed Tunnel for Limbo | **ACCEPTED** | 2026-10-17 |

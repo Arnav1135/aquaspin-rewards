@@ -11,7 +11,8 @@ import { playTone, vibrate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface LimboGameProps { onClose: () => void; }
-type Star = { x: number; y: number; size: number; speed: number; };
+type WarpRay = { angle: number; dist: number; speed: number; len: number; color: string; };
+type QuantumShockwave = { radius: number; opacity: number; color: string; maxRadius: number; };
 
 export function LimboGame({ onClose }: LimboGameProps) {
   const { profile, updateProfile } = useAuthStore();
@@ -25,36 +26,147 @@ export function LimboGame({ onClose }: LimboGameProps) {
   const [displayNum, setDisplayNum] = useState('1.00');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const starsRef = useRef<Star[]>([]);
+  const warpRaysRef = useRef<WarpRay[]>([]);
+  const shockwavesRef = useRef<QuantumShockwave[]>([]);
   const rAFRef = useRef<number | null>(null);
   const rollingRef = useRef(false);
+  const reactorAngleRef = useRef(0);
   const balance = profile?.tokens ?? 0;
 
   useEffect(() => { rollingRef.current = rolling; }, [rolling]);
 
+  // Initialize Quantum Hyperspace Rays
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const W = canvas.width, H = canvas.height;
-    starsRef.current = Array.from({ length: 80 }, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      size: Math.random() * 2 + 0.5, speed: Math.random() * 0.8 + 0.3
+    const maxDist = Math.sqrt((W / 2) ** 2 + (H / 2) ** 2);
+
+    warpRaysRef.current = Array.from({ length: 90 }, () => ({
+      angle: Math.random() * Math.PI * 2,
+      dist: Math.random() * maxDist,
+      speed: 2 + Math.random() * 4,
+      len: 10 + Math.random() * 25,
+      color: Math.random() > 0.3 ? '#00f0ff' : '#38bdf8'
     }));
+
     const loop = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
-      ctx.fillStyle = 'rgba(5,14,26,0.25)';
-      ctx.fillRect(0, 0, W, H);
-      starsRef.current.forEach(s => {
-        s.y += s.speed * (rollingRef.current ? 5 : 1);
-        if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+      const cW = canvas.width, cH = canvas.height;
+      const cX = cW / 2, cY = cH / 2;
+      const isFast = rollingRef.current;
+
+      // 1. Cosmic Void Backdrop with Vignette
+      const bgGrad = ctx.createRadialGradient(cX, cY, 30, cX, cY, cW * 0.75);
+      bgGrad.addColorStop(0, '#061325');
+      bgGrad.addColorStop(0.5, '#030a16');
+      bgGrad.addColorStop(1, '#01040a');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, cW, cH);
+
+      reactorAngleRef.current += isFast ? 0.04 : 0.008;
+
+      // 2. Quantum Hyperspace Warp Rays
+      const speedMultiplier = isFast ? 4.5 : 1;
+      warpRaysRef.current.forEach(ray => {
+        ray.dist += ray.speed * speedMultiplier;
+        if (ray.dist > maxDist) {
+          ray.dist = 15 + Math.random() * 20;
+          ray.angle = Math.random() * Math.PI * 2;
+        }
+
+        const p1x = cX + Math.cos(ray.angle) * ray.dist;
+        const p1y = cY + Math.sin(ray.angle) * ray.dist;
+        const tailDist = Math.max(10, ray.dist - ray.len * (isFast ? 2.5 : 1));
+        const p0x = cX + Math.cos(ray.angle) * tailDist;
+        const p0y = cY + Math.sin(ray.angle) * tailDist;
+
+        const alpha = Math.min(1, (ray.dist / maxDist) * (isFast ? 0.9 : 0.5));
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${0.4 + s.size * 0.2})`;
-        ctx.fill();
+        ctx.moveTo(p0x, p0y);
+        ctx.lineTo(p1x, p1y);
+        ctx.strokeStyle = `rgba(0, 240, 255, ${alpha})`;
+        ctx.lineWidth = isFast ? 2 : 1;
+        ctx.stroke();
       });
+
+      // 3. Concentric Quantum Reactor Rings
+      const ringPulse = 1 + 0.05 * Math.sin(Date.now() / 150);
+      const ringRadii = [60, 110, 160];
+
+      ringRadii.forEach((r, idx) => {
+        const currentR = r * ringPulse * (isFast ? 1.08 : 1);
+        ctx.beginPath();
+        ctx.arc(cX, cY, currentR, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 240, 255, ${0.12 - idx * 0.03})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Rotating Segmented Ticks
+        const segments = 12 + idx * 6;
+        const rotDir = idx % 2 === 0 ? 1 : -1;
+        for (let s = 0; s < segments; s++) {
+          const sAngle = (s * Math.PI * 2) / segments + reactorAngleRef.current * rotDir;
+          const tx1 = cX + Math.cos(sAngle) * (currentR - 4);
+          const ty1 = cY + Math.sin(sAngle) * (currentR - 4);
+          const tx2 = cX + Math.cos(sAngle) * (currentR + 4);
+          const ty2 = cY + Math.sin(sAngle) * (currentR + 4);
+
+          ctx.beginPath();
+          ctx.moveTo(tx1, ty1);
+          ctx.lineTo(tx2, ty2);
+          ctx.strokeStyle = isFast ? 'rgba(0, 240, 255, 0.45)' : 'rgba(0, 240, 255, 0.2)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+      });
+
+      // 4. Electric Plasma Lightning Discharges during Roll
+      if (isFast) {
+        ctx.save();
+        for (let arc = 0; arc < 4; arc++) {
+          const baseAng = Math.random() * Math.PI * 2;
+          let lx = cX + Math.cos(baseAng) * 45;
+          let ly = cY + Math.sin(baseAng) * 45;
+
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          for (let step = 0; step < 4; step++) {
+            const nextAng = baseAng + (Math.random() - 0.5) * 0.8;
+            const nextDist = 45 + (step + 1) * 25;
+            lx = cX + Math.cos(nextAng) * nextDist + (Math.random() - 0.5) * 12;
+            ly = cY + Math.sin(nextAng) * nextDist + (Math.random() - 0.5) * 12;
+            ctx.lineTo(lx, ly);
+          }
+          ctx.strokeStyle = Math.random() > 0.5 ? '#00f0ff' : '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = '#00f0ff';
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 5. Quantum Shockwaves
+      shockwavesRef.current = shockwavesRef.current.filter(sw => sw.opacity > 0);
+      shockwavesRef.current.forEach(sw => {
+        ctx.beginPath();
+        ctx.arc(cX, cY, sw.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = sw.color.replace('ALPHA', String(sw.opacity));
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = sw.color.replace('ALPHA', '1');
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        sw.radius += 5.5;
+        sw.opacity -= 0.03;
+      });
+
       rAFRef.current = requestAnimationFrame(loop);
     };
+
     rAFRef.current = requestAnimationFrame(loop);
     return () => { if (rAFRef.current) cancelAnimationFrame(rAFRef.current); };
   }, []);
@@ -62,10 +174,10 @@ export function LimboGame({ onClose }: LimboGameProps) {
   const handleRoll = async () => {
     if (betAmount <= 0) { toast.error('Enter a valid bet!'); return; }
     
-    const { profile, isOwner, updateProfile } = useAuthStore.getState();
-    const freeTrials = profile?.free_trials ?? 3;
-    const isFreeTrial = !isOwner && !profile?.has_deposited && freeTrials > 0;
-    const outOfTrials = !isOwner && !profile?.has_deposited && freeTrials <= 0;
+    const { profile: currentProf, isOwner, updateProfile: updateProf } = useAuthStore.getState();
+    const freeTrials = currentProf?.free_trials ?? 3;
+    const isFreeTrial = !isOwner && !currentProf?.has_deposited && freeTrials > 0;
+    const outOfTrials = !isOwner && !currentProf?.has_deposited && freeTrials <= 0;
     
     if (outOfTrials) { toast.error('Out of free trials! Deposit real cash to play unlimited.'); return; }
     const actualBetAmount = isFreeTrial ? 0 : betAmount;
@@ -80,10 +192,10 @@ export function LimboGame({ onClose }: LimboGameProps) {
     setShowConfetti(false); setBgColor('rgba(0,0,0,0)');
     playTone(200, 0.1, 'sine', 0.2);
     const nb = balance - actualBetAmount;
-    if (profile && !profile.id.startsWith('guest')) {
-      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', profile.id); } catch {}
+    if (currentProf && !currentProf.id.startsWith('guest')) {
+      try { await (supabase.from('users') as any).update({ tokens: nb }).eq('id', currentProf.id); } catch {}
     }
-    updateProfile({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
+    updateProf({ tokens: nb, ...(isFreeTrial ? { free_trials: freeTrials - 1 } : {}) });
     const u = Math.random();
     let roll = Math.round((0.96 / u) * 100) / 100;
     if (roll < 1.0) roll = 1.0;
@@ -104,8 +216,21 @@ export function LimboGame({ onClose }: LimboGameProps) {
         setWin(isWin);
         setNearMiss(isNearMiss);
         finalizeResult(roll, isWin, isNearMiss, nb);
-        if (isWin) { setBgColor('rgba(16,185,129,0.12)'); setShowConfetti(true); setTimeout(() => setShowConfetti(false), 1200); }
-        else setBgColor('rgba(239,68,68,0.10)');
+        if (isWin) {
+          setBgColor('rgba(16,185,129,0.12)');
+          setShowConfetti(true);
+          shockwavesRef.current.push(
+            { radius: 30, opacity: 1, color: 'rgba(16, 185, 129, ALPHA)', maxRadius: 220 },
+            { radius: 10, opacity: 0.8, color: 'rgba(0, 240, 255, ALPHA)', maxRadius: 180 }
+          );
+          setTimeout(() => setShowConfetti(false), 1200);
+        } else if (isNearMiss) {
+          setBgColor('rgba(249,115,22,0.12)');
+          shockwavesRef.current.push({ radius: 20, opacity: 1, color: 'rgba(249, 115, 22, ALPHA)', maxRadius: 160 });
+        } else {
+          setBgColor('rgba(239,68,68,0.10)');
+          shockwavesRef.current.push({ radius: 20, opacity: 0.9, color: 'rgba(239, 68, 68, ALPHA)', maxRadius: 140 });
+        }
       }
     }, 65);
   };
@@ -139,7 +264,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
   };
 
   const winChance = Math.min(100, (96 / targetMultiplier));
-  const numColor = win === true ? '#10b981' : win === false ? '#ef4444' : '#00F0FF';
+  const numColor = win === true ? '#10b981' : win === false ? (nearMiss ? '#f97316' : '#ef4444') : '#00F0FF';
   const presets = [1.5, 2, 3, 5, 10, 50];
 
   return (
@@ -161,7 +286,7 @@ export function LimboGame({ onClose }: LimboGameProps) {
             <div className="grid grid-cols-3 gap-1.5">
               {presets.map(p => (
                 <button key={p} onClick={() => setTargetMultiplier(p)} disabled={rolling}
-                  className={`py-1.5 rounded-lg text-xs font-bold border transition-all ${targetMultiplier === p ? 'border-cyan-neon bg-cyan-neon/10 text-cyan-neon' : 'border-navy-700 text-muted hover:border-navy-500'}`}>
+                  className={`py-1.5 rounded-lg text-xs font-bold border transition-all ${targetMultiplier === p ? 'border-cyan-neon bg-cyan-neon/10 text-cyan-neon shadow-[0_0_12px_rgba(0,240,255,0.3)]' : 'border-navy-700 text-muted hover:border-navy-500'}`}>
                   {p}x
                 </button>
               ))}
@@ -172,19 +297,19 @@ export function LimboGame({ onClose }: LimboGameProps) {
               <span>Win Chance</span><span>{winChance.toFixed(2)}%</span>
             </div>
             <div className="h-2 rounded-full bg-navy-800 overflow-hidden">
-              <motion.div className="h-full rounded-full bg-cyan-neon" animate={{ width: `${winChance}%` }} transition={{ duration: 0.4 }} />
+              <motion.div className="h-full rounded-full bg-cyan-neon shadow-[0_0_8px_#00f0ff]" animate={{ width: `${winChance}%` }} transition={{ duration: 0.4 }} />
             </div>
           </div>
         </div>
         <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl" disabled={rolling || betAmount <= 0 || betAmount > balance} onClick={handleRoll}>
-            {rolling ? 'Rolling...' : 'Bet'}
+          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.35)]" disabled={rolling || betAmount <= 0 || betAmount > balance} onClick={handleRoll}>
+            {rolling ? '⚡ Quantum Roll...' : 'Bet'}
           </Button>
           <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>Close Game</Button>
         </div>
       </Card>
 
-      <motion.div className="flex-1 relative rounded-2xl border border-navy-800/80 overflow-hidden min-h-[360px]"
+      <motion.div className="flex-1 relative rounded-2xl border border-navy-800/80 overflow-hidden min-h-[360px] shadow-[0_8px_32px_rgba(0,0,0,0.7)]"
         animate={{ backgroundColor: bgColor }} transition={{ duration: 0.5 }}>
         <canvas ref={canvasRef} width={600} height={400} className="absolute inset-0 w-full h-full" />
         <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted z-10">
@@ -193,32 +318,31 @@ export function LimboGame({ onClose }: LimboGameProps) {
         <div className="relative z-10 flex flex-col items-center justify-center h-full gap-6 p-6">
           <AnimatePresence mode="wait">
             <motion.div key={displayNum}
-              initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
-              transition={{ duration: 0.05 }}>
-              <motion.p className="text-7xl md:text-8xl font-extrabold font-mono tracking-tight drop-shadow-lg"
-                style={{ color: numColor }}
-                animate={nearMiss && win === false ? { boxShadow: ['0 0 0 0 rgba(249,115,22,0.5)', '0 0 0 20px rgba(249,115,22,0)', '0 0 0 0 rgba(249,115,22,0.5)'] } : {}}
-                transition={{ repeat: 3, duration: 0.5 }}>
+              initial={{ y: 20, opacity: 0, scale: 0.9 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: -20, opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.05 }}
+              className="relative">
+              <motion.p className="text-7xl md:text-8xl font-extrabold font-mono tracking-tight drop-shadow-[0_0_30px_rgba(0,240,255,0.5)]"
+                style={{ color: numColor }}>
                 {displayNum}x
               </motion.p>
             </motion.div>
           </AnimatePresence>
 
           <div className="min-h-[32px] text-center">
-            {win === true && <motion.p initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-sm font-bold text-success uppercase tracking-widest">🎉 TARGET HIT!</motion.p>}
-            {win === false && !nearMiss && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm font-bold text-danger uppercase tracking-widest">❌ CRASHED</motion.p>}
-            {win === false && nearMiss && <motion.span initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-xs px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold">⚡ NEAR MISS!</motion.span>}
-            {rolling && <p className="text-xs text-muted animate-pulse uppercase tracking-wider">Launching...</p>}
+            {win === true && <motion.p initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-sm font-bold text-success uppercase tracking-widest drop-shadow-[0_0_12px_rgba(16,185,129,0.8)]">🎉 QUANTUM TARGET HIT!</motion.p>}
+            {win === false && !nearMiss && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm font-bold text-danger uppercase tracking-widest drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]">❌ CORE COLLAPSED</motion.p>}
+            {win === false && nearMiss && <motion.span initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-xs px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/50 text-orange-400 font-bold shadow-[0_0_15px_rgba(249,115,22,0.4)]">⚡ HIGH VOLTAGE NEAR MISS!</motion.span>}
+            {rolling && <p className="text-xs text-cyan-400 animate-pulse uppercase tracking-wider font-mono">⚡ Accelerating Quantum Flux...</p>}
           </div>
 
           {showConfetti && (
             <div className="absolute inset-0 pointer-events-none">
-              {Array.from({ length: 20 }).map((_, i) => {
-                const angle = (i / 20) * Math.PI * 2;
-                const dist = 80 + Math.random() * 80;
+              {Array.from({ length: 24 }).map((_, i) => {
+                const angle = (i / 24) * Math.PI * 2;
+                const dist = 90 + Math.random() * 90;
                 return (
                   <motion.div key={i} className="absolute rounded-full"
-                    style={{ width: 7, height: 7, top: '50%', left: '50%', marginTop: -3, marginLeft: -3, background: i % 2 === 0 ? '#f59e0b' : '#00F0FF' }}
+                    style={{ width: 8, height: 8, top: '50%', left: '50%', marginTop: -4, marginLeft: -4, background: i % 2 === 0 ? '#10b981' : '#00F0FF', boxShadow: '0 0 10px #00f0ff' }}
                     initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
                     animate={{ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, opacity: 0, scale: 0 }}
                     transition={{ duration: 0.9, ease: 'easeOut' }} />
@@ -228,11 +352,12 @@ export function LimboGame({ onClose }: LimboGameProps) {
           )}
 
           <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex justify-between text-2xs text-muted mb-1">
-              <span>Target: {targetMultiplier.toFixed(2)}x</span><span>{winChance.toFixed(2)}% chance</span>
+            <div className="flex justify-between text-2xs text-muted mb-1 font-mono">
+              <span>Target: <strong className="text-cyan-neon">{targetMultiplier.toFixed(2)}x</strong></span>
+              <span>{winChance.toFixed(2)}% chance</span>
             </div>
-            <div className="h-1.5 rounded-full bg-navy-800 overflow-hidden">
-              <div className="h-full rounded-full bg-cyan-neon/70 transition-all duration-300" style={{ width: `${winChance}%` }} />
+            <div className="h-1.5 rounded-full bg-navy-800 overflow-hidden p-0.5">
+              <div className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300 shadow-[0_0_8px_#00f0ff]" style={{ width: `${winChance}%` }} />
             </div>
           </div>
         </div>

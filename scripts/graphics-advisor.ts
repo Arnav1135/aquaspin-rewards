@@ -191,6 +191,30 @@ export function inspectAndGenerateRecommendations(): GraphicsRecommendation[] {
       dependencies: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-LIMBO-QUANTUM-REACTOR-PBR',
+      targetGame: 'Limbo',
+      componentPath: 'src/components/games/LimboGame.tsx',
+      title: 'Quantum Reactor Holographic HUD, High-Voltage Plasma Arc & Cybernetic Speed Tunnel for Limbo',
+      defectOrLimitation: 'Limbo background uses flat falling dot particles and standard text presentation without dynamic volumetric lighting, particle accelerator FX, or quantum shockwave feedback on target hit.',
+      proposedImprovement: 'Add procedural quantum reactor tunnel with radial perspective hyperspace warp, chromatic aberration high-voltage plasma arcs around multiplier readout, volumetric laser target horizon, and shockwave particle corona on winning rolls.',
+      observableBenefit: 'High-energy adrenaline rush with arcade-cabinet hyper-drive visuals and electrifying near-miss/win animations.',
+      implementationApproach: 'Upgrade 2D background canvas to render high-speed perspective warp rays and rotating reactor rings; integrate dynamic electric arc discharges and pulsating quantum corona on target success.',
+      complexity: 'MEDIUM',
+      priority: 7,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Hyperspace warp tunnel runs at smooth 60fps',
+        'Quantum reactor rings expand dynamically during rolls',
+        'Winning corona and near-miss warning animations render cleanly'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ];
 

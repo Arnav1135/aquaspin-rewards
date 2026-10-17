@@ -37,11 +37,8 @@ registerSW({
   onRegisteredSW(swUrl: string, r: { installing: unknown; update: () => Promise<void> } | undefined) {
     console.log('[PWA] Service Worker registered:', swUrl);
     if (r) {
-      setInterval(async () => {
-        if (!navigator.onLine) return;
-        const resp = await fetch(swUrl, { cache: 'no-store' });
-        if (resp?.status === 200) await r.update();
-      }, 60 * 60 * 1000);
+      // Background auto-update polling has been permanently disabled
+      // The PWA will only update when the user refreshes the page or reopens the app.
     }
   },
   onOfflineReady() {

@@ -103,32 +103,72 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
       const y = (H / 5) * i; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
     }
 
-    // Pegs
+    // Pegs - AAA Metallic Specular Gradients & Impact Shockwave Rings
     pegsRef.current.forEach(peg => {
+      // Rebound shockwave ring if recently hit
+      if (peg.flash > 0) {
+        ctx.beginPath();
+        ctx.arc(peg.x, peg.y, 4.5 + (10 - peg.flash) * 1.2, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(0, 240, 255, ${peg.flash / 10})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
       ctx.beginPath();
       ctx.arc(peg.x, peg.y, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = peg.flash > 0 ? '#ffffff' : 'rgba(0,240,255,0.75)';
-      ctx.shadowBlur = peg.flash > 0 ? 14 : 7;
-      ctx.shadowColor = '#00F0FF';
+      
+      // Radial metallic specular highlight
+      const pegGrad = ctx.createRadialGradient(peg.x - 1.2, peg.y - 1.2, 0.5, peg.x, peg.y, 4.5);
+      if (peg.flash > 0) {
+        pegGrad.addColorStop(0, '#ffffff');
+        pegGrad.addColorStop(0.5, '#70f3ff');
+        pegGrad.addColorStop(1, '#00a3ff');
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = '#00f0ff';
+      } else {
+        pegGrad.addColorStop(0, '#c8f5ff');
+        pegGrad.addColorStop(0.4, '#00d0e6');
+        pegGrad.addColorStop(1, '#004c66');
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = 'rgba(0, 208, 230, 0.6)';
+      }
+      ctx.fillStyle = pegGrad;
       ctx.fill();
       ctx.shadowBlur = 0;
       if (peg.flash > 0) peg.flash--;
     });
 
-    // Buckets
+    // Buckets - Illuminated Neon Multiplier Pockets
     const bucketY = H - 60;
     multipliers.forEach((mult, i) => {
       const bx = getBucketX(i);
       const isFlashing = bucketFlashesRef.current.some(bf => bf.idx === i && bf.frames > 0);
       ctx.beginPath();
-      ctx.roundRect(bx - 12, bucketY, 24, 36, 5);
-      ctx.fillStyle = mult >= 10 ? (isFlashing ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.18)') :
-        mult >= 2 ? (isFlashing ? 'rgba(245,158,11,0.5)' : 'rgba(245,158,11,0.18)') :
-        mult >= 1 ? (isFlashing ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.15)') : 'rgba(30,41,59,0.35)';
-      ctx.strokeStyle = mult >= 10 ? '#ef4444' : mult >= 2 ? '#f59e0b' : mult >= 1 ? '#10b981' : '#334155';
-      ctx.lineWidth = isFlashing ? 2 : 1;
-      ctx.fill(); ctx.stroke();
-      ctx.font = 'bold 8px monospace'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.roundRect(bx - 12, bucketY, 24, 36, 6);
+      
+      const baseColor = mult >= 10 ? '#ef4444' : mult >= 2 ? '#f59e0b' : mult >= 1 ? '#10b981' : '#3b82f6';
+      const bucketGrad = ctx.createLinearGradient(bx, bucketY, bx, bucketY + 36);
+      if (isFlashing) {
+        bucketGrad.addColorStop(0, baseColor);
+        bucketGrad.addColorStop(1, 'rgba(255, 255, 255, 0.3)');
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = baseColor;
+      } else {
+        bucketGrad.addColorStop(0, `${baseColor}33`);
+        bucketGrad.addColorStop(1, 'rgba(15, 23, 42, 0.7)');
+        ctx.shadowBlur = 0;
+      }
+      ctx.fillStyle = bucketGrad;
+      ctx.fill();
+
+      ctx.strokeStyle = isFlashing ? '#ffffff' : baseColor;
+      ctx.lineWidth = isFlashing ? 2 : 1.2;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = isFlashing ? '#ffffff' : '#e2e8f0';
+      ctx.textAlign = 'center';
       ctx.fillText(`${mult >= 10 ? Math.floor(mult) : mult}x`, bx, bucketY + 22);
     });
     bucketFlashesRef.current.forEach(bf => { if (bf.frames > 0) bf.frames--; });
@@ -160,21 +200,32 @@ export function PlinkoGame({ onClose }: PlinkoGameProps) {
       if (ball.x < 15) { ball.x = 15; ball.vx = Math.abs(ball.vx) * 0.7; }
       if (ball.x > W - 15) { ball.x = W - 15; ball.vx = -Math.abs(ball.vx) * 0.7; }
       ball.trail.unshift({ x: ball.x, y: ball.y });
-      if (ball.trail.length > 9) ball.trail.pop();
+      if (ball.trail.length > 12) ball.trail.pop();
       if (ball.y > H - 65) {
         ball.settled = true;
         toSettle.push(ball);
       }
-      // Trail
+      // Motion blur trail with velocity glow
       ball.trail.forEach((tp, ti) => {
-        ctx.globalAlpha = ((9 - ti) / 9) * 0.5;
-        ctx.beginPath(); ctx.arc(tp.x, tp.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#FF0055'; ctx.fill();
+        const trailAlpha = ((12 - ti) / 12) * 0.45;
+        ctx.beginPath();
+        ctx.arc(tp.x, tp.y, Math.max(1, 6 - ti * 0.4), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 0, 85, ${trailAlpha})`;
+        ctx.fill();
       });
-      ctx.globalAlpha = 1;
-      // Ball
-      ctx.beginPath(); ctx.arc(ball.x, ball.y, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#FF0055'; ctx.shadowBlur = 14; ctx.shadowColor = '#FF0055'; ctx.fill(); ctx.shadowBlur = 0;
+      // Ball with 3D Radial Specular Sphere Shading
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, 7, 0, Math.PI * 2);
+      const ballGrad = ctx.createRadialGradient(ball.x - 2, ball.y - 2, 1, ball.x, ball.y, 7);
+      ballGrad.addColorStop(0, '#ffffff');
+      ballGrad.addColorStop(0.3, '#ff3377');
+      ballGrad.addColorStop(0.8, '#d60045');
+      ballGrad.addColorStop(1, '#66001d');
+      ctx.fillStyle = ballGrad;
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = 'rgba(255, 0, 85, 0.8)';
+      ctx.fill();
+      ctx.shadowBlur = 0;
     });
 
     // Settle balls with error handling

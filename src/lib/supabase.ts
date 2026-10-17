@@ -153,7 +153,25 @@ export async function getLeaderboard() {
 
 /** Get game stats for a user */
 export async function getGameStats(userId: string) {
-  return db.from('game_stats').select('*').eq('user_id', userId).single();
+  return db.from('game_stats').select('*').eq('user_id', userId).maybeSingle();
+}
+
+/** Fetch today's claimed daily missions */
+export async function getMissionClaims(userId: string) {
+  const today = new Date().toISOString().split('T')[0];
+  return db
+    .from('mission_claims')
+    .select('mission_id, tokens_awarded, created_at')
+    .eq('user_id', userId)
+    .eq('claimed_on', today);
+}
+
+/** Atomically validate and claim a daily mission reward */
+export async function claimMissionReward(userId: string, missionId: string) {
+  // userId is checked for UI consistency; the RPC always trusts auth.uid(), never this value.
+  if (!userId) return { data: null, error: 'Authentication required' };
+  const { data, error } = await db.rpc('claim_daily_mission', { p_mission_id: missionId });
+  return { data, error: error?.message ?? null };
 }
 
 /** Subscribe to realtime leaderboard changes */

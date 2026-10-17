@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home, Disc3, Gamepad2, Trophy, User, ShoppingBag,
-  FileText, X, Coins, TrendingUp
+  FileText, X, Coins, TrendingUp, Target
 } from 'lucide-react';
 import { useUIStore } from '@/features/uiStore';
 import { useAuthStore } from '@/features/authStore';
@@ -16,6 +16,7 @@ const navItems = [
   { to: '/dashboard',   icon: Home,        label: 'Dashboard' },
   { to: '/wheel',       icon: Disc3,        label: 'Spin Wheel', badge: 'SPIN' },
   { to: '/games',       icon: Gamepad2,     label: 'Mini Games' },
+  { to: '/progress',    icon: Target,       label: 'Missions & Achievements', badge: 'NEW' },
   { to: '/leaderboard', icon: Trophy,       label: 'Leaderboard' },
   { to: '/shop',        icon: ShoppingBag,  label: 'Shop' },
   { to: '/profile',     icon: User,         label: 'Profile' },

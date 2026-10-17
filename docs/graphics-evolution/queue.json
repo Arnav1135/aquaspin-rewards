@@ -1,0 +1,109 @@
+[
+  {
+    "id": "REC-PLINKO-CANVAS-HQ-PBR",
+    "targetGame": "Plinko",
+    "componentPath": "src/components/games/PlinkoGame.tsx",
+    "title": "High-Fidelity Canvas Shading, Peg Glow & Multi-Layer Depth for Plinko",
+    "defectOrLimitation": "Plinko canvas rendering uses flat 2D arcs with minimal lighting, basic trails, and no dynamic rim lighting or 3D peg bevel highlights.",
+    "proposedImprovement": "Implement procedural radial specular gradients, metallic peg rims, dynamic ball drop motion blur trail with particle sparks on bounce, and illuminated multiplier buckets.",
+    "observableBenefit": "Delivers physical arcade-cabinet depth, realistic metallic reflection on pegs, vibrant impact flashes, and responsive multiplier illumination.",
+    "implementationApproach": "Upgrade the 2D canvas draw loop: introduce radial specular gradients for pegs with neon rebound rings, enhanced multi-point ball shadow and velocity-stretched motion blur, and bucket bounce animations.",
+    "complexity": "MEDIUM",
+    "priority": 1,
+    "riskLevel": "LOW",
+    "status": "ACCEPTED",
+    "acceptanceCriteria": [
+      "TypeScript build passes with zero errors",
+      "Balls bounce accurately with responsive physics preserved",
+      "Pegs render with 3D specular highlight and ring flash on hit",
+      "Multiplier buckets show radiant glow state upon capture",
+      "No frame drops or memory leaks"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T08:21:08.425Z",
+    "updatedAt": "2026-10-17T08:21:08.425Z",
+    "outcome": "Successfully implemented, type-checked, and verified."
+  },
+  {
+    "id": "REC-ROULETTE-3D-PHYSICAL-WHEEL",
+    "targetGame": "Roulette",
+    "componentPath": "src/components/games/RouletteGame.tsx",
+    "title": "Physical PBR Shading & Metallic Rim Reflections for Roulette Wheel",
+    "defectOrLimitation": "Roulette wheel uses flat SVG/CSS borders without realistic metallic reflections, ambient occlusion, or physical ball track depth.",
+    "proposedImprovement": "Add conic-gradient metallic brass rim, ball shadow projection, and illuminated winning pocket highlights.",
+    "observableBenefit": "Luxury casino-grade wheel appearance with tangible metallic luster and realistic ball path illumination.",
+    "implementationApproach": "Enhance SVG/Canvas layers with multi-stop metallic linear/radial gradients, dynamic pocket bevels, and animated track specular reflections.",
+    "complexity": "MEDIUM",
+    "priority": 2,
+    "riskLevel": "LOW",
+    "status": "QUEUED",
+    "acceptanceCriteria": [
+      "Build passes without errors",
+      "Wheel spin animation remains 60fps",
+      "Winning pocket highlight pulses cleanly"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T08:21:08.425Z",
+    "updatedAt": "2026-10-17T08:39:29.907Z"
+  },
+  {
+    "id": "REC-COINFLIP-3D-PBR-TEXTURES",
+    "targetGame": "CoinFlip",
+    "componentPath": "src/features/coinflip/components/Coin3D.tsx",
+    "title": "3D PBR Coin Shading & Rim Milling Detail",
+    "defectOrLimitation": "Coin 3D flip has simplistic rim shading and lacks realistic light glint across the face during high-velocity rotation.",
+    "proposedImprovement": "Add procedural metallic edge milling, high-contrast Fresnel rim glint, and realistic depth drop-shadow on the floor plane.",
+    "observableBenefit": "Tangible heavyweight golden token feel with cinematic spin glint.",
+    "implementationApproach": "Update Coin3D SVG/Three/CSS transforms with dynamic light angle calculations and anisotropic reflection simulation.",
+    "complexity": "LOW",
+    "priority": 3,
+    "riskLevel": "LOW",
+    "status": "DISCOVERED",
+    "acceptanceCriteria": [
+      "Build passes",
+      "Tumbling physics unaffected",
+      "Specular sheen sweeps across face smoothly"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T08:21:08.425Z",
+    "updatedAt": "2026-10-17T08:21:08.425Z"
+  },
+  {
+    "id": "REC-MINES-VOLUMETRIC-TILE-REVEAL",
+    "targetGame": "Mines",
+    "componentPath": "src/components/games/MinesGame.tsx",
+    "title": "Volumetric Depth, Glassmorphism & Crystal Gem Glow in Mines",
+    "defectOrLimitation": "Mines tiles reveal with standard 2D flat fade; gems lack internal caustics and mines lack ominous pulse warnings.",
+    "proposedImprovement": "Add layered inset shadow bevels, crystal refraction highlight for gems, and molten warning heat-distortion on uncovered mines.",
+    "observableBenefit": "High-stakes tactile feedback with thrilling discovery visuals.",
+    "implementationApproach": "Integrate CSS 3D tile press effects, animated backdrop-filter crystal flares, and glowing hazard shaders.",
+    "complexity": "LOW",
+    "priority": 4,
+    "riskLevel": "LOW",
+    "status": "DISCOVERED",
+    "acceptanceCriteria": [
+      "Build passes",
+      "Tile grid alignment preserved on mobile and desktop",
+      "Zero lag during rapid reveals"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T08:21:08.425Z",
+    "updatedAt": "2026-10-17T08:21:08.425Z"
+  }
+]

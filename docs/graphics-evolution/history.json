@@ -1,0 +1,16 @@
+[
+  {
+    "id": "REC-PLINKO-CANVAS-HQ-PBR",
+    "targetGame": "Plinko",
+    "title": "High-Fidelity Canvas Shading, Peg Glow & Multi-Layer Depth for Plinko",
+    "executedAt": "2026-10-17T08:21:28.098Z",
+    "status": "ACCEPTED",
+    "componentPath": "src/components/games/PlinkoGame.tsx",
+    "observableBenefit": "Delivers physical arcade-cabinet depth, realistic metallic reflection on pegs, vibrant impact flashes, and responsive multiplier illumination.",
+    "testResults": {
+      "typeCheck": "PASS",
+      "error": null
+    },
+    "evidence": "Visual and canvas rendering upgraded in src/components/games/PlinkoGame.tsx."
+  }
+]

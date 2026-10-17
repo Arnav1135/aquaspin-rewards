@@ -23,6 +23,7 @@ import { MiniGames } from '@/pages/MiniGames';
 import { Leaderboard } from '@/pages/Leaderboard';
 import { Profile } from '@/pages/Profile';
 import { Shop } from '@/pages/Shop';
+import { Progress } from '@/pages/Progress';
 import { Legal } from '@/pages/Legal';
 
 // ── TanStack Query client ───────────────────────────────────────────────────
@@ -122,6 +123,7 @@ function AppRoutes() {
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
+          <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />

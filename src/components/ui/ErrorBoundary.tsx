@@ -3,7 +3,7 @@
 
 import React, { ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { AppError, logError, ErrorSeverity, ErrorCategory } from '@/lib/errors';
+import { AppError, createAppError, logError, ErrorSeverity, ErrorCategory } from '@/lib/errors';
 import { Button } from './Button';
 
 interface ErrorBoundaryProps {
@@ -38,12 +38,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    const appError = {
-      ...error,
-      category: ErrorCategory.RENDERING,
-      severity: ErrorSeverity.ERROR,
-      context: { componentStack: errorInfo.componentStack },
-    } as AppError;
+    const appError = createAppError(
+      error.message,
+      ErrorCategory.RENDERING,
+      ErrorSeverity.ERROR,
+      { context: { componentStack: errorInfo.componentStack, stack: error.stack } }
+    );
 
     logError(appError, { boundaryName: this.props.name });
     this.props.onError?.(error, errorInfo);
@@ -86,7 +86,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               </div>
 
               {/* Error details in development */}
-              {process.env.NODE_ENV === 'development' && (
+              {import.meta.env.DEV && (
                 <div className="bg-navy-950/80 rounded-lg p-3 space-y-2 text-xs font-mono border border-navy-700/50">
                   <div>
                     <p className="text-text-secondary">Message:</p>
@@ -178,13 +178,12 @@ export function createAsyncErrorHandler(
   }
 ) {
   return (error: unknown) => {
-    const appError = error instanceof Error
-      ? ({
-        ...error,
-        category: ErrorCategory.GAME_LOGIC,
-        severity: ErrorSeverity.ERROR,
-      } as AppError)
-      : new Error(String(error)) as AppError;
+    const appError = createAppError(
+      error instanceof Error ? error.message : String(error),
+      ErrorCategory.GAME_LOGIC,
+      ErrorSeverity.ERROR,
+      { context: error instanceof Error ? { stack: error.stack } : undefined }
+    );
 
     logError(appError);
     onError?.(appError);

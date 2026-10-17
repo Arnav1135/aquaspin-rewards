@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Disc3, Zap, Trophy, Flame, Gamepad2, TrendingUp,
-  Gift, ChevronRight, Coins, Calendar
+  Gift, ChevronRight, Coins, Calendar, Target
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/authStore';
@@ -213,6 +213,25 @@ export function Dashboard() {
             </Button>
           </Card>
         )}
+
+        {/* ── Progress feature callout ── */}
+        <Link to="/progress">
+          <Card hover glow="gold" className="flex items-center justify-between p-4 rounded-2xl border border-gold-neon/20">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gold-neon/15 flex items-center justify-center">
+                <Target size={24} className="text-gold-neon" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-text-primary">Daily Missions</h3>
+                  <Badge variant="gold">NEW</Badge>
+                </div>
+                <p className="text-sm text-text-secondary">Complete goals and unlock achievements</p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-muted" />
+          </Card>
+        </Link>
 
         {/* ── Quick actions ── */}
         <div className="grid grid-cols-1 gap-3">

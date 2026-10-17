@@ -10,3 +10,4 @@
 | 2026-10-17 | `REC-CHICKEN-PBR-SILVER-CLOCHE` | `98fa1fd` | Preview | https://aquaspin-rewards-it4a2g7og-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-FLIP-DUAL-METALLIC-COIN-PBR` | `abfa581` | Preview | https://aquaspin-rewards-83ylu54mr-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-TAP-NEON-TARGET-PARTICLE-BURST` | `d4885ac` | Preview | https://aquaspin-rewards-b2pj1yugd-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-17 | `REC-CLICKER-CYBER-CORE-PULSE` | `2f5868f` | Preview | https://aquaspin-rewards-ri1vbqmh8-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |

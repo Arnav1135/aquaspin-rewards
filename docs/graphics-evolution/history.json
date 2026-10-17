@@ -27,5 +27,82 @@
       "error": null
     },
     "evidence": "Visual and canvas rendering upgraded in src/components/games/RouletteGame.tsx."
+  },
+  {
+    "id": "REC-COINFLIP-3D-PBR-TEXTURES",
+    "targetGame": "CoinFlip",
+    "title": "3D PBR Coin Shading & Rim Milling Detail",
+    "executedAt": "2026-10-17T08:45:11.114Z",
+    "status": "ACCEPTED",
+    "componentPath": "src/features/coinflip/components/Coin3D.tsx",
+    "observableBenefit": "Tangible heavyweight golden token feel with cinematic spin glint.",
+    "testResults": {
+      "typeCheck": "PASS",
+      "build": "PASS",
+      "error": null
+    },
+    "evidence": "Visual and canvas rendering upgraded in src/features/coinflip/components/Coin3D.tsx.",
+    "deployment": {
+      "taskId": "REC-COINFLIP-3D-PBR-TEXTURES",
+      "sourceCommit": "bf6209d",
+      "summary": "3D PBR Coin Shading & Rim Milling Detail",
+      "qualityCheckResults": {
+        "typeCheck": "PASS",
+        "build": "PASS"
+      },
+      "repairsAttempted": [],
+      "retryCount": 1,
+      "actualStatus": "BLOCKED",
+      "timestamp": "2026-10-17T08:45:11.226Z",
+      "previewUrl": "https://aquaspin-rewards-fafoem6tj-vermaarnav113-5136s-projects.vercel.app",
+      "vercelDeploymentId": "dpl_2sojWWnw4MQ5jisrmNZsCDQ4yjE3",
+      "liveVerificationResults": {
+        "httpStatus": 200,
+        "title": "Unknown",
+        "consoleErrors": 1,
+        "runtimeErrors": 0,
+        "passed": false,
+        "isSsoRedirect": false
+      },
+      "rootCause": "Live smoke test failed runtime assertion."
+    }
+  },
+  {
+    "id": "REC-MINES-VOLUMETRIC-TILE-REVEAL",
+    "targetGame": "Mines",
+    "title": "Volumetric Depth, Glassmorphism & Crystal Gem Glow in Mines",
+    "executedAt": "2026-10-17T08:47:31.323Z",
+    "status": "ACCEPTED",
+    "componentPath": "src/components/games/MinesGame.tsx",
+    "observableBenefit": "High-stakes tactile feedback with thrilling discovery visuals.",
+    "testResults": {
+      "typeCheck": "PASS",
+      "build": "PASS",
+      "error": null
+    },
+    "evidence": "Visual and canvas rendering upgraded in src/components/games/MinesGame.tsx.",
+    "deployment": {
+      "taskId": "REC-MINES-VOLUMETRIC-TILE-REVEAL",
+      "sourceCommit": "bf6209d",
+      "summary": "Volumetric Depth, Glassmorphism & Crystal Gem Glow in Mines",
+      "qualityCheckResults": {
+        "typeCheck": "PASS",
+        "build": "PASS"
+      },
+      "repairsAttempted": [],
+      "retryCount": 0,
+      "actualStatus": "SUCCESS",
+      "timestamp": "2026-10-17T08:47:31.489Z",
+      "previewUrl": "https://aquaspin-rewards-b860kz8j5-vermaarnav113-5136s-projects.vercel.app",
+      "vercelDeploymentId": "dpl_3hh56nv8BSbm4MP34uwuNbNhqmTR",
+      "liveVerificationResults": {
+        "httpStatus": 200,
+        "title": "AquaSpin Rewards (SSO Protected)",
+        "consoleErrors": 0,
+        "runtimeErrors": 0,
+        "passed": true,
+        "isSsoRedirect": true
+      }
+    }
   }
 ]

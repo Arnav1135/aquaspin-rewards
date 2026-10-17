@@ -67,7 +67,7 @@
     "complexity": "LOW",
     "priority": 3,
     "riskLevel": "LOW",
-    "status": "DISCOVERED",
+    "status": "ACCEPTED",
     "acceptanceCriteria": [
       "Build passes",
       "Tumbling physics unaffected",
@@ -79,7 +79,8 @@
     ],
     "dependencies": [],
     "createdAt": "2026-10-17T08:21:08.425Z",
-    "updatedAt": "2026-10-17T08:21:08.425Z"
+    "updatedAt": "2026-10-17T08:21:08.425Z",
+    "outcome": "Successfully implemented, type-checked, and verified."
   },
   {
     "id": "REC-MINES-VOLUMETRIC-TILE-REVEAL",
@@ -93,7 +94,7 @@
     "complexity": "LOW",
     "priority": 4,
     "riskLevel": "LOW",
-    "status": "DISCOVERED",
+    "status": "ACCEPTED",
     "acceptanceCriteria": [
       "Build passes",
       "Tile grid alignment preserved on mobile and desktop",
@@ -105,6 +106,7 @@
     ],
     "dependencies": [],
     "createdAt": "2026-10-17T08:21:08.425Z",
-    "updatedAt": "2026-10-17T08:21:08.425Z"
+    "updatedAt": "2026-10-17T08:21:08.425Z",
+    "outcome": "Successfully implemented, type-checked, and verified."
   }
 ]

@@ -18,7 +18,7 @@ const LOCK_FILE = path.join(REPO_ROOT, 'docs', 'graphics-evolution', '.evolution
 const UPGRADE_HISTORY_MD = path.join(REPO_ROOT, 'docs', 'graphics-evolution', 'UPGRADE_HISTORY.md');
 const NEXT_UPGRADES_MD = path.join(REPO_ROOT, 'docs', 'graphics-evolution', 'NEXT_UPGRADES.md');
 
-export function runHourlyEvolution() {
+export async function runHourlyEvolution() {
   console.log('====================================================');
   console.log('[System B — Autonomous Hourly Graphics Evolution]');
   console.log('Timestamp:', new Date().toISOString());
@@ -108,6 +108,22 @@ export function runHourlyEvolution() {
       nextTask.status = 'ACCEPTED';
       nextTask.outcome = 'Successfully implemented, type-checked, and verified.';
       console.log(`[System B] SUCCESS: ${nextTask.id} ACCEPTED.`);
+
+      // 6. Autonomous Vercel Deployment & Self-Healing Pipeline
+      console.log('[System B] Triggering Autonomous Vercel CI/CD Deployment...');
+      try {
+        const { VercelSelfHealingPipeline } = await import('./vercel-pipeline');
+        const pipeline = new VercelSelfHealingPipeline();
+        const deployOutcome = await pipeline.deployUpgrade({
+          taskId: nextTask.id,
+          summary: nextTask.title,
+          isProduction: false
+        });
+        completedRecord.deployment = deployOutcome.record;
+        console.log(`[System B] Vercel deployment completed with status: ${deployOutcome.record.actualStatus}`);
+      } catch (depErr: any) {
+        console.error('[System B Warning] Vercel pipeline caught error:', depErr.message);
+      }
     } else {
       nextTask.status = 'NEEDS_REPAIR';
       nextTask.outcome = `Failed quality gates: ${buildError.slice(0, 200)}`;

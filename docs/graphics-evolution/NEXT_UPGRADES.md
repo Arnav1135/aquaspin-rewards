@@ -4,7 +4,7 @@
 
 ### [11] Cybernetic Plasma Power Core, Overdrive Arc Discharges & Volumetric Heat Distortion for Clicker Game (`REC-CLICKER-CYBER-CORE-PULSE`)
 - **Target Game:** Clicker (src/components/games/ClickerGame.tsx)
-- **Status:** `DISCOVERED` | **Complexity:** LOW | **Risk:** LOW
+- **Status:** `QUEUED` | **Complexity:** LOW | **Risk:** LOW
 - **Defect/Limitation:** Clicker button is a standard UI element with simple ripple divs, lacking visual escalation as click frequency accelerates.
 - **Proposed Improvement:** Implement a multi-stage plasma reactor core that shifts from cool cyan to superheated violet-white, with procedural electric arc discharges, heat shimmer rings, and dynamic screen shake.
 - **Observable Benefit:** Visceral sense of escalating power and tactile kinetic frenzy that makes rapid clicking feel explosive.

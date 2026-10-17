@@ -191,5 +191,139 @@
     "createdAt": "2026-10-17T10:30:53.793Z",
     "updatedAt": "2026-10-17T10:30:53.794Z",
     "outcome": "Successfully implemented, type-checked, and verified."
+  },
+  {
+    "id": "REC-CHICKEN-PBR-SILVER-CLOCHE",
+    "targetGame": "Chicken",
+    "componentPath": "src/components/games/ChickenGame.tsx",
+    "title": "Luxury Silver PBR Cloches, Golden Roasted Feast Hologram & Molten Bone Hazard FX for Chicken Game",
+    "defectOrLimitation": "Chicken game cloches render as flat 2D grey ellipses with basic emoji reveals (🐔 / 💀), rudimentary 4-div smoke blurs, and no culinary luxury dome reflections or interactive cloche unsealing dynamics.",
+    "proposedImprovement": "Implement photorealistic PBR brushed chrome cloche domes with radial anisotropic specular highlights, gold-rimmed filigree base plates, dynamic steam vent dissipation on unseal, radiant golden roasted platter with floating spice/sparkle particles for safe dishes, and molten obsidian crossbones with pulsating volcanic fissure glow for hazard tiles.",
+    "observableBenefit": "Brings high-stakes gastronomic tension and luxury VIP presentation, transforming flat emoji tiles into an appetizing, visceral banquet reveal experience with dramatic culinary sound & particle feedback.",
+    "implementationApproach": "Upgrade tile renderers with multi-layer SVG/CSS PBR metallic shaders, procedural steam puff canvas/motion particles, 3D tilt spring unsealing physics, molten magma fissure effects on bone reveal, and cyber-gourmet HUD lighting.",
+    "complexity": "MEDIUM",
+    "priority": 8,
+    "riskLevel": "LOW",
+    "status": "ACCEPTED",
+    "acceptanceCriteria": [
+      "TypeScript build passes with zero errors",
+      "PBR silver cloches render with realistic specular reflections and golden rim filigree",
+      "Unsealing cloches trigger dynamic steam puff dissipation",
+      "Golden roasted feasts render with radiant gold aura and sparkles",
+      "Molten hazard tiles show volcanic magma fissures and smoke particles",
+      "Multi-stage audio chords accompany reveals and cashouts"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T10:36:50.064Z",
+    "updatedAt": "2026-10-17T10:36:50.064Z",
+    "outcome": "Successfully implemented, type-checked, and verified."
+  },
+  {
+    "id": "REC-FLIP-DUAL-METALLIC-COIN-PBR",
+    "targetGame": "Flip",
+    "componentPath": "src/components/games/FlipGame.tsx",
+    "title": "Dual-Alloy Physical 3D Coin Shading, Anisotropic Rim Bevel & Dynamic Orbit Shadows for Flip Game",
+    "defectOrLimitation": "Flip game coin uses emoji 👑 and ⭐ on flat radial CSS gradients without depth-layered coin rim thickness, specular light sweeps during flip, or realistic ground contact shadow projection.",
+    "proposedImprovement": "Upgrade coin to 3D multi-layered extruded cylinder with high-relief minted royal crest, specular Fresnel rim glint, anisotropic micro-brushing, dynamic contact shadow that squashes/stretches with toss altitude, and celebratory radial coin shower.",
+    "observableBenefit": "Tangible heavyweight casino coin feel with dazzling rotational lighting and satisfying physical weight perception.",
+    "implementationApproach": "Implement multi-stop metallic coin face shaders, 3D extruded side-rim segments with coin milling ridges, dynamic drop shadow scaling, and particle cascades.",
+    "complexity": "MEDIUM",
+    "priority": 9,
+    "riskLevel": "LOW",
+    "status": "DISCOVERED",
+    "acceptanceCriteria": [
+      "TypeScript build passes with zero errors",
+      "Dual-alloy metallic coin faces reflect light smoothly during 3D flip",
+      "Shadow squashes and expands realistically with toss height"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T10:36:50.064Z",
+    "updatedAt": "2026-10-17T10:36:50.064Z"
+  },
+  {
+    "id": "REC-TAP-NEON-TARGET-PARTICLE-BURST",
+    "targetGame": "TapChallenge",
+    "componentPath": "src/components/games/TapChallenge.tsx",
+    "title": "Holographic Reticle Targets, High-Velocity Kinetic Shockwaves & Combo Supercharge FX for Tap Challenge",
+    "defectOrLimitation": "Tap targets are plain colored circles that vanish with basic timeout, lacking arcade reticle lock-on HUDs, pulse compression timers, or combo-fueled neon particle bursts.",
+    "proposedImprovement": "Render procedural cyberpunk reticles with concentric rotating lock rings, countdown arc timer ring, glass-shatter burst on tap, and screen-edge chromatic combo charge.",
+    "observableBenefit": "High-octane arcade responsiveness that rewards reflex precision with hyper-satisfying visual feedback and escalating combo excitement.",
+    "implementationApproach": "Upgrade target component with SVG rotating lock-on reticles, canvas-driven kinetic shockwaves, and dynamic chromatic screen border on high combos.",
+    "complexity": "LOW",
+    "priority": 10,
+    "riskLevel": "LOW",
+    "status": "DISCOVERED",
+    "acceptanceCriteria": [
+      "TypeScript build passes with zero errors",
+      "Concentric target reticles rotate smoothly at 60fps",
+      "Kinetic shatter particles burst on tap hit"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T10:36:50.064Z",
+    "updatedAt": "2026-10-17T10:36:50.064Z"
+  },
+  {
+    "id": "REC-CLICKER-CYBER-CORE-PULSE",
+    "targetGame": "Clicker",
+    "componentPath": "src/components/games/ClickerGame.tsx",
+    "title": "Cybernetic Plasma Power Core, Overdrive Arc Discharges & Volumetric Heat Distortion for Clicker Game",
+    "defectOrLimitation": "Clicker button is a standard UI element with simple ripple divs, lacking visual escalation as click frequency accelerates.",
+    "proposedImprovement": "Implement a multi-stage plasma reactor core that shifts from cool cyan to superheated violet-white, with procedural electric arc discharges, heat shimmer rings, and dynamic screen shake.",
+    "observableBenefit": "Visceral sense of escalating power and tactile kinetic frenzy that makes rapid clicking feel explosive.",
+    "implementationApproach": "Implement plasma canvas shader for button core, dynamic electric discharge arcs, and state-based heat progression.",
+    "complexity": "LOW",
+    "priority": 11,
+    "riskLevel": "LOW",
+    "status": "DISCOVERED",
+    "acceptanceCriteria": [
+      "TypeScript build passes with zero errors",
+      "Plasma reactor core shifts color smoothly as click rate increases",
+      "Electric arc discharges trigger on rapid clicks"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T10:36:50.064Z",
+    "updatedAt": "2026-10-17T10:36:50.064Z"
+  },
+  {
+    "id": "REC-MEMORY-HOLOGRAPHIC-CARD-FLIP",
+    "targetGame": "Memory",
+    "componentPath": "src/components/games/MemoryGame.tsx",
+    "title": "Prismatic Holographic Card Foiling, 3D Depth Tilting & Particle Match Synapses for Memory Game",
+    "defectOrLimitation": "Memory cards use flat flip transitions without tactile depth, foil reflection, or visual linking between matched pairs.",
+    "proposedImprovement": "Add prismatic diffraction foil shader to card backs, spring-driven 3D tilt responding to cursor hover, and glowing electric synapse beam connecting matching card pairs.",
+    "observableBenefit": "Premium collectible card aesthetic with tactile physical handling and satisfying puzzle completion visuals.",
+    "implementationApproach": "Implement CSS prismatic diffraction gradient, 3D card tilt physics, and SVG glowing synapse arcs upon match.",
+    "complexity": "MEDIUM",
+    "priority": 12,
+    "riskLevel": "LOW",
+    "status": "DISCOVERED",
+    "acceptanceCriteria": [
+      "TypeScript build passes with zero errors",
+      "Prismatic diffraction foil glints across card backs",
+      "Matched cards trigger electric synapse connecting beams"
+    ],
+    "requiredTests": [
+      "npm run type-check",
+      "npm run build"
+    ],
+    "dependencies": [],
+    "createdAt": "2026-10-17T10:36:50.064Z",
+    "updatedAt": "2026-10-17T10:36:50.064Z"
   }
 ]

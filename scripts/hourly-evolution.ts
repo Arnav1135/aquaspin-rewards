@@ -46,7 +46,7 @@ export async function runHourlyEvolution() {
     }
 
     const queueData = JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf-8'));
-    const nextTask = queueData.find((item: any) => item.status === 'QUEUED' || item.status === 'PRIORITIZED');
+    const nextTask = queueData.find((item: any) => item.status === 'QUEUED' || item.status === 'PRIORITIZED' || item.status === 'IN_PROGRESS');
 
     if (!nextTask) {
       console.log('No pending tasks in queue. All recommendations completed or awaiting fresh analysis.');

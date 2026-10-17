@@ -34,26 +34,116 @@ function getRandomCard(): CardData {
 function PlayingCard({ card, revealed, isWinner }: { card: CardData | null; revealed: boolean; isWinner: boolean }) {
   const isRed = card?.suit === '♥' || card?.suit === '♦';
   return (
-    <div className="relative" style={{ width: 96, height: 134, perspective: '600px' }}>
-      <motion.div className="w-full h-full" style={{ transformStyle: 'preserve-3d', position: 'relative' }}
-        animate={{ rotateY: revealed ? 0 : 180 }} transition={{ duration: 0.55, ease: 'easeOut' }}>
-        {/* Front */}
-        <div className={`absolute inset-0 rounded-xl border-2 bg-white flex flex-col p-2 justify-between ${isWinner ? 'border-yellow-400 shadow-[0_0_28px_rgba(250,204,21,0.7)]' : 'border-gray-300'}`}
-          style={{ backfaceVisibility: 'hidden' }}>
+    <div className="relative group select-none" style={{ width: 104, height: 148, perspective: '800px' }}>
+      <motion.div
+        className="w-full h-full relative"
+        style={{ transformStyle: 'preserve-3d' }}
+        animate={{
+          rotateY: revealed ? 0 : 180,
+          scale: isWinner ? 1.05 : 1,
+          y: isWinner ? -6 : 0,
+        }}
+        transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
+      >
+        {/* Front of Card */}
+        <div
+          className={`absolute inset-0 rounded-xl border-2 flex flex-col p-2.5 justify-between overflow-hidden transition-all duration-300 ${
+            isWinner
+              ? 'border-amber-400 bg-gradient-to-br from-white via-amber-50/40 to-amber-100/30 shadow-[0_0_35px_rgba(251,191,36,0.8),inset_0_0_12px_rgba(251,191,36,0.3)]'
+              : 'border-slate-200/90 bg-gradient-to-b from-white to-slate-50 shadow-[0_8px_20px_rgba(0,0,0,0.4)]'
+          }`}
+          style={{ backfaceVisibility: 'hidden' }}
+        >
+          {/* Holographic foil shimmer sweep */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none opacity-40 mix-blend-color-dodge"
+            animate={{
+              backgroundPosition: revealed ? ['200% 0', '-200% 0'] : '0% 0%',
+            }}
+            transition={{
+              duration: 2.8,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+            style={{
+              background: 'linear-gradient(115deg, transparent 20%, rgba(255,215,0,0.5) 35%, rgba(0,240,255,0.6) 50%, rgba(244,63,94,0.5) 65%, transparent 80%)',
+              backgroundSize: '250% 100%',
+            }}
+          />
+
+          {/* Micro linen texture layer */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-15"
+            style={{
+              backgroundImage: 'radial-gradient(#000 0.75px, transparent 0.75px)',
+              backgroundSize: '4px 4px',
+            }}
+          />
+
           {card && (
             <>
-              <div className={`text-xs font-bold leading-tight ${isRed ? 'text-red-600' : 'text-slate-900'}`}>{card.label}<br />{card.suit}</div>
-              <div className={`text-4xl self-center leading-none ${isRed ? 'text-red-500' : 'text-slate-800'}`}>{card.suit}</div>
-              <div className={`text-xs font-bold leading-tight self-end rotate-180 ${isRed ? 'text-red-600' : 'text-slate-900'}`}>{card.label}<br />{card.suit}</div>
+              {/* Top-left Index */}
+              <div className={`text-xs font-black tracking-tight leading-tight z-10 ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
+                <span className="font-mono text-sm">{card.label}</span>
+                <span className="block text-base leading-none -mt-0.5">{card.suit}</span>
+              </div>
+
+              {/* Central Suit Emblem with Specular Depth */}
+              <div className="relative self-center z-10 flex items-center justify-center">
+                <span
+                  className={`text-5xl select-none leading-none drop-shadow-md ${
+                    isRed
+                      ? 'text-red-500 [text-shadow:0_2px_10px_rgba(239,68,68,0.3)]'
+                      : 'text-slate-800 [text-shadow:0_2px_10px_rgba(15,23,42,0.3)]'
+                  }`}
+                >
+                  {card.suit}
+                </span>
+                {/* Watermark suit symbol in background */}
+                <span className="absolute text-7xl opacity-[0.06] select-none text-black pointer-events-none">
+                  {card.suit}
+                </span>
+              </div>
+
+              {/* Bottom-right Inverted Index */}
+              <div className={`text-xs font-black tracking-tight leading-tight self-end rotate-180 z-10 ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
+                <span className="font-mono text-sm">{card.label}</span>
+                <span className="block text-base leading-none -mt-0.5">{card.suit}</span>
+              </div>
             </>
           )}
+
+          {/* Subtle gold inner border */}
+          <div className="absolute inset-[3px] rounded-lg border border-amber-500/20 pointer-events-none" />
         </div>
-        {/* Back */}
-        <div className="absolute inset-0 rounded-xl border-2 border-blue-800 flex items-center justify-center overflow-hidden"
-          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: 'repeating-linear-gradient(45deg,#1e3a5f 0,#1e3a5f 4px,#0f2440 4px,#0f2440 8px)' }}>
-          <div className="w-14 h-20 border border-blue-600 rounded-lg opacity-50 flex items-center justify-center">
-            <span className="text-blue-400 text-xl">♦</span>
+
+        {/* Back of Card — Luxury Gilded Casino Pattern */}
+        <div
+          className="absolute inset-0 rounded-xl border-2 border-amber-500/60 flex items-center justify-center overflow-hidden shadow-[0_10px_25px_rgba(0,0,0,0.6)]"
+          style={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            background: 'radial-gradient(circle at center, #1e3a8a 0%, #0f172a 100%)',
+          }}
+        >
+          {/* Filigree lattice background */}
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(45deg, #fbbf24 0, #fbbf24 1.5px, transparent 0, transparent 8px), repeating-linear-gradient(-45deg, #fbbf24 0, #fbbf24 1.5px, transparent 0, transparent 8px)',
+            }}
+          />
+
+          {/* Gilded Center Medallion */}
+          <div className="relative w-16 h-24 border-2 border-amber-400/80 rounded-lg flex flex-col items-center justify-center bg-navy-950/80 shadow-[inset_0_0_12px_rgba(251,191,36,0.3)]">
+            <div className="w-12 h-20 border border-amber-400/40 rounded flex flex-col items-center justify-center">
+              <span className="text-amber-400 text-2xl drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]">⚜</span>
+              <span className="text-[8px] font-mono font-bold tracking-widest text-amber-300/80 mt-1 uppercase">AQUA</span>
+            </div>
           </div>
+
+          {/* Holographic rim glint */}
+          <div className="absolute inset-0 rounded-xl border border-white/20 pointer-events-none" />
         </div>
       </motion.div>
     </div>
@@ -367,109 +457,275 @@ export function DragonTigerGame({ onClose }: DragonTigerGameProps) {
               <div className="grid grid-cols-2 gap-2">
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} disabled={dealing}
                   onClick={() => { setBetSelection('dragon'); playTone(400, 0.05, 'sine', 0.1); }}
-                  className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${betSelection === 'dragon' ? 'border-red-500 bg-red-950/30 text-red-400 shadow-[0_0_16px_rgba(220,38,38,0.3)]' : 'border-navy-700 text-text-secondary'}`}>
+                  className={`py-3.5 rounded-xl border-2 font-bold text-sm transition-all relative overflow-hidden ${
+                    betSelection === 'dragon'
+                      ? 'border-red-500 bg-gradient-to-r from-red-950/70 to-red-900/50 text-red-300 shadow-[0_0_20px_rgba(239,68,68,0.4)]'
+                      : 'border-navy-700/80 bg-navy-900/40 hover:border-red-500/50 text-text-secondary'
+                  }`}>
                   🐉 Dragon (2x)
                 </motion.button>
                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} disabled={dealing}
                   onClick={() => { setBetSelection('tiger'); playTone(400, 0.05, 'sine', 0.1); }}
-                  className={`py-3 rounded-xl border-2 font-bold text-sm transition-all ${betSelection === 'tiger' ? 'border-cyan-neon bg-cyan-950/30 text-cyan-neon shadow-[0_0_16px_rgba(0,240,255,0.25)]' : 'border-navy-700 text-text-secondary'}`}>
+                  className={`py-3.5 rounded-xl border-2 font-bold text-sm transition-all relative overflow-hidden ${
+                    betSelection === 'tiger'
+                      ? 'border-cyan-neon bg-gradient-to-r from-cyan-950/70 to-cyan-900/50 text-cyan-neon shadow-[0_0_20px_rgba(0,240,255,0.35)]'
+                      : 'border-navy-700/80 bg-navy-900/40 hover:border-cyan-500/50 text-text-secondary'
+                  }`}>
                   🐯 Tiger (2x)
                 </motion.button>
               </div>
               <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }} disabled={dealing}
                 onClick={() => { setBetSelection('tie'); playTone(400, 0.05, 'sine', 0.1); }}
-                className={`w-full py-3 rounded-xl border-2 font-bold text-sm transition-all ${betSelection === 'tie' ? 'border-emerald-500 bg-emerald-950/30 text-emerald-400 shadow-[0_0_16px_rgba(22,163,74,0.4)]' : 'border-navy-700 text-text-secondary'}`}>
+                className={`w-full py-3.5 rounded-xl border-2 font-bold text-sm transition-all relative overflow-hidden ${
+                  betSelection === 'tie'
+                    ? 'border-emerald-500 bg-gradient-to-r from-emerald-950/70 to-emerald-900/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                    : 'border-navy-700/80 bg-navy-900/40 hover:border-emerald-500/50 text-text-secondary'
+                }`}>
                 🤝 Tie (11x)
               </motion.button>
             </div>
           </div>
         </div>
         <div className="space-y-2">
-          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl" disabled={dealing || !betSelection || betAmount <= 0 || betAmount > balance} onClick={handleDeal}>
+          <Button variant="neon" size="lg" className="w-full font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(0,240,255,0.25)]" disabled={dealing || !betSelection || betAmount <= 0 || betAmount > balance} onClick={handleDeal}>
             {dealing ? 'Dealing...' : 'Deal Cards'}
           </Button>
           <Button variant="ghost" className="w-full text-xs text-muted" onClick={onClose}>Close Game</Button>
         </div>
       </Card>
 
-      <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] bg-navy-900/40 border border-navy-800/80 rounded-2xl p-5 overflow-hidden">
-        <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-muted"><HelpCircle size={10} /><span>3.73% edge</span></div>
+      <Card className="flex-1 flex flex-col gap-4 relative min-h-[440px] bg-navy-900/40 border border-navy-800/80 rounded-2xl p-5 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        <div className="absolute top-4 right-4 flex items-center gap-1 text-2xs text-amber-300/60 z-20 font-mono"><HelpCircle size={10} /><span>3.73% edge</span></div>
 
-        {/* Bead road */}
-        <div className="grid grid-cols-10 gap-1">
-          {history.slice(-30).map((h, i) => (
-            <motion.div key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400 }}
-              className={`w-5 h-5 rounded-full border text-3xs flex items-center justify-center font-bold ${h === 'D' ? 'bg-red-500/20 border-red-500/50 text-red-400' : h === 'T' ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-neon' : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'}`}>
-              {h[0]}
-            </motion.div>
-          ))}
+        {/* Bead road — VIP Casino Acrylic Tracker */}
+        <div className="flex items-center gap-2 p-2 bg-navy-950/70 rounded-xl border border-navy-800/70 shadow-inner z-10">
+          <span className="text-[10px] font-mono font-bold text-amber-400/80 uppercase tracking-widest shrink-0 ml-1">
+            ROAD:
+          </span>
+          <div className="grid grid-cols-10 gap-1.5 flex-1 min-w-0">
+            {history.slice(-30).map((h, i) => (
+              <motion.div key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400 }}
+                className={`w-6 h-6 rounded-full border text-3xs flex items-center justify-center font-bold shadow-sm ${
+                  h === 'D'
+                    ? 'bg-red-500/25 border-red-500/70 text-red-400 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                    : h === 'T'
+                    ? 'bg-cyan-500/25 border-cyan-500/70 text-cyan-neon shadow-[0_0_8px_rgba(0,240,255,0.4)]'
+                    : 'bg-emerald-500/25 border-emerald-500/70 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                }`}>
+                {h[0]}
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-        {/* Card table — felt */}
-        <div className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-4 relative"
-          style={{ background: 'radial-gradient(ellipse at center, #14532d 0%, #052e16 100%)', backgroundImage: 'radial-gradient(ellipse at center, #14532d 0%, #052e16 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 0, transparent 50%)' }}>
+        {/* Card table — Luxury Casino Felt with Dynamic Directional PBR Spotlight */}
+        <div
+          className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-6 p-6 relative overflow-hidden shadow-[inset_0_0_60px_rgba(0,0,0,0.9)] border-2 border-emerald-950"
+          style={{
+            backgroundColor: '#021e12',
+            backgroundImage: `
+              radial-gradient(ellipse at 50% 40%, rgba(16, 185, 129, 0.22) 0%, rgba(4, 38, 20, 0.85) 60%, rgba(1, 15, 8, 0.98) 100%),
+              repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0, rgba(255, 255, 255, 0.02) 1px, transparent 1px, transparent 5px),
+              repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.08) 0, rgba(0, 0, 0, 0.08) 1px, transparent 1px, transparent 5px)
+            `,
+          }}
+        >
+          {/* Ambient Casino Chandelier Vignette */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 75%)',
+            }}
+          />
 
-          <div className="flex items-center gap-12">
-            {/* Dragon */}
+          {/* Dragon Spotlight */}
+          <motion.div
+            className="absolute top-0 bottom-0 left-[8%] w-[42%] pointer-events-none rounded-full blur-2xl"
+            animate={{
+              opacity: outcome === 'dragon' ? 0.5 : outcome === null && dealing ? 0.18 : 0.04,
+              scale: outcome === 'dragon' ? [1, 1.08, 1] : 1,
+            }}
+            transition={{
+              opacity: { duration: 0.35 },
+              scale: { repeat: outcome === 'dragon' ? Infinity : 0, duration: 1.4, ease: 'easeInOut' },
+            }}
+            style={{
+              background: 'radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.85) 0%, rgba(239, 68, 68, 0.25) 50%, transparent 75%)',
+            }}
+          />
+
+          {/* Tiger Spotlight */}
+          <motion.div
+            className="absolute top-0 bottom-0 right-[8%] w-[42%] pointer-events-none rounded-full blur-2xl"
+            animate={{
+              opacity: outcome === 'tiger' ? 0.5 : outcome === null && dealing ? 0.18 : 0.04,
+              scale: outcome === 'tiger' ? [1, 1.08, 1] : 1,
+            }}
+            transition={{
+              opacity: { duration: 0.35 },
+              scale: { repeat: outcome === 'tiger' ? Infinity : 0, duration: 1.4, ease: 'easeInOut' },
+            }}
+            style={{
+              background: 'radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.85) 0%, rgba(0, 240, 255, 0.25) 50%, transparent 75%)',
+            }}
+          />
+
+          {/* Tie Spotlight */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none rounded-full blur-3xl"
+            animate={{
+              opacity: outcome === 'tie' ? 0.55 : 0,
+              scale: outcome === 'tie' ? [1, 1.1, 1] : 1,
+            }}
+            transition={{
+              opacity: { duration: 0.35 },
+              scale: { repeat: outcome === 'tie' ? Infinity : 0, duration: 1.2 },
+            }}
+            style={{
+              background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.9) 0%, rgba(245, 158, 11, 0.35) 50%, transparent 75%)',
+            }}
+          />
+
+          {/* Casino Felt Watermark */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] select-none">
+            <span className="text-8xl font-display font-black tracking-widest text-amber-200 uppercase">
+              AQUASPIN
+            </span>
+          </div>
+
+          <div className="flex items-center gap-10 md:gap-14 relative z-10">
+            {/* Dragon Box */}
             <div className="flex flex-col items-center gap-3">
-              <span className="text-sm font-bold text-red-400 uppercase tracking-widest font-display">Dragon</span>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
+                <span className="text-sm font-black text-red-400 uppercase tracking-widest font-display drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]">
+                  Dragon
+                </span>
+              </div>
               <div className="relative">
                 {outcome === 'dragon' && (
-                  <motion.div className="absolute inset-0 rounded-xl -m-2"
-                    animate={{ boxShadow: ['0 0 0 rgba(239,68,68,0)', '0 0 40px rgba(239,68,68,0.7)', '0 0 0 rgba(239,68,68,0)'] }}
-                    transition={{ repeat: 3, duration: 0.7 }} />
+                  <motion.div
+                    className="absolute -inset-3 rounded-2xl pointer-events-none"
+                    animate={{
+                      boxShadow: [
+                        '0 0 10px rgba(239,68,68,0.3)',
+                        '0 0 45px rgba(239,68,68,0.85), inset 0 0 20px rgba(239,68,68,0.4)',
+                        '0 0 10px rgba(239,68,68,0.3)',
+                      ],
+                    }}
+                    transition={{ repeat: Infinity, duration: 1.2 }}
+                  />
                 )}
                 <AnimatePresence>
                   {dragonCard && (
-                    <motion.div key="dragon" initial={{ y: -160, opacity: 0, scale: 0.8 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 22 }}>
+                    <motion.div key="dragon" initial={{ y: -180, opacity: 0, scale: 0.75, rotate: -4 }} animate={{ y: 0, opacity: 1, scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 220, damping: 20 }}>
                       <PlayingCard card={dragonCard} revealed={dragonRevealed} isWinner={outcome === 'dragon'} />
                     </motion.div>
                   )}
-                  {!dragonCard && <div className="w-24 h-[134px] rounded-xl border-2 border-dashed border-red-900/40 bg-red-950/10 flex items-center justify-center text-red-900/50 text-3xs font-mono tracking-widest">DRAGON</div>}
+                  {!dragonCard && (
+                    <div className="w-[104px] h-[148px] rounded-xl border-2 border-dashed border-red-800/40 bg-red-950/20 backdrop-blur-sm flex flex-col items-center justify-center gap-1 text-red-400/40 shadow-inner">
+                      <span className="text-2xl opacity-60">🐉</span>
+                      <span className="text-[10px] font-mono tracking-widest font-bold">DRAGON</span>
+                    </div>
+                  )}
                 </AnimatePresence>
               </div>
             </div>
 
-            {/* VS */}
-            <motion.div animate={dealing ? { scale: [1, 1.15, 1] } : { scale: 1 }} transition={{ repeat: dealing ? Infinity : 0, duration: 0.8 }}
-              className="text-2xl font-extrabold text-white/30 font-display">
-              {outcome ? (outcome === 'tie' ? '🤝' : outcome === 'dragon' ? '🐉' : '🐯') : 'VS'}
-            </motion.div>
+            {/* Center VS / Outcome Badge */}
+            <div className="relative z-10 flex flex-col items-center">
+              <motion.div
+                animate={dealing ? { scale: [1, 1.18, 1], rotate: [0, 4, -4, 0] } : { scale: 1 }}
+                transition={{ repeat: dealing ? Infinity : 0, duration: 0.85 }}
+                className={`w-14 h-14 rounded-full border-2 flex items-center justify-center font-display font-black text-lg shadow-lg backdrop-blur-md transition-all duration-300 ${
+                  outcome === 'dragon'
+                    ? 'border-red-500 bg-red-950/70 text-red-400 shadow-[0_0_25px_rgba(239,68,68,0.6)]'
+                    : outcome === 'tiger'
+                    ? 'border-cyan-neon bg-cyan-950/70 text-cyan-neon shadow-[0_0_25px_rgba(0,240,255,0.6)]'
+                    : outcome === 'tie'
+                    ? 'border-emerald-400 bg-emerald-950/70 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.7)]'
+                    : 'border-amber-400/40 bg-navy-950/60 text-amber-200/60 shadow-[0_4px_15px_rgba(0,0,0,0.5)]'
+                }`}
+              >
+                {outcome ? (outcome === 'tie' ? '🤝' : outcome === 'dragon' ? '🐉' : '🐯') : 'VS'}
+              </motion.div>
+            </div>
 
-            {/* Tiger */}
+            {/* Tiger Box */}
             <div className="flex flex-col items-center gap-3">
-              <span className="text-sm font-bold text-cyan-neon uppercase tracking-widest font-display">Tiger</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-cyan-neon uppercase tracking-widest font-display drop-shadow-[0_0_10px_rgba(0,240,255,0.6)]">
+                  Tiger
+                </span>
+                <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f0ff]" />
+              </div>
               <div className="relative">
                 {outcome === 'tiger' && (
-                  <motion.div className="absolute inset-0 rounded-xl -m-2"
-                    animate={{ boxShadow: ['0 0 0 rgba(0,240,255,0)', '0 0 40px rgba(0,240,255,0.6)', '0 0 0 rgba(0,240,255,0)'] }}
-                    transition={{ repeat: 3, duration: 0.7 }} />
+                  <motion.div
+                    className="absolute -inset-3 rounded-2xl pointer-events-none"
+                    animate={{
+                      boxShadow: [
+                        '0 0 10px rgba(0,240,255,0.3)',
+                        '0 0 45px rgba(0,240,255,0.85), inset 0 0 20px rgba(0,240,255,0.4)',
+                        '0 0 10px rgba(0,240,255,0.3)',
+                      ],
+                    }}
+                    transition={{ repeat: Infinity, duration: 1.2 }}
+                  />
                 )}
                 <AnimatePresence>
                   {tigerCard && (
-                    <motion.div key="tiger" initial={{ y: -160, opacity: 0, scale: 0.8 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 22 }}>
+                    <motion.div key="tiger" initial={{ y: -180, opacity: 0, scale: 0.75, rotate: 4 }} animate={{ y: 0, opacity: 1, scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 220, damping: 20 }}>
                       <PlayingCard card={tigerCard} revealed={tigerRevealed} isWinner={outcome === 'tiger'} />
                     </motion.div>
                   )}
-                  {!tigerCard && <div className="w-24 h-[134px] rounded-xl border-2 border-dashed border-cyan-900/40 bg-cyan-950/10 flex items-center justify-center text-cyan-900/50 text-3xs font-mono tracking-widest">TIGER</div>}
+                  {!tigerCard && (
+                    <div className="w-[104px] h-[148px] rounded-xl border-2 border-dashed border-cyan-800/40 bg-cyan-950/20 backdrop-blur-sm flex flex-col items-center justify-center gap-1 text-cyan-400/40 shadow-inner">
+                      <span className="text-2xl opacity-60">🐯</span>
+                      <span className="text-[10px] font-mono tracking-widest font-bold">TIGER</span>
+                    </div>
+                  )}
                 </AnimatePresence>
               </div>
             </div>
           </div>
 
-          {/* Outcome */}
-          <div className="min-h-[48px] text-center">
+          {/* Outcome Announcement */}
+          <div className="min-h-[50px] text-center relative z-10">
             <AnimatePresence>
               {outcome && (
-                <motion.div initial={{ scale: 0.8, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }}>
-                  <h3 className={`text-2xl font-bold font-display uppercase tracking-widest ${outcome === 'dragon' ? 'text-red-400' : outcome === 'tiger' ? 'text-cyan-neon' : 'text-emerald-400'}`}>
-                    {outcome === 'tie' ? 'Tie Game!' : `${outcome} wins!`}
+                <motion.div
+                  initial={{ scale: 0.75, opacity: 0, y: 12 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                  className="bg-navy-950/85 px-6 py-2.5 rounded-2xl border border-amber-500/30 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
+                >
+                  <h3 className={`text-2xl font-black font-display uppercase tracking-widest ${
+                    outcome === 'dragon'
+                      ? 'text-red-400 drop-shadow-[0_0_12px_rgba(239,68,68,0.7)]'
+                      : outcome === 'tiger'
+                      ? 'text-cyan-neon drop-shadow-[0_0_12px_rgba(0,240,255,0.7)]'
+                      : 'text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.7)]'
+                  }`}>
+                    {outcome === 'tie' ? '🤝 Tie Game!' : `${outcome} wins!`}
                   </h3>
-                  {payoutResult !== null && payoutResult > 0 && <p className="text-xs text-gold-neon font-semibold">Payout: +{payoutResult} tokens</p>}
+                  {payoutResult !== null && payoutResult > 0 && (
+                    <motion.p initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-xs text-amber-300 font-mono font-bold mt-0.5">
+                      Payout: +{payoutResult} tokens 💰
+                    </motion.p>
+                  )}
                 </motion.div>
               )}
-              {dealing && !dragonCard && <p className="text-xs text-white/40 animate-pulse uppercase tracking-wider">Shuffling deck...</p>}
-              {dealing && dragonCard && !tigerCard && <p className="text-xs text-white/40 animate-pulse uppercase tracking-wider">Dealing tiger...</p>}
+              {dealing && !dragonCard && (
+                <p className="text-xs font-mono text-amber-200/70 animate-pulse uppercase tracking-wider bg-navy-950/60 px-4 py-1.5 rounded-full border border-amber-500/20">
+                  Shuffling high-roller deck...
+                </p>
+              )}
+              {dealing && dragonCard && !tigerCard && (
+                <p className="text-xs font-mono text-cyan-200/70 animate-pulse uppercase tracking-wider bg-navy-950/60 px-4 py-1.5 rounded-full border border-cyan-500/20">
+                  Revealing Tiger card...
+                </p>
+              )}
             </AnimatePresence>
           </div>
         </div>

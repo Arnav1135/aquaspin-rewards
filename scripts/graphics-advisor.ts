@@ -144,6 +144,53 @@ export function inspectAndGenerateRecommendations(): GraphicsRecommendation[] {
       dependencies: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-CRASH-CYBERPUNK-VOLUMETRIC-GRAPH',
+      targetGame: 'Crash',
+      componentPath: 'src/components/games/CrashGame.tsx',
+      title: 'Cyberpunk Volumetric Neon Flight Curve, Exhaust Plume & Procedural Vector Interceptor Craft for Crash',
+      defectOrLimitation: 'Crash game uses an emoji 🚀 with flat 2D canvas curves, basic dot particles, and minimal single-circle crash explosion effects.',
+      proposedImprovement: 'Replace emoji rocket with procedural vector aerospace interceptor craft with dynamic afterburner shock-diamonds, multi-layer volumetric neon glowing under-curve, cyber grid with animated horizon depth, and multi-stage kinetic shockwave particle explosion on crash.',
+      observableBenefit: 'AAA esports-grade visual intensity, dramatic ascending tension with animated afterburner plume, and spectacular crash destruction shockwaves.',
+      implementationApproach: 'Upgrade 2D canvas draw loop: render futuristic sleek vector spacecraft with glowing cockpit and flame exhaust, multi-stop neon altitude gradient with pulsating bloom, starfield warp particles, and radial shockwave blast.',
+      complexity: 'MEDIUM',
+      priority: 5,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Smooth 60fps graph climb animation',
+        'Rocket vector orientation aligns with curve tangent angle',
+        'Crash shockwave particles expand and fade smoothly'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-DRAGONTIGER-FELT-LIGHTING-PBR',
+      targetGame: 'DragonTiger',
+      componentPath: 'src/components/games/DragonTigerGame.tsx',
+      title: 'Luxury Casino Felt Shading, Dynamic Spotlight PBR & Holographic Card Deal FX for Dragon Tiger',
+      defectOrLimitation: 'Dragon Tiger table uses flat solid background containers without textured casino felt, directional spotlights, or card holographic foil glints.',
+      proposedImprovement: 'Implement procedural micro-texture casino felt gradient with ambient vignette, dynamic spotlight focus over winning card side, and holographic foil sheen across dragon/tiger card reveals.',
+      observableBenefit: 'Delivers high-roller VIP casino ambiance with tactile card interaction and thrilling win announcements.',
+      implementationApproach: 'Enhance CSS/SVG styling with radial vignette spotlights, foil shimmer keyframes, and gold-leaf embossed bet borders.',
+      complexity: 'LOW',
+      priority: 6,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'Build passes without errors',
+        'Card flip and deal animations remain 60fps',
+        'Spotlight cleanly shifts focus between Dragon, Tiger, and Tie outcomes'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ];
 

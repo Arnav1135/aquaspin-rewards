@@ -13,3 +13,4 @@
 | `REC-LIMBO-QUANTUM-REACTOR-PBR` | **Limbo** | Quantum Reactor Holographic HUD, High-Voltage Plasma Arc & Cybernetic Speed Tunnel for Limbo | **ACCEPTED** | 2026-10-17 |
 | `REC-CHICKEN-PBR-SILVER-CLOCHE` | **Chicken** | Luxury Silver PBR Cloches, Golden Roasted Feast Hologram & Molten Bone Hazard FX for Chicken Game | **ACCEPTED** | 2026-10-17 |
 | `REC-FLIP-DUAL-METALLIC-COIN-PBR` | **Flip** | Dual-Alloy Physical 3D Coin Shading, Anisotropic Rim Bevel & Dynamic Orbit Shadows for Flip Game | **ACCEPTED** | 2026-10-17 |
+| `REC-TAP-NEON-TARGET-PARTICLE-BURST` | **TapChallenge** | Holographic Reticle Targets, High-Velocity Kinetic Shockwaves & Combo Supercharge FX for Tap Challenge | **ACCEPTED** | 2026-10-17 |

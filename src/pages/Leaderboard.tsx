@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Zap, Flame, RefreshCw, Info, ChevronDown } from 'lucide-react';
+import { Trophy, Zap, Flame, RefreshCw, Info, ChevronDown, Crown, Sparkles, Medal, Award } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import confetti from 'canvas-confetti';
 import { useAuthStore } from '@/features/authStore';
 import { getLeaderboard, subscribeToLeaderboard } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
@@ -85,16 +86,9 @@ export function Leaderboard() {
           </motion.div>
         )}
 
-        {/* Top 3 podium */}
+        {/* Holographic Champions Stadium Podium */}
         {leaderboard && leaderboard.length >= 3 && (
-          <div className="flex items-end justify-center gap-3 py-4">
-            {/* 2nd */}
-            <PodiumCard entry={leaderboard[1]} position={2} />
-            {/* 1st */}
-            <PodiumCard entry={leaderboard[0]} position={1} />
-            {/* 3rd */}
-            <PodiumCard entry={leaderboard[2]} position={3} />
-          </div>
+          <ChampionsStadium topThree={[leaderboard[0], leaderboard[1], leaderboard[2]]} />
         )}
 
         {/* Full list */}
@@ -177,35 +171,291 @@ export function Leaderboard() {
   );
 }
 
-function PodiumCard({ entry, position }: { entry: any; position: 1 | 2 | 3 }) {
-  const heights = { 1: 'h-28', 2: 'h-20', 3: 'h-16' };
-  const colors = { 1: '#FFD700', 2: '#C0C0C0', 3: '#CD7F32' };
+function ChampionsStadium({ topThree }: { topThree: any[] }) {
+  const champion = topThree[0];
+  const second = topThree[1];
+  const third = topThree[2];
+
+  const triggerCelebration = () => {
+    confetti({
+      particleCount: 60,
+      spread: 75,
+      origin: { y: 0.55 },
+      colors: ['#FFD700', '#F59E0B', '#00F0FF', '#E2E8F0', '#FFFFFF'],
+    });
+  };
 
   return (
-    <div className="flex flex-col items-center gap-2 flex-1">
-      <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-navy-900 text-sm"
-        style={{ backgroundColor: getAvatarColor(entry.id), boxShadow: `0 0 15px ${colors[position]}50` }}
-      >
-        {getInitials(entry.username)}
+    <motion.div
+      className="relative rounded-3xl p-5 sm:p-6 overflow-hidden border border-cyan-neon/30 bg-gradient-to-b from-navy-900/95 via-navy-950/98 to-navy-900/95 backdrop-blur-2xl shadow-2xl"
+      initial={{ opacity: 0, y: 25 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+    >
+      {/* Volumetric Stadium Light Beams & Laser Grid */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Central golden volumetric spotlight cone */}
+        <div
+          className="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-80 sm:w-96 sm:h-96 rounded-full blur-[80px] opacity-30"
+          style={{
+            background: 'radial-gradient(circle, rgba(255, 215, 0, 0.45) 0%, rgba(0, 240, 255, 0.25) 45%, transparent 70%)',
+          }}
+        />
+        {/* Neon floor grid perspective */}
+        <div
+          className="absolute bottom-0 inset-x-0 h-24 opacity-15"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(0, 240, 255, 0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 240, 255, 0.3) 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+            transform: 'perspective(180px) rotateX(60deg)',
+            transformOrigin: 'bottom center',
+          }}
+        />
+        {/* Floating arena dust sparkles */}
+        <div className="absolute top-4 left-6 flex items-center gap-1.5 opacity-40 text-amber-300">
+          <Sparkles size={14} className="animate-pulse" />
+        </div>
+        <div className="absolute top-6 right-8 flex items-center gap-1.5 opacity-40 text-cyan-neon">
+          <Sparkles size={16} className="animate-pulse" />
+        </div>
       </div>
-      <p className="text-xs font-medium text-text-primary truncate max-w-[70px] text-center">
-        {entry.username ?? 'Player'}
-      </p>
+
+      {/* Stadium Header */}
+      <div className="relative z-10 flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-amber-400/10 border border-amber-400/30 text-amber-400 shadow-sm">
+            <Trophy size={16} />
+          </div>
+          <div>
+            <h2 className="font-display text-sm sm:text-base font-bold text-gradient-cyan tracking-wide">
+              CHAMPIONS STADIUM
+            </h2>
+            <p className="text-3xs uppercase tracking-widest text-muted">Tiered VIP Podium • Top Titans</p>
+          </div>
+        </div>
+
+        <button
+          onClick={triggerCelebration}
+          className="flex items-center gap-1.5 text-2xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-text-secondary hover:text-cyan-neon transition-all cursor-pointer shadow-sm"
+          title="Celebrate Champions"
+        >
+          <Sparkles size={12} className="text-amber-400" />
+          <span className="font-medium">Celebrate</span>
+        </button>
+      </div>
+
+      {/* 3D Tiered Pillars: Order 2nd (Left), 1st (Center), 3rd (Right) */}
+      <div className="relative z-10 flex items-end justify-center gap-3 sm:gap-5 pt-8 pb-1">
+        <MetallicPodiumPillar entry={second} position={2} />
+        <MetallicPodiumPillar entry={champion} position={1} onCelebrate={triggerCelebration} />
+        <MetallicPodiumPillar entry={third} position={3} />
+      </div>
+    </motion.div>
+  );
+}
+
+interface MetallicPodiumPillarProps {
+  entry: any;
+  position: 1 | 2 | 3;
+  onCelebrate?: () => void;
+}
+
+function MetallicPodiumPillar({ entry, position, onCelebrate }: MetallicPodiumPillarProps) {
+  const configs = {
+    1: {
+      title: 'Champion',
+      height: 'h-40 sm:h-44',
+      primaryColor: '#FFD700',
+      borderColor: 'rgba(255, 215, 0, 0.75)',
+      glowColor: 'rgba(255, 215, 0, 0.4)',
+      pillarBg:
+        'linear-gradient(180deg, rgba(255, 215, 0, 0.28) 0%, rgba(212, 175, 55, 0.16) 40%, rgba(10, 16, 30, 0.96) 100%)',
+      capBg: 'radial-gradient(ellipse at 50% 30%, #FFFBEA 0%, #FFD700 50%, #B45309 100%)',
+      badgeBg: 'linear-gradient(135deg, #FFE873 0%, #FFD700 50%, #D97706 100%)',
+      badgeText: '#1A1303',
+      icon: <Crown size={14} className="text-amber-300" />,
+      delay: 0.1,
+    },
+    2: {
+      title: 'Runner Up',
+      height: 'h-32 sm:h-36',
+      primaryColor: '#E2E8F0',
+      borderColor: 'rgba(226, 232, 240, 0.65)',
+      glowColor: 'rgba(148, 163, 184, 0.35)',
+      pillarBg:
+        'linear-gradient(180deg, rgba(226, 232, 240, 0.22) 0%, rgba(148, 163, 184, 0.14) 40%, rgba(10, 16, 30, 0.96) 100%)',
+      capBg: 'radial-gradient(ellipse at 50% 30%, #FFFFFF 0%, #CBD5E1 50%, #475569 100%)',
+      badgeBg: 'linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, #64748B 100%)',
+      badgeText: '#0F172A',
+      icon: <Medal size={14} className="text-slate-200" />,
+      delay: 0.2,
+    },
+    3: {
+      title: '3rd Place',
+      height: 'h-28 sm:h-30',
+      primaryColor: '#F97316',
+      borderColor: 'rgba(249, 115, 22, 0.65)',
+      glowColor: 'rgba(249, 115, 22, 0.35)',
+      pillarBg:
+        'linear-gradient(180deg, rgba(249, 115, 22, 0.22) 0%, rgba(180, 83, 9, 0.14) 40%, rgba(10, 16, 30, 0.96) 100%)',
+      capBg: 'radial-gradient(ellipse at 50% 30%, #FFEDD5 0%, #EA580C 50%, #7C2D12 100%)',
+      badgeBg: 'linear-gradient(135deg, #FFEDD5 0%, #EA580C 50%, #7C2D12 100%)',
+      badgeText: '#1F0B03',
+      icon: <Award size={14} className="text-amber-500" />,
+      delay: 0.3,
+    },
+  };
+
+  const config = configs[position];
+
+  return (
+    <motion.div
+      className="flex flex-col items-center flex-1 max-w-[130px] sm:max-w-[160px] cursor-pointer group"
+      initial={{ opacity: 0, y: 35 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: config.delay, ease: 'easeOut' }}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      onClick={() => {
+        if (position === 1 && onCelebrate) {
+          onCelebrate();
+        }
+      }}
+    >
+      {/* Avatar Container with Pulsing Energy Rings */}
+      <div className="relative flex flex-col items-center mb-2.5">
+        {/* Floating Crown for 1st Place Champion */}
+        {position === 1 && (
+          <motion.div
+            className="absolute -top-7 sm:-top-8 flex items-center justify-center pointer-events-none z-20"
+            animate={{
+              y: [0, -5, 0],
+              rotate: [-2, 2, -2],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            <div className="relative">
+              <Crown className="w-8 h-8 sm:w-9 sm:h-9 text-amber-300 drop-shadow-[0_0_12px_rgba(255,215,0,0.9)]" />
+              <Sparkles className="w-3.5 h-3.5 text-white absolute -top-1 -right-1.5 animate-pulse" />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Concentric Pulsing Energy Rings */}
+        <div className="relative">
+          <motion.div
+            className="absolute -inset-2 rounded-2xl pointer-events-none"
+            style={{
+              border: `2px solid ${config.borderColor}`,
+              boxShadow: `0 0 20px ${config.glowColor}`,
+            }}
+            animate={{
+              scale: [1, 1.14, 1],
+              opacity: [0.8, 0.25, 0.8],
+            }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+          <motion.div
+            className="absolute -inset-1 rounded-2xl pointer-events-none"
+            style={{
+              border: `1px dashed ${config.primaryColor}`,
+            }}
+            animate={{
+              rotate: [0, 360],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          />
+          <div
+            className="relative w-13 h-13 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-bold text-navy-900 text-sm sm:text-base shadow-xl"
+            style={{
+              backgroundColor: getAvatarColor(entry?.id ?? 'anon'),
+              boxShadow: `0 0 20px ${config.glowColor}, inset 0 2px 4px rgba(255,255,255,0.4)`,
+              border: `2px solid ${config.borderColor}`,
+            }}
+          >
+            {getInitials(entry?.username)}
+          </div>
+        </div>
+
+        {/* Username */}
+        <p className="text-xs font-semibold text-text-primary truncate max-w-[85px] sm:max-w-[110px] text-center mt-2.5">
+          {entry?.username ?? 'Player'}
+        </p>
+
+        {/* Level and streak */}
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-3xs text-muted font-medium">Lv.{entry?.level ?? 1}</span>
+          {entry?.streak > 1 && (
+            <span className="flex items-center text-3xs text-warn font-semibold">
+              <Flame size={10} className="mr-0.5" />
+              {entry.streak}d
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 3D Tiered Pillar Body */}
       <div
-        className={`w-full ${heights[position]} rounded-t-xl flex flex-col items-center justify-center gap-1`}
+        className={`w-full ${config.height} rounded-t-2xl relative flex flex-col items-center justify-between p-2.5 sm:p-3 overflow-hidden backdrop-blur-md transition-all duration-300`}
         style={{
-          background: `linear-gradient(to top, ${colors[position]}20, ${colors[position]}10)`,
-          border: `1px solid ${colors[position]}40`,
+          background: config.pillarBg,
+          borderTop: `2px solid ${config.borderColor}`,
+          borderLeft: `1px solid ${config.borderColor}`,
+          borderRight: `1px solid ${config.borderColor}`,
+          boxShadow: `0 12px 35px -8px ${config.glowColor}, inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -4px 15px rgba(0, 0, 0, 0.6)`,
         }}
       >
-        <Trophy size={16} style={{ color: colors[position] }} />
-        <span className="font-display font-bold" style={{ color: colors[position], fontSize: '11px' }}>
-          #{position}
-        </span>
-        <span className="text-2xs text-text-secondary font-mono">{formatTokens(entry.total_earned)}</span>
+        {/* Metallic Beveled Top Cap */}
+        <div
+          className="w-4/5 h-1.5 sm:h-2 rounded-full mb-1 opacity-90 shadow-sm"
+          style={{ background: config.capBg }}
+        />
+
+        {/* 3D Embossed Medal Emblem */}
+        <div className="flex flex-col items-center my-auto">
+          <div
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-display font-black text-xs sm:text-sm shadow-md"
+            style={{
+              background: config.badgeBg,
+              color: config.badgeText,
+              boxShadow: `0 4px 12px ${config.glowColor}, inset 0 2px 2px rgba(255, 255, 255, 0.6)`,
+              border: `1.5px solid ${config.borderColor}`,
+            }}
+          >
+            #{position}
+          </div>
+          <div className="flex items-center gap-1 mt-1">
+            {config.icon}
+            <span
+              className="font-display text-3xs sm:text-2xs uppercase tracking-wider font-bold"
+              style={{ color: config.primaryColor }}
+            >
+              {config.title}
+            </span>
+          </div>
+        </div>
+
+        {/* Token Metric Capsule */}
+        <div className="w-full bg-navy-950/80 border border-white/10 rounded-xl py-1 px-1.5 sm:px-2 text-center backdrop-blur-sm">
+          <p className="font-mono font-bold text-xs sm:text-sm text-cyan-neon tracking-tight">
+            {formatTokens(entry?.total_earned ?? 0)}
+          </p>
+          <p className="text-3xs uppercase tracking-wider text-muted font-medium">tokens</p>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

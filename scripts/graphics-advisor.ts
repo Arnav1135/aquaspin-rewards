@@ -382,6 +382,126 @@ export function inspectAndGenerateRecommendations(): GraphicsRecommendation[] {
       dependencies: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-MINIGAMES-CYBER-PORTAL-LOBBY',
+      targetGame: 'MiniGames',
+      componentPath: 'src/pages/MiniGames.tsx',
+      title: 'Holographic Cyber Arcade Portal, Floating 3D Parallax Tilt Cards & Volumetric Starfield Aurora for Mini-Games Lobby',
+      defectOrLimitation: 'Mini-games lobby renders game selection cards with standard flat borders and static cards without tactile 3D hover physics, dynamic cyber aura highlights, or background particle depth.',
+      proposedImprovement: 'Implement interactive 3D perspective card tilting with cursor tracking, holographic diffraction foil badges on popular games, dynamic cybernetic aurora particle background, and glowing quick-launch badges.',
+      observableBenefit: 'Elevates the game selection hub into an exciting AAA cyber-arcade portal that entices players to explore and play all games.',
+      implementationApproach: 'Upgrade MiniGames page with interactive 3D card tilt springs, backdrop aurora canvas, and foil status badges.',
+      complexity: 'MEDIUM',
+      priority: 15,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Game cards tilt with responsive 3D spring dynamics',
+        'Background renders subtle volumetric starfield aurora',
+        'Smooth 60fps scrolling and card interaction'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-LEADERBOARD-HOLOGRAPHIC-PODIUM',
+      targetGame: 'Leaderboard',
+      componentPath: 'src/pages/Leaderboard.tsx',
+      title: 'Holographic Champions Stadium, Tiered Metallic Trophy Pillars & Radiant Particle Crown for Leaderboard',
+      defectOrLimitation: 'Leaderboard uses simple tabular rows without visual grandeur for top 3 podium winners or celebratory visual prestige.',
+      proposedImprovement: 'Add 3D tiered gold/silver/bronze champion podiums with metallic reflections, glowing avatar energy rings, and radiant particle confetti crowns.',
+      observableBenefit: 'Celebrates top players with luxury VIP esports prestige, boosting retention and competitive motivation.',
+      implementationApproach: 'Implement podium 3D components, animated rank pedestals, and gleaming particle crowns for podium finishers.',
+      complexity: 'MEDIUM',
+      priority: 16,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Top 3 winners displayed on metallic 3D podiums',
+        'Avatar energy rings pulse smoothly'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-DASHBOARD-CYBER-COMMAND-HUD',
+      targetGame: 'Dashboard',
+      componentPath: 'src/pages/Dashboard.tsx',
+      title: 'Cyber Command Center HUD, Volumetric Streak Reactor & Prismatic Token Vault for Dashboard',
+      defectOrLimitation: 'Dashboard uses flat 2D cards with static borders and plain badges, lacking dynamic cybernetic HUD immersion, volumetric token vault glints, and animated daily streak reactor node feedback.',
+      proposedImprovement: 'Implement futuristic cyber-command HUD styling with ambient volumetric aura glows, high-energy plasma streak reactor with illuminated gemstone nodes, interactive 3D stats cards with hover scanlines, and animated particle sheens on quick action cards.',
+      observableBenefit: 'Delivers an electrifying central hub experience that immediately immerses players upon login, highlights progression milestones with tactile visual feedback, and amplifies daily retention.',
+      implementationApproach: 'Upgrade Dashboard.tsx with glowing cybernetic HUD frames, canvas-based or animated SVG streak reactor circuits, 3D tilt stat cards with reactive neon highlights, and radiant cashout progress bar.',
+      complexity: 'MEDIUM',
+      priority: 17,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Dashboard renders high-fidelity cyber command HUD layout',
+        'Daily streak displays interactive reactor nodes with ambient glow',
+        'Stats cards feature 3D perspective hover feedback and neon borders',
+        '60fps responsive performance maintained on all screen sizes'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-SHOP-CYBER-VAULT-PBR',
+      targetGame: 'Shop',
+      componentPath: 'src/pages/Shop.tsx',
+      title: 'Holographic Cyber-Vault Emporium, 3D Power-Up Canister Glows & Prismatic Purchase Energy FX for Token Shop',
+      defectOrLimitation: 'Shop items render as flat emoji tiles inside basic border containers without futuristic power-up canister depth, animated rarity glows, purchase particle shocks, or luxury cyber-vault aesthetic.',
+      proposedImprovement: 'Transform shop into high-tech cyber-emporium with volumetric booster canisters, animated radial aura flares for popular items, interactive 3D card perspective tilt, and celebratory token cascade beam on purchase.',
+      observableBenefit: 'Transforms token redemption into a thrilling arcade shopping experience with premium tangible power-up artifacts and satisfying purchase celebration feedback.',
+      implementationApproach: 'Upgrade Shop.tsx with volumetric SVG/CSS booster canisters containing animated plasma/liquid cores, dynamic rarity glow shaders, interactive 3D hover physics, and celebratory particle burst effects on successful purchase.',
+      complexity: 'MEDIUM',
+      priority: 18,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Power-up boosters render as volumetric cyber canisters with energy pulse',
+        'Popular items feature illuminated radial aura highlights',
+        'Purchase modal and confirmation celebrate with dynamic particle beams'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: 'REC-PROGRESS-ACHIEVEMENT-VAULT',
+      targetGame: 'Progress',
+      componentPath: 'src/pages/Progress.tsx',
+      title: 'Holographic Mission Terminal, Tiered 3D Metallic Trophy Vault & Energy Pulse Gauges for Progress Page',
+      defectOrLimitation: 'Progress page uses simple list items with flat progress bars, lacking arcade quest terminal aesthetic, metallic trophy sheen, or tactile claim animation feedback.',
+      proposedImprovement: 'Upgrade to holographic mission terminal with animated circuit conduits, 3D metallic trophy pedestals for unlocked achievements, high-voltage progress charge bars, and radiant token fountain particles on mission claim.',
+      observableBenefit: 'Gamifies player progression with prestigious trophy cabinet displays and high-voltage quest milestones that inspire long-term player dedication.',
+      implementationApproach: 'Enhance Progress.tsx with holographic scanline terminal frames, metallic PBR trophy icons with specular glints, pulsating energy track progress indicators, and celebratory mission reward fountains.',
+      complexity: 'MEDIUM',
+      priority: 19,
+      riskLevel: 'LOW',
+      status: 'DISCOVERED',
+      acceptanceCriteria: [
+        'TypeScript build passes with zero errors',
+        'Missions display holographic terminal styling with animated energy bars',
+        'Achievements showcase 3D metallic trophy badges',
+        'Reward claims trigger festive token fountain visual effects'
+      ],
+      requiredTests: ['npm run type-check', 'npm run build'],
+      dependencies: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ];
 

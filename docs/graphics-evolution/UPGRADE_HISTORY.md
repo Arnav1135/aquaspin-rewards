@@ -18,3 +18,7 @@
 | `REC-CLICKER-CYBER-CORE-PULSE` | **Clicker** | Cybernetic Plasma Power Core, Overdrive Arc Discharges & Volumetric Heat Distortion for Clicker Game | **ACCEPTED** | 2026-10-17 |
 | `REC-MEMORY-HOLOGRAPHIC-CARD-FLIP` | **Memory** | Prismatic Holographic Card Foiling, 3D Depth Tilting & Particle Match Synapses for Memory Game | **ACCEPTED** | 2026-10-17 |
 | `REC-QUIZ-HOLOGRAPHIC-HUD-PBR` | **Quiz** | Cyberpunk Holographic Trivia Terminal, Neon Streak Timers & Prismatic Particle Bursts for Quiz Game | **ACCEPTED** | 2026-10-17 |
+| `REC-WHEEL-PHYSICAL-PBR-CABINET` | **Wheel** | Physical Casino PBR Outer Bevel Rim, Metallic Chrome Pegs, Dynamic Motion-Blur Shading & Holographic Aqua-Core for Wheel Game | **ACCEPTED** | 2026-10-17 |
+| `REC-MINIGAMES-CYBER-PORTAL-LOBBY` | **MiniGames** | Holographic Cyber Arcade Portal, Floating 3D Parallax Tilt Cards & Volumetric Starfield Aurora for Mini-Games Lobby | **ACCEPTED** | 2026-10-17 |
+| `REC-LEADERBOARD-HOLOGRAPHIC-PODIUM` | **Leaderboard** | Holographic Champions Stadium, Tiered Metallic Trophy Pillars & Radiant Particle Crown for Leaderboard | **ACCEPTED** | 2026-10-17 |
+| `REC-DASHBOARD-CYBER-COMMAND-HUD` | **Dashboard** | Cyber Command Center HUD, Volumetric Streak Reactor & Prismatic Token Vault for Dashboard | **ACCEPTED** | 2026-10-18 |

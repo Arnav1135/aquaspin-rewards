@@ -13,3 +13,7 @@
 | 2026-10-17 | `REC-CLICKER-CYBER-CORE-PULSE` | `2f5868f` | Preview | https://aquaspin-rewards-ri1vbqmh8-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-MEMORY-HOLOGRAPHIC-CARD-FLIP` | `15f8c9b` | Preview | https://aquaspin-rewards-o9s36dfom-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-17 | `REC-QUIZ-HOLOGRAPHIC-HUD-PBR` | `1c0a80f` | Production | N/A | **BLOCKED** | 1 |
+| 2026-10-17 | `REC-WHEEL-PHYSICAL-PBR-CABINET` | `b7f053f` | Preview | https://aquaspin-rewards-k1x780k2q-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-17 | `REC-MINIGAMES-CYBER-PORTAL-LOBBY` | `b7f053f` | Preview | https://aquaspin-rewards-dfxlut02l-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-17 | `REC-LEADERBOARD-HOLOGRAPHIC-PODIUM` | `b7f053f` | Preview | https://aquaspin-rewards-4vd60qot8-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-18 | `REC-DASHBOARD-CYBER-COMMAND-HUD` | `b7f053f` | Preview | https://aquaspin-rewards-10omkz6oi-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |

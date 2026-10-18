@@ -10,8 +10,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
-    "graphics:advisor": "tsx scripts/graphics-advisor.ts",
-    "graphics:evolve": "tsx scripts/hourly-evolution.ts"
+    "graphics:advisor": "npx tsx scripts/graphics-advisor.ts",
+    "graphics:evolve": "npx tsx scripts/hourly-evolution.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

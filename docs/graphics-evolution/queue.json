@@ -511,7 +511,7 @@
     "complexity": "MEDIUM",
     "priority": 19,
     "riskLevel": "LOW",
-    "status": "DISCOVERED",
+    "status": "QUEUED",
     "acceptanceCriteria": [
       "TypeScript build passes with zero errors",
       "Missions display holographic terminal styling with animated energy bars",
@@ -524,6 +524,6 @@
     ],
     "dependencies": [],
     "createdAt": "2026-10-18T08:41:21.808Z",
-    "updatedAt": "2026-10-18T08:41:21.808Z"
+    "updatedAt": "2026-10-18T10:35:42.448Z"
   }
 ]

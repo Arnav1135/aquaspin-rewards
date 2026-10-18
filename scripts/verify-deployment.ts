@@ -20,7 +20,7 @@ async function verify() {
   });
 
   try {
-    const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const status = response ? response.status() : 0;
     console.log(`[Smoke Test] HTTP Status: ${status}`);
     

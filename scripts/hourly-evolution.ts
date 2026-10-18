@@ -117,10 +117,17 @@ export async function runHourlyEvolution() {
         const deployOutcome = await pipeline.deployUpgrade({
           taskId: nextTask.id,
           summary: nextTask.title,
-          isProduction: false
+          isProduction: true
         });
         completedRecord.deployment = deployOutcome.record;
         console.log(`[System B] Vercel deployment completed with status: ${deployOutcome.record.actualStatus}`);
+
+        // Push committed upgrade to GitHub to keep git origin in sync
+        try {
+          execSync('git push origin graphics-evolution', { cwd: REPO_ROOT, stdio: 'pipe' });
+        } catch (pushErr: any) {
+          console.warn('[System B Git Push Warning]:', pushErr.message);
+        }
       } catch (depErr: any) {
         console.error('[System B Warning] Vercel pipeline caught error:', depErr.message);
       }

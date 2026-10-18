@@ -5,17 +5,24 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
 // ── Environment variables ────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL as string;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY as string;
+
+const supabaseUrl = 
+  (import.meta as any).env.VITE_SUPABASE_URL || 
+  (import.meta as any).env.NEXT_PUBLIC_SUPABASE_URL || 
+  (import.meta as any).env.SUPABASE_URL || 
+  '';
+
+const supabaseAnonKey = 
+  (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  (import.meta as any).env.VITE_SUPABASE_ANON_KEY || 
+  (import.meta as any).env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  (import.meta as any).env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+  (import.meta as any).env.SUPABASE_PUBLISHABLE_KEY ||
+  (import.meta as any).env.SUPABASE_ANON_KEY || 
+  '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    '⛔ Missing Supabase environment variables.\n' +
-    'Copy .env.example to .env and fill in your Supabase project URL and anon key.\n' +
-    'Get them from: https://app.supabase.com → Your Project → Settings → API'
-  );
+  console.warn('⛔ Missing Supabase environment variables (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). Please configure your environment.');
 }
 
 // ── Supabase client (fully typed) ────────────────────────────────────────────

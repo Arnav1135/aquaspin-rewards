@@ -22,3 +22,4 @@
 | `REC-MINIGAMES-CYBER-PORTAL-LOBBY` | **MiniGames** | Holographic Cyber Arcade Portal, Floating 3D Parallax Tilt Cards & Volumetric Starfield Aurora for Mini-Games Lobby | **ACCEPTED** | 2026-10-17 |
 | `REC-LEADERBOARD-HOLOGRAPHIC-PODIUM` | **Leaderboard** | Holographic Champions Stadium, Tiered Metallic Trophy Pillars & Radiant Particle Crown for Leaderboard | **ACCEPTED** | 2026-10-17 |
 | `REC-DASHBOARD-CYBER-COMMAND-HUD` | **Dashboard** | Cyber Command Center HUD, Volumetric Streak Reactor & Prismatic Token Vault for Dashboard | **ACCEPTED** | 2026-10-18 |
+| `REC-SHOP-CYBER-VAULT-PBR` | **Shop** | Holographic Cyber-Vault Emporium, 3D Power-Up Canister Glows & Prismatic Purchase Energy FX for Token Shop | **ACCEPTED** | 2026-10-18 |

@@ -18,3 +18,5 @@
 | 2026-10-17 | `REC-LEADERBOARD-HOLOGRAPHIC-PODIUM` | `b7f053f` | Preview | https://aquaspin-rewards-4vd60qot8-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-18 | `REC-DASHBOARD-CYBER-COMMAND-HUD` | `b7f053f` | Preview | https://aquaspin-rewards-10omkz6oi-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
 | 2026-10-18 | `REC-SHOP-CYBER-VAULT-PBR` | `2803df6` | Preview | https://aquaspin-rewards-281w3n12d-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-18 | `REC-PROGRESS-ACHIEVEMENT-VAULT` | `68e9bfd` | Preview | https://aquaspin-rewards-2c0ebms6p-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |
+| 2026-10-18 | `REC-PROGRESS-ACHIEVEMENT-VAULT` | `c8a012b` | Preview | https://aquaspin-rewards-mieioeldg-vermaarnav113-5136s-projects.vercel.app | **SUCCESS** | 0 |

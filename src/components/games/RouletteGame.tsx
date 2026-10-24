@@ -21,88 +21,89 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 
 // ==========================================
-// CINEMATIC AAA ROULETTE MATERIALS & GEOMETRIES
+// CINEMATIC AAA ROULETTE MATERIALS & GEOMETRIES (LUXURY LIGHT THEME)
 // ==========================================
 
 const GEO_BOWL_BASE = new THREE.CylinderGeometry(4.8, 5.0, 1.0, 128, 1, true);
 const MAT_BOWL_BASE = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.1, 
-  envMapIntensity: 2.5, color: "#2B0B04", 
-  metalness: 0.2, roughness: 0.1, 
+  clearcoat: 1.0, clearcoatRoughness: 0.08, 
+  envMapIntensity: 2.2, color: "#4A2418", 
+  metalness: 0.15, roughness: 0.12, 
   side: THREE.DoubleSide 
-}); // Ultra-Rich Mahogany
+}); // Polished Royal Mahogany
 
 const GEO_BOWL_TRIM = new THREE.TorusGeometry(4.7, 0.15, 32, 128);
 const MAT_BOWL_TRIM = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.05, 
-  envMapIntensity: 3.0, color: "#FFDF00", 
-  metalness: 1.0, roughness: 0.1 
-}); // Solid Gold Trim
+  clearcoat: 1.0, clearcoatRoughness: 0.04, 
+  envMapIntensity: 3.5, color: "#EAB308", 
+  metalness: 0.95, roughness: 0.08 
+}); // Solid 24k Gold Rim
 
 const GEO_BOWL_SLOPE = new THREE.CylinderGeometry(4.6, 3.2, 0.6, 128, 1, true);
 const MAT_BOWL_SLOPE = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.0, 
-  envMapIntensity: 2.0, color: "#1a0803", 
-  metalness: 0.4, roughness: 0.1, 
+  clearcoat: 1.0, clearcoatRoughness: 0.05, 
+  envMapIntensity: 2.5, color: "#2E150F", 
+  metalness: 0.35, roughness: 0.08, 
   side: THREE.DoubleSide 
 }); // High-Gloss Track
 
-const GEO_DEFLECTOR = new THREE.OctahedronGeometry(0.1, 1);
+const GEO_DEFLECTOR = new THREE.OctahedronGeometry(0.12, 1);
 const MAT_DEFLECTOR = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.1, 
-  envMapIntensity: 4.0, color: "#fef08a", 
-  metalness: 1.0, roughness: 0.05 
-}); // Diamond-cut Brass Deflectors
+  clearcoat: 1.0, clearcoatRoughness: 0.05, 
+  envMapIntensity: 4.5, color: "#FDE047", 
+  metalness: 1.0, roughness: 0.04 
+}); // Diamond-cut Polished Brass Deflectors
 
 const GEO_WHEEL_BASE = new THREE.CylinderGeometry(3.2, 3.2, 0.15, 128);
 const MAT_WHEEL_BASE = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.05, 
-  envMapIntensity: 2.0, color: "#000000", 
-  metalness: 0.6, roughness: 0.1 
-}); // Obsidian Black Wheel
+  clearcoat: 1.0, clearcoatRoughness: 0.06, 
+  envMapIntensity: 2.2, color: "#1E293B", 
+  metalness: 0.5, roughness: 0.12 
+}); // Deep Slate Steel Base
 
-const GEO_WHEEL_RING = new THREE.TorusGeometry(2.9, 0.04, 32, 128);
+const GEO_WHEEL_RING = new THREE.TorusGeometry(2.9, 0.05, 32, 128);
 const MAT_WHEEL_RING = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.1, 
-  envMapIntensity: 3.0, color: "#D4AF37", 
-  metalness: 1.0, roughness: 0.1 
+  clearcoat: 1.0, clearcoatRoughness: 0.06, 
+  envMapIntensity: 3.5, color: "#EAB308", 
+  metalness: 0.95, roughness: 0.08 
 }); // Inner Gold Ring
 
 const GEO_WHEEL_TURRET = new THREE.CylinderGeometry(1.2, 1.8, 0.5, 64);
 const MAT_WHEEL_TURRET = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.1, 
-  envMapIntensity: 2.5, color: "#c5a059", 
-  metalness: 0.9, roughness: 0.15 
-}); // Brushed Gold Turret
+  clearcoat: 1.0, clearcoatRoughness: 0.08, 
+  envMapIntensity: 3.0, color: "#D4AF37", 
+  metalness: 0.9, roughness: 0.1 
+}); // Brushed Imperial Gold Turret
 
 const GEO_SPINDLE = new THREE.CylinderGeometry(0.12, 0.18, 1.2, 32);
-const GEO_SPINDLE_TOP = new THREE.SphereGeometry(0.3, 64, 64);
+const GEO_SPINDLE_TOP = new THREE.SphereGeometry(0.32, 64, 64);
 const MAT_SPINDLE = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 1.0, clearcoatRoughness: 0.0, 
-  envMapIntensity: 5.0, color: "#FFDF00", 
+  clearcoat: 1.0, clearcoatRoughness: 0.02, 
+  envMapIntensity: 5.0, color: "#FBBF24", 
   metalness: 1.0, roughness: 0.02 
 }); // Mirror Gold Spindle
 
-const GEO_NUMBER_PLATE = new THREE.BoxGeometry(0.42, 0.03, 0.5);
+const GEO_NUMBER_PLATE = new THREE.BoxGeometry(0.42, 0.04, 0.52);
 const GEO_POCKET = new THREE.BoxGeometry(0.33, 0.05, 0.5);
 const MAT_POCKET = new THREE.MeshPhysicalMaterial({ 
-  clearcoat: 0.8, clearcoatRoughness: 0.1, 
-  envMapIntensity: 2.0, color: "#94a3b8", 
-  metalness: 0.9, roughness: 0.2 
-}); // Silver Pocket
+  clearcoat: 0.9, clearcoatRoughness: 0.08, 
+  envMapIntensity: 2.5, color: "#CBD5E1", 
+  metalness: 0.85, roughness: 0.15 
+}); // Polished Platinum Pocket
 
-const GEO_DIVIDER = new THREE.BoxGeometry(0.02, 0.15, 1.0);
-const GEO_BALL = new THREE.SphereGeometry(0.12, 64, 64);
+const GEO_DIVIDER = new THREE.BoxGeometry(0.025, 0.16, 1.0);
+const GEO_BALL = new THREE.SphereGeometry(0.13, 64, 64);
 const MAT_BALL = new THREE.MeshPhysicalMaterial({ 
   clearcoat: 1.0, clearcoatRoughness: 0.0, 
-  envMapIntensity: 3.0, color: "#ffffff", 
-  metalness: 0.2, roughness: 0.0,
-  transmission: 0.2, ior: 1.5
-}); // Pearl / Ivory Ball
+  envMapIntensity: 3.5, color: "#FFFFFF", 
+  metalness: 0.15, roughness: 0.02,
+  emissive: "#FFFFFF", emissiveIntensity: 0.35
+}); // Radiant Ivory Ball with soft ambient glow
 
-const MAT_NUMBER_PLATE_RED = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#990000", metalness: 0.2, roughness: 0.1 });
-const MAT_NUMBER_PLATE_GREEN = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#005500", metalness: 0.2, roughness: 0.1 });
-const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.1, envMapIntensity: 1.5, color: "#050505", metalness: 0.2, roughness: 0.1 });
+// Distinct, vibrant colors for the number plates for maximum visibility
+const MAT_NUMBER_PLATE_RED = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.08, envMapIntensity: 2.0, color: "#DC2626", metalness: 0.1, roughness: 0.12 });
+const MAT_NUMBER_PLATE_GREEN = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.08, envMapIntensity: 2.0, color: "#059669", metalness: 0.1, roughness: 0.12 });
+const MAT_NUMBER_PLATE_BLACK = new THREE.MeshPhysicalMaterial({ clearcoat: 1.0, clearcoatRoughness: 0.08, envMapIntensity: 2.0, color: "#0F172A", metalness: 0.3, roughness: 0.12 });
 
 
 type GameState = 'BETTING' | 'SPINNING' | 'SETTLING' | 'PAYOUT';
@@ -139,25 +140,25 @@ function CameraController({ gameState, winIdx, wheelRotRef }: { gameState: GameS
 
   useFrame((state, delta) => {
     if (gameState === 'BETTING' || gameState === 'PAYOUT') {
-      const targetCamPos = new THREE.Vector3(0, 10, 8);
-      camera.position.lerp(targetCamPos, delta * 2);
-      lookAtTarget.current.lerp(new THREE.Vector3(0, 0, 0), delta * 2);
+      const targetCamPos = new THREE.Vector3(0, 9.5, 7.8);
+      camera.position.lerp(targetCamPos, delta * 2.5);
+      lookAtTarget.current.lerp(new THREE.Vector3(0, 0, 0), delta * 2.5);
     } else if (gameState === 'SPINNING') {
       const time = state.clock.getElapsedTime();
-      const radius = 6.5;
+      const radius = 6.2;
       const targetCamPos = new THREE.Vector3(
-        Math.cos(time * 0.5) * radius,
-        5 + Math.sin(time * 0.3) * 1.5,
-        Math.sin(time * 0.5) * radius
+        Math.cos(time * 0.45) * radius,
+        5.2 + Math.sin(time * 0.25) * 1.2,
+        Math.sin(time * 0.45) * radius
       );
-      camera.position.lerp(targetCamPos, delta * 1.5);
-      lookAtTarget.current.lerp(new THREE.Vector3(0, -1, 0), delta * 2);
+      camera.position.lerp(targetCamPos, delta * 1.8);
+      lookAtTarget.current.lerp(new THREE.Vector3(0, -0.6, 0), delta * 2);
     } else if (gameState === 'SETTLING' && winIdx !== null) {
       const targetAngle = (winIdx * SECTOR_ANGLE) + wheelRotRef.current;
-      const radius = 3.5;
+      const radius = 3.6;
       const targetCamPos = new THREE.Vector3(
         Math.cos(targetAngle) * radius,
-        3.5,
+        3.8,
         Math.sin(targetAngle) * radius
       );
       camera.position.lerp(targetCamPos, delta * 3);
@@ -194,7 +195,7 @@ function RouletteWheel({ wheelRotRef, ballPosRef, gameState }: { wheelRotRef: Re
       
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
-      ballRef.current.position.set(x, 0.15, z);
+      ballRef.current.position.set(x, 0.16, z);
     }
   });
 
@@ -218,10 +219,10 @@ function RouletteWheel({ wheelRotRef, ballPosRef, gameState }: { wheelRotRef: Re
         
         {/* Turret Arms */}
         {Array.from({ length: 4 }).map((_, i) => (
-          <mesh key={`arm-${i}`} geometry={new THREE.CylinderGeometry(0.04, 0.04, 2.4)} material={MAT_SPINDLE} position={[0, 0.65, 0]} rotation={[Math.PI/2, 0, i * Math.PI/4]} castShadow />
+          <mesh key={`arm-${i}`} geometry={new THREE.CylinderGeometry(0.045, 0.045, 2.4)} material={MAT_SPINDLE} position={[0, 0.65, 0]} rotation={[Math.PI/2, 0, i * Math.PI/4]} castShadow />
         ))}
 
-        {/* 37 Numbers */}
+        {/* 37 Numbers with High-Contrast Legibility */}
         {WHEEL_TILES.map((tile, i) => {
           const angle = i * SECTOR_ANGLE;
           const x = Math.cos(angle) * 2.5;
@@ -236,15 +237,19 @@ function RouletteWheel({ wheelRotRef, ballPosRef, gameState }: { wheelRotRef: Re
               <mesh geometry={GEO_NUMBER_PLATE} material={mat} receiveShadow />
               <mesh geometry={GEO_DIVIDER} material={MAT_WHEEL_RING} position={[0.2, 0.05, 0]} castShadow />
               <mesh geometry={GEO_POCKET} material={MAT_POCKET} position={[-0.4, -0.05, 0]} receiveShadow />
+              
+              {/* Bold high-contrast number text with raised position, crisp outline and glow */}
               <Text 
-                position={[0, 0.02, 0]} 
+                position={[0, 0.045, 0]} 
                 rotation={[-Math.PI / 2, 0, Math.PI / 2]} 
-                fontSize={0.25} 
-                color="white" 
+                fontSize={0.28} 
+                color="#FFFFFF" 
                 anchorX="center" 
                 anchorY="middle"
-                outlineWidth={0.01}
-                outlineColor="#000"
+                outlineWidth={0.035}
+                outlineColor="#000000"
+                outlineOpacity={0.9}
+                renderOrder={10}
               >
                 {tile.num}
               </Text>
@@ -255,31 +260,32 @@ function RouletteWheel({ wheelRotRef, ballPosRef, gameState }: { wheelRotRef: Re
 
       <mesh ref={ballRef} geometry={GEO_BALL} material={MAT_BALL} castShadow />
 
-      {/* Cinematic Studio Lighting */}
+      {/* Radiant Luxury Lighting */}
       <SpotLight
-        position={[0, 15, 0]}
-        angle={0.6}
-        penumbra={0.8}
-        intensity={8}
+        position={[0, 16, 0]}
+        angle={0.65}
+        penumbra={0.7}
+        intensity={9}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        color="#fffaee"
+        color="#FFFFFF"
       />
       <SpotLight
-        position={[10, 8, 10]}
-        angle={0.8}
+        position={[8, 10, 8]}
+        angle={0.85}
         penumbra={1}
-        intensity={3}
-        color="#4facfe"
+        intensity={4}
+        color="#F8FAFC"
       />
       <SpotLight
-        position={[-10, 8, -10]}
-        angle={0.8}
+        position={[-8, 10, -8]}
+        angle={0.85}
         penumbra={1}
-        intensity={3}
-        color="#f093fb"
+        intensity={3.5}
+        color="#FEF08A"
       />
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={1.1} color="#F1F5F9" />
+      <directionalLight position={[0, 12, 5]} intensity={1.5} color="#FFFFFF" />
     </group>
   );
 }
@@ -437,17 +443,17 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
 
   return (
     <ErrorBoundary name="RouletteGame">
-      <div className="absolute inset-0 bg-black flex flex-col font-sans overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-100 via-sky-50 to-slate-200 flex flex-col font-sans overflow-hidden">
         
         {/* 3D Scene */}
         <div className="absolute inset-0 z-0">
           <ErrorBoundary name="Roulette3DCanvas" fallback={() => (
-            <div className="w-full h-full flex flex-col items-center justify-center text-white/70 bg-neutral-950 p-6">
-              <p className="text-xl font-bold mb-2 text-yellow-500">3D Graphics Fallback</p>
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-700 bg-slate-100 p-6">
+              <p className="text-xl font-bold mb-2 text-amber-600">3D Graphics Fallback</p>
               <p className="text-sm text-center max-w-sm mb-4">The 3D wheel encountered a WebGL issue. You can still play with the betting table below.</p>
               {winNumber !== null && (
-                <div className="px-6 py-4 rounded-xl bg-neutral-900 border border-yellow-500/30 text-center">
-                  <span className="text-2xl font-black text-yellow-400">Winning Number: {winNumber}</span>
+                <div className="px-6 py-4 rounded-xl bg-white border border-amber-500/40 shadow-lg text-center">
+                  <span className="text-2xl font-black text-amber-600">Winning Number: {winNumber}</span>
                 </div>
               )}
             </div>
@@ -460,21 +466,21 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
                 <group position={[0, -2, 0]}>
                   <RouletteWheel wheelRotRef={wheelRotRef} ballPosRef={ballPosRef} gameState={gameState} />
                   
-                  {/* Cinematic Floor Reflection */}
+                  {/* Luxury Marble / Pearl Floor Reflection */}
                   <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, -0.6, 0]} receiveShadow>
                     <planeGeometry args={[50, 50]} />
                     <MeshReflectorMaterial 
-                      blur={[300, 100]}
+                      blur={[200, 80]}
                       resolution={1024}
                       mixBlur={1}
-                      mixStrength={80}
-                      roughness={0.2}
+                      mixStrength={60}
+                      roughness={0.15}
                       depthScale={1.2}
                       minDepthThreshold={0.4}
                       maxDepthThreshold={1.4}
-                      color="#0a0a0a"
-                      metalness={0.5}
-                      mirror={0.5}
+                      color="#E2E8F0"
+                      metalness={0.2}
+                      mirror={0.4}
                     />
                   </mesh>
                 </group>
@@ -482,35 +488,35 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
                 <PostFXManager />
                 <ParticleManager />
                 
-                {/* Ambient Dust Particles */}
-                <Sparkles count={200} scale={20} size={2} speed={0.4} opacity={0.2} color="#fef08a" />
+                {/* Ambient Golden Sparkles */}
+                <Sparkles count={150} scale={20} size={2.5} speed={0.3} opacity={0.35} color="#D97706" />
               </QualityManager>
             </Canvas>
           </ErrorBoundary>
         </div>
 
       {/* Top Header UI */}
-      <div className="relative z-10 flex justify-between items-center p-6 bg-gradient-to-b from-black/80 to-transparent">
+      <div className="relative z-10 flex justify-between items-center p-6 bg-gradient-to-b from-white/90 via-white/60 to-transparent">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/10 backdrop-blur-md rounded-xl">
+          <Button variant="ghost" onClick={onClose} className="text-slate-700 hover:text-slate-900 bg-white/80 hover:bg-white border border-slate-200/80 shadow-sm backdrop-blur-md rounded-xl font-bold">
             EXIT
           </Button>
-          <div className="bg-black/40 backdrop-blur-md border border-white/10 px-6 py-2 rounded-xl flex items-center gap-3">
+          <div className="bg-white/90 backdrop-blur-md border border-slate-200/80 px-6 py-2 rounded-xl flex items-center gap-3 shadow-sm">
             <div>
-              <p className="text-white/60 text-xs font-bold tracking-widest uppercase">Balance</p>
-              <p className="text-yellow-400 font-black text-lg">{profile?.tokens?.toLocaleString() || 0} 🪙</p>
+              <p className="text-slate-500 text-xs font-bold tracking-widest uppercase">Balance</p>
+              <p className="text-amber-600 font-black text-lg">{profile?.tokens?.toLocaleString() || 0} 🪙</p>
             </div>
-            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-400/30 shadow-[0_0_10px_rgba(250,204,21,0.2)]">
+            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/15 text-amber-700 border border-amber-500/30 shadow-sm">
               v2.5 AAA
             </span>
           </div>
 
           <button
             onClick={() => setProvablyFairOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 hover:bg-emerald-900/50 text-emerald-300 text-xs font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)]"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 border border-emerald-500/40 hover:bg-emerald-50 text-emerald-700 text-xs font-bold transition-all shadow-sm"
             title="Provably Fair Verification"
           >
-            <ShieldCheck size={16} className="text-emerald-400" />
+            <ShieldCheck size={16} className="text-emerald-600" />
             <span className="hidden sm:inline">Provably Fair</span>
           </button>
         </div>
@@ -522,12 +528,16 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
               initial={{ scale: 0, y: -50 }} 
               animate={{ scale: 1, y: 0 }} 
               exit={{ scale: 0, opacity: 0 }}
-              className={`px-10 py-6 rounded-3xl border-4 ${lastWin > 0 ? 'bg-emerald-900/80 border-emerald-400 shadow-[0_0_50px_rgba(52,211,153,0.5)]' : 'bg-red-900/80 border-red-500 shadow-[0_0_50px_rgba(239,68,68,0.5)]'} backdrop-blur-xl absolute left-1/2 -translate-x-1/2 top-24 text-center z-50`}
+              className={`px-10 py-6 rounded-3xl border-2 ${lastWin > 0 ? 'bg-white/95 border-emerald-500 shadow-[0_15px_40px_rgba(16,185,129,0.3)]' : 'bg-white/95 border-rose-500 shadow-[0_15px_40px_rgba(244,63,94,0.25)]'} backdrop-blur-xl absolute left-1/2 -translate-x-1/2 top-24 text-center z-50`}
             >
-              <h2 className="text-white font-black text-4xl drop-shadow-lg tracking-wider">
+              <h2 className="text-slate-900 font-black text-4xl tracking-wider">
                 {WHEEL_TILES.find(t => t.num === winNumber)?.num} {WHEEL_TILES.find(t => t.num === winNumber)?.color.toUpperCase()}
               </h2>
-              {lastWin > 0 && <p className="text-yellow-400 font-bold text-xl mt-2">+{lastWin} WIN</p>}
+              {lastWin > 0 ? (
+                <p className="text-emerald-600 font-extrabold text-2xl mt-2">+{lastWin} TOKENS</p>
+              ) : (
+                <p className="text-rose-500 font-bold text-lg mt-2">NO WIN</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -540,25 +550,25 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
             initial={{ y: 200, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 200, opacity: 0 }}
-            className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/90 to-transparent z-10 flex flex-col items-center pb-safe"
+            className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-slate-200/95 via-slate-100/80 to-transparent z-10 flex flex-col items-center pb-safe"
           >
-            <div className="w-full max-w-4xl bg-green-950/80 p-6 rounded-3xl border-2 border-green-500/30 backdrop-blur-2xl shadow-2xl overflow-x-auto custom-scrollbar mb-6">
+            <div className="w-full max-w-4xl bg-white/95 p-6 rounded-3xl border border-slate-200/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-x-auto custom-scrollbar mb-4">
               <div className="min-w-[800px] flex flex-col gap-2 relative">
                 
                 {/* Numbers Grid */}
                 <div className="flex">
                   <button 
                     onClick={() => handlePlaceBet('straight', '0', [0])}
-                    className="w-16 flex-shrink-0 bg-green-700 hover:bg-green-600 border border-green-400/50 rounded-l-xl flex items-center justify-center font-black text-xl text-white relative transition-colors"
+                    className="w-16 flex-shrink-0 bg-emerald-600 hover:bg-emerald-500 border border-emerald-400 rounded-l-xl flex items-center justify-center font-black text-xl text-white relative transition-colors shadow-sm"
                   >
                     0
                     {placedBets.filter(b => b.label === '0').length > 0 && (
-                      <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-1 right-1 shadow-md">
+                      <span className="absolute bg-amber-400 text-slate-900 text-[10px] font-black px-1.5 py-0.5 rounded-full bottom-1 right-1 shadow-md border border-amber-200">
                         {placedBets.filter(b => b.label === '0').reduce((a,b)=>a+b.amount,0)}
                       </span>
                     )}
                   </button>
-                  <div className="flex-1 grid grid-cols-12 gap-1 px-1">
+                  <div className="flex-1 grid grid-cols-12 gap-1.5 px-1.5">
                     {/* Reverse order for standard layout (cols: 1st, 2nd, 3rd) */}
                     {[3,2,1].map(rowOffset => (
                       Array.from({length: 12}).map((_, col) => {
@@ -571,11 +581,17 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
                           <button
                             key={num}
                             onClick={() => handlePlaceBet('straight', label, [num])}
-                            className={`h-12 flex items-center justify-center font-bold text-white text-lg relative rounded-md border border-white/10 transition-colors ${isRed ? 'bg-red-700 hover:bg-red-600' : 'bg-slate-900 hover:bg-slate-800'}`}
+                            className={`h-12 flex items-center justify-center font-black text-white text-lg relative rounded-lg border transition-all shadow-sm ${
+                              isRed 
+                                ? 'bg-rose-600 hover:bg-rose-500 border-rose-400/80 active:scale-95' 
+                                : 'bg-slate-800 hover:bg-slate-700 border-slate-600 active:scale-95'
+                            }`}
                           >
                             {num}
                             {betVal > 0 && (
-                              <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5 shadow-md z-10">{betVal}</span>
+                              <span className="absolute bg-amber-400 text-slate-900 text-[10px] font-black px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5 shadow-md z-10 border border-amber-200">
+                                {betVal}
+                              </span>
                             )}
                           </button>
                         );
@@ -584,8 +600,8 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
                   </div>
                 </div>
 
-                {/* Outside Bets */}
-                <div className="flex pl-16 gap-1 mt-2">
+                {/* Outside Bets (Dozens) */}
+                <div className="flex pl-16 gap-1.5 mt-2">
                   {[
                     { id: '1st 12', label: '1st 12', nums: Array.from({length:12}, (_,i)=>i+1), type: 'dozen' },
                     { id: '2nd 12', label: '2nd 12', nums: Array.from({length:12}, (_,i)=>i+13), type: 'dozen' },
@@ -593,28 +609,29 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
                   ].map(b => {
                     const betVal = placedBets.filter(pb => pb.label === b.id).reduce((a,b)=>a+b.amount,0);
                     return (
-                      <button key={b.id} onClick={() => handlePlaceBet(b.type as BetType, b.id, b.nums)} className="flex-1 h-10 bg-green-800 hover:bg-green-700 border border-green-500/30 rounded-md font-bold text-white relative transition-colors">
+                      <button key={b.id} onClick={() => handlePlaceBet(b.type as BetType, b.id, b.nums)} className="flex-1 h-10 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg font-bold text-slate-800 relative transition-all shadow-sm active:scale-95">
                         {b.label}
-                        {betVal > 0 && <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5">{betVal}</span>}
+                        {betVal > 0 && <span className="absolute bg-amber-400 text-slate-900 text-[10px] font-black px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5 shadow border border-amber-200">{betVal}</span>}
                       </button>
                     )
                   })}
                 </div>
                 
-                <div className="flex pl-16 gap-1 mt-1">
+                {/* Even Money Bets */}
+                <div className="flex pl-16 gap-1.5 mt-1">
                   {[
-                    { id: '1-18', label: '1 TO 18', nums: Array.from({length:18}, (_,i)=>i+1), type: 'high_low' },
-                    { id: 'EVEN', label: 'EVEN', nums: Array.from({length:18}, (_,i)=>(i+1)*2), type: 'even_odd' },
-                    { id: 'RED', label: 'RED', nums: RED_NUMS, type: 'red_black', color: 'bg-red-700 hover:bg-red-600' },
-                    { id: 'BLACK', label: 'BLACK', nums: BLACK_NUMS, type: 'red_black', color: 'bg-slate-900 hover:bg-slate-800' },
-                    { id: 'ODD', label: 'ODD', nums: Array.from({length:18}, (_,i)=>(i*2)+1), type: 'even_odd' },
-                    { id: '19-36', label: '19 TO 36', nums: Array.from({length:18}, (_,i)=>i+19), type: 'high_low' }
+                    { id: '1-18', label: '1 TO 18', nums: Array.from({length:18}, (_,i)=>i+1), type: 'high_low', bg: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' },
+                    { id: 'EVEN', label: 'EVEN', nums: Array.from({length:18}, (_,i)=>(i+1)*2), type: 'even_odd', bg: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' },
+                    { id: 'RED', label: 'RED', nums: RED_NUMS, type: 'red_black', bg: 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400' },
+                    { id: 'BLACK', label: 'BLACK', nums: BLACK_NUMS, type: 'red_black', bg: 'bg-slate-800 hover:bg-slate-700 text-white border-slate-600' },
+                    { id: 'ODD', label: 'ODD', nums: Array.from({length:18}, (_,i)=>(i*2)+1), type: 'even_odd', bg: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' },
+                    { id: '19-36', label: '19 TO 36', nums: Array.from({length:18}, (_,i)=>i+19), type: 'high_low', bg: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300' }
                   ].map(b => {
                     const betVal = placedBets.filter(pb => pb.label === b.id).reduce((a,b)=>a+b.amount,0);
                     return (
-                      <button key={b.id} onClick={() => handlePlaceBet(b.type as BetType, b.id, b.nums)} className={`flex-1 h-12 ${b.color || 'bg-green-900 hover:bg-green-800'} border border-white/10 rounded-md font-black text-white relative transition-colors`}>
+                      <button key={b.id} onClick={() => handlePlaceBet(b.type as BetType, b.id, b.nums)} className={`flex-1 h-11 ${b.bg} border rounded-lg font-black relative transition-all shadow-sm active:scale-95`}>
                         {b.label}
-                        {betVal > 0 && <span className="absolute bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5">{betVal}</span>}
+                        {betVal > 0 && <span className="absolute bg-amber-400 text-slate-900 text-[10px] font-black px-1.5 py-0.5 rounded-full bottom-0.5 right-0.5 shadow border border-amber-200">{betVal}</span>}
                       </button>
                     )
                   })}
@@ -622,13 +639,14 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
-            <div className="w-full max-w-4xl flex items-center justify-between gap-6 bg-black/50 p-4 rounded-3xl backdrop-blur-md border border-white/10">
+            {/* Bottom Controls Bar in Light Luxury Theme */}
+            <div className="w-full max-w-4xl flex items-center justify-between gap-6 bg-white/95 p-4 rounded-3xl backdrop-blur-md border border-slate-200/90 shadow-lg">
               <BetControl betAmount={betAmount} setBetAmount={setBetAmount} minBet={10} maxBet={10000} />
-              <div className="flex gap-4">
-                <Button variant="danger" onClick={handleClearBets} disabled={placedBets.length === 0} className="w-32 rounded-xl font-bold tracking-widest bg-red-950/50 hover:bg-red-900 text-red-400 border-red-500/30">
+              <div className="flex gap-3">
+                <Button variant="danger" onClick={handleClearBets} disabled={placedBets.length === 0} className="w-28 rounded-xl font-bold tracking-wider bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 shadow-sm">
                   CLEAR
                 </Button>
-                <Button onClick={spin} disabled={placedBets.length === 0} className="w-48 h-12 rounded-xl font-black text-lg tracking-widest bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                <Button onClick={spin} disabled={placedBets.length === 0} className="w-48 h-12 rounded-xl font-black text-base tracking-widest bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_10px_25px_rgba(16,185,129,0.3)] active:scale-95 transition-all">
                   SPIN WHEEL
                 </Button>
               </div>

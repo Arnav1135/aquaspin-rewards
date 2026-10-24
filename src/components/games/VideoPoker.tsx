@@ -152,7 +152,7 @@ const evaluateHand = (cards: PlayingCard[]): { name: string; multiplier: number 
 };
 
 export const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [bet, setBet] = useState(10);
   const [hand, setHand] = useState<PlayingCard[]>([]);
   const [held, setHeld] = useState<boolean[]>([false, false, false, false, false]);
@@ -175,6 +175,7 @@ export const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
     setIsProcessing(true);
     try {
       await secureUpdateTokens(profile?.id || "", -bet);
+      updateProfile({ tokens: profile.tokens - bet });
       audio.play('cards', 'shuffle');
 
       let seed = activeServerSeed;
@@ -238,12 +239,21 @@ export const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
         audio.play('cards', 'win');
         toast.success(`🎉 ${name}! Won ${wonTokens} tokens!`);
         if (profile?.id && !profile.id.startsWith('guest')) {
-          await secureRecordGameResult({
+          const res = await secureRecordGameResult({
             userId: profile.id,
             betAmount: 0,
             earnedAmount: wonTokens,
             xpEarned: Math.floor(bet * 0.15)
           });
+          if (res?.data) {
+            updateProfile({ tokens: res.data });
+          } else {
+            const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+            updateProfile({ tokens: currentLive + wonTokens });
+          }
+        } else if (profile) {
+          const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+          updateProfile({ tokens: currentLive + wonTokens });
         }
       } else {
         audio.play('ui', 'lose');
@@ -252,7 +262,7 @@ export const VideoPokerContent: React.FC<VideoPokerProps> = ({ onClose }) => {
       toast.error('Failed to resolve hand');
     }
     setIsProcessing(false);
-  }, [gameState, profile, hand, held, bet]);
+  }, [gameState, profile, hand, held, bet, updateProfile]);
 
   return (
     <div className="flex flex-col items-center justify-between p-4 max-w-4xl mx-auto min-h-[580px] w-full text-white bg-[#0c1424] rounded-3xl border border-cyan-500/30 shadow-2xl relative select-none">

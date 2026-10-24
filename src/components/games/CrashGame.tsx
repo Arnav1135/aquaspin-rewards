@@ -753,19 +753,22 @@ export function CrashGame({ onClose }: CrashGameProps) {
 
     setTimeout(() => setIsAborting(false), 800);
 
-    const fb = balance + earned;
+    const currentTokens = useAuthStore.getState().profile?.tokens ?? balance;
+    let finalTokens = currentTokens + earned;
     
     OpportunityEngine.registerGameOutcome(profile?.id || 'guest', 'Crash', betAmount, true, earned);
 
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: earned, xpEarned: Math.floor(betAmount * 0.15) });
-        // stats handled by RPC
+        const res = await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: earned, xpEarned: Math.floor(betAmount * 0.15) });
+        if (res?.data != null && typeof res.data === 'number') {
+          finalTokens = res.data;
+        }
       } catch (e) {
         console.error('Failed to update user after cashout:', e);
       }
     }
-    updateProfile({ tokens: fb });
+    updateProfile({ tokens: finalTokens });
   };
 
   useEffect(() => () => {

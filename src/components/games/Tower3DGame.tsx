@@ -35,7 +35,7 @@ interface BlockData {
 }
 
 export function Tower3DGame() {
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [bet, setBet] = useState(10);
   const [activeRow, setActiveRow] = useState(0);
@@ -88,6 +88,7 @@ export function Tower3DGame() {
 
     const success = await secureUpdateTokens(profile.id, -bet);
     if (!success) return toast.error("Transaction failed.");
+    updateProfile({ tokens: profile.tokens - bet });
 
     audio.play('tower', 'click');
     await initTower();
@@ -98,7 +99,13 @@ export function Tower3DGame() {
     
     const payout = Math.floor(bet * MULTIPLIERS[activeRow - 1]);
     
-    await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: payout }) /* AUTOFIX: bet=0 to prevent double charge */;
+    const res = await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: payout }) /* AUTOFIX: bet=0 to prevent double charge */;
+    if (res?.data) {
+      updateProfile({ tokens: res.data });
+    } else {
+      const currentLive = useAuthStore.getState().profile?.tokens ?? profile!.tokens;
+      updateProfile({ tokens: currentLive + payout });
+    }
     
     // Reveal all remaining blocks safely on cashout
     setBlocks(prev => prev.map(b => ({
@@ -168,7 +175,13 @@ export function Tower3DGame() {
         // Auto cashout on top
         const payout = Math.floor(bet * MULTIPLIERS[TOWER_ROWS - 1]);
         
-        await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: payout }) /* AUTOFIX: bet=0 to prevent double charge */;
+        const res = await secureRecordGameResult({ userId: profile!.id, betAmount: 0, earnedAmount: payout }) /* AUTOFIX: bet=0 to prevent double charge */;
+        if (res?.data) {
+          updateProfile({ tokens: res.data });
+        } else {
+          const currentLive = useAuthStore.getState().profile?.tokens ?? profile!.tokens;
+          updateProfile({ tokens: currentLive + payout });
+        }
         
         setWinAmount(payout);
         setGameState('CASHOUT');

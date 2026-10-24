@@ -380,15 +380,19 @@ export function MinesGame({ onClose }: MinesGameProps) {
     audio.play('mines', 'cash-out');
     vibrate([60, 40, 100, 40, 150]);
 
-    const fb = balance + won;
+    const currentTokens = useAuthStore.getState().profile?.tokens ?? balance;
+    let finalTokens = currentTokens + won;
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.15) });
+        const res = await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.15) });
+        if (res?.data != null && typeof res.data === 'number') {
+          finalTokens = res.data;
+        }
       } catch (e) {
         console.error('Failed to update user after cashout:', e);
       }
     }
-    (updateProfile as any)({ tokens: fb });
+    (updateProfile as any)({ tokens: finalTokens });
   }, [isPlaying, gameOver, clicks, mineCount, profile, balance, betAmount, updateProfile]);
 
   return (

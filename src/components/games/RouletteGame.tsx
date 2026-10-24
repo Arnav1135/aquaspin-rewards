@@ -292,7 +292,7 @@ function RouletteWheel({ wheelRotRef, ballPosRef, gameState }: { wheelRotRef: Re
 
 
 export function RouletteGame({ onClose }: { onClose: () => void }) {
-  const { profile, isGuest } = useAuthStore();
+  const { profile, isGuest, updateProfile } = useAuthStore();
   const [betAmount, setBetAmount] = useState(10);
   const [placedBets, setPlacedBets] = useState<PlacedBet[]>([]);
   const [gameState, setGameState] = useState<GameState>('BETTING');
@@ -353,10 +353,13 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       }
       try {
         await secureUpdateTokens(profile.id, -totalBet);
+        updateProfile({ tokens: profile.tokens - totalBet });
       } catch (e: any) {
         toast.error(e?.message || 'Transaction failed');
         return;
       }
+    } else if (profile) {
+      updateProfile({ tokens: Math.max(0, profile.tokens - totalBet) });
     }
 
     if (!isMountedRef.current) return;
@@ -423,7 +426,18 @@ export function RouletteGame({ onClose }: { onClose: () => void }) {
       toast.success(`You won ${totalWin} tokens!`);
       if (profile && !isGuest) {
         const totalBet = placedBets.reduce((a,b)=>a+b.amount,0);
-        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: totalWin, xpEarned: Math.floor(totalBet * 0.15) }) /* AUTOFIX: bet=0 to prevent double charge */;
+        secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: totalWin, xpEarned: Math.floor(totalBet * 0.15) }) /* AUTOFIX: bet=0 to prevent double charge */
+          .then(res => {
+            if (res?.data) {
+              updateProfile({ tokens: res.data });
+            } else {
+              const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+              updateProfile({ tokens: currentLive + totalWin });
+            }
+          });
+      } else if (profile) {
+        const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+        updateProfile({ tokens: currentLive + totalWin });
       }
     } else {
       audio.play('ui', 'lose');

@@ -25,7 +25,7 @@ type GameState = 'IDLE' | 'PLAYING' | 'CASHOUT' | 'CRASHED';
 const MULTIPLIERS = [1.42, 2.13, 3.20, 4.80, 7.20, 10.80, 16.20, 24.30];
 
 export default function TowerGame({ onClose }: TowerGameProps) {
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [betAmount, setBetAmount] = useState(10);
   
@@ -59,6 +59,7 @@ export default function TowerGame({ onClose }: TowerGameProps) {
     try {
       const { error } = await secureUpdateTokens(pr.id, -betAmount);
       if (error) throw error;
+      updateProfile({ tokens: pr.tokens - betAmount });
       
       // Cryptographically generate mines via Provably Fair SHA-256
       const pfState = useProvablyFairStore.getState();
@@ -134,12 +135,18 @@ export default function TowerGame({ onClose }: TowerGameProps) {
     
     const pr = profileRef.current;
     if (pr && !pr.id.startsWith('guest')) {
-      await secureRecordGameResult({
+      const res = await secureRecordGameResult({
         userId: pr.id,
         betAmount: 0,
         earnedAmount: winnings,
         xpEarned: Math.floor(betAmount * 0.1)
       }) /* AUTOFIX: bet=0 to prevent double charge */;
+      if (res?.data) {
+        updateProfile({ tokens: res.data });
+      } else {
+        const currentLive = useAuthStore.getState().profile?.tokens ?? pr.tokens;
+        updateProfile({ tokens: currentLive + winnings });
+      }
       toast.success(`Cashed out ${winnings} tokens!`);
     }
   };

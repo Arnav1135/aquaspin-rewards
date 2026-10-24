@@ -42,7 +42,7 @@ const BET_MULTIPLIERS: Record<string, number> = {
 };
 
 export function SicBo3DGame() {
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [bet, setBet] = useState(10);
   const [selectedBet, setSelectedBet] = useState<BetType>('small');
@@ -64,6 +64,7 @@ export function SicBo3DGame() {
 
     try {
       await secureUpdateTokens(profile.id, -bet);
+      updateProfile({ tokens: profile.tokens - bet });
     } catch (e: any) {
       return toast.error(e?.message || "Transaction failed.");
     }
@@ -177,14 +178,19 @@ export function SicBo3DGame() {
     setWinAmount(win);
 
     if (win > 0) {
-      
       audio.play('sicbo', 'win-jackpot');
       vibrate([50, 100, 50]);
     } else {
       audio.play('sicbo', 'click-lose');
     }
 
-    await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: win }) /* AUTOFIX: bet=0 to prevent double charge */;
+    const res = await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: win }) /* AUTOFIX: bet=0 to prevent double charge */;
+    if (res?.data) {
+      updateProfile({ tokens: res.data });
+    } else if (win > 0) {
+      const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+      updateProfile({ tokens: currentLive + win });
+    }
     setGameState('PAYOUT');
   };
 

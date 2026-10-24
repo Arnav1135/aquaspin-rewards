@@ -36,7 +36,7 @@ const getSymbolFromFloat = (floatVal: number) => {
 export default function SlotsGame() {
   useAIGameEngine('slots', 'Lucky Slots', 'arcade', 'dom-css');
   const navigate = useNavigate();
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   
   const [betAmount, setBetAmount] = useState(10);
   const [reels, setReels] = useState([SYMBOLS[0], SYMBOLS[1], SYMBOLS[2]]);
@@ -62,6 +62,7 @@ export default function SlotsGame() {
     try {
       const success = await secureUpdateTokens(profile.id, -betAmount);
       if (!success) throw new Error('Transaction failed');
+      updateProfile({ tokens: profile.tokens - betAmount });
 
       // Cryptographically derive reel outcomes via Provably Fair HMAC-SHA256
       let s1 = SYMBOLS[0];
@@ -123,12 +124,18 @@ export default function SlotsGame() {
         }
 
         if (profile) {
-          await secureRecordGameResult({
+          const res = await secureRecordGameResult({
             userId: profile.id,
             betAmount: 0, /* bet charged upfront */
             earnedAmount: payout,
             xpEarned: Math.floor(betAmount * 0.1),
           });
+          if (res?.data) {
+            updateProfile({ tokens: res.data });
+          } else if (payout > 0) {
+            const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+            updateProfile({ tokens: currentLive + payout });
+          }
         }
       }, 1600);
       

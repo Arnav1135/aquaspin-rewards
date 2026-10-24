@@ -201,15 +201,19 @@ export function ChickenGame({ onClose }: ChickenGameProps) {
     audio.play('chicken', 'cash-out-safe');
     vibrate([60, 40, 120]);
 
-    const fb = balance + won;
+    const currentTokens = useAuthStore.getState().profile?.tokens ?? balance;
+    let finalTokens = currentTokens + won;
     if (profile && !profile.id.startsWith('guest')) {
       try {
-        await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.15) });
+        const res = await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: won, xpEarned: Math.floor(betAmount * 0.15) });
+        if (res?.data != null && typeof res.data === 'number') {
+          finalTokens = res.data;
+        }
       } catch (e) {
         console.error('Failed to update user after cashout:', e);
       }
     }
-    updateProfile({ tokens: fb });
+    updateProfile({ tokens: finalTokens });
   }, [isPlaying, gameOver, clicks, boneCount, profile, balance, betAmount, updateProfile]);
 
   const dangerPct = Math.min(100, (boneCount / 24) * 100);

@@ -49,7 +49,7 @@ const getCardFromFloat = (floatVal: number): Card => {
 export default function BaccaratGame() {
   useAIGameEngine('baccarat', 'Baccarat', 'arcade', 'dom-css');
   const navigate = useNavigate();
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   
   const [betAmount, setBetAmount] = useState(10);
   const [betType, setBetType] = useState<BetType>(null);
@@ -96,6 +96,7 @@ export default function BaccaratGame() {
     try {
       const success = await secureUpdateTokens(profile.id, -betAmount);
       if (!success) throw new Error('Transaction failed');
+      updateProfile({ tokens: profile.tokens - betAmount });
 
       setGameState('dealing');
       audio.play('cards', 'shuffle');
@@ -191,12 +192,20 @@ export default function BaccaratGame() {
     }
 
     if (profile) {
-      await secureRecordGameResult({
+      const res = await secureRecordGameResult({
         userId: profile.id,
         betAmount: 0,
         earnedAmount: winAmount,
         xpEarned: Math.floor(betAmount * 0.1),
       });
+      if (winAmount > 0) {
+        if (res?.data != null && typeof res.data === 'number') {
+          updateProfile({ tokens: res.data });
+        } else {
+          const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+          updateProfile({ tokens: currentLive + winAmount });
+        }
+      }
     }
     
     setPayout(winAmount);

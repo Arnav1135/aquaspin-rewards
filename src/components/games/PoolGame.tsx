@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ResponsiveCanvas as Canvas } from '@/components/ui/ResponsiveCanvas';;
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -9,19 +9,53 @@ import { HUD } from './pool/HUD';
 import { usePoolEconomy, TABLE_TIERS } from './pool/PoolEconomy';
 import { usePoolRules } from './pool/RulesEngine';
 import { audio } from '@/lib/audioEngine';
+import { useAuthStore } from '@/features/authStore';
+import { secureUpdateTokens, secureRecordGameResult } from '@/lib/secureEconomy';
+import toast from 'react-hot-toast';
 
 interface Props { onClose: () => void; }
 
 export function PoolGame({ onClose }: Props) {
+  const { profile, updateProfile } = useAuthStore();
   const mode = usePoolEconomy(s => s.mode);
   const setMode = usePoolEconomy(s => s.setMode);
   const selectedTier = usePoolEconomy(s => s.selectedTier);
   const selectTier = usePoolEconomy(s => s.selectTier);
 
   const startMatch = usePoolRules(s => s.startMatch);
+  const winner = usePoolRules(s => s.winner);
+  const gameState = usePoolRules(s => s.gameState);
   
   const [cueAngle, setCueAngle] = useState(0);
   const [power, setPower] = useState(0);
+
+  // Handle victory prize settlement
+  useEffect(() => {
+    if (gameState === 'GAME_OVER' && winner === 'PLAYER_1' && profile) {
+      const tierConfig = TABLE_TIERS.find(t => t.id === selectedTier);
+      const prize = tierConfig?.prize ?? 0;
+      if (prize > 0) {
+        secureRecordGameResult({
+          userId: profile.id,
+          betAmount: 0,
+          earnedAmount: prize,
+          xpEarned: Math.floor(prize * 0.1),
+        }).then((res) => {
+          if (res?.data != null && typeof res.data === 'number') {
+            updateProfile({ tokens: res.data });
+          } else {
+            const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+            updateProfile({ tokens: currentLive + prize });
+          }
+        }).catch(() => {
+          const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+          updateProfile({ tokens: currentLive + prize });
+        });
+        toast.success(`🎱 Victory! You won ${prize} tokens!`);
+        audio.play('ui', 'win');
+      }
+    }
+  }, [gameState, winner]);
 
   const handleStrike = (p: number) => {
     // Notify rules engine that balls are rolling
@@ -34,7 +68,24 @@ export function PoolGame({ onClose }: Props) {
     audio.play('pool', 'hit');
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    const tierConfig = TABLE_TIERS.find(t => t.id === selectedTier);
+    const fee = tierConfig?.entryFee ?? 0;
+
+    if (profile && fee > 0) {
+      if (profile.tokens < fee) {
+        toast.error('Insufficient tokens to enter this table!');
+        return;
+      }
+      try {
+        await secureUpdateTokens(profile.id, -fee);
+        updateProfile({ tokens: profile.tokens - fee });
+      } catch (err: any) {
+        toast.error(err?.message || 'Transaction failed. Could not enter table.');
+        return;
+      }
+    }
+
     setMode('PLAYING');
     startMatch();
     setCueAngle(0);

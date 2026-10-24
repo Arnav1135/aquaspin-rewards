@@ -24,7 +24,7 @@ import * as THREE from 'three';
 type GameState = 'IDLE' | 'DRAWING' | 'PAYOUT';
 
 export function Keno3DGame() {
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [bet, setBet] = useState(10);
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
@@ -76,6 +76,7 @@ export function Keno3DGame() {
 
     try {
       await secureUpdateTokens(profile.id, -bet);
+      updateProfile({ tokens: profile.tokens - bet });
     } catch (e: any) {
       setGameState('IDLE');
       return toast.error(e?.message || "Transaction failed.");
@@ -131,14 +132,19 @@ export function Keno3DGame() {
     setWinAmount(win);
 
     if (win > 0) {
-      
       audio.play('keno-3d', 'jackpot');
       vibrate([50, 100, 50]);
     } else {
       audio.play('keno-3d', 'lose');
     }
 
-    await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: win }) /* AUTOFIX: bet=0 to prevent double charge */;
+    const res = await secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: win }) /* AUTOFIX: bet=0 to prevent double charge */;
+    if (res?.data) {
+      updateProfile({ tokens: res.data });
+    } else if (win > 0) {
+      const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+      updateProfile({ tokens: currentLive + win });
+    }
     setGameState('PAYOUT');
   };
 

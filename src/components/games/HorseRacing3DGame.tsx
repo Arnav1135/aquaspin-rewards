@@ -92,7 +92,7 @@ function RaceTrack({ progresses }: { progresses: number[] }) {
 }
 
 export default function HorseRacing3DGame({ onClose }: { onClose?: () => void }) {
-  const { profile } = useAuthStore();
+  const { profile, updateProfile } = useAuthStore();
   const [bet, setBet] = useState(10);
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [isStarting, setIsStarting] = useState(false);
@@ -150,7 +150,19 @@ export default function HorseRacing3DGame({ onClose }: { onClose?: () => void })
               const horse = HORSES.find(h => h.id === finalHorse);
               const multiplier = horse ? horse.odds : 0;
               const winAmount = Math.floor(currentBet * multiplier);
-              secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: winAmount, xpEarned: Math.floor(currentBet * 0.1) });
+              secureRecordGameResult({ userId: profile.id, betAmount: 0, earnedAmount: winAmount, xpEarned: Math.floor(currentBet * 0.1) })
+                .then((res) => {
+                  if (res?.data != null && typeof res.data === 'number') {
+                    updateProfile({ tokens: res.data });
+                  } else {
+                    const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+                    updateProfile({ tokens: currentLive + winAmount });
+                  }
+                })
+                .catch(() => {
+                  const currentLive = useAuthStore.getState().profile?.tokens ?? profile.tokens;
+                  updateProfile({ tokens: currentLive + winAmount });
+                });
               audio.play('horse', 'win');
               toast.success(`🎉 Horse #${finalHorse} won! +${winAmount} tokens!`);
             } else {
@@ -191,6 +203,7 @@ export default function HorseRacing3DGame({ onClose }: { onClose?: () => void })
     setIsStarting(true);
     try {
       await secureUpdateTokens(profile.id, -bet);
+      updateProfile({ tokens: profile.tokens - bet });
       activeBetRef.current = bet;
       activeHorseRef.current = selectedHorseId;
       settledRef.current = false;
